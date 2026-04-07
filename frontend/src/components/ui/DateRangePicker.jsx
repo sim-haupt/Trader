@@ -165,6 +165,7 @@ function DateRangePicker({
   const initialFrom = parseIsoDate(from);
   const initialTo = parseIsoDate(to);
   const [isOpen, setIsOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ mode: align, top: 0 });
   const [draftFrom, setDraftFrom] = useState(initialFrom);
   const [draftTo, setDraftTo] = useState(initialTo);
   const [activePreset, setActivePreset] = useState("CUSTOM");
@@ -203,12 +204,58 @@ function DateRangePicker({
   const nextMonth = useMemo(() => addMonths(visibleMonth, 1), [visibleMonth]);
   const nextMonthCells = useMemo(() => buildMonthCells(nextMonth), [nextMonth]);
 
+  function updateMenuPosition() {
+    if (!rootRef.current) {
+      return;
+    }
+
+    const rect = rootRef.current.getBoundingClientRect();
+    const viewportPadding = 12;
+    const viewportWidth = window.innerWidth;
+    const panelWidth = Math.min(1040, viewportWidth - viewportPadding * 2);
+    let mode = align === "right" ? "right" : "left";
+
+    if (viewportWidth < 1180) {
+      mode = "center";
+    } else if (mode === "left" && rect.left + panelWidth > viewportWidth - viewportPadding) {
+      mode = rect.right - panelWidth >= viewportPadding ? "right" : "center";
+    } else if (mode === "right" && rect.right - panelWidth < viewportPadding) {
+      mode = rect.left + panelWidth <= viewportWidth - viewportPadding ? "left" : "center";
+    }
+
+    setMenuPosition({
+      mode,
+      top: rect.bottom + 10
+    });
+  }
+
+  useEffect(() => {
+    if (!isOpen) {
+      return undefined;
+    }
+
+    updateMenuPosition();
+
+    function handleReposition() {
+      updateMenuPosition();
+    }
+
+    window.addEventListener("resize", handleReposition);
+    window.addEventListener("scroll", handleReposition, true);
+
+    return () => {
+      window.removeEventListener("resize", handleReposition);
+      window.removeEventListener("scroll", handleReposition, true);
+    };
+  }, [isOpen, align]);
+
   function openPicker() {
     const parsedFrom = parseIsoDate(from);
     const parsedTo = parseIsoDate(to);
     setDraftFrom(parsedFrom);
     setDraftTo(parsedTo);
     setVisibleMonth(startOfMonth(parsedFrom || parsedTo || new Date()));
+    updateMenuPosition();
     setIsOpen(true);
   }
 
@@ -322,7 +369,21 @@ function DateRangePicker({
 
       {isOpen ? (
         <div
-          className={`ui-popover absolute top-[calc(100%+10px)] z-50 w-[min(1040px,calc(100vw-40px))] overflow-hidden ${align === "right" ? "right-0" : "left-0"}`}
+          className={`ui-popover z-50 overflow-hidden ${
+            menuPosition.mode === "center"
+              ? "fixed left-1/2 -translate-x-1/2"
+              : `absolute ${menuPosition.mode === "right" ? "right-0" : "left-0"} top-[calc(100%+10px)]`
+          }`}
+          style={
+            menuPosition.mode === "center"
+              ? {
+                  top: menuPosition.top,
+                  width: "min(1040px, calc(100vw - 24px))"
+                }
+              : {
+                  width: "min(1040px, calc(100vw - 24px))"
+                }
+          }
         >
           <div className="grid min-h-[520px] xl:grid-cols-[290px_1fr]">
             <div className="border-r border-[var(--line)] p-5">
