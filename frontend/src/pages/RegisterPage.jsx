@@ -30,11 +30,11 @@ function RegisterPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-10">
-      <div className="w-full max-w-xl border-2 border-mint/25 bg-[linear-gradient(180deg,rgba(16,12,24,0.96),rgba(7,5,11,0.98))] p-8 shadow-crt sm:p-10">
+      <div className="w-full max-w-xl border-2 border-[#2a2240] bg-[linear-gradient(180deg,rgba(16,12,24,0.96),rgba(7,5,11,0.98))] p-8 shadow-crt sm:p-10">
         <div className="mb-8 flex items-center justify-between gap-4">
           <div>
-            <p className="ui-title text-xs text-[#59b9ff]">Start Journaling</p>
-            <h1 className="ui-title mt-4 text-3xl text-[#fff8df]">Create Your Account</h1>
+            <p className="ui-title text-xs text-mist">Start Journaling</p>
+            <h1 className="ui-title mt-4 text-3xl text-white">Create Your Account</h1>
           </div>
           <div className="ui-chip">New Pilot</div>
         </div>
@@ -70,7 +70,7 @@ function RegisterPage() {
             className="ui-input"
           />
 
-          {error && <p className="ui-notice border-coral/30 bg-coral/10 text-coral">{error}</p>}
+          {error && <p className="ui-notice border-coral/30 bg-[#2a1111] text-coral">{error}</p>}
 
           <button
             type="submit"
@@ -83,7 +83,7 @@ function RegisterPage() {
 
         <p className="mt-6 text-lg text-mist">
           Already have an account?{" "}
-          <Link to="/login" className="ui-title text-mint">
+          <Link to="/login" className="ui-title text-white">
             Sign in
           </Link>
         </p>

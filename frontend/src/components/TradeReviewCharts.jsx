@@ -219,11 +219,11 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
         </div>
       </div>
 
-      <div className="relative overflow-hidden border-2 border-mint/20 bg-black/70">
+      <div className="relative overflow-hidden border-2 border-white/10 bg-black/70">
         <div ref={mainRef} />
         <div ref={overlayRef} className="pointer-events-none absolute inset-0 z-10" />
       </div>
-      <div ref={macdRef} className="overflow-hidden border-2 border-mint/20 bg-black/70" />
+      <div ref={macdRef} className="overflow-hidden border-2 border-white/10 bg-black/70" />
     </div>
   );
 }
@@ -260,7 +260,7 @@ function TradeReviewCharts({ trade }) {
 
   if (loading) {
     return (
-      <div className="flex h-[360px] items-center justify-center border-2 border-mint/20 bg-black/40 text-sm text-mist">
+      <div className="flex h-[360px] items-center justify-center border-2 border-white/10 bg-black/40 text-sm text-mist">
         Loading market data...
       </div>
     );
@@ -268,7 +268,7 @@ function TradeReviewCharts({ trade }) {
 
   if (error) {
     return (
-      <div className="border-2 border-coral/30 bg-coral/10 p-5 text-sm text-coral">
+      <div className="border-2 border-coral/30 bg-[#2a1111] p-5 text-sm text-coral">
         {error}
       </div>
     );
@@ -276,7 +276,7 @@ function TradeReviewCharts({ trade }) {
 
   if (!minuteBars.length) {
     return (
-      <div className="border-2 border-mint/20 bg-black/40 p-5 text-sm text-mist">
+      <div className="border-2 border-white/10 bg-black/40 p-5 text-sm text-mist">
         No market bars were returned for this trade window.
       </div>
     );

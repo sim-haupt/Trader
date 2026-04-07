@@ -18,11 +18,11 @@ import { formatCurrency, formatPercent } from "../utils/formatters";
 
 function tooltipStyle() {
   return {
-    background: "rgba(255,255,255,0.98)",
-    border: "2px solid rgba(107,125,255,0.28)",
+    background: "rgba(17,17,22,0.98)",
+    border: "2px solid rgba(255,255,255,0.1)",
     borderRadius: "0px",
-    color: "#252933",
-    boxShadow: "0 18px 40px rgba(18,27,45,0.08)"
+    color: "#f5f7fb",
+    boxShadow: "0 18px 40px rgba(0,0,0,0.32)"
   };
 }
 
@@ -96,12 +96,12 @@ function AnalyticsCharts({ analytics }) {
               <AreaChart data={equityCurve}>
                 <defs>
                   <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6b7dff" stopOpacity={0.24} />
+                    <stop offset="5%" stopColor="#d9dde6" stopOpacity={0.18} />
                     <stop offset="45%" stopColor="#18a36b" stopOpacity={0.18} />
                     <stop offset="95%" stopColor="#18a36b" stopOpacity={0.04} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid stroke="rgba(107,125,255,0.12)" vertical={false} />
+                <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
                 <XAxis dataKey="date" stroke="#6e7585" tickLine={false} axisLine={false} />
                 <YAxis stroke="#6e7585" tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={tooltipStyle()} />
@@ -145,9 +145,9 @@ function AnalyticsCharts({ analytics }) {
                   {Number(summary.averageWinningHoldMinutes.toFixed(1))} min
                 </span>
               </div>
-              <div className="h-3 bg-[#e9edf4]">
+              <div className="h-3 bg-white/10">
                 <div
-                  className="h-3 bg-[linear-gradient(90deg,#6b7dff,#18a36b)]"
+                  className="h-3 bg-[linear-gradient(90deg,#d9dde6,#18a36b)]"
                   style={{ width: `${Math.min(100, summary.averageWinningHoldMinutes * 6)}%` }}
                 />
               </div>
@@ -160,7 +160,7 @@ function AnalyticsCharts({ analytics }) {
                   {Number(summary.averageLosingHoldMinutes.toFixed(1))} min
                 </span>
               </div>
-              <div className="h-3 bg-[#e9edf4]">
+              <div className="h-3 bg-white/10">
                 <div
                   className="h-3 bg-[linear-gradient(90deg,#ff6b6b,#ff8a76)]"
                   style={{ width: `${Math.min(100, summary.averageLosingHoldMinutes * 6)}%` }}
@@ -180,7 +180,7 @@ function AnalyticsCharts({ analytics }) {
         <Card title="Recent Sessions" subtitle="The latest daily snapshots.">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
             {recentDays.map((day) => (
-              <div key={day.date} className="ui-panel bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(244,246,250,0.98))] px-4 py-4">
+              <div key={day.date} className="ui-panel bg-[linear-gradient(180deg,rgba(28,24,37,0.98),rgba(16,13,23,0.96))] px-4 py-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="ui-title text-sm text-phosphor">{day.weekday}</p>
@@ -202,7 +202,7 @@ function AnalyticsCharts({ analytics }) {
           <div className="h-[260px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={performanceByWeekday}>
-                <CartesianGrid stroke="rgba(107,125,255,0.12)" vertical={false} />
+                <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
                 <XAxis dataKey="day" stroke="#6e7585" tickLine={false} axisLine={false} />
                 <YAxis stroke="#6e7585" tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={tooltipStyle()} />

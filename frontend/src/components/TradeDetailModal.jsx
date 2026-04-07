@@ -26,7 +26,7 @@ import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 
 function SummaryMetric({ label, value, accent = "text-white" }) {
   return (
-    <div className="ui-panel bg-[linear-gradient(180deg,rgba(30,20,45,0.92),rgba(14,10,20,0.98))] p-4">
+    <div className="ui-panel bg-[linear-gradient(180deg,rgba(26,21,36,0.92),rgba(14,10,20,0.98))] p-4">
       <p className="ui-title text-xs text-mist">{label}</p>
       <p className={`mt-3 text-2xl font-semibold ${accent}`}>{value}</p>
     </div>
@@ -39,7 +39,7 @@ function ChartTooltip({ active, payload, label }) {
   }
 
   return (
-    <div className="border-2 border-mint/20 bg-black/95 px-3 py-2 text-xs text-phosphor shadow-xl">
+    <div className="border-2 border-white/10 bg-black/95 px-3 py-2 text-xs text-phosphor shadow-xl">
       <div className="font-medium">{label}</div>
       <div className="mt-1 text-mint">{formatCurrency(payload[0].value)}</div>
     </div>
@@ -50,8 +50,8 @@ function TimelineTable({ rows }) {
   return (
     <div className="ui-table-shell">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-mint/10 text-sm">
-          <thead className="bg-mint/6">
+        <table className="min-w-full divide-y divide-white/10 text-sm">
+          <thead className="bg-white/5">
             <tr className="ui-title text-left text-[11px] text-mist">
               <th className="px-4 py-3">Event</th>
               <th className="px-4 py-3">Date / Time</th>
@@ -61,7 +61,7 @@ function TimelineTable({ rows }) {
               <th className="px-4 py-3">Position</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-mint/10 bg-black/20">
+          <tbody className="divide-y divide-white/10 bg-black/20">
             {rows.map((row) => (
               <tr key={row.id}>
                 <td className="px-4 py-4 font-medium text-phosphor">{row.label}</td>
@@ -138,11 +138,11 @@ function TradeDetailModal({ trade, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 p-4 backdrop-blur">
-      <div className="w-full max-w-[1500px] border-2 border-mint/25 bg-[linear-gradient(180deg,rgba(18,13,28,0.98),rgba(8,6,12,0.98))] shadow-crt">
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b-2 border-cyan/20 bg-[linear-gradient(90deg,rgba(138,103,255,0.28),rgba(89,185,255,0.08),rgba(255,180,77,0.08))] px-6 py-5 backdrop-blur">
+      <div className="w-full max-w-[1500px] border-2 border-[#2a2240] bg-[linear-gradient(180deg,rgba(18,13,28,0.98),rgba(8,6,12,0.98))] shadow-crt">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b-2 border-[#2a2240] bg-[linear-gradient(90deg,rgba(56,56,66,0.72),rgba(34,34,41,0.42),rgba(18,18,22,0.18))] px-6 py-5 backdrop-blur">
           <div>
             <div className="flex flex-wrap items-center gap-3">
-              <h2 className="ui-title text-3xl text-[#fff8df]">{activeTrade.symbol}</h2>
+              <h2 className="ui-title text-3xl text-white">{activeTrade.symbol}</h2>
               <span
                 className={`inline-flex border px-3 py-1 text-[11px] font-semibold ${
                   activeTrade.side === "LONG" ? "bg-mint/15 text-mint" : "bg-coral/15 text-coral"
@@ -160,7 +160,7 @@ function TradeDetailModal({ trade, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="ui-button border-coral/35 bg-coral/10 text-sm text-coral hover:bg-coral/20"
+              className="ui-button border-coral/35 bg-[linear-gradient(180deg,#452222,#2d1616)] text-sm text-coral hover:brightness-110"
             >
               Close
             </button>
@@ -171,7 +171,7 @@ function TradeDetailModal({ trade, onClose }) {
             <div className="ui-chip text-xs">Refreshing Trade Review</div>
           )}
           {tradeDetailError && (
-            <div className="ui-notice border-coral/30 bg-coral/10 text-coral">
+            <div className="ui-notice border-coral/30 bg-[#2a1111] text-coral">
               {tradeDetailError}
             </div>
           )}
@@ -190,7 +190,7 @@ function TradeDetailModal({ trade, onClose }) {
           <Card
             title="Executions"
             subtitle="Stored execution rows for this trade. This table is pinned near the top so it is visible immediately when the trade opens."
-            className="bg-[linear-gradient(180deg,rgba(22,16,34,0.94),rgba(10,8,16,0.98))]"
+            className="bg-[linear-gradient(180deg,rgba(28,24,37,0.98),rgba(16,13,23,0.96))]"
           >
             <TimelineTable rows={tradeTimeline} />
           </Card>
@@ -198,7 +198,7 @@ function TradeDetailModal({ trade, onClose }) {
           <Card
             title="Execution Review Charts"
             subtitle="Custom 1 minute chart with execution markers drawn at the exact execution price."
-            className="bg-[linear-gradient(180deg,rgba(20,16,32,0.96),rgba(8,6,12,0.98))]"
+            className="bg-[linear-gradient(180deg,rgba(28,24,37,0.98),rgba(16,13,23,0.96))]"
           >
             <TradeReviewCharts trade={activeTrade} />
           </Card>

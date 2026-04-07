@@ -65,8 +65,8 @@ function AdminTradeTable({
   return (
     <div className="ui-table-shell">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-mint/10 text-sm">
-          <thead className="bg-mint/6">
+        <table className="min-w-full divide-y divide-white/10 text-sm">
+          <thead className="bg-white/5">
             <tr className="ui-title text-left text-[11px] text-mist">
               <th className="px-4 py-4">
                 <input
@@ -89,13 +89,13 @@ function AdminTradeTable({
               <th className="px-4 py-4">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-mint/10 bg-black/20">
+          <tbody className="divide-y divide-white/10 bg-black/20">
             {trades.map((trade) => {
               const isEditing = editingId === trade.id;
               const pnl = Number(trade.netPnl ?? trade.grossPnl ?? 0);
 
               return (
-                <tr key={trade.id} className="align-top transition hover:bg-mint/6">
+                <tr key={trade.id} className="align-top transition hover:bg-white/5">
                   <td className="px-4 py-4">
                     <input
                       type="checkbox"
@@ -247,7 +247,7 @@ function AdminTradeTable({
                             type="button"
                             onClick={() => onDelete(trade.id)}
                             disabled={isDeleting}
-                            className="ui-button border-coral/35 bg-coral/10 px-3 py-1.5 text-[11px] text-coral hover:bg-coral/20 disabled:cursor-not-allowed disabled:opacity-70"
+                            className="ui-button border-coral/35 bg-[linear-gradient(180deg,#452222,#2d1616)] px-3 py-1.5 text-[11px] text-coral hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
                           >
                             Delete
                           </button>

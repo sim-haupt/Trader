@@ -22,7 +22,7 @@ function DashboardPage() {
   }
 
   if (error) {
-    return <div className="ui-notice border-coral/30 bg-coral/10 text-coral">{error}</div>;
+    return <div className="ui-notice border-coral/30 bg-[#2a1111] text-coral">{error}</div>;
   }
 
   if (trades.length === 0) {

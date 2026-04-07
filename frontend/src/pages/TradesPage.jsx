@@ -203,11 +203,11 @@ function TradesPage() {
   return (
     <div className="space-y-6">
       <section className="ui-panel overflow-hidden">
-        <div className="border-b border-cyan/25 bg-[linear-gradient(90deg,rgba(138,103,255,0.24),rgba(89,185,255,0.14),rgba(255,180,77,0.1))] px-6 py-5">
+        <div className="border-b border-[#2a2240] bg-[linear-gradient(90deg,rgba(52,52,60,0.88),rgba(27,27,33,0.82),rgba(14,14,18,0.82))] px-6 py-5">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div>
-              <p className="ui-title text-xs text-[#59b9ff]">Trade Deck</p>
-              <h2 className="ui-title mt-3 text-2xl text-[#fff8df]">
+              <p className="ui-title text-xs text-mist">Trade Deck</p>
+              <h2 className="ui-title mt-3 text-2xl text-white">
                 {isImportMode ? "Import / Entry Console" : "Execution Ledger"}
               </h2>
               <p className="mt-3 max-w-2xl text-base text-mist">
@@ -220,17 +220,17 @@ function TradesPage() {
             <div className="grid gap-3 sm:grid-cols-2 xl:min-w-[420px] xl:grid-cols-3">
               <div className="ui-panel px-4 py-4">
                 <p className="ui-title text-xs text-mist">Visible Trades</p>
-                <p className="mt-3 text-3xl font-semibold text-[#59b9ff]">{trades.length}</p>
+                <p className="mt-3 text-3xl font-semibold text-white">{trades.length}</p>
               </div>
               <div className="ui-panel px-4 py-4">
                 <p className="ui-title text-xs text-mist">Mode</p>
-                <p className="mt-3 text-2xl font-semibold text-mint">
+                <p className="mt-3 text-2xl font-semibold text-white">
                   {isImportMode ? "Import" : "Review"}
                 </p>
               </div>
               <div className="ui-panel px-4 py-4">
                 <p className="ui-title text-xs text-mist">Active Filter</p>
-                <p className="mt-3 text-2xl font-semibold text-[#ffb44d]">
+                <p className="mt-3 text-2xl font-semibold text-white">
                   {filters.symbol || filters.strategy || filters.side ? "Scoped" : "All"}
                 </p>
               </div>
@@ -279,7 +279,7 @@ function TradesPage() {
             <Card
               title={title}
               subtitle="Keep each trade rich enough to be reviewable later."
-              className="bg-[linear-gradient(180deg,rgba(26,18,38,0.98),rgba(12,9,18,0.96))]"
+              className="bg-[linear-gradient(180deg,rgba(28,24,37,0.98),rgba(16,13,23,0.96))]"
             >
               <TradeForm
                 trade={selectedTrade}
@@ -295,10 +295,10 @@ function TradesPage() {
             <Card
               title="CSV Import"
               subtitle="Import a broker export with one drag-and-drop style action."
-              className="bg-[linear-gradient(180deg,rgba(20,16,34,0.98),rgba(10,8,18,0.96))]"
+              className="bg-[linear-gradient(180deg,rgba(28,24,37,0.98),rgba(16,13,23,0.96))]"
             >
               <UploadCSV onUpload={handleUpload} isUploading={isUploading} />
-              <div className="ui-notice mt-4 border-dashed text-mist">
+              <div className="ui-notice mt-4 border-dashed border-[#3b334e] text-mist">
                 Supported CSVs: <span className="text-phosphor">app format and broker exports with Open Datetime / Entry Price / Exit Price columns</span>
                 <br />
                 Normalized format: <span className="text-phosphor">symbol, side, quantity, entryPrice, entryDate, exitPrice, exitDate, fees, strategy, notes</span>
@@ -309,7 +309,7 @@ function TradesPage() {
           <Card
             title="Text Import"
             subtitle="Paste execution lines directly and the app will combine fills into closed trades."
-            className="bg-[linear-gradient(180deg,rgba(18,15,28,0.96),rgba(9,7,15,0.98))]"
+            className="bg-[linear-gradient(180deg,rgba(28,24,37,0.98),rgba(16,13,23,0.96))]"
           >
             <TradeTextImport onImport={handleTextImport} isImporting={isUploading} />
           </Card>
@@ -317,7 +317,7 @@ function TradesPage() {
       )}
 
       {message && <div className="ui-notice">{message}</div>}
-      {error && <div className="ui-notice border-coral/30 bg-coral/10 text-coral">{error}</div>}
+      {error && <div className="ui-notice border-coral/30 bg-[#2a1111] text-coral">{error}</div>}
 
       <Card
         title="Trade History"
@@ -327,7 +327,7 @@ function TradesPage() {
             type="button"
             onClick={handleDeleteAll}
             disabled={loading || trades.length === 0}
-            className="ui-button border-coral/35 bg-coral/10 text-coral hover:bg-coral/20"
+            className="ui-button border-coral/35 bg-[linear-gradient(180deg,#452222,#2d1616)] text-coral hover:brightness-110"
           >
             Delete All Trades
           </button>

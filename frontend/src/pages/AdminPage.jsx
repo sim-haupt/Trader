@@ -208,7 +208,7 @@ function AdminPage() {
               type="button"
               onClick={handleBulkDelete}
               disabled={selectedIds.length === 0 || isDeleting}
-              className="ui-button border-coral/35 bg-coral/10 text-sm text-coral hover:bg-coral/20"
+              className="ui-button border-coral/35 bg-[linear-gradient(180deg,#452222,#2d1616)] text-sm text-coral hover:brightness-110"
             >
               {isDeleting ? "Deleting..." : `Bulk Delete (${selectedIds.length})`}
             </button>
@@ -216,7 +216,7 @@ function AdminPage() {
               type="button"
               onClick={handleDeleteAll}
               disabled={isDeleting || trades.length === 0}
-              className="ui-button border-coral/35 bg-coral/10 text-sm text-coral hover:bg-coral/20"
+              className="ui-button border-coral/35 bg-[linear-gradient(180deg,#452222,#2d1616)] text-sm text-coral hover:brightness-110"
             >
               Delete All Trades
             </button>
@@ -224,7 +224,7 @@ function AdminPage() {
         }
       >
         {message && <div className="ui-notice mb-4">{message}</div>}
-        {error && <div className="ui-notice border-coral/30 bg-coral/10 text-coral">{error}</div>}
+        {error && <div className="ui-notice border-coral/30 bg-[#2a1111] text-coral">{error}</div>}
 
         {loading ? (
           <div className="text-sm text-mist">Loading admin data...</div>
