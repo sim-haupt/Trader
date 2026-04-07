@@ -15,13 +15,19 @@ import {
 } from "recharts";
 import Card from "../components/ui/Card";
 import CustomSelect from "../components/ui/CustomSelect";
+import DateRangePicker from "../components/ui/DateRangePicker";
 import EmptyState from "../components/ui/EmptyState";
 import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 import tagService from "../services/tagService";
 import tradeService from "../services/tradeService";
 import { formatCurrency, formatPercent } from "../utils/formatters";
 import { useAuth } from "../context/AuthContext";
-import { getTradeGrossPnl, getTradeNetPnl, getTradePnlByType } from "../utils/tradePnl";
+import {
+  getEffectiveTradeCommission,
+  getTradeGrossPnl,
+  getTradeNetPnl,
+  getTradePnlByType
+} from "../utils/tradePnl";
 
 const TAB_ITEMS = [
   "Overview",
@@ -261,6 +267,160 @@ function calculateStandardDeviation(values) {
   return Math.sqrt(variance);
 }
 
+function combination(n, k) {
+  if (k < 0 || k > n) {
+    return 0;
+  }
+
+  const safeK = Math.min(k, n - k);
+  let result = 1;
+
+  for (let i = 1; i <= safeK; i += 1) {
+    result = (result * (n - safeK + i)) / i;
+  }
+
+  return result;
+}
+
+function calculateRandomChanceProbability(winningTrades, losingTrades) {
+  const n = winningTrades + losingTrades;
+
+  if (n <= 0) {
+    return 0;
+  }
+
+  const threshold = Math.max(winningTrades, losingTrades);
+  let probability = 0;
+
+  for (let k = threshold; k <= n; k += 1) {
+    probability += combination(n, k) / 2 ** n;
+  }
+
+  return probability * 100;
+}
+
+function calculateKellyPercentage(summary) {
+  const n = summary.winningTrades + summary.losingTrades;
+
+  if (n === 0) {
+    return 0;
+  }
+
+  const averageWin = summary.averageWinningTrade;
+  const averageLoss = Math.abs(summary.averageLosingTrade);
+
+  if (averageWin <= 0 || averageLoss <= 0) {
+    return 0;
+  }
+
+  const winRate = summary.winningTrades / n;
+  const lossRate = 1 - winRate;
+  const rewardRisk = averageWin / averageLoss;
+  const kelly = winRate - lossRate / rewardRisk;
+
+  return kelly * 100;
+}
+
+function calculateSqn(summary) {
+  const n = summary.winningTrades + summary.losingTrades;
+
+  if (n === 0 || summary.tradePnlStdDev === 0) {
+    return 0;
+  }
+
+  return (Math.sqrt(n) * summary.averageTradeGainLoss) / summary.tradePnlStdDev;
+}
+
+function calculateDrawdownStats(sortedTrades, defaultCommission, pnlType) {
+  if (sortedTrades.length === 0) {
+    return {
+      averageDrawdown: 0,
+      biggestDrawdown: 0,
+      averageDaysInDrawdown: 0,
+      daysInDrawdown: 0,
+      averageTradesInDrawdown: 0
+    };
+  }
+
+  const dailyMap = new Map();
+
+  for (const trade of sortedTrades) {
+    const date = new Date(trade.entryDate);
+    const dayKey = getDayKey(date);
+    const current = dailyMap.get(dayKey) || {
+      date: startOfDay(date),
+      pnl: 0,
+      trades: 0
+    };
+
+    current.pnl = Number(
+      (current.pnl + getTradePnlByType(trade, pnlType, defaultCommission)).toFixed(2)
+    );
+    current.trades += 1;
+    dailyMap.set(dayKey, current);
+  }
+
+  const dailySeries = Array.from(dailyMap.values()).sort((a, b) => a.date - b.date);
+  let runningEquity = 0;
+  let peakEquity = 0;
+  let currentEpisode = null;
+  const episodes = [];
+
+  for (const day of dailySeries) {
+    runningEquity = Number((runningEquity + day.pnl).toFixed(2));
+    peakEquity = Math.max(peakEquity, runningEquity);
+    const drawdown = Number((runningEquity - peakEquity).toFixed(2));
+
+    if (drawdown < 0) {
+      if (!currentEpisode) {
+        currentEpisode = {
+          drawdowns: [],
+          dayCount: 0,
+          tradeCount: 0
+        };
+      }
+
+      currentEpisode.drawdowns.push(Math.abs(drawdown));
+      currentEpisode.dayCount += 1;
+      currentEpisode.tradeCount += day.trades;
+    } else if (currentEpisode) {
+      episodes.push(currentEpisode);
+      currentEpisode = null;
+    }
+  }
+
+  if (currentEpisode) {
+    episodes.push(currentEpisode);
+  }
+
+  if (episodes.length === 0) {
+    return {
+      averageDrawdown: 0,
+      biggestDrawdown: 0,
+      averageDaysInDrawdown: 0,
+      daysInDrawdown: 0,
+      averageTradesInDrawdown: 0
+    };
+  }
+
+  const averageDrawdown =
+    episodes.reduce((sum, episode) => sum + Math.max(...episode.drawdowns), 0) / episodes.length;
+  const biggestDrawdown = Math.max(...episodes.flatMap((episode) => episode.drawdowns));
+  const daysInDrawdown = episodes.reduce((sum, episode) => sum + episode.dayCount, 0);
+  const averageDaysInDrawdown =
+    episodes.reduce((sum, episode) => sum + episode.dayCount, 0) / episodes.length;
+  const averageTradesInDrawdown =
+    episodes.reduce((sum, episode) => sum + episode.tradeCount, 0) / episodes.length;
+
+  return {
+    averageDrawdown,
+    biggestDrawdown,
+    averageDaysInDrawdown,
+    daysInDrawdown,
+    averageTradesInDrawdown
+  };
+}
+
 function summarizeTrades(trades, dayCountOverride, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
   const pnlType = options.pnlType || "NET";
@@ -289,6 +449,8 @@ function summarizeTrades(trades, dayCountOverride, options = {}) {
   let maxWinStreak = 0;
   let maxLossStreak = 0;
   const pnlSeries = [];
+  let explicitFees = 0;
+  let effectiveCommissions = 0;
 
   for (const trade of sortedTrades) {
     const pnl = getTradePnlByType(trade, pnlType, defaultCommission);
@@ -296,10 +458,11 @@ function summarizeTrades(trades, dayCountOverride, options = {}) {
     const perShare = quantity > 0 ? pnl / quantity : 0;
     const holdMinutes = getHoldMinutes(trade);
     const dayKey = getDayKey(new Date(trade.entryDate));
-    const day = dailyStats.get(dayKey) || { pnl: 0, volume: 0 };
+    const day = dailyStats.get(dayKey) || { pnl: 0, volume: 0, trades: 0 };
 
     day.pnl = Number((day.pnl + pnl).toFixed(2));
     day.volume += quantity;
+    day.trades += 1;
     dailyStats.set(dayKey, day);
 
     totalPnl += pnl;
@@ -308,6 +471,8 @@ function summarizeTrades(trades, dayCountOverride, options = {}) {
     largestGain = Math.max(largestGain, pnl);
     largestLoss = Math.min(largestLoss, pnl);
     pnlSeries.push(pnl);
+    explicitFees += asNumber(trade.fees);
+    effectiveCommissions += getEffectiveTradeCommission(trade, defaultCommission);
 
     if (pnl > 0) {
       totalWins += pnl;
@@ -336,6 +501,14 @@ function summarizeTrades(trades, dayCountOverride, options = {}) {
 
   const totalTrades = sortedTrades.length;
   const totalDays = Math.max(dayCountOverride ?? dailyStats.size, 1);
+  const randomChanceProbability = calculateRandomChanceProbability(winningTrades, losingTrades);
+  const kellyPercentage = calculateKellyPercentage({
+    winningTrades,
+    losingTrades,
+    averageWinningTrade: winningTrades ? totalWinningPnl / winningTrades : 0,
+    averageLosingTrade: losingTrades ? totalLosingPnl / losingTrades : 0
+  });
+  const drawdownStats = calculateDrawdownStats(sortedTrades, defaultCommission, pnlType);
 
   return {
     totalPnl,
@@ -360,7 +533,17 @@ function summarizeTrades(trades, dayCountOverride, options = {}) {
     scratchTrades,
     maxWinStreak,
     maxLossStreak,
-    totalFees: sortedTrades.reduce((sum, trade) => sum + (getTradeGrossPnl(trade) - getTradeNetPnl(trade, defaultCommission)), 0)
+    totalFees: explicitFees,
+    totalCommissions: effectiveCommissions,
+    sqn: calculateSqn({
+      winningTrades,
+      losingTrades,
+      averageTradeGainLoss: totalTrades ? totalPnl / totalTrades : 0,
+      tradePnlStdDev: calculateStandardDeviation(pnlSeries)
+    }),
+    randomChanceProbability,
+    kellyPercentage,
+    ...drawdownStats
   };
 }
 
@@ -404,22 +587,16 @@ function buildDetailedStats(trades, options = {}) {
     ],
     [
       { label: "Trade P&L Standard Deviation", value: formatCurrency(summary.tradePnlStdDev), tone: "text-white" },
-      { label: "System Quality Number (SQN)", value: "Locked", tone: "text-white/38", locked: true },
-      { label: "Probability of Random Chance", value: "Locked", tone: "text-white/38", locked: true }
+      { label: "System Quality Number (SQN)", value: summary.sqn.toFixed(2), tone: "text-white" },
+      { label: "Probability of Random Chance", value: formatPercent(summary.randomChanceProbability), tone: "text-white" }
     ],
     [
-      { label: "Kelly Percentage", value: "Locked", tone: "text-white/38", locked: true },
-      { label: "K-Ratio", value: "Locked", tone: "text-white/38", locked: true },
+      { label: "Kelly Percentage", value: formatPercent(summary.kellyPercentage), tone: summary.kellyPercentage >= 0 ? "text-mint" : "text-coral" },
       { label: "Profit Factor", value: summary.profitFactor ? summary.profitFactor.toFixed(2) : "0.00", tone: "text-white" }
     ],
     [
-      { label: "Total Commissions", value: "Locked", tone: "text-white/38", locked: true },
+      { label: "Total Commissions", value: formatCurrency(summary.totalCommissions), tone: "text-white" },
       { label: "Total Fees", value: formatCurrency(summary.totalFees), tone: "text-white" },
-      null
-    ],
-    [
-      { label: "Average position MAE", value: "Locked", tone: "text-white/38", locked: true },
-      { label: "Average Position MFE", value: "Locked", tone: "text-white/38", locked: true },
       null
     ]
   ];
@@ -440,18 +617,15 @@ function buildWinLossDayRows(summary) {
     { label: "Average Winning Trade", value: formatCurrency(summary.averageWinningTrade), tone: "text-mint" },
     { label: "Average Losing Trade", value: formatCurrency(summary.averageLosingTrade), tone: "text-coral" },
     { label: "Trade P&L Standard Deviation", value: formatCurrency(summary.tradePnlStdDev), tone: "text-white" },
-    { label: "Probability of Random Chance", value: "Locked", tone: "text-white/38", locked: true },
-    { label: "K-Ratio", value: "Locked", tone: "text-white/38", locked: true },
-    { label: "System Quality Number (SQN)", value: "Locked", tone: "text-white/38", locked: true },
-    { label: "Kelly Percentage", value: "Locked", tone: "text-white/38", locked: true },
+    { label: "Probability of Random Chance", value: formatPercent(summary.randomChanceProbability), tone: "text-white" },
+    { label: "System Quality Number (SQN)", value: summary.sqn.toFixed(2), tone: "text-white" },
+    { label: "Kelly Percentage", value: formatPercent(summary.kellyPercentage), tone: summary.kellyPercentage >= 0 ? "text-mint" : "text-coral" },
     { label: "Average Hold Time (winning trades)", value: formatMinutes(summary.averageWinningHold), tone: "text-white" },
     { label: "Average Hold Time (losing trades)", value: formatMinutes(summary.averageLosingHold), tone: "text-white" },
     { label: "Profit Factor", value: summary.profitFactor ? summary.profitFactor.toFixed(2) : "0.00", tone: "text-white" },
     { label: "Largest Gain", value: formatCurrency(summary.largestGain), tone: "text-mint" },
     { label: "Largest Loss", value: formatCurrency(summary.largestLoss), tone: "text-coral" },
-    { label: "Average Position MFE", value: "n/a", tone: "text-white/38", locked: true },
-    { label: "Average Position MAE", value: "n/a", tone: "text-white/38", locked: true },
-    { label: "Total Commissions", value: "Locked", tone: "text-white/38", locked: true },
+    { label: "Total Commissions", value: formatCurrency(summary.totalCommissions), tone: "text-white" },
     { label: "Total Fees", value: formatCurrency(summary.totalFees), tone: "text-white" }
   ];
 }
@@ -665,18 +839,18 @@ function WinVsLossDaysSection({ stats }) {
   );
 }
 
-function DrawdownSection() {
+function DrawdownSection({ summary }) {
   const rows = [
     [
-      { label: "Average drawdown", value: "Locked", tone: "text-white/38", locked: true },
-      { label: "Biggest Drawdown", value: "Locked", tone: "text-white/38", locked: true }
+      { label: "Average drawdown", value: formatCurrency(-Math.abs(summary.averageDrawdown)), tone: "text-coral" },
+      { label: "Biggest Drawdown", value: formatCurrency(-Math.abs(summary.biggestDrawdown)), tone: "text-coral" }
     ],
     [
-      { label: "Average number of days in Drawdown", value: "Locked", tone: "text-white/38", locked: true },
-      { label: "Number of days in Drawdown", value: "Locked", tone: "text-white/38", locked: true }
+      { label: "Average number of days in Drawdown", value: summary.averageDaysInDrawdown.toFixed(1), tone: "text-white" },
+      { label: "Number of days in Drawdown", value: formatCompactNumber(summary.daysInDrawdown), tone: "text-white" }
     ],
     [
-      { label: "Average trades in Drawdown", value: "Locked", tone: "text-white/38", locked: true },
+      { label: "Average trades in Drawdown", value: summary.averageTradesInDrawdown.toFixed(1), tone: "text-white" },
       null
     ]
   ];
@@ -700,11 +874,8 @@ function DrawdownSection() {
                   <div className="flex h-full items-center justify-between gap-4">
                     <span className="text-sm font-medium text-white/70">
                       {cell.label}
-                      {cell.locked ? <span className="ml-2 text-white/38">🔒</span> : null}
                     </span>
-                    {!cell.locked ? (
-                      <span className={`text-sm font-semibold ${cell.tone}`}>{cell.value}</span>
-                    ) : null}
+                    <span className={`text-sm font-semibold ${cell.tone}`}>{cell.value}</span>
                   </div>
                 ) : null}
               </div>
@@ -717,6 +888,8 @@ function DrawdownSection() {
 }
 
 function CompareStatsColumn({ title, rows, tradesMatched }) {
+  const flattenedRows = rows.flat().filter(Boolean);
+
   return (
     <div className="rounded-[18px] border border-[#e5e7eb42] bg-white/[0.02]">
       <div className="border-b border-[#e5e7eb42] px-4 py-3">
@@ -724,23 +897,15 @@ function CompareStatsColumn({ title, rows, tradesMatched }) {
         <p className="mt-1 text-xs text-white/44">Trades matches: {tradesMatched}</p>
       </div>
       <div>
-        {rows.map((row, rowIndex) => (
-          <div key={`${title}-row-${rowIndex}`} className="grid border-b border-[#e5e7eb42] last:border-b-0 xl:grid-cols-3">
-            {row.map((cell, cellIndex) => (
-              <div
-                key={`${title}-cell-${rowIndex}-${cellIndex}`}
-                className={`min-h-[70px] border-r border-[#e5e7eb42] px-4 py-4 last:border-r-0 ${!cell ? "hidden xl:block" : ""}`}
-              >
-                {cell ? (
-                  <div className="flex h-full items-center justify-between gap-4">
-                    <span className="text-sm font-medium text-white/52">{cell.label}</span>
-                    <span className={`text-sm font-semibold ${cell.tone}`}>
-                      {cell.locked ? "🔒" : cell.value}
-                    </span>
-                  </div>
-                ) : null}
-              </div>
-            ))}
+        {flattenedRows.map((cell) => (
+          <div
+            key={`${title}-${cell.label}`}
+            className="flex items-center justify-between gap-4 border-b border-[#e5e7eb42] px-4 py-3 last:border-b-0"
+          >
+            <span className="text-sm font-medium text-white/52">{cell.label}</span>
+            <span className={`text-sm font-semibold ${cell.tone}`}>
+              {cell.locked ? "🔒" : cell.value}
+            </span>
           </div>
         ))}
       </div>
@@ -805,25 +970,17 @@ function CompareGroupCard({ title, filters, onChange, tags, matchedCount }) {
             placeholder="All"
           />
         </div>
-        <div className="grid gap-3 md:grid-cols-2">
-          <div>
-            <label className="mb-2 block text-xs font-medium text-white/72">Date range</label>
-            <input
-              type="date"
-              value={filters.from}
-              onChange={(event) => onChange("from", event.target.value)}
-              className="ui-input"
-            />
-          </div>
-          <div>
-            <label className="mb-2 block text-xs font-medium text-white/72 opacity-0">To</label>
-            <input
-              type="date"
-              value={filters.to}
-              onChange={(event) => onChange("to", event.target.value)}
-              className="ui-input"
-            />
-          </div>
+        <div>
+          <label className="mb-2 block text-xs font-medium text-white/72">Date range</label>
+          <DateRangePicker
+            from={filters.from}
+            to={filters.to}
+            onChange={({ from, to }) => {
+              onChange("from", from);
+              onChange("to", to);
+            }}
+            placeholder="From - To"
+          />
         </div>
       </div>
     </div>
@@ -836,7 +993,6 @@ function CompareSection({
   groupBFilters,
   onGroupAChange,
   onGroupBChange,
-  onResetGroups,
   groupATrades,
   groupBTrades,
   pnlType,
@@ -847,28 +1003,7 @@ function CompareSection({
 
   return (
     <div className="space-y-5">
-      <Card
-        title="QUICK REPORT"
-        action={
-          <div className="flex items-center gap-2">
-            <CustomSelect
-              value="compare"
-              onChange={() => {}}
-              options={[{ label: "Select type", value: "compare" }]}
-              className="min-w-[140px]"
-              buttonClassName="!w-[140px]"
-              menuClassName="min-w-[140px]"
-              align="right"
-            />
-            <button type="button" onClick={onResetGroups} className="ui-button px-4 py-2 text-sm">
-              Reset
-            </button>
-            <button type="button" className="ui-button-solid px-4 py-2 text-sm">
-              Generate Report
-            </button>
-          </div>
-        }
-      >
+      <Card title="QUICK REPORT">
         <p className="text-sm text-white/48">Or build a custom report below</p>
         <div className="mt-5 grid gap-5 xl:grid-cols-2">
           <CompareGroupCard
@@ -1023,6 +1158,14 @@ function ReportsPage() {
     }),
     [filteredTrades, activeRange.days, user?.defaultCommission, pnlType]
   );
+  const reportSummary = useMemo(
+    () =>
+      summarizeTrades(filteredTrades, undefined, {
+        defaultCommission: user?.defaultCommission ?? 0,
+        pnlType
+      }),
+    [filteredTrades, user?.defaultCommission, pnlType]
+  );
   const detailedStats = useMemo(
     () => buildDetailedStats(filteredTrades, {
       defaultCommission: user?.defaultCommission ?? 0,
@@ -1071,11 +1214,6 @@ function ReportsPage() {
     }));
   }
 
-  function resetCompareGroups() {
-    setGroupAFilters(COMPARE_GROUP_FILTERS);
-    setGroupBFilters(COMPARE_GROUP_FILTERS);
-  }
-
   if (loading) {
     return <div className="text-sm text-mist">Loading reports...</div>;
   }
@@ -1098,7 +1236,7 @@ function ReportsPage() {
 
   return (
     <div className="space-y-5">
-      <Card>
+      <Card className="overflow-visible">
         <div className="space-y-5">
           <div className="grid gap-3 xl:grid-cols-[repeat(3,minmax(0,1fr))_1.2fr_auto]">
             <div>
@@ -1135,25 +1273,17 @@ function ReportsPage() {
                 placeholder="All"
               />
             </div>
-            <div className="grid gap-3 md:grid-cols-2">
-              <div>
-                <label className="mb-2 block text-xs font-medium text-white/72">From</label>
-                <input
-                  type="date"
-                  value={filters.from}
-                  onChange={(event) => updateFilter("from", event.target.value)}
-                  className="ui-input"
-                />
-              </div>
-              <div>
-                <label className="mb-2 block text-xs font-medium text-white/72">To</label>
-                <input
-                  type="date"
-                  value={filters.to}
-                  onChange={(event) => updateFilter("to", event.target.value)}
-                  className="ui-input"
-                />
-              </div>
+            <div>
+              <label className="mb-2 block text-xs font-medium text-white/72">Date range</label>
+              <DateRangePicker
+                from={filters.from}
+                to={filters.to}
+                onChange={({ from, to }) => {
+                  updateFilter("from", from);
+                  updateFilter("to", to);
+                }}
+                placeholder="From - To"
+              />
             </div>
             <div className="flex items-end justify-end gap-2">
               <button type="button" onClick={resetFilters} className="ui-button px-4 py-3 text-sm">
@@ -1249,7 +1379,7 @@ function ReportsPage() {
       ) : activeTab === "Win vs Loss Days" ? (
         <WinVsLossDaysSection stats={winVsLossDayStats} />
       ) : activeTab === "Drawdown" ? (
-        <DrawdownSection />
+        <DrawdownSection summary={reportSummary} />
       ) : activeTab === "Compare" ? (
         <CompareSection
           tags={tags}
@@ -1257,7 +1387,6 @@ function ReportsPage() {
           groupBFilters={groupBFilters}
           onGroupAChange={(key, value) => updateGroupFilters("A", key, value)}
           onGroupBChange={(key, value) => updateGroupFilters("B", key, value)}
-          onResetGroups={resetCompareGroups}
           groupATrades={groupATrades}
           groupBTrades={groupBTrades}
           pnlType={pnlType}
