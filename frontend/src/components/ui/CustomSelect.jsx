@@ -51,7 +51,7 @@ function CustomSelect({
   const selectedOption = normalizedOptions.find((option) => option.value === value);
 
   return (
-    <div ref={rootRef} className={`relative ${className}`}>
+    <div ref={rootRef} className={`relative ${isOpen ? "z-[90]" : "z-0"} ${className}`}>
       <button
         type="button"
         onClick={() => setIsOpen((current) => !current)}

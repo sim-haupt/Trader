@@ -1236,7 +1236,7 @@ function ReportsPage() {
 
   return (
     <div className="space-y-5">
-      <Card className="overflow-visible">
+      <Card className="relative z-20 overflow-visible">
         <div className="space-y-5">
           <div className="grid gap-3 xl:grid-cols-[repeat(3,minmax(0,1fr))_1.2fr_auto]">
             <div>
