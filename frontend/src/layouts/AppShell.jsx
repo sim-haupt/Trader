@@ -23,9 +23,9 @@ function AppShell() {
   const { user, logout } = useAuth();
 
   return (
-    <div className="min-h-screen bg-grid bg-[length:24px_24px]">
-      <header className="sticky top-0 z-20 border-b-2 border-[#221b31] bg-[rgba(15,12,22,0.92)] backdrop-blur">
-        <div className="px-4 py-4 sm:px-6 xl:px-8">
+    <div className="app-shell">
+      <div className="desktop-frame">
+        <header className="top-status sticky top-0 z-20">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <nav className="flex flex-wrap items-center gap-3">
               {navigationItems.map((item) => (
@@ -34,11 +34,11 @@ function AppShell() {
                   to={item.path}
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-4 py-3 text-[11px] uppercase transition ${
-                      isActive ? "ui-button-solid" : "ui-button text-[#f4f6fb]"
+                      isActive ? "ui-button-solid" : "ui-button"
                     }`
                   }
                 >
-                  <span className={location.pathname.startsWith(item.path) ? "text-[#07110f]" : "text-[#f4f6fb]"}>
+                  <span className={location.pathname.startsWith(item.path) ? "text-black" : "text-white"}>
                     <NavIcon path={item.icon} />
                   </span>
                   {item.label}
@@ -50,11 +50,11 @@ function AppShell() {
                   to="/admin"
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-4 py-3 text-[11px] uppercase transition ${
-                      isActive ? "ui-button-solid" : "ui-button text-[#f4f6fb]"
+                      isActive ? "ui-button-solid" : "ui-button"
                     }`
                   }
                 >
-                  <span className={location.pathname.startsWith("/admin") ? "text-[#07110f]" : "text-[#f4f6fb]"}>
+                  <span className={location.pathname.startsWith("/admin") ? "text-black" : "text-white"}>
                     <NavIcon path="M12 3l7 4v10l-7 4-7-4V7l7-4zm0 5v4m0 4h.01" />
                   </span>
                   Admin
@@ -71,7 +71,7 @@ function AppShell() {
                 Import Trades
               </button>
               <div className="text-right">
-                <p className="ui-title text-[10px] text-[#f4f6fb]">{user?.name}</p>
+                <p className="ui-title text-[10px] text-white">{user?.name}</p>
               </div>
               <button
                 type="button"
@@ -82,12 +82,12 @@ function AppShell() {
               </button>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <main className="px-4 py-8 sm:px-6 xl:px-8">
-        <Outlet />
-      </main>
+        <main className="min-h-0 px-1 py-2 sm:px-2 xl:px-2">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }

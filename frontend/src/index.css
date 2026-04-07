@@ -4,35 +4,71 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color: #f0f1f7;
-  background:
-    radial-gradient(circle at top left, rgba(140, 108, 255, 0.16), transparent 22%),
-    radial-gradient(circle at 82% 12%, rgba(107, 125, 255, 0.12), transparent 18%),
-    radial-gradient(circle at bottom right, rgba(255, 184, 77, 0.1), transparent 22%),
-    linear-gradient(180deg, #17131f 0%, #120f19 58%, #0d0a12 100%);
-  font-family:
-    "VT323",
-    "IBM Plex Mono",
-    "Courier New",
-    monospace;
+:root,
+body,
+body[data-theme="dark"] {
+  --bg: #000000;
+  --panel: #0a0a0a;
+  --panel-2: #141414;
+  --ink: #f3f3f3;
+  --navy: #111111;
+  --line: #000000;
+  --shadow: #000000;
+  --paper: #111111;
+  --blue: #7bc6ff;
+  --green: #74f0a7;
+  --orange: #ffc14d;
+  --red: #ff6174;
+  --pink: #ff8fd9;
+  --purple: #2f2f2f;
+  --grid: rgba(255, 255, 255, 0.07);
+  --body-top: rgba(255, 255, 255, 0.08);
+  --body-start: #050505;
+  --body-end: #000000;
+  --overlay-opacity: 0.2;
+  --scanline-opacity: 0.15;
+  --frame-outline: #1d1d1d;
+  --frame-highlight: rgba(255, 255, 255, 0.05);
+  --status-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 45%), var(--panel);
+  --widget-title-bg: linear-gradient(90deg, #111111, #1b1b1b);
+  --widget-body-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 40%),
+    linear-gradient(180deg, var(--panel-2), var(--panel));
+  --hero-bg:
+    radial-gradient(circle at center, rgba(255, 255, 255, 0.06), transparent 42%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 60%),
+    #0d0d0d;
+  --notes-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+    var(--paper);
+  --footer-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 45%), var(--panel);
+  --button-bg: linear-gradient(180deg, #1b1b1b, #0f0f0f);
+  --action-bg: linear-gradient(180deg, #2a2a2a, #111111);
+  --separator: rgba(255, 255, 255, 0.16);
+  --row-line: rgba(255, 255, 255, 0.12);
+  --subtle-text: #a9a9a9;
+  --track-green: #74f0a7;
+  --track-blue: #7bc6ff;
+  --track-orange: #ffc14d;
 }
 
 * {
   box-sizing: border-box;
 }
 
+html,
 body {
   margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-  color: #f0f1f7;
+  min-height: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: "Press Start 2P", cursive;
   background:
-    radial-gradient(circle at top left, rgba(140, 108, 255, 0.16), transparent 22%),
-    radial-gradient(circle at 82% 12%, rgba(107, 125, 255, 0.12), transparent 18%),
-    radial-gradient(circle at bottom right, rgba(255, 184, 77, 0.1), transparent 22%),
-    linear-gradient(180deg, #17131f 0%, #120f19 58%, #0d0a12 100%);
-  letter-spacing: 0.03em;
+    radial-gradient(circle at top, var(--body-top), transparent 30%),
+    linear-gradient(180deg, var(--body-start), var(--body-end) 80%);
+  color: var(--ink);
 }
 
 #root {
@@ -44,15 +80,25 @@ body::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 100;
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.02) 50%, rgba(0, 0, 0, 0.08) 50%),
-    linear-gradient(90deg, rgba(140, 108, 255, 0.02), transparent 18%, rgba(107, 125, 255, 0.015)),
-    linear-gradient(rgba(107, 125, 255, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(107, 125, 255, 0.045) 1px, transparent 1px);
-  background-size: 100% 4px, 100% 100%, 24px 24px, 24px 24px;
-  mix-blend-mode: screen;
-  opacity: 0.26;
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 22px 22px;
+  opacity: var(--overlay-opacity);
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.04) 0 2px,
+    rgba(0, 0, 0, 0.04) 2px 4px
+  );
+  mix-blend-mode: soft-light;
+  opacity: var(--scanline-opacity);
 }
 
 input,
@@ -69,59 +115,158 @@ textarea {
 }
 
 ::selection {
-  background: rgba(107, 125, 255, 0.3);
-  color: #f8f9ff;
+  background: rgba(123, 198, 255, 0.25);
+  color: var(--ink);
 }
 
 @layer components {
+  .app-shell {
+    width: 100vw;
+    min-height: 100vh;
+    display: grid;
+    place-items: start center;
+    padding: 18px;
+  }
+
+  .desktop-frame {
+    width: min(100%, 1980px);
+    min-height: calc(100vh - 36px);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 30%),
+      linear-gradient(180deg, var(--panel-2), var(--panel));
+    border: 4px solid var(--line);
+    box-shadow:
+      0 0 0 4px var(--frame-outline),
+      0 0 0 8px var(--line),
+      12px 12px 0 var(--shadow);
+    display: grid;
+    grid-template-rows: auto 1fr;
+    gap: 16px;
+    padding: 18px;
+  }
+
+  .top-status {
+    border: 4px solid var(--line);
+    box-shadow:
+      0 0 0 3px var(--frame-highlight),
+      6px 6px 0 var(--shadow);
+    background: var(--status-bg);
+    padding: 14px 18px;
+  }
+
   .ui-panel {
-    @apply border-2 border-[#241c33] bg-[linear-gradient(180deg,rgba(33,26,47,0.98),rgba(20,16,29,0.98))] shadow-[0_0_0_2px_rgba(5,5,7,0.85),6px_6px_0_0_rgba(8,8,11,0.7)];
+    border: 4px solid var(--line);
+    box-shadow:
+      0 0 0 3px var(--frame-highlight),
+      6px 6px 0 var(--shadow);
+    background: var(--widget-body-bg);
     border-radius: 0;
+    overflow: hidden;
   }
 
   .ui-title {
-    font-family: "Press Start 2P", monospace;
-    letter-spacing: 0.08em;
-    line-height: 1.35;
+    font-family: "Press Start 2P", cursive;
+    line-height: 1.5;
+    letter-spacing: 0.04em;
+    text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35);
   }
 
   .ui-input {
-    @apply w-full border-2 border-[#2b2240] bg-[#110e18] px-4 py-3 text-[#f1eff9] outline-none transition focus:border-cyan;
+    width: 100%;
+    border: 4px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    padding: 12px;
+    outline: none;
+    transition: filter 120ms ease;
     border-radius: 0;
-    box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.45);
+    box-shadow: 4px 4px 0 var(--shadow);
+    font-size: 0.7rem;
+  }
+
+  .ui-input:focus {
+    filter: brightness(1.08);
+  }
+
+  .ui-button,
+  .ui-button-solid,
+  .ui-chip {
+    border: 4px solid var(--line);
+    font-family: "Press Start 2P", cursive;
+    border-radius: 0;
+    text-transform: uppercase;
+    box-shadow: 4px 4px 0 var(--shadow);
   }
 
   .ui-button {
-    @apply border-[3px] border-[#050608] bg-[linear-gradient(180deg,#21443d,#16312d)] px-5 py-3 font-semibold uppercase tracking-[0.08em] text-[#f5f7fb] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60;
-    border-radius: 0;
-    box-shadow: inset -3px -3px 0 rgba(8, 12, 11, 0.55), inset 3px 3px 0 rgba(112, 201, 173, 0.14), 4px 4px 0 rgba(4, 5, 7, 0.85);
-    font-family: "Press Start 2P", monospace;
-    font-size: 0.7rem;
+    background: var(--button-bg);
+    color: var(--ink);
+    padding: 10px 12px;
+    transition: filter 120ms ease;
+    font-size: 0.52rem;
+  }
+
+  .ui-button:hover,
+  .ui-button-solid:hover,
+  .ui-chip:hover {
+    filter: brightness(1.08);
   }
 
   .ui-button-solid {
-    @apply border-[3px] border-[#050608] bg-[linear-gradient(180deg,#8ff0df,#59dac2)] px-5 py-3 font-semibold uppercase tracking-[0.08em] text-[#07110f] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60;
-    border-radius: 0;
-    box-shadow: inset -3px -3px 0 rgba(13, 91, 78, 0.45), inset 3px 3px 0 rgba(235, 255, 251, 0.45), 4px 4px 0 rgba(4, 5, 7, 0.85);
-    font-family: "Press Start 2P", monospace;
-    font-size: 0.7rem;
+    background: var(--blue);
+    color: var(--line);
+    padding: 10px 12px;
+    font-size: 0.52rem;
   }
 
   .ui-chip {
-    @apply inline-flex items-center border-[3px] border-[#050608] bg-[linear-gradient(180deg,#2d2740,#1c1827)] px-3 py-2 uppercase tracking-[0.08em] text-[#f5f7fb];
-    border-radius: 0;
-    box-shadow: inset -3px -3px 0 rgba(7, 7, 11, 0.5), inset 3px 3px 0 rgba(159, 127, 255, 0.12), 4px 4px 0 rgba(4, 5, 7, 0.8);
-    font-family: "Press Start 2P", monospace;
-    font-size: 0.7rem;
+    background: var(--button-bg);
+    color: var(--ink);
+    padding: 8px 10px 6px;
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.46rem;
+    line-height: 1.4;
   }
 
   .ui-notice {
-    @apply border-2 border-[#2a2240] bg-[linear-gradient(180deg,rgba(35,28,49,0.98),rgba(19,15,28,0.98))] px-4 py-3 text-sm text-[#f1eff9];
+    border: 4px solid var(--line);
+    box-shadow:
+      0 0 0 3px var(--frame-highlight),
+      6px 6px 0 var(--shadow);
+    background: var(--notes-bg);
+    color: var(--ink);
+    padding: 14px 18px;
     border-radius: 0;
+    font-size: 0.65rem;
+    line-height: 1.7;
   }
 
   .ui-table-shell {
-    @apply overflow-hidden border-2 border-[#2a2240] bg-[#120f19];
+    overflow: hidden;
+    border: 4px solid var(--line);
+    box-shadow:
+      0 0 0 3px var(--frame-highlight),
+      6px 6px 0 var(--shadow);
+    background: var(--panel);
     border-radius: 0;
+  }
+}
+
+@media (max-width: 1180px) {
+  .app-shell {
+    padding: 10px;
+  }
+
+  .desktop-frame {
+    min-height: calc(100vh - 20px);
+    padding: 12px;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 700px) {
+  .desktop-frame {
+    min-height: calc(100vh - 20px);
   }
 }
