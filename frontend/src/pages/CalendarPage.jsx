@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
+import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 import tradeService from "../services/tradeService";
 import { formatCurrency } from "../utils/formatters";
 
@@ -238,38 +239,18 @@ function MonthDetailModal({ month, onClose }) {
 }
 
 function CalendarPage() {
-  const [trades, setTrades] = useState(() => tradeService.peekTrades() || []);
-  const [loading, setLoading] = useState(() => !tradeService.peekTrades());
-  const [error, setError] = useState("");
   const [selectedMonthIndex, setSelectedMonthIndex] = useState(null);
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadTrades() {
-      try {
-        const data = await tradeService.getTrades();
-
-        if (active) {
-          setTrades(data);
-        }
-      } catch (err) {
-        if (active) {
-          setError(err.message);
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    }
-
-    loadTrades();
-
-    return () => {
-      active = false;
-    };
-  }, []);
+  const {
+    data: trades,
+    loading,
+    error,
+    refreshing
+  } = useCachedAsyncResource({
+    peek: () => tradeService.peekTrades(),
+    load: () => tradeService.getTrades(),
+    initialValue: [],
+    deps: []
+  });
 
   const calendarData = useMemo(() => {
     const dailyStats = buildDailyStats(trades);
@@ -325,6 +306,7 @@ function CalendarPage() {
 
   return (
     <div className="space-y-6">
+      {refreshing && <div className="ui-chip text-xs">Refreshing Calendar</div>}
       <Card
         title="Calendar Overview"
         subtitle="A year-level view of green and red trading days. Open any month to drill into the details in a focused window."

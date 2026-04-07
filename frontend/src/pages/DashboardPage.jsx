@@ -1,40 +1,21 @@
-import { useEffect, useState } from "react";
 import AnalyticsCharts from "../components/AnalyticsCharts";
 import EmptyState from "../components/ui/EmptyState";
+import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 import tradeService from "../services/tradeService";
 import { buildAnalytics } from "../utils/analytics";
 
 function DashboardPage() {
-  const [trades, setTrades] = useState(() => tradeService.peekTrades() || []);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(() => !tradeService.peekTrades());
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadTrades() {
-      try {
-        const data = await tradeService.getTrades();
-        if (active) {
-          setTrades(data);
-        }
-      } catch (err) {
-        if (active) {
-          setError(err.message);
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    }
-
-    loadTrades();
-
-    return () => {
-      active = false;
-    };
-  }, []);
+  const {
+    data: trades,
+    error,
+    loading,
+    refreshing
+  } = useCachedAsyncResource({
+    peek: () => tradeService.peekTrades(),
+    load: () => tradeService.getTrades(),
+    initialValue: [],
+    deps: []
+  });
 
   if (loading) {
     return <div className="text-sm text-mist">Loading dashboard...</div>;
@@ -53,7 +34,12 @@ function DashboardPage() {
     );
   }
 
-  return <AnalyticsCharts analytics={buildAnalytics(trades)} />;
+  return (
+    <div className="space-y-3">
+      {refreshing && <div className="ui-chip text-xs">Refreshing Dashboard</div>}
+      <AnalyticsCharts analytics={buildAnalytics(trades)} />
+    </div>
+  );
 }
 
 export default DashboardPage;

@@ -1,42 +1,37 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
 import StatCard from "../components/ui/StatCard";
 import UploadCSV from "../components/UploadCSV";
 import TradeTextImport from "../components/TradeTextImport";
 import AdminTradeTable from "../components/AdminTradeTable";
+import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 import tradeService from "../services/tradeService";
 import { useAuth } from "../context/AuthContext";
 
 function AdminPage() {
   const { user } = useAuth();
-  const [trades, setTrades] = useState(() => tradeService.peekAllTrades() || []);
   const [selectedIds, setSelectedIds] = useState([]);
-  const [loading, setLoading] = useState(() => !tradeService.peekAllTrades());
-  const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
-  const loadTrades = useCallback(async () => {
-    setLoading(true);
-    setError("");
-
-    try {
-      const data = await tradeService.getAllTrades();
-      setTrades(data);
-      setSelectedIds((current) => current.filter((id) => data.some((trade) => trade.id === id)));
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadTrades();
-  }, [loadTrades]);
+  const loadTrades = useCallback(async () => tradeService.getAllTrades(), []);
+  const {
+    data: trades,
+    setData: setTrades,
+    loading,
+    error,
+    setError,
+    refreshing,
+    reload: reloadTrades
+  } = useCachedAsyncResource({
+    peek: () => tradeService.peekAllTrades(),
+    load: loadTrades,
+    initialValue: [],
+    deps: [loadTrades]
+  });
 
   function toggleSelection(tradeId) {
     setSelectedIds((current) =>
@@ -58,7 +53,8 @@ function AdminPage() {
     try {
       await tradeService.updateTrade(tradeId, payload);
       setMessage("Trade updated successfully.");
-      await loadTrades();
+      const data = await reloadTrades();
+      setSelectedIds((current) => current.filter((id) => data.some((trade) => trade.id === id)));
     } catch (err) {
       setError(err.message);
       throw err;
@@ -82,7 +78,8 @@ function AdminPage() {
       await tradeService.deleteTrade(tradeId);
       setSelectedIds((current) => current.filter((id) => id !== tradeId));
       setMessage("Trade deleted successfully.");
-      await loadTrades();
+      const data = await reloadTrades();
+      setSelectedIds((current) => current.filter((id) => data.some((trade) => trade.id === id)));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -109,7 +106,8 @@ function AdminPage() {
       const result = await tradeService.bulkDeleteTrades(selectedIds);
       setSelectedIds([]);
       setMessage(`Deleted ${result.deletedCount} trades.`);
-      await loadTrades();
+      const data = await reloadTrades();
+      setSelectedIds((current) => current.filter((id) => data.some((trade) => trade.id === id)));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -132,7 +130,7 @@ function AdminPage() {
       const result = await tradeService.deleteAllTrades("all");
       setSelectedIds([]);
       setMessage(`Deleted ${result.deletedCount} trades.`);
-      await loadTrades();
+      await reloadTrades();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -150,7 +148,8 @@ function AdminPage() {
       setMessage(
         `Imported ${result.insertedCount} trades${result.errorCount ? ` with ${result.errorCount} row errors` : ""}.`
       );
-      await loadTrades();
+      const data = await reloadTrades();
+      setSelectedIds((current) => current.filter((id) => data.some((trade) => trade.id === id)));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -168,7 +167,8 @@ function AdminPage() {
       setMessage(
         `Imported ${result.insertedCount} trades${result.errorCount ? ` with ${result.errorCount} row errors` : ""}.`
       );
-      await loadTrades();
+      const data = await reloadTrades();
+      setSelectedIds((current) => current.filter((id) => data.some((trade) => trade.id === id)));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -178,6 +178,7 @@ function AdminPage() {
 
   return (
     <div className="space-y-6">
+      {refreshing && <div className="ui-chip text-xs">Refreshing Admin Data</div>}
       <div className="grid gap-4 lg:grid-cols-3">
         <StatCard label="Admin Role" value={user?.role || "ADMIN"} accent="gold" />
         <StatCard label="Visible Trades" value={trades.length} accent="mint" />

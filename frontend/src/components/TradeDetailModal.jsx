@@ -22,6 +22,7 @@ import {
   getTradeHoldMinutes,
   getTradePnl
 } from "../utils/tradeDetail";
+import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 
 function SummaryMetric({ label, value, accent = "text-white" }) {
   return (
@@ -89,16 +90,29 @@ function TradeDetailModal({ trade, onClose }) {
     from: initialDayStart.toISOString(),
     to: initialDayEnd.toISOString()
   };
-  const [tradeDetail, setTradeDetail] = useState(() => tradeService.peekTrade(trade.id) || trade);
-  const [loadingTradeDetail, setLoadingTradeDetail] = useState(
-    () => !tradeService.peekTrade(trade.id)
-  );
-  const [tradeDetailError, setTradeDetailError] = useState("");
-  const [dayTrades, setDayTrades] = useState(() => tradeService.peekTrades(initialDayFilters) || []);
-  const [loadingDayTrades, setLoadingDayTrades] = useState(
-    () => !tradeService.peekTrades(initialDayFilters)
-  );
-  const [dayTradesError, setDayTradesError] = useState("");
+  const {
+    data: tradeDetail,
+    loading: loadingTradeDetail,
+    error: tradeDetailError,
+    refreshing: refreshingTradeDetail
+  } = useCachedAsyncResource({
+    peek: () => tradeService.peekTrade(trade.id),
+    load: () => tradeService.getTrade(trade.id),
+    initialValue: trade,
+    deps: [trade.id]
+  });
+  const {
+    data: dayTrades,
+    loading: loadingDayTrades,
+    error: dayTradesError,
+    refreshing: refreshingDayTrades
+  } = useCachedAsyncResource({
+    peek: () => tradeService.peekTrades(initialDayFilters),
+    load: () => tradeService.getTrades(initialDayFilters),
+    initialValue: [],
+    enabled: Boolean(tradeDetail?.entryDate),
+    deps: [tradeDetail?.entryDate]
+  });
 
   useEffect(() => {
     function handleEscape(event) {
@@ -110,85 +124,6 @@ function TradeDetailModal({ trade, onClose }) {
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
   }, [onClose]);
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadTradeDetail() {
-      if (!tradeService.peekTrade(trade.id)) {
-        setLoadingTradeDetail(true);
-      }
-      setTradeDetailError("");
-
-      try {
-        const data = await tradeService.getTrade(trade.id);
-        if (active) {
-          setTradeDetail(data);
-        }
-      } catch (error) {
-        if (active) {
-          setTradeDetailError(error.message);
-        }
-      } finally {
-        if (active) {
-          setLoadingTradeDetail(false);
-        }
-      }
-    }
-
-    loadTradeDetail();
-
-    return () => {
-      active = false;
-    };
-  }, [trade.id]);
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadDayTrades() {
-      if (!tradeDetail?.entryDate) {
-        return;
-      }
-
-      setDayTradesError("");
-
-      const tradeDayStart = new Date(tradeDetail.entryDate);
-      tradeDayStart.setHours(0, 0, 0, 0);
-      const tradeDayEnd = new Date(tradeDetail.entryDate);
-      tradeDayEnd.setHours(23, 59, 59, 999);
-      const filters = {
-        from: tradeDayStart.toISOString(),
-        to: tradeDayEnd.toISOString()
-      };
-
-      try {
-        if (!tradeService.peekTrades(filters)) {
-          setLoadingDayTrades(true);
-        }
-
-        const data = await tradeService.getTrades(filters);
-
-        if (active) {
-          setDayTrades(data);
-        }
-      } catch (error) {
-        if (active) {
-          setDayTradesError(error.message);
-        }
-      } finally {
-        if (active) {
-          setLoadingDayTrades(false);
-        }
-      }
-    }
-
-    loadDayTrades();
-
-    return () => {
-      active = false;
-    };
-  }, [tradeDetail]);
 
   const activeTrade = tradeDetail || trade;
   const tradePnl = getTradePnl(activeTrade);
@@ -232,6 +167,9 @@ function TradeDetailModal({ trade, onClose }) {
         </div>
 
         <div className="space-y-6 p-6">
+          {(refreshingTradeDetail || refreshingDayTrades) && (
+            <div className="ui-chip text-xs">Refreshing Trade Review</div>
+          )}
           {tradeDetailError && (
             <div className="ui-notice border-coral/30 bg-coral/10 text-coral">
               {tradeDetailError}

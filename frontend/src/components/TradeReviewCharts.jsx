@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import {
   CandlestickSeries,
   ColorType,
@@ -7,6 +7,7 @@ import {
   createChart
 } from "lightweight-charts";
 import marketDataService from "../services/marketDataService";
+import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 import {
   buildExecutionMarkers,
   calculateEmaSeries,
@@ -229,67 +230,33 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
 
 function TradeReviewCharts({ trade }) {
   const initialRange = buildDayRange(trade.entryDate);
-  const [minuteBars, setMinuteBars] = useState([]);
-  const [loading, setLoading] = useState(
-    () =>
-      !marketDataService.peekBars({
+  const markers = useMemo(() => buildExecutionMarkers(trade), [trade]);
+  const {
+    data: minuteResponse,
+    loading,
+    error,
+    refreshing
+  } = useCachedAsyncResource({
+    peek: () =>
+      marketDataService.peekBars({
         symbol: trade.symbol,
         resolution: "1m",
         from: initialRange.from,
         to: initialRange.to,
         includeExtended: true
-      })
-  );
-  const [error, setError] = useState("");
-
-  const markers = useMemo(() => buildExecutionMarkers(trade), [trade]);
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadBars() {
-      setError("");
-
-      try {
-        const dayRange = buildDayRange(trade.entryDate);
-        const params = {
-          symbol: trade.symbol,
-          resolution: "1m",
-          from: dayRange.from,
-          to: dayRange.to,
-          includeExtended: true
-        };
-
-        const cached = marketDataService.peekBars(params);
-        if (!cached) {
-          setLoading(true);
-        } else if (active) {
-          setMinuteBars(cached.bars || []);
-          setLoading(false);
-        }
-
-        const minuteResponse = await marketDataService.getBars(params);
-
-        if (active) {
-          setMinuteBars(minuteResponse.bars || []);
-        }
-      } catch (loadError) {
-        if (active) {
-          setError(loadError.message);
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    }
-
-    loadBars();
-
-    return () => {
-      active = false;
-    };
-  }, [trade]);
+      }),
+    load: () =>
+      marketDataService.getBars({
+        symbol: trade.symbol,
+        resolution: "1m",
+        from: initialRange.from,
+        to: initialRange.to,
+        includeExtended: true
+      }),
+    initialValue: { bars: [] },
+    deps: [trade.symbol, trade.entryDate]
+  });
+  const minuteBars = minuteResponse?.bars || [];
 
   if (loading) {
     return (
@@ -317,6 +284,7 @@ function TradeReviewCharts({ trade }) {
 
   return (
     <div className="space-y-6">
+      {refreshing && <div className="ui-chip text-xs">Refreshing Chart</div>}
       {minuteBars.length > 0 && (
         <TimeframeChart
           title="1 Minute Review"
