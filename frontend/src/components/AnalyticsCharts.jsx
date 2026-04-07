@@ -16,9 +16,8 @@ import { formatCurrency, formatPercent } from "../utils/formatters";
 
 export const DEFAULT_DASHBOARD_LAYOUT = [
   { id: "cumulative", span: 2 },
-  { id: "expectancy", span: 1 },
-  { id: "riskReward", span: 1 },
-  { id: "winStats", span: 2 },
+  { id: "summaryMetrics", span: 1 },
+  { id: "avgStats", span: 1 },
   { id: "drawdown", span: 2 },
   { id: "performanceWeekday", span: 1 },
   { id: "performancePrice", span: 1 },
@@ -36,9 +35,39 @@ export function normalizeDashboardLayout(layout) {
   const safeLayout = Array.isArray(layout) ? layout : [];
   const seen = new Set();
   const normalized = [];
+  let insertedSummaryMetrics = false;
+  let insertedAvgStats = false;
 
   for (const item of safeLayout) {
-    if (!item || !WIDGET_IDS.has(item.id) || seen.has(item.id)) {
+    if (!item) {
+      continue;
+    }
+
+    if (["expectancy", "riskReward"].includes(item.id)) {
+      if (!insertedSummaryMetrics) {
+        insertedSummaryMetrics = true;
+        seen.add("summaryMetrics");
+        normalized.push({
+          id: "summaryMetrics",
+          span: 1
+        });
+      }
+      continue;
+    }
+
+    if (item.id === "winStats") {
+      if (!insertedAvgStats) {
+        insertedAvgStats = true;
+        seen.add("avgStats");
+        normalized.push({
+          id: "avgStats",
+          span: 1
+        });
+      }
+      continue;
+    }
+
+    if (!WIDGET_IDS.has(item.id) || seen.has(item.id)) {
       continue;
     }
 
@@ -210,39 +239,10 @@ function AnalyticsCharts({
         )
       },
       {
-        id: "expectancy",
-        title: "EXPECTANCY",
+        id: "summaryMetrics",
+        title: "WIN RATE / EXPECTANCY / R:R",
         defaultSpan: 1,
         className: "min-h-[205px]",
-        body: (
-          <div className="grid h-full">
-            <MiniMetric
-              label="EXPECTANCY PER TRADE"
-              value={formatCurrency(summary.expectancyPerTrade)}
-              tone={toneForValue(summary.expectancyPerTrade)}
-            />
-          </div>
-        )
-      },
-      {
-        id: "riskReward",
-        title: "RISK REWARD RATIO",
-        defaultSpan: 1,
-        className: "min-h-[205px]",
-        body: (
-          <div className="grid h-full">
-            <MiniMetric
-              label="R:R"
-              value={summary.riskRewardRatio ? `${summary.riskRewardRatio.toFixed(2)} : 1` : "0.00 : 1"}
-              tone={summary.riskRewardRatio >= 1 ? "text-mint" : "text-coral"}
-            />
-          </div>
-        )
-      },
-      {
-        id: "winStats",
-        title: "WIN RATE / AVG WIN / AVG LOSS",
-        defaultSpan: 2,
         body: (
           <div className="grid gap-3">
             <MiniMetric
@@ -250,14 +250,36 @@ function AnalyticsCharts({
               value={formatPercent(summary.winRate)}
               tone={summary.winRate >= 68 ? "text-mint" : summary.winRate < 50 ? "text-coral" : "text-[#ffc14d]"}
             />
-            <div className="grid gap-3 md:grid-cols-2">
-              <MiniMetric label="AVG WIN" value={formatCurrency(summary.averageWin)} tone="text-mint" />
-              <MiniMetric label="AVG LOSS" value={formatCurrency(summary.averageLoss)} tone="text-coral" />
-            </div>
-            <div className="grid gap-3 md:grid-cols-2">
-              <MiniMetric label="AVG GAIN / SHARE" value={formatCurrency(summary.averageGainPerShare)} tone="text-mint" />
-              <MiniMetric label="AVG LOSS / SHARE" value={formatCurrency(summary.averageLossPerShare)} tone="text-coral" />
-            </div>
+            <MiniMetric
+              label="EXPECTANCY"
+              value={formatCurrency(summary.expectancyPerTrade)}
+              tone={summary.winRate >= 68 ? "text-mint" : summary.winRate < 50 ? "text-coral" : "text-[#ffc14d]"}
+            />
+            <MiniMetric
+              label="R:R"
+              value={summary.riskRewardRatio ? `${summary.riskRewardRatio.toFixed(2)} : 1` : "0.00 : 1"}
+              tone={
+                summary.riskRewardRatio < 1
+                  ? "text-coral"
+                  : summary.riskRewardRatio >= 2
+                    ? "text-mint"
+                    : "text-[#ffc14d]"
+              }
+            />
+          </div>
+        )
+      },
+      {
+        id: "avgStats",
+        title: "AVG WIN / AVG LOSS / SHARE",
+        defaultSpan: 1,
+        className: "min-h-[205px]",
+        body: (
+          <div className="grid gap-3 md:grid-cols-2">
+            <MiniMetric label="AVG WIN" value={formatCurrency(summary.averageWin)} tone="text-mint" />
+            <MiniMetric label="AVG LOSS" value={formatCurrency(summary.averageLoss)} tone="text-coral" />
+            <MiniMetric label="AVG GAIN / SHARE" value={formatCurrency(summary.averageGainPerShare)} tone="text-mint" />
+            <MiniMetric label="AVG LOSS / SHARE" value={formatCurrency(summary.averageLossPerShare)} tone="text-coral" />
           </div>
         )
       },
