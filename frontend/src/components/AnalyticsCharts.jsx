@@ -23,6 +23,25 @@ function tooltipStyle() {
   };
 }
 
+function ChartTooltipContent({ active, payload, label }) {
+  if (!active || !payload?.length) {
+    return null;
+  }
+
+  const value = Number(payload[0].value || 0);
+
+  return (
+    <div
+      className="rounded-[12px] border border-white/10 bg-[#171d29]/95 px-3 py-2 shadow-[0_18px_40px_rgba(0,0,0,0.32)] backdrop-blur"
+    >
+      <div className="text-xs font-medium text-white/72">{label}</div>
+      <div className={`mt-1 text-sm font-semibold ${value >= 0 ? "text-mint" : "text-coral"}`}>
+        {formatCurrency(value)}
+      </div>
+    </div>
+  );
+}
+
 function MiniMetric({ label, value, tone = "text-white" }) {
   return (
     <div className="rounded-[12px] border border-[#e5e7eb42] bg-white/[0.025] px-4 py-4">
@@ -209,7 +228,10 @@ function AnalyticsCharts({ analytics }) {
                   tick={{ fill: "#c6cedb", fontSize: 11 }}
                   width={48}
                 />
-                <Tooltip contentStyle={tooltipStyle()} />
+                <Tooltip
+                  cursor={{ fill: "rgba(255,255,255,0.03)" }}
+                  content={<ChartTooltipContent />}
+                />
                 <Bar dataKey="pnl" barSize={18}>
                   {hourlyPerformance.map((entry) => (
                     <Cell key={entry.label} fill={entry.pnl >= 0 ? "#56f0a9" : "#ff6b6b"} />
@@ -238,7 +260,10 @@ function AnalyticsCharts({ analytics }) {
                   tickFormatter={(value) => `$${value}`}
                   tick={{ fill: "#c6cedb", fontSize: 11 }}
                 />
-                <Tooltip contentStyle={tooltipStyle()} />
+                <Tooltip
+                  cursor={{ fill: "rgba(255,255,255,0.03)" }}
+                  content={<ChartTooltipContent />}
+                />
                 <Bar dataKey="grossPnl" barSize={20}>
                   {grossDailyThirtyDays.map((entry) => (
                     <Cell key={entry.date} fill={entry.grossPnl >= 0 ? "#56f0a9" : "#ff6b6b"} />

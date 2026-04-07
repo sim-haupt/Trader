@@ -116,13 +116,11 @@ export function buildAnalytics(trades) {
 
   const dailyMap = new Map();
   const weekdayMap = new Map([
-    ["Sun", 0],
     ["Mon", 0],
     ["Tue", 0],
     ["Wed", 0],
     ["Thu", 0],
-    ["Fri", 0],
-    ["Sat", 0]
+    ["Fri", 0]
   ]);
   const timeBucketMap = new Map([
     ["PREMARKET", { label: "Premarket", pnl: 0, trades: 0 }],
@@ -199,7 +197,9 @@ export function buildAnalytics(trades) {
       trades: (dailyMap.get(dayKey)?.trades || 0) + 1
     });
 
-    weekdayMap.set(weekday, Number((weekdayMap.get(weekday) + pnl).toFixed(2)));
+    if (weekdayMap.has(weekday)) {
+      weekdayMap.set(weekday, Number((weekdayMap.get(weekday) + pnl).toFixed(2)));
+    }
 
     const bucketStats = timeBucketMap.get(timeBucket);
     timeBucketMap.set(timeBucket, {
