@@ -3,6 +3,10 @@ const prisma = require("../config/prisma");
 const buildTradePayload = require("../utils/buildTradePayload");
 const ApiError = require("../utils/ApiError");
 const { validateImportTradeRow } = require("../validators/trade.schemas");
+const {
+  normalizeImportedCsvRow,
+  parseTradesFromText
+} = require("../utils/tradeImportParsers");
 
 function normalizeHeaders(record) {
   const normalizedRecord = {};
@@ -37,7 +41,7 @@ async function importTradesFromCsv(userId, file) {
   const invalidRows = [];
 
   records.forEach((row, index) => {
-    const validation = validateImportTradeRow(row);
+    const validation = validateImportTradeRow(normalizeImportedCsvRow(row));
 
     if (!validation.success) {
       invalidRows.push({
@@ -51,14 +55,24 @@ async function importTradesFromCsv(userId, file) {
     validTrades.push(validation.data);
   });
 
+  return persistImportedTrades(
+    userId,
+    file.originalname,
+    validTrades,
+    invalidRows,
+    records.length
+  );
+}
+
+async function persistImportedTrades(userId, sourceName, validTrades, invalidRows, totalRows) {
   const result = await prisma.$transaction(async (tx) => {
     // Keep import metadata and inserted trades consistent if any write fails midway.
     const importRecord = await tx.tradeImport.create({
       data: {
         userId,
-        fileName: file.originalname,
+        fileName: sourceName,
         status: invalidRows.length > 0 ? (validTrades.length > 0 ? "PARTIAL" : "FAILED") : "SUCCESS",
-        totalRows: records.length,
+        totalRows,
         successfulRows: validTrades.length,
         failedRows: invalidRows.length
       }
@@ -68,7 +82,7 @@ async function importTradesFromCsv(userId, file) {
       await tx.importError.createMany({
         data: invalidRows.map((row) => ({
           importId: importRecord.id,
-          rowNumber: row.rowNumber,
+          rowNumber: row.rowNumber ?? 0,
           rawData: row.rawData,
           errorMessage: row.errors.join(", ")
         }))
@@ -90,14 +104,31 @@ async function importTradesFromCsv(userId, file) {
 
   return {
     importId: result.importId,
-    fileName: file.originalname,
-    totalRows: records.length,
+    fileName: sourceName,
+    totalRows,
     insertedCount: result.insertedCount,
     errorCount: invalidRows.length,
     errors: invalidRows
   };
 }
 
+async function importTradesFromText(userId, text) {
+  const parsed = parseTradesFromText(text);
+
+  if (parsed.totalRows === 0) {
+    throw new ApiError(400, "Trade text is empty");
+  }
+
+  return persistImportedTrades(
+    userId,
+    "manual-text-import",
+    parsed.trades,
+    parsed.invalidRows,
+    parsed.totalRows
+  );
+}
+
 module.exports = {
-  importTradesFromCsv
+  importTradesFromCsv,
+  importTradesFromText
 };

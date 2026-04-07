@@ -52,6 +52,10 @@ const bulkDeleteSchema = z.object({
   tradeIds: z.array(z.string().min(1)).min(1)
 });
 
+const tradeTextImportSchema = z.object({
+  text: z.string().trim().min(1)
+});
+
 const tradeQuerySchema = z.object({
   symbol: z.string().trim().max(20).optional(),
   side: z.enum(["LONG", "SHORT"]).optional(),
@@ -85,5 +89,6 @@ module.exports = {
   tradeSchema,
   bulkDeleteSchema,
   tradeQuerySchema,
+  tradeTextImportSchema,
   validateImportTradeRow
 };

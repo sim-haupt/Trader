@@ -65,11 +65,21 @@ const importTrades = asyncHandler(async (req, res) => {
   });
 });
 
+const importTradesFromText = asyncHandler(async (req, res) => {
+  const result = await importService.importTradesFromText(req.user.id, req.validatedBody.text);
+
+  res.status(200).json({
+    success: true,
+    data: result
+  });
+});
+
 module.exports = {
   createTrade,
   getTrades,
   updateTrade,
   deleteTrade,
   bulkDeleteTrades,
-  importTrades
+  importTrades,
+  importTradesFromText
 };

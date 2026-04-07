@@ -6,7 +6,8 @@ const upload = require("../middleware/upload.middleware");
 const {
   tradeSchema,
   bulkDeleteSchema,
-  tradeQuerySchema
+  tradeQuerySchema,
+  tradeTextImportSchema
 } = require("../validators/trade.schemas");
 
 const router = express.Router();
@@ -24,5 +25,6 @@ router.post(
   tradeController.bulkDeleteTrades
 );
 router.post("/import", upload.single("file"), tradeController.importTrades);
+router.post("/import-text", validate(tradeTextImportSchema), tradeController.importTradesFromText);
 
 module.exports = router;

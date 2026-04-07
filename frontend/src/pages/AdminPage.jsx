@@ -3,6 +3,7 @@ import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
 import StatCard from "../components/ui/StatCard";
 import UploadCSV from "../components/UploadCSV";
+import TradeTextImport from "../components/TradeTextImport";
 import AdminTradeTable from "../components/AdminTradeTable";
 import tradeService from "../services/tradeService";
 import { useAuth } from "../context/AuthContext";
@@ -134,6 +135,24 @@ function AdminPage() {
     }
   }
 
+  async function handleTextImport(text) {
+    setIsUploading(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const result = await tradeService.importTradesFromText(text);
+      setMessage(
+        `Imported ${result.insertedCount} trades${result.errorCount ? ` with ${result.errorCount} row errors` : ""}.`
+      );
+      await loadTrades();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 lg:grid-cols-3">
@@ -147,6 +166,13 @@ function AdminPage() {
         subtitle="Import trades from a CSV using the same authenticated upload flow as the journal workspace."
       >
         <UploadCSV onUpload={handleUpload} isUploading={isUploading} />
+      </Card>
+
+      <Card
+        title="Text Trade Import"
+        subtitle="Paste raw execution lines and let the importer collapse fills into completed trades."
+      >
+        <TradeTextImport onImport={handleTextImport} isImporting={isUploading} />
       </Card>
 
       <Card

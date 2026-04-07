@@ -51,6 +51,11 @@ const tradeService = {
     });
 
     return response.data.data;
+  },
+
+  async importTradesFromText(text) {
+    const response = await api.post("/trades/import-text", { text });
+    return response.data.data;
   }
 };
 

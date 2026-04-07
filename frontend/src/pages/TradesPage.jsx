@@ -5,6 +5,7 @@ import Filters from "../components/Filters";
 import TradeForm from "../components/TradeForm";
 import TradeTable from "../components/TradeTable";
 import UploadCSV from "../components/UploadCSV";
+import TradeTextImport from "../components/TradeTextImport";
 import tradeService from "../services/tradeService";
 
 const initialFilters = {
@@ -127,6 +128,24 @@ function TradesPage() {
     }
   }
 
+  async function handleTextImport(text) {
+    setIsUploading(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const result = await tradeService.importTradesFromText(text);
+      setMessage(
+        `Imported ${result.insertedCount} trades${result.errorCount ? ` with ${result.errorCount} row errors` : ""}.`
+      );
+      await loadTrades(filters);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <Card
@@ -160,12 +179,19 @@ function TradesPage() {
         <Card title="CSV Import" subtitle="Import a broker export with one drag-and-drop style action.">
           <UploadCSV onUpload={handleUpload} isUploading={isUploading} />
           <div className="mt-4 rounded-2xl border border-dashed border-white/10 bg-slate-950/30 p-4 text-sm text-mist">
-            Required columns: <span className="text-white">symbol, side, quantity, entryPrice, entryDate</span>
+            Supported CSVs: <span className="text-white">app format and broker exports with Open Datetime / Entry Price / Exit Price columns</span>
             <br />
-            Optional columns: <span className="text-white">exitPrice, exitDate, fees, strategy, notes</span>
+            Normalized format: <span className="text-white">symbol, side, quantity, entryPrice, entryDate, exitPrice, exitDate, fees, strategy, notes</span>
           </div>
         </Card>
       </div>
+
+      <Card
+        title="Text Import"
+        subtitle="Paste execution lines directly and the app will combine fills into closed trades."
+      >
+        <TradeTextImport onImport={handleTextImport} isImporting={isUploading} />
+      </Card>
 
       {message && <div className="rounded-2xl bg-mint/10 px-4 py-3 text-sm text-mint">{message}</div>}
       {error && <div className="rounded-2xl bg-coral/10 px-4 py-3 text-sm text-coral">{error}</div>}
