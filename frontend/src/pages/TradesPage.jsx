@@ -146,6 +146,28 @@ function TradesPage() {
     }
   }
 
+  async function handleDeleteAll() {
+    const confirmed = window.confirm("Delete all of your trades? This cannot be undone.");
+
+    if (!confirmed) {
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const result = await tradeService.deleteAllTrades();
+      setSelectedTrade(null);
+      setMessage(`Deleted ${result.deletedCount} trades.`);
+      await loadTrades(initialFilters);
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <Card
@@ -196,7 +218,20 @@ function TradesPage() {
       {message && <div className="rounded-2xl bg-mint/10 px-4 py-3 text-sm text-mint">{message}</div>}
       {error && <div className="rounded-2xl bg-coral/10 px-4 py-3 text-sm text-coral">{error}</div>}
 
-      <Card title="Trade History" subtitle="A searchable ledger of your recent executions.">
+      <Card
+        title="Trade History"
+        subtitle="A searchable ledger of your recent executions."
+        action={
+          <button
+            type="button"
+            onClick={handleDeleteAll}
+            disabled={loading || trades.length === 0}
+            className="rounded-full border border-coral/40 px-4 py-2 text-sm font-semibold text-coral transition hover:bg-coral/10 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Delete All Trades
+          </button>
+        }
+      >
         {loading ? (
           <div className="text-sm text-mist">Loading trades...</div>
         ) : trades.length === 0 ? (

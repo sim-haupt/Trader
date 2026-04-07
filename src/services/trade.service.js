@@ -130,6 +130,20 @@ async function bulkDeleteTrades(actor, tradeIds) {
   };
 }
 
+async function deleteAllTrades(actor, options = {}) {
+  const where = {};
+
+  if (!(actor.role === "ADMIN" && options.scope === "all")) {
+    where.userId = actor.id;
+  }
+
+  const result = await prisma.trade.deleteMany({ where });
+
+  return {
+    deletedCount: result.count
+  };
+}
+
 async function createManyTrades(userId, trades) {
   if (trades.length === 0) {
     return { count: 0 };
@@ -146,5 +160,6 @@ module.exports = {
   updateTrade,
   deleteTrade,
   bulkDeleteTrades,
+  deleteAllTrades,
   createManyTrades
 };

@@ -52,6 +52,15 @@ const bulkDeleteTrades = asyncHandler(async (req, res) => {
   });
 });
 
+const deleteAllTrades = asyncHandler(async (req, res) => {
+  const result = await tradeService.deleteAllTrades(req.user, req.validatedBody || {});
+
+  res.status(200).json({
+    success: true,
+    data: result
+  });
+});
+
 const importTrades = asyncHandler(async (req, res) => {
   if (!req.file) {
     throw new ApiError(400, "CSV file is required");
@@ -80,6 +89,7 @@ module.exports = {
   updateTrade,
   deleteTrade,
   bulkDeleteTrades,
+  deleteAllTrades,
   importTrades,
   importTradesFromText
 };

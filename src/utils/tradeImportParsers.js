@@ -73,6 +73,8 @@ function normalizeImportedCsvRow(row) {
     entryDate: normalizeDateTime(row["Open Datetime"]),
     exitDate: normalizeDateTime(row["Close Datetime"]),
     fees: 0,
+    grossPnl: row["Gross P&L"],
+    netPnl: row["Gross P&L"],
     strategy: row.Tags ? String(row.Tags).trim() : null,
     notes: sanitizeNotes(row.Notes)
   };

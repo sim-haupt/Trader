@@ -117,6 +117,29 @@ function AdminPage() {
     }
   }
 
+  async function handleDeleteAll() {
+    const confirmed = window.confirm("Delete all trades in the system? This cannot be undone.");
+
+    if (!confirmed) {
+      return;
+    }
+
+    setIsDeleting(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const result = await tradeService.deleteAllTrades("all");
+      setSelectedIds([]);
+      setMessage(`Deleted ${result.deletedCount} trades.`);
+      await loadTrades();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
   async function handleUpload(file) {
     setIsUploading(true);
     setError("");
@@ -179,14 +202,24 @@ function AdminPage() {
         title="Admin Panel"
         subtitle="Review all trades, edit rows inline, remove entries, or bulk delete selected trades."
         action={
-          <button
-            type="button"
-            onClick={handleBulkDelete}
-            disabled={selectedIds.length === 0 || isDeleting}
-            className="rounded-full border border-coral/40 px-4 py-2 text-sm font-semibold text-coral transition hover:bg-coral/10 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isDeleting ? "Deleting..." : `Bulk Delete (${selectedIds.length})`}
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={handleBulkDelete}
+              disabled={selectedIds.length === 0 || isDeleting}
+              className="rounded-full border border-coral/40 px-4 py-2 text-sm font-semibold text-coral transition hover:bg-coral/10 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isDeleting ? "Deleting..." : `Bulk Delete (${selectedIds.length})`}
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteAll}
+              disabled={isDeleting || trades.length === 0}
+              className="rounded-full border border-coral/40 px-4 py-2 text-sm font-semibold text-coral transition hover:bg-coral/10 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Delete All Trades
+            </button>
+          </div>
         }
       >
         {message && <div className="mb-4 rounded-2xl bg-mint/10 px-4 py-3 text-sm text-mint">{message}</div>}

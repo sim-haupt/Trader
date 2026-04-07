@@ -40,6 +40,11 @@ const tradeService = {
     return response.data.data;
   },
 
+  async deleteAllTrades(scope) {
+    const response = await api.post("/trades/delete-all", scope ? { scope } : {});
+    return response.data.data;
+  },
+
   async importTrades(file) {
     const formData = new FormData();
     formData.append("file", file);
