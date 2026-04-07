@@ -6,8 +6,11 @@ function extractTrades(response) {
 
 const TRADE_LIST_TTL_MS = 60_000;
 const TRADE_DETAIL_TTL_MS = 60_000;
+const TRADE_TAGS_TTL_MS = 60_000;
 const tradeListCache = new Map();
 const tradeDetailCache = new Map();
+let tradeTagsCache = null;
+let tradeTagsCreatedAt = 0;
 
 function buildCacheKey(prefix, filters = {}) {
   const normalized = Object.entries(filters)
@@ -44,6 +47,8 @@ function writeCache(cache, key, data) {
 function clearTradeCaches() {
   tradeListCache.clear();
   tradeDetailCache.clear();
+  tradeTagsCache = null;
+  tradeTagsCreatedAt = 0;
 }
 
 const tradeService = {
@@ -57,6 +62,20 @@ const tradeService = {
 
   peekTrade(id) {
     return readCache(tradeDetailCache, String(id), TRADE_DETAIL_TTL_MS);
+  },
+
+  peekTradeTags() {
+    if (!tradeTagsCache) {
+      return null;
+    }
+
+    if (Date.now() - tradeTagsCreatedAt > TRADE_TAGS_TTL_MS) {
+      tradeTagsCache = null;
+      tradeTagsCreatedAt = 0;
+      return null;
+    }
+
+    return tradeTagsCache;
   },
 
   async getTrades(filters = {}, options = {}) {
@@ -100,6 +119,19 @@ const tradeService = {
     return writeCache(tradeDetailCache, cacheKey, response.data.data);
   },
 
+  async getTradeTags(options = {}) {
+    const cached = this.peekTradeTags();
+
+    if (cached && !options.forceRefresh) {
+      return cached;
+    }
+
+    const response = await api.get("/trades/tags");
+    tradeTagsCache = response.data.data ?? [];
+    tradeTagsCreatedAt = Date.now();
+    return tradeTagsCache;
+  },
+
   async createTrade(payload) {
     const response = await api.post("/trades", payload);
     clearTradeCaches();
@@ -108,6 +140,12 @@ const tradeService = {
 
   async updateTrade(id, payload) {
     const response = await api.put(`/trades/${id}`, payload);
+    clearTradeCaches();
+    return response.data.data;
+  },
+
+  async updateTradeMeta(id, payload) {
+    const response = await api.patch(`/trades/${id}/meta`, payload);
     clearTradeCaches();
     return response.data.data;
   },

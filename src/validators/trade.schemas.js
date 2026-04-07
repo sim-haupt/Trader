@@ -69,6 +69,21 @@ const bulkUpdateTradesSchema = z
     }
   });
 
+const tradeMetaSchema = z
+  .object({
+    tags: z.string().trim().max(500).nullable().optional(),
+    notes: z.string().trim().max(2000).nullable().optional(),
+    tagsMode: z.enum(["append", "replace"]).optional()
+  })
+  .superRefine((data, context) => {
+    if (data.tags === undefined && data.notes === undefined) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "At least one of tags or notes is required"
+      });
+    }
+  });
+
 const deleteAllTradesSchema = z.object({
   scope: z.enum(["all"]).optional()
 });
@@ -137,6 +152,7 @@ module.exports = {
   tradeSchema,
   bulkDeleteSchema,
   bulkUpdateTradesSchema,
+  tradeMetaSchema,
   deleteAllTradesSchema,
   tradeQuerySchema,
   tradeTextImportSchema,

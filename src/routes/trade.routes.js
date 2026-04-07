@@ -1,12 +1,13 @@
 const express = require("express");
 const tradeController = require("../controllers/trade.controller");
 const validate = require("../middleware/validate.middleware");
-const { authenticate, authorizeRoles } = require("../middleware/auth.middleware");
+const { authenticate } = require("../middleware/auth.middleware");
 const upload = require("../middleware/upload.middleware");
 const {
   tradeSchema,
   bulkDeleteSchema,
   bulkUpdateTradesSchema,
+  tradeMetaSchema,
   deleteAllTradesSchema,
   tradeQuerySchema,
   tradeTextImportSchema
@@ -18,14 +19,15 @@ router.use(authenticate);
 
 router.post("/", validate(tradeSchema), tradeController.createTrade);
 router.get("/", validate(tradeQuerySchema, "query"), tradeController.getTrades);
+router.get("/tags", tradeController.getTradeTags);
 router.get("/:id", tradeController.getTradeById);
 router.put("/:id", validate(tradeSchema), tradeController.updateTrade);
+router.patch("/:id/meta", validate(tradeMetaSchema), tradeController.updateTradeMeta);
 router.delete("/:id", tradeController.deleteTrade);
 router.post("/delete-all", validate(deleteAllTradesSchema), tradeController.deleteAllTrades);
 router.post("/bulk-update", validate(bulkUpdateTradesSchema), tradeController.bulkUpdateTrades);
 router.post(
   "/bulk-delete",
-  authorizeRoles("ADMIN"),
   validate(bulkDeleteSchema),
   tradeController.bulkDeleteTrades
 );

@@ -32,7 +32,6 @@ function TradesPage() {
   const [activeTradeId, setActiveTradeId] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
   const [bulkTags, setBulkTags] = useState("");
-  const [bulkNotes, setBulkNotes] = useState("");
   const [bulkTagsMode, setBulkTagsMode] = useState("append");
   const [filters, setFilters] = useState(initialFilters);
   const [pageSize, setPageSize] = useState(25);
@@ -134,7 +133,6 @@ function TradesPage() {
 
   function resetBulkForm() {
     setBulkTags("");
-    setBulkNotes("");
     setBulkTagsMode("append");
   }
 
@@ -226,15 +224,14 @@ function TradesPage() {
 
   async function handleBulkUpdate() {
     const trimmedTags = bulkTags.trim();
-    const trimmedNotes = bulkNotes.trim();
 
     if (selectedIds.length === 0) {
       setError("Select at least one trade first.");
       return;
     }
 
-    if (!trimmedTags && !trimmedNotes) {
-      setError("Add tags or notes before applying bulk changes.");
+    if (!trimmedTags) {
+      setError("Add tags before applying bulk changes.");
       return;
     }
 
@@ -245,9 +242,8 @@ function TradesPage() {
     try {
       const result = await tradeService.bulkUpdateTrades({
         tradeIds: selectedIds,
-        ...(trimmedTags ? { tags: trimmedTags } : {}),
-        ...(trimmedNotes ? { notes: trimmedNotes } : {}),
-        ...(trimmedTags ? { tagsMode: bulkTagsMode } : {})
+        tags: trimmedTags,
+        tagsMode: bulkTagsMode
       });
 
       setMessage(`Updated ${result.updatedCount} trades.`);
@@ -525,19 +521,12 @@ function TradesPage() {
                   </button>
                 </div>
 
-                <div className="mt-4 grid gap-3 lg:grid-cols-[1.2fr_1.2fr_180px_auto_auto]">
+                <div className="mt-4 grid gap-3 lg:grid-cols-[1.6fr_180px_auto_auto]">
                   <input
                     type="text"
                     value={bulkTags}
                     onChange={(event) => setBulkTags(event.target.value)}
                     placeholder="Add tags, comma separated"
-                    className="ui-input"
-                  />
-                  <input
-                    type="text"
-                    value={bulkNotes}
-                    onChange={(event) => setBulkNotes(event.target.value)}
-                    placeholder="Add or replace notes"
                     className="ui-input"
                   />
                   <select

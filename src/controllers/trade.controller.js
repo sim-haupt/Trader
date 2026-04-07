@@ -21,6 +21,15 @@ const getTrades = asyncHandler(async (req, res) => {
   });
 });
 
+const getTradeTags = asyncHandler(async (req, res) => {
+  const tags = await tradeService.getTradeTags(req.user);
+
+  res.status(200).json({
+    success: true,
+    data: tags
+  });
+});
+
 const getTradeById = asyncHandler(async (req, res) => {
   const trade = await tradeService.getTradeById(req.user, req.params.id);
 
@@ -32,6 +41,19 @@ const getTradeById = asyncHandler(async (req, res) => {
 
 const updateTrade = asyncHandler(async (req, res) => {
   const trade = await tradeService.updateTrade(
+    req.user,
+    req.params.id,
+    req.validatedBody
+  );
+
+  res.status(200).json({
+    success: true,
+    data: trade
+  });
+});
+
+const updateTradeMeta = asyncHandler(async (req, res) => {
+  const trade = await tradeService.updateTradeMeta(
     req.user,
     req.params.id,
     req.validatedBody
@@ -104,8 +126,10 @@ const importTradesFromText = asyncHandler(async (req, res) => {
 module.exports = {
   createTrade,
   getTrades,
+  getTradeTags,
   getTradeById,
   updateTrade,
+  updateTradeMeta,
   deleteTrade,
   bulkDeleteTrades,
   bulkUpdateTrades,

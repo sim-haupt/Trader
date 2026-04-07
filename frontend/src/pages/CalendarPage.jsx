@@ -85,7 +85,7 @@ function getDayTone(stats, isCurrentMonth) {
   }
 
   if (!stats) {
-    return "border border-[#e5e7eb42] bg-white/[0.01] text-slate-400";
+    return "bg-white/[0.01] text-slate-400";
   }
 
   if (stats.pnl > 0) {
@@ -105,7 +105,7 @@ function getDayBorderStyle(stats, isCurrentMonth) {
   }
 
   if (!stats) {
-    return { borderColor: "rgba(229, 231, 235, 0.26)" };
+    return { borderColor: "transparent" };
   }
 
   if (stats.pnl > 0) {

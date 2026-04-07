@@ -98,6 +98,22 @@ async function getTrades(actor, filters) {
   });
 }
 
+async function getTradeTags(actor) {
+  const trades = await prisma.trade.findMany({
+    where: actor.role === "ADMIN" ? undefined : { userId: actor.id },
+    select: {
+      tags: true
+    }
+  });
+
+  return [...new Set(
+    trades
+      .flatMap((trade) => String(trade.tags || "").split(","))
+      .map((tag) => tag.trim())
+      .filter(Boolean)
+  )].sort((left, right) => left.localeCompare(right));
+}
+
 async function getTradeById(actor, tradeId) {
   const trade = await prisma.trade.findFirst({
     where: {
@@ -120,6 +136,39 @@ async function updateTrade(actor, tradeId, data) {
   return prisma.trade.update({
     where: { id: tradeId },
     data: buildTradePayload(data, existingTrade.userId)
+  });
+}
+
+async function updateTradeMeta(actor, tradeId, payload) {
+  const existingTrade = await findAccessibleTrade(actor, tradeId);
+  const tagsMode = payload.tagsMode || "append";
+
+  const nextTags =
+    payload.tags === undefined
+      ? undefined
+      : payload.tags === null || payload.tags === ""
+        ? null
+        : tagsMode === "replace"
+          ? payload.tags
+          : mergeTagStrings(existingTrade.tags, payload.tags);
+
+  const notes =
+    payload.notes === undefined ? undefined : payload.notes === "" ? null : payload.notes;
+
+  const data = {};
+
+  if (nextTags !== undefined) {
+    data.tags = nextTags;
+  }
+
+  if (notes !== undefined) {
+    data.notes = notes;
+  }
+
+  return prisma.trade.update({
+    where: { id: tradeId },
+    data,
+    include: tradeDetailInclude
   });
 }
 
@@ -267,8 +316,10 @@ async function createManyTrades(userId, trades) {
 module.exports = {
   createTrade,
   getTrades,
+  getTradeTags,
   getTradeById,
   updateTrade,
+  updateTradeMeta,
   deleteTrade,
   bulkDeleteTrades,
   bulkUpdateTrades,

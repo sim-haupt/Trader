@@ -24,6 +24,13 @@ import {
 } from "../utils/tradeDetail";
 import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 
+function parseTags(value) {
+  return String(value || "")
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+}
+
 function SummaryMetric({ label, value, accent = "text-white" }) {
   return (
     <div className="rounded-[18px] border border-black/30 bg-white/[0.03] p-4">
@@ -111,6 +118,43 @@ function TradeDetailModal({ trade, onClose }) {
     enabled: Boolean(tradeDetail?.entryDate),
     deps: [tradeDetail?.entryDate]
   });
+  const [editableTrade, setEditableTrade] = useState(trade);
+  const [availableTags, setAvailableTags] = useState(() => tradeService.peekTradeTags() || []);
+  const [isTagEditorOpen, setIsTagEditorOpen] = useState(false);
+  const [tagDraft, setTagDraft] = useState("");
+  const [isNotesEditorOpen, setIsNotesEditorOpen] = useState(false);
+  const [noteDraft, setNoteDraft] = useState(trade.notes || "");
+  const [isSavingMeta, setIsSavingMeta] = useState(false);
+
+  useEffect(() => {
+    const nextTrade = tradeDetail || trade;
+    setEditableTrade(nextTrade);
+    setNoteDraft(nextTrade.notes || "");
+  }, [trade, tradeDetail]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadTags() {
+      try {
+        const tags = await tradeService.getTradeTags();
+
+        if (!cancelled) {
+          setAvailableTags(tags);
+        }
+      } catch {
+        if (!cancelled) {
+          setAvailableTags([]);
+        }
+      }
+    }
+
+    loadTags();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     function handleEscape(event) {
@@ -123,7 +167,7 @@ function TradeDetailModal({ trade, onClose }) {
     return () => window.removeEventListener("keydown", handleEscape);
   }, [onClose]);
 
-  const activeTrade = tradeDetail || trade;
+  const activeTrade = editableTrade || tradeDetail || trade;
   const tradePnl = getTradePnl(activeTrade);
   const holdMinutes = getTradeHoldMinutes(activeTrade);
   const executionCount = getDisplayedExecutionCount(activeTrade);
@@ -133,6 +177,62 @@ function TradeDetailModal({ trade, onClose }) {
     () => buildDayRunningPnl(activeTrade, dayTrades),
     [activeTrade, dayTrades]
   );
+  const activeTags = useMemo(() => parseTags(activeTrade.tags), [activeTrade.tags]);
+  const tagSuggestions = useMemo(() => {
+    const current = new Set(activeTags.map((tag) => tag.toLowerCase()));
+    const query = tagDraft.trim().toLowerCase();
+
+    return availableTags.filter((tag) => {
+      if (current.has(tag.toLowerCase())) {
+        return false;
+      }
+
+      return query ? tag.toLowerCase().includes(query) : true;
+    });
+  }, [activeTags, availableTags, tagDraft]);
+
+  async function refreshAvailableTags() {
+    const tags = await tradeService.getTradeTags({ forceRefresh: true });
+    setAvailableTags(tags);
+  }
+
+  async function handleAddTag(tagValue) {
+    const nextTag = tagValue.trim();
+
+    if (!nextTag) {
+      return;
+    }
+
+    setIsSavingMeta(true);
+
+    try {
+      const updatedTrade = await tradeService.updateTradeMeta(activeTrade.id, {
+        tags: nextTag,
+        tagsMode: "append"
+      });
+
+      setEditableTrade(updatedTrade);
+      setTagDraft("");
+      await refreshAvailableTags();
+    } finally {
+      setIsSavingMeta(false);
+    }
+  }
+
+  async function handleSaveNotes() {
+    setIsSavingMeta(true);
+
+    try {
+      const updatedTrade = await tradeService.updateTradeMeta(activeTrade.id, {
+        notes: noteDraft.trim()
+      });
+
+      setEditableTrade(updatedTrade);
+      setIsNotesEditorOpen(false);
+    } finally {
+      setIsSavingMeta(false);
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 p-4 backdrop-blur">
@@ -298,14 +398,118 @@ function TradeDetailModal({ trade, onClose }) {
                   <p className="mt-2 text-sm text-phosphor">{activeTrade.strategy || "No strategy tagged"}</p>
                 </div>
                 <div className="rounded-[18px] border border-black/30 bg-white/[0.03] p-4">
-                  <p className="ui-title text-xs text-white/48">Tags</p>
-                  <p className="mt-2 text-sm text-phosphor">{activeTrade.tags || "No tags added"}</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="ui-title text-xs text-white/48">Tags</p>
+                    <button
+                      type="button"
+                      onClick={() => setIsTagEditorOpen((current) => !current)}
+                      className="ui-button px-3 py-2 text-xs"
+                    >
+                      Add tags +
+                    </button>
+                  </div>
+                  {activeTags.length > 0 ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {activeTags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs text-white/78"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-sm text-phosphor">No tags added</p>
+                  )}
+
+                  {isTagEditorOpen && (
+                    <div className="mt-4 space-y-3">
+                      <div className="flex gap-2">
+                        <input
+                          value={tagDraft}
+                          onChange={(event) => setTagDraft(event.target.value)}
+                          placeholder="Type a tag"
+                          list={`trade-tag-suggestions-${activeTrade.id}`}
+                          className="ui-input"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleAddTag(tagDraft)}
+                          disabled={isSavingMeta || !tagDraft.trim()}
+                          className="ui-button-solid whitespace-nowrap px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Add
+                        </button>
+                      </div>
+                      <datalist id={`trade-tag-suggestions-${activeTrade.id}`}>
+                        {tagSuggestions.map((tag) => (
+                          <option key={tag} value={tag} />
+                        ))}
+                      </datalist>
+                      {tagSuggestions.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {tagSuggestions.slice(0, 8).map((tag) => (
+                            <button
+                              key={tag}
+                              type="button"
+                              onClick={() => handleAddTag(tag)}
+                              className="ui-button px-3 py-1.5 text-xs"
+                            >
+                              {tag}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="rounded-[18px] border border-black/30 bg-white/[0.03] p-4">
-                  <p className="ui-title text-xs text-white/48">Notes</p>
-                  <p className="mt-2 whitespace-pre-wrap text-sm text-white/60">
-                    {activeTrade.notes || "No notes captured for this trade yet."}
-                  </p>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="ui-title text-xs text-white/48">Notes</p>
+                    <button
+                      type="button"
+                      onClick={() => setIsNotesEditorOpen((current) => !current)}
+                      className="ui-button px-3 py-2 text-xs"
+                    >
+                      {activeTrade.notes ? "Edit notes" : "Add notes"}
+                    </button>
+                  </div>
+                  {isNotesEditorOpen ? (
+                    <div className="mt-4 space-y-3">
+                      <textarea
+                        rows="6"
+                        value={noteDraft}
+                        onChange={(event) => setNoteDraft(event.target.value)}
+                        placeholder="Capture your thesis, execution, and review notes here..."
+                        className="ui-input"
+                      />
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNoteDraft(activeTrade.notes || "");
+                            setIsNotesEditorOpen(false);
+                          }}
+                          className="ui-button px-3 py-2 text-xs"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSaveNotes}
+                          disabled={isSavingMeta}
+                          className="ui-button-solid px-4 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {isSavingMeta ? "Saving..." : "Save notes"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="mt-2 whitespace-pre-wrap text-sm text-white/60">
+                      {activeTrade.notes || "No notes captured for this trade yet."}
+                    </p>
+                  )}
                 </div>
                 <div className="rounded-[18px] border border-black/30 bg-white/[0.03] p-4">
                   <p className="ui-title text-xs text-white/48">Execution Coverage</p>
