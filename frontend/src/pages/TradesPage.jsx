@@ -568,11 +568,15 @@ function TradesPage() {
         ) : (
           <div className="space-y-4">
             {selectedIds.length > 0 && (
-              <div className="rounded-[16px] border border-black/30 bg-white/[0.035] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+              <div className="rounded-[18px] border border-[#e5e7eb20] bg-[linear-gradient(180deg,rgba(255,255,255,0.028),rgba(255,255,255,0.012))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="text-sm text-white/72">
-                    <span className="font-semibold text-white">{selectedIds.length}</span>{" "}
-                    {selectedIds.length === 1 ? "trade selected" : "trades selected"}
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-white/80">
+                      {selectedIds.length} selected
+                    </div>
+                    <div className="text-sm text-white/56">
+                      {selectedIds.length === 1 ? "1 trade ready for bulk actions" : `${selectedIds.length} trades ready for bulk actions`}
+                    </div>
                   </div>
                   <button
                     type="button"
@@ -583,8 +587,8 @@ function TradesPage() {
                   </button>
                 </div>
 
-                <div className="mt-4 grid gap-3 lg:grid-cols-[1.6fr_180px_auto_auto]">
-                  <div className="space-y-3">
+                <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1.8fr)_minmax(240px,0.9fr)]">
+                  <div className="space-y-4">
                     {selectedBulkTags.length > 0 ? (
                       <div className="flex flex-wrap gap-2">
                         {selectedBulkTags.map((tag) => (
@@ -592,16 +596,16 @@ function TradesPage() {
                             key={tag}
                             type="button"
                             onClick={() => removeBulkTag(tag)}
-                            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-xs text-white/82"
+                            className="inline-flex items-center gap-2 rounded-full border border-mint/20 bg-mint/[0.08] px-3 py-1.5 text-xs font-medium text-white/88 transition hover:bg-mint/[0.14]"
                           >
                             <span>{tag}</span>
-                            <span className="text-white/45">x</span>
+                            <span className="text-white/45">×</span>
                           </button>
                         ))}
                       </div>
                     ) : (
-                      <div className="rounded-[12px] border border-black/20 bg-white/[0.02] px-4 py-3 text-sm text-white/54">
-                        No tags selected
+                      <div className="rounded-[14px] border border-white/8 bg-black/10 px-4 py-3 text-sm text-white/48">
+                        Choose one or more saved tags to apply to the selected trades.
                       </div>
                     )}
 
@@ -612,7 +616,7 @@ function TradesPage() {
                             key={tag.id}
                             type="button"
                             onClick={() => addBulkTag(tag.name)}
-                            className="ui-button px-3 py-1.5 text-xs"
+                            className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5 text-xs font-medium text-white/78 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
                           >
                             {tag.name}
                           </button>
@@ -624,30 +628,63 @@ function TradesPage() {
                       </div>
                     )}
                   </div>
-                  <select
-                    value={bulkTagsMode}
-                    onChange={(event) => setBulkTagsMode(event.target.value)}
-                    className="ui-input"
-                  >
-                    <option value="append">Append Tags</option>
-                    <option value="replace">Replace Tags</option>
-                  </select>
-                  <button
-                    type="button"
-                    onClick={handleBulkUpdate}
-                    disabled={isBulkSaving}
-                    className="ui-button-solid text-sm disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {isBulkSaving ? "Saving..." : "Apply to Selected"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleBulkDelete}
-                    disabled={isBulkDeleting}
-                    className="ui-button border-coral/25 bg-coral/10 text-sm text-coral disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {isBulkDeleting ? "Deleting..." : "Delete Selected"}
-                  </button>
+
+                  <div className="flex h-full flex-col justify-between gap-4 rounded-[16px] border border-white/8 bg-black/10 p-4">
+                    <div className="space-y-4">
+                      <div>
+                        <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/42">
+                          Tag Action
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 rounded-[12px] border border-white/8 bg-white/[0.02] p-1">
+                          <button
+                            type="button"
+                            onClick={() => setBulkTagsMode("append")}
+                            className={`rounded-[10px] px-3 py-2 text-xs font-semibold transition ${
+                              bulkTagsMode === "append"
+                                ? "bg-white text-black"
+                                : "text-white/68 hover:bg-white/[0.05] hover:text-white"
+                            }`}
+                          >
+                            Append Tags
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setBulkTagsMode("replace")}
+                            className={`rounded-[10px] px-3 py-2 text-xs font-semibold transition ${
+                              bulkTagsMode === "replace"
+                                ? "bg-white text-black"
+                                : "text-white/68 hover:bg-white/[0.05] hover:text-white"
+                            }`}
+                          >
+                            Replace Tags
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="rounded-[12px] border border-coral/15 bg-coral/[0.06] px-4 py-3 text-sm text-white/68">
+                        Delete will permanently remove the selected trades.
+                      </div>
+                    </div>
+
+                    <div className="grid gap-3">
+                      <button
+                        type="button"
+                        onClick={handleBulkUpdate}
+                        disabled={isBulkSaving}
+                        className="ui-button-solid w-full justify-center text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {isBulkSaving ? "Saving..." : "Apply Tags"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleBulkDelete}
+                        disabled={isBulkDeleting}
+                        className="w-full rounded-[12px] border border-coral/25 bg-coral/[0.08] px-4 py-3 text-sm font-semibold text-coral transition hover:bg-coral/[0.14] disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {isBulkDeleting ? "Deleting..." : "Delete Selected"}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
