@@ -167,6 +167,7 @@ function AnalyticsCharts({
   } = analytics;
 
   const [draggedId, setDraggedId] = useState(null);
+  const [dropTargetId, setDropTargetId] = useState(null);
 
   const widgets = useMemo(
     () => [
@@ -407,11 +408,13 @@ function AnalyticsCharts({
 
   function handleDrop(targetId) {
     if (!draggedId || draggedId === targetId) {
+      setDropTargetId(null);
       return;
     }
 
     onReorder?.(draggedId, targetId);
     setDraggedId(null);
+    setDropTargetId(null);
   }
 
   return (
@@ -436,7 +439,7 @@ function AnalyticsCharts({
         </div>
       </div>
 
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid auto-rows-max grid-flow-row-dense items-start gap-5 md:grid-cols-2 xl:grid-cols-4">
         {orderedWidgets.map(({ id, span, widget }) => {
           const cardAction = editing ? (
             <div className="flex items-center gap-2">
@@ -457,11 +460,25 @@ function AnalyticsCharts({
             <div
               key={id}
               draggable={editing}
-              onDragStart={() => setDraggedId(id)}
-              onDragEnd={() => setDraggedId(null)}
+              onDragStart={() => {
+                setDraggedId(id);
+                setDropTargetId(id);
+              }}
+              onDragEnd={() => {
+                setDraggedId(null);
+                setDropTargetId(null);
+              }}
+              onDragEnter={() => {
+                if (editing && draggedId && draggedId !== id) {
+                  setDropTargetId(id);
+                }
+              }}
               onDragOver={(event) => {
                 if (editing) {
                   event.preventDefault();
+                  if (draggedId && draggedId !== id && dropTargetId !== id) {
+                    setDropTargetId(id);
+                  }
                 }
               }}
               onDrop={() => handleDrop(id)}
@@ -470,7 +487,11 @@ function AnalyticsCharts({
               <Card
                 title={widget.title}
                 action={cardAction}
-                className={`${editing ? "ring-1 ring-white/10" : ""}`}
+                className={`transition ${editing ? "ring-1 ring-white/10" : ""} ${
+                  editing && dropTargetId === id && draggedId !== id
+                    ? "border-white/0 ring-2 ring-mint/80 ring-offset-2 ring-offset-transparent"
+                    : ""
+                }`}
               >
                 {widget.body}
               </Card>
