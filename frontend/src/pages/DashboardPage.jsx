@@ -8,8 +8,7 @@ function DashboardPage() {
   const {
     data: trades,
     error,
-    loading,
-    refreshing
+    loading
   } = useCachedAsyncResource({
     peek: () => tradeService.peekTrades(),
     load: () => tradeService.getTrades(),
@@ -36,7 +35,6 @@ function DashboardPage() {
 
   return (
     <div className="space-y-3">
-      {refreshing && <div className="ui-chip text-xs">Refreshing Dashboard</div>}
       <AnalyticsCharts analytics={buildAnalytics(trades)} />
     </div>
   );

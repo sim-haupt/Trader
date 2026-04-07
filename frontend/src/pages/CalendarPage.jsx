@@ -252,8 +252,7 @@ function CalendarPage() {
   const {
     data: trades,
     loading,
-    error,
-    refreshing
+    error
   } = useCachedAsyncResource({
     peek: () => tradeService.peekTrades(),
     load: () => tradeService.getTrades(),
@@ -315,7 +314,6 @@ function CalendarPage() {
 
   return (
     <div className="space-y-6">
-      {refreshing && <div className="ui-chip text-xs">Refreshing Calendar</div>}
       {selectedMonth && (
         <MonthDetailSection month={selectedMonth} onClose={() => setSelectedMonthIndex(null)} />
       )}

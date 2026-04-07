@@ -234,8 +234,7 @@ function TradeReviewCharts({ trade }) {
   const {
     data: minuteResponse,
     loading,
-    error,
-    refreshing
+    error
   } = useCachedAsyncResource({
     peek: () =>
       marketDataService.peekBars({
@@ -268,7 +267,7 @@ function TradeReviewCharts({ trade }) {
 
   if (error) {
     return (
-      <div className="border-2 border-coral/30 bg-[#2a1111] p-5 text-sm text-coral">
+      <div className="border-2 border-white/10 bg-black/40 p-5 text-sm text-mist">
         {error}
       </div>
     );
@@ -284,7 +283,6 @@ function TradeReviewCharts({ trade }) {
 
   return (
     <div className="space-y-6">
-      {refreshing && <div className="ui-chip text-xs">Refreshing Chart</div>}
       {minuteBars.length > 0 && (
         <TimeframeChart
           title="1 Minute Review"

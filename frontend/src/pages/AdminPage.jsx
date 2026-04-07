@@ -24,7 +24,6 @@ function AdminPage() {
     loading,
     error,
     setError,
-    refreshing,
     reload: reloadTrades
   } = useCachedAsyncResource({
     peek: () => tradeService.peekAllTrades(),
@@ -178,7 +177,6 @@ function AdminPage() {
 
   return (
     <div className="space-y-6">
-      {refreshing && <div className="ui-chip text-xs">Refreshing Admin Data</div>}
       <div className="grid gap-4 lg:grid-cols-3">
         <StatCard label="Admin Role" value={user?.role || "ADMIN"} accent="gold" />
         <StatCard label="Visible Trades" value={trades.length} accent="mint" />

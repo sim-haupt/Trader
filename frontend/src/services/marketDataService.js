@@ -28,6 +28,24 @@ function readCache(key) {
   return entry.data;
 }
 
+function normalizeMarketDataError(error) {
+  const message = error?.message || "Market data request failed.";
+
+  if (/not_authorized/i.test(message) || /not entitled/i.test(message)) {
+    return new Error(
+      "1-minute chart data is unavailable on the current Polygon plan. The trade review chart is hidden, but the execution table remains available."
+    );
+  }
+
+  if (/doesn't include this data timeframe/i.test(message) || /include this data timeframe/i.test(message)) {
+    return new Error(
+      "This Polygon plan does not include the requested intraday timeframe. The chart is unavailable for now."
+    );
+  }
+
+  return new Error(message);
+}
+
 const marketDataService = {
   peekBars(params) {
     return readCache(buildBarsKey(params));
@@ -41,22 +59,26 @@ const marketDataService = {
       return cached;
     }
 
-    const response = await api.get("/market-data/bars", {
-      params: {
-        symbol,
-        resolution,
-        from,
-        to,
-        includeExtended: includeExtended ? "true" : "false"
-      }
-    });
+    try {
+      const response = await api.get("/market-data/bars", {
+        params: {
+          symbol,
+          resolution,
+          from,
+          to,
+          includeExtended: includeExtended ? "true" : "false"
+        }
+      });
 
-    const data = response.data.data;
-    marketDataCache.set(key, {
-      data,
-      createdAt: Date.now()
-    });
-    return data;
+      const data = response.data.data;
+      marketDataCache.set(key, {
+        data,
+        createdAt: Date.now()
+      });
+      return data;
+    } catch (error) {
+      throw normalizeMarketDataError(error);
+    }
   }
 };
 

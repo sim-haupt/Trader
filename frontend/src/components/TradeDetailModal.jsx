@@ -94,7 +94,6 @@ function TradeDetailModal({ trade, onClose }) {
     data: tradeDetail,
     loading: loadingTradeDetail,
     error: tradeDetailError,
-    refreshing: refreshingTradeDetail
   } = useCachedAsyncResource({
     peek: () => tradeService.peekTrade(trade.id),
     load: () => tradeService.getTrade(trade.id),
@@ -104,8 +103,7 @@ function TradeDetailModal({ trade, onClose }) {
   const {
     data: dayTrades,
     loading: loadingDayTrades,
-    error: dayTradesError,
-    refreshing: refreshingDayTrades
+    error: dayTradesError
   } = useCachedAsyncResource({
     peek: () => tradeService.peekTrades(initialDayFilters),
     load: () => tradeService.getTrades(initialDayFilters),
@@ -167,9 +165,6 @@ function TradeDetailModal({ trade, onClose }) {
         </div>
 
         <div className="space-y-6 p-6">
-          {(refreshingTradeDetail || refreshingDayTrades) && (
-            <div className="ui-chip text-xs">Refreshing Trade Review</div>
-          )}
           {tradeDetailError && (
             <div className="ui-notice border-coral/30 bg-[#2a1111] text-coral">
               {tradeDetailError}
