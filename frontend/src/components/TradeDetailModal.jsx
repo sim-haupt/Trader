@@ -10,7 +10,7 @@ import {
   YAxis
 } from "recharts";
 import tradeService from "../services/tradeService";
-import TradingViewChart from "./TradingViewChart";
+import TradeReviewCharts from "./TradeReviewCharts";
 import Card from "./ui/Card";
 import { formatCurrency, formatDate, formatDateTimeLocal } from "../utils/formatters";
 import {
@@ -66,7 +66,9 @@ function TimelineTable({ rows }) {
                 <td className="px-4 py-4 font-medium text-white">{row.label}</td>
                 <td className="px-4 py-4 text-slate-200">{formatDateTimeLocal(row.time).replace("T", " ")}</td>
                 <td className="px-4 py-4 text-slate-200">{row.symbol}</td>
-                <td className="px-4 py-4 text-slate-200">{row.quantity}</td>
+                <td className={`px-4 py-4 ${Number(row.quantity) >= 0 ? "text-mint" : "text-coral"}`}>
+                  {row.quantity}
+                </td>
                 <td className="px-4 py-4 text-slate-200">{formatCurrency(row.price)}</td>
                 <td className="px-4 py-4 text-slate-200">{row.position}</td>
               </tr>
@@ -349,10 +351,10 @@ function TradeDetailModal({ trade, onClose }) {
           </div>
 
           <Card
-            title="TradingView 1 Minute Context"
-            subtitle="This chart gives symbol context on a 1-minute interval. The execution list below shows the exact stored timestamps driving this trade review."
+            title="Execution Review Charts"
+            subtitle="Custom 1 minute and 10 second charts with execution markers and the default study stack turned on."
           >
-            <TradingViewChart symbol={activeTrade.symbol} />
+            <TradeReviewCharts trade={activeTrade} />
           </Card>
 
           <Card

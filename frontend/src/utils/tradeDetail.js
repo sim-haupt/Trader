@@ -152,7 +152,8 @@ function buildTradeTimeline(trade) {
       label: execution.action === "BUY" ? "Buy" : "Sell",
       time: execution.occurredAt,
       symbol: trade.symbol,
-      quantity: asNumber(execution.quantity),
+      quantity:
+        execution.action === "BUY" ? asNumber(execution.quantity) : -asNumber(execution.quantity),
       price: asNumber(execution.price),
       position:
         execution.positionAfter === null || execution.positionAfter === undefined
