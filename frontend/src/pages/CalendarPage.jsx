@@ -238,8 +238,8 @@ function MonthDetailModal({ month, onClose }) {
 }
 
 function CalendarPage() {
-  const [trades, setTrades] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [trades, setTrades] = useState(() => tradeService.peekTrades() || []);
+  const [loading, setLoading] = useState(() => !tradeService.peekTrades());
   const [error, setError] = useState("");
   const [selectedMonthIndex, setSelectedMonthIndex] = useState(null);
 

@@ -20,7 +20,7 @@ const initialFilters = {
 
 function TradesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [trades, setTrades] = useState([]);
+  const [trades, setTrades] = useState(() => tradeService.peekTrades(initialFilters) || []);
   const [selectedTrade, setSelectedTrade] = useState(null);
   const [activeTradeId, setActiveTradeId] = useState(null);
   const [filters, setFilters] = useState(initialFilters);
@@ -28,11 +28,13 @@ function TradesPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !tradeService.peekTrades(initialFilters));
   const isImportMode = searchParams.get("mode") === "import";
 
   async function loadTrades(activeFilters = filters) {
-    setLoading(true);
+    if (!tradeService.peekTrades(activeFilters) && trades.length === 0) {
+      setLoading(true);
+    }
     setError("");
 
     try {

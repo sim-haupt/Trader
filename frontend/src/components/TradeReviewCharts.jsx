@@ -228,8 +228,18 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
 }
 
 function TradeReviewCharts({ trade }) {
+  const initialRange = buildDayRange(trade.entryDate);
   const [minuteBars, setMinuteBars] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(
+    () =>
+      !marketDataService.peekBars({
+        symbol: trade.symbol,
+        resolution: "1m",
+        from: initialRange.from,
+        to: initialRange.to,
+        includeExtended: true
+      })
+  );
   const [error, setError] = useState("");
 
   const markers = useMemo(() => buildExecutionMarkers(trade), [trade]);
@@ -238,18 +248,27 @@ function TradeReviewCharts({ trade }) {
     let active = true;
 
     async function loadBars() {
-      setLoading(true);
       setError("");
 
       try {
         const dayRange = buildDayRange(trade.entryDate);
-        const minuteResponse = await marketDataService.getBars({
+        const params = {
           symbol: trade.symbol,
           resolution: "1m",
           from: dayRange.from,
           to: dayRange.to,
           includeExtended: true
-        });
+        };
+
+        const cached = marketDataService.peekBars(params);
+        if (!cached) {
+          setLoading(true);
+        } else if (active) {
+          setMinuteBars(cached.bars || []);
+          setLoading(false);
+        }
+
+        const minuteResponse = await marketDataService.getBars(params);
 
         if (active) {
           setMinuteBars(minuteResponse.bars || []);

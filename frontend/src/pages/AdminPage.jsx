@@ -10,9 +10,9 @@ import { useAuth } from "../context/AuthContext";
 
 function AdminPage() {
   const { user } = useAuth();
-  const [trades, setTrades] = useState([]);
+  const [trades, setTrades] = useState(() => tradeService.peekAllTrades() || []);
   const [selectedIds, setSelectedIds] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !tradeService.peekAllTrades());
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);

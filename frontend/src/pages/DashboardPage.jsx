@@ -5,9 +5,9 @@ import tradeService from "../services/tradeService";
 import { buildAnalytics } from "../utils/analytics";
 
 function DashboardPage() {
-  const [trades, setTrades] = useState([]);
+  const [trades, setTrades] = useState(() => tradeService.peekTrades() || []);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !tradeService.peekTrades());
 
   useEffect(() => {
     let active = true;

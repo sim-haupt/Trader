@@ -81,11 +81,23 @@ function TimelineTable({ rows }) {
 }
 
 function TradeDetailModal({ trade, onClose }) {
-  const [tradeDetail, setTradeDetail] = useState(trade);
-  const [loadingTradeDetail, setLoadingTradeDetail] = useState(true);
+  const initialDayStart = new Date(trade.entryDate);
+  initialDayStart.setHours(0, 0, 0, 0);
+  const initialDayEnd = new Date(trade.entryDate);
+  initialDayEnd.setHours(23, 59, 59, 999);
+  const initialDayFilters = {
+    from: initialDayStart.toISOString(),
+    to: initialDayEnd.toISOString()
+  };
+  const [tradeDetail, setTradeDetail] = useState(() => tradeService.peekTrade(trade.id) || trade);
+  const [loadingTradeDetail, setLoadingTradeDetail] = useState(
+    () => !tradeService.peekTrade(trade.id)
+  );
   const [tradeDetailError, setTradeDetailError] = useState("");
-  const [dayTrades, setDayTrades] = useState([]);
-  const [loadingDayTrades, setLoadingDayTrades] = useState(true);
+  const [dayTrades, setDayTrades] = useState(() => tradeService.peekTrades(initialDayFilters) || []);
+  const [loadingDayTrades, setLoadingDayTrades] = useState(
+    () => !tradeService.peekTrades(initialDayFilters)
+  );
   const [dayTradesError, setDayTradesError] = useState("");
 
   useEffect(() => {
@@ -103,7 +115,9 @@ function TradeDetailModal({ trade, onClose }) {
     let active = true;
 
     async function loadTradeDetail() {
-      setLoadingTradeDetail(true);
+      if (!tradeService.peekTrade(trade.id)) {
+        setLoadingTradeDetail(true);
+      }
       setTradeDetailError("");
 
       try {
@@ -137,19 +151,23 @@ function TradeDetailModal({ trade, onClose }) {
         return;
       }
 
-      setLoadingDayTrades(true);
       setDayTradesError("");
 
       const tradeDayStart = new Date(tradeDetail.entryDate);
       tradeDayStart.setHours(0, 0, 0, 0);
       const tradeDayEnd = new Date(tradeDetail.entryDate);
       tradeDayEnd.setHours(23, 59, 59, 999);
+      const filters = {
+        from: tradeDayStart.toISOString(),
+        to: tradeDayEnd.toISOString()
+      };
 
       try {
-        const data = await tradeService.getTrades({
-          from: tradeDayStart.toISOString(),
-          to: tradeDayEnd.toISOString()
-        });
+        if (!tradeService.peekTrades(filters)) {
+          setLoadingDayTrades(true);
+        }
+
+        const data = await tradeService.getTrades(filters);
 
         if (active) {
           setDayTrades(data);
