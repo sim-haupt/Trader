@@ -246,7 +246,9 @@ export function buildAnalytics(trades) {
       label: entryDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
       weekday: entryDate.toLocaleDateString("en-US", { weekday: "short" }),
       pnl: Number(((dailyMap.get(dayKey)?.pnl || 0) + pnl).toFixed(2)),
-      trades: (dailyMap.get(dayKey)?.trades || 0) + 1
+      trades: (dailyMap.get(dayKey)?.trades || 0) + 1,
+      wins: (dailyMap.get(dayKey)?.wins || 0) + (pnl > 0 ? 1 : 0),
+      volume: (dailyMap.get(dayKey)?.volume || 0) + quantity
     });
 
     if (weekdayMap.has(weekday)) {
@@ -333,6 +335,38 @@ export function buildAnalytics(trades) {
     drawdown: item.drawdown
   }));
 
+  const winRateThirtyDays = Array.from({ length: 30 }, (_, index) => {
+    const day = new Date(latestDayStart);
+    day.setDate(latestDayStart.getDate() - (29 - index));
+    const dayKey = getLocalDayKey(day);
+    const stats = dailyMap.get(dayKey);
+    const trades = stats?.trades || 0;
+    const winsForDay = stats?.wins || 0;
+
+    return {
+      date: dayKey,
+      label: day.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      winRate: trades ? Number(((winsForDay / trades) * 100).toFixed(2)) : 0
+    };
+  });
+
+  const dailyVolumeThirtyDays = Array.from({ length: 30 }, (_, index) => {
+    const day = new Date(latestDayStart);
+    day.setDate(latestDayStart.getDate() - (29 - index));
+    const dayKey = getLocalDayKey(day);
+    const stats = dailyMap.get(dayKey);
+
+    return {
+      date: dayKey,
+      label: day.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      volume: stats?.volume || 0
+    };
+  });
+
+  const currentDrawdown = processedTrades.length
+    ? processedTrades[processedTrades.length - 1].drawdown
+    : 0;
+
   return {
     summary: {
       tradeCount,
@@ -354,6 +388,7 @@ export function buildAnalytics(trades) {
       averageGainPerShare,
       averageLossPerShare,
       maxDrawdown,
+      currentDrawdown,
       riskRewardRatio,
       longestWinStreak,
       longestLossStreak
@@ -370,6 +405,8 @@ export function buildAnalytics(trades) {
     hourlyPerformance: buildHourlyPerformance(processedTrades),
     performanceByPrice: buildPriceBuckets(processedTrades),
     grossDailyThirtyDays: buildLastThirtyDayGross(processedTrades, latestDayStart),
+    winRateThirtyDays,
+    dailyVolumeThirtyDays,
     latestDateLabel: latestTradeDate.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",

@@ -105,7 +105,9 @@ function AnalyticsCharts({ analytics }) {
     performanceByTimeOfDaySummary,
     performanceByPrice,
     hourlyPerformance,
-    grossDailyThirtyDays
+    grossDailyThirtyDays,
+    winRateThirtyDays,
+    dailyVolumeThirtyDays
   } = analytics;
 
   return (
@@ -134,8 +136,8 @@ function AnalyticsCharts({ analytics }) {
         </div>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr_0.75fr]">
-        <Card title="CUMULATIVE P&L" className="xl:row-span-2">
+      <div className="grid gap-5 xl:grid-cols-4">
+        <Card title="CUMULATIVE P&L" className="xl:col-span-2 xl:row-span-2">
           <div className="mb-5 grid gap-3 md:grid-cols-4">
             <MiniMetric label="TOTAL" value={formatCurrency(summary.totalPnl)} tone={toneForValue(summary.totalPnl)} />
             <MiniMetric label="MONTH" value={formatCurrency(summary.totalMonthPnl)} tone={toneForValue(summary.totalMonthPnl)} />
@@ -197,9 +199,10 @@ function AnalyticsCharts({ analytics }) {
           </div>
         </Card>
 
-        <Card title="DRAWDOWN TRACKER">
-          <div className="mb-4">
+        <Card title="DRAWDOWN TRACKER" className="xl:col-span-2">
+          <div className="mb-4 grid gap-3 md:grid-cols-2">
             <MiniMetric label="MAX DRAWDOWN" value={formatCurrency(summary.maxDrawdown)} tone="text-coral" />
+            <MiniMetric label="CURRENT DRAWDOWN" value={formatCurrency(summary.currentDrawdown)} tone="text-coral" />
           </div>
           <div className="h-[220px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -221,7 +224,7 @@ function AnalyticsCharts({ analytics }) {
         </Card>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-2 2xl:grid-cols-[0.9fr_0.95fr_0.95fr_1.1fr_0.8fr]">
+      <div className="grid gap-5 xl:grid-cols-4">
         <Card title="PERFORMANCE BY DAY OF WEEK">
           <BreakdownRows entries={performanceByWeekday} />
         </Card>
@@ -234,7 +237,7 @@ function AnalyticsCharts({ analytics }) {
           <BreakdownRows entries={performanceByTimeOfDaySummary} />
         </Card>
 
-        <Card title="PERFORMANCE BY TIME OF DAY" className="lg:col-span-2 2xl:col-span-1">
+        <Card title="PERFORMANCE BY TIME OF DAY" className="xl:col-span-2">
           <div className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={hourlyPerformance} layout="vertical" margin={{ top: 4, right: 18, left: 6, bottom: 4 }}>
@@ -268,7 +271,7 @@ function AnalyticsCharts({ analytics }) {
           </div>
         </Card>
 
-        <Card title="GROSS DAILY P&L (30 DAYS)" className="lg:col-span-2 2xl:col-span-1">
+        <Card title="GROSS DAILY P&L (30 DAYS)" className="xl:col-span-2">
           <div className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={grossDailyThirtyDays}>
@@ -293,6 +296,69 @@ function AnalyticsCharts({ analytics }) {
                 <Bar dataKey="grossPnl" barSize={20}>
                   {grossDailyThirtyDays.map((entry) => (
                     <Cell key={entry.date} fill={entry.grossPnl >= 0 ? "#56f0a9" : "#ff6b6b"} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+
+        <Card title="WIN %" className="xl:col-span-2">
+          <div className="h-[320px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={winRateThirtyDays}>
+                <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <XAxis
+                  dataKey="label"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#c6cedb", fontSize: 11 }}
+                  minTickGap={18}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  domain={[0, 100]}
+                  tick={{ fill: "#c6cedb", fontSize: 11 }}
+                />
+                <Tooltip
+                  cursor={{ fill: "rgba(255,255,255,0.03)" }}
+                  content={<ChartTooltipContent />}
+                />
+                <Bar dataKey="winRate" barSize={20}>
+                  {winRateThirtyDays.map((entry) => (
+                    <Cell key={entry.date} fill="#56f0a9" />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+
+        <Card title="DAILY VOLUME" className="xl:col-span-2">
+          <div className="h-[320px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={dailyVolumeThirtyDays}>
+                <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <XAxis
+                  dataKey="label"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#c6cedb", fontSize: 11 }}
+                  minTickGap={18}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#c6cedb", fontSize: 11 }}
+                />
+                <Tooltip
+                  cursor={{ fill: "rgba(255,255,255,0.03)" }}
+                  content={<ChartTooltipContent />}
+                />
+                <Bar dataKey="volume" barSize={20}>
+                  {dailyVolumeThirtyDays.map((entry) => (
+                    <Cell key={entry.date} fill="#56f0a9" />
                   ))}
                 </Bar>
               </BarChart>
