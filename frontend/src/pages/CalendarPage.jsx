@@ -144,13 +144,13 @@ function MonthCard({ month, onOpen }) {
         {month.weeks.flat().map((day) => (
           <div
             key={day.dayKey}
-            className={`min-h-[74px] rounded-[12px] border border-transparent px-2 py-4 text-lg font-medium transition ${getDayTone(
+            className={`aspect-square rounded-[12px] border border-transparent px-2 py-4 text-lg font-medium transition ${getDayTone(
               day.stats,
               day.isCurrentMonth
             )}`}
             style={getDayBorderStyle(day.stats, day.isCurrentMonth)}
           >
-            {day.dayNumber}
+            <div className="flex h-full items-center justify-center">{day.dayNumber}</div>
           </div>
         ))}
       </div>
