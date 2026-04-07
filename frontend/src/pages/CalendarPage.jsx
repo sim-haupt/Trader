@@ -109,14 +109,14 @@ function getDayBorderStyle(stats, isCurrentMonth) {
   }
 
   if (stats.pnl > 0) {
-    return { boxShadow: "inset 0 0 0 1px rgba(45, 212, 143, 0.55)" };
+    return { boxShadow: "inset 0 0 0 1px rgba(45, 212, 143, 0.34)" };
   }
 
   if (stats.pnl < 0) {
-    return { boxShadow: "inset 0 0 0 1px rgba(255, 107, 107, 0.55)" };
+    return { boxShadow: "inset 0 0 0 1px rgba(255, 107, 107, 0.34)" };
   }
 
-  return { boxShadow: "inset 0 0 0 1px rgba(229, 231, 235, 0.26)" };
+  return { boxShadow: "inset 0 0 0 1px rgba(229, 231, 235, 0.16)" };
 }
 
 function MonthCard({ month, onOpen }) {

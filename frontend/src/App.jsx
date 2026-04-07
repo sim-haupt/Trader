@@ -10,6 +10,7 @@ import AdminPage from "./pages/AdminPage";
 import CalendarPage from "./pages/CalendarPage";
 import SectionPlaceholderPage from "./pages/SectionPlaceholderPage";
 import SettingsPage from "./pages/SettingsPage";
+import ReportsPage from "./pages/ReportsPage";
 
 function App() {
   return (
@@ -27,15 +28,7 @@ function App() {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/calendar" element={<CalendarPage />} />
-        <Route
-          path="/reports"
-          element={
-            <SectionPlaceholderPage
-              title="Reports"
-              description="Performance breakdowns, exported summaries, and deeper analytics reports will live here."
-            />
-          }
-        />
+        <Route path="/reports" element={<ReportsPage />} />
         <Route path="/trades" element={<TradesPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route
