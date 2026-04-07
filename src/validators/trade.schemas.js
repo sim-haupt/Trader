@@ -20,6 +20,7 @@ const tradeSchema = z
       .optional(),
     fees: z.coerce.number().min(0).optional(),
     strategy: z.string().trim().max(100).nullable().optional(),
+    tags: z.string().trim().max(500).nullable().optional(),
     notes: z.string().trim().max(2000).nullable().optional()
   })
   .superRefine((data, context) => {
@@ -106,6 +107,7 @@ function mapImportRowToPayload(row) {
         : row.reportedExecutionCount,
     executions: Array.isArray(row.executions) ? row.executions : [],
     strategy: row.strategy ? String(row.strategy).trim() : null,
+    tags: row.tags ? String(row.tags).trim() : null,
     notes: row.notes ? String(row.notes).trim() : null
   };
 }

@@ -13,8 +13,8 @@ body[data-theme="dark"] {
   --panel: rgba(28, 33, 47, 0.88);
   --panel-strong: rgba(25, 30, 43, 0.96);
   --panel-soft: rgba(255, 255, 255, 0.025);
-  --line: rgba(255, 255, 255, 0.07);
-  --line-strong: rgba(255, 255, 255, 0.12);
+  --line: rgba(5, 7, 10, 0.45);
+  --line-strong: rgba(8, 11, 16, 0.7);
   --text: #f4f6fb;
   --text-soft: #b1b8c7;
   --text-dim: #8c94a6;

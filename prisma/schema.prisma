@@ -58,6 +58,7 @@ model Trade {
   exitDate             DateTime?
   fees                 Decimal          @default(0) @db.Decimal(18, 4)
   strategy             String?
+  tags                 String?
   notes                String?
   grossPnl             Decimal?         @db.Decimal(18, 4)
   netPnl               Decimal?         @db.Decimal(18, 4)

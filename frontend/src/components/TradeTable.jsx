@@ -18,10 +18,13 @@ function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = tru
             </tr>
           </thead>
           <tbody className="divide-y divide-white/10 bg-transparent">
-            {trades.map((trade) => {
+            {trades.map((trade, index) => {
               const pnl = Number(trade.netPnl ?? trade.grossPnl ?? 0);
               const executionCount =
                 Number(trade.reportedExecutionCount ?? trade.executions?.length ?? 0) || 0;
+              const currentDate = formatDate(trade.entryDate);
+              const previousDate = index > 0 ? formatDate(trades[index - 1].entryDate) : null;
+              const startsNewDay = currentDate !== previousDate;
 
               return (
                 <tr
@@ -35,10 +38,19 @@ function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = tru
                       onSelectTrade?.(trade);
                     }
                   }}
-                  className="cursor-pointer transition hover:bg-white/[0.025] focus:bg-white/[0.025] focus:outline-none"
+                  className={`cursor-pointer transition hover:bg-white/[0.025] focus:bg-white/[0.025] focus:outline-none ${
+                    startsNewDay ? "border-t border-white/20" : ""
+                  }`}
+                  style={startsNewDay ? { boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12)" } : undefined}
                 >
                   <td className="px-4 py-4 text-white/88">{formatDate(trade.entryDate)}</td>
-                  <td className="px-4 py-4 text-[15px] font-semibold tracking-[-0.02em] text-white">{trade.symbol}</td>
+                  <td className="px-4 py-4">
+                    <div className="text-[15px] font-semibold tracking-[-0.02em] text-white">{trade.symbol}</div>
+                    {trade.tags ? <div className="mt-1 text-xs text-white/52">{trade.tags}</div> : null}
+                    {!trade.tags && trade.notes ? (
+                      <div className="mt-1 max-w-[220px] truncate text-xs text-white/42">{trade.notes}</div>
+                    ) : null}
+                  </td>
                   <td className="px-4 py-4 text-white/84">{trade.entryPrice}</td>
                   <td className="px-4 py-4 text-white/84">{trade.exitPrice ?? "-"}</td>
                   <td className="px-4 py-4 text-white/84">{trade.quantity}</td>

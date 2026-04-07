@@ -298,6 +298,10 @@ function TradeDetailModal({ trade, onClose }) {
                   <p className="mt-2 text-sm text-phosphor">{activeTrade.strategy || "No strategy tagged"}</p>
                 </div>
                 <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
+                  <p className="ui-title text-xs text-white/48">Tags</p>
+                  <p className="mt-2 text-sm text-phosphor">{activeTrade.tags || "No tags added"}</p>
+                </div>
+                <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
                   <p className="ui-title text-xs text-white/48">Notes</p>
                   <p className="mt-2 whitespace-pre-wrap text-sm text-white/60">
                     {activeTrade.notes || "No notes captured for this trade yet."}

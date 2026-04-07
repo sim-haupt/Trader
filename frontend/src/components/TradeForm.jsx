@@ -12,6 +12,7 @@ const initialState = {
   exitDate: "",
   fees: "",
   strategy: "",
+  tags: "",
   notes: ""
 };
 
@@ -30,6 +31,7 @@ function mapTradeToForm(trade) {
     exitDate: formatDateTimeLocal(trade.exitDate),
     fees: trade.fees ?? "",
     strategy: trade.strategy ?? "",
+    tags: trade.tags ?? "",
     notes: trade.notes ?? ""
   };
 }
@@ -161,6 +163,18 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
             name="strategy"
             value={form.strategy}
             onChange={handleChange}
+            className="ui-input"
+          />
+        </FormField>
+      </div>
+
+      <div className="md:col-span-2">
+        <FormField label="Tags">
+          <input
+            name="tags"
+            value={form.tags}
+            onChange={handleChange}
+            placeholder="Breakout, A+, news, revenge"
             className="ui-input"
           />
         </FormField>

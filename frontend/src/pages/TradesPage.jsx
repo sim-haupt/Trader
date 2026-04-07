@@ -18,12 +18,21 @@ const initialFilters = {
   to: ""
 };
 
+const pageSizeOptions = [
+  { label: "25", value: 25 },
+  { label: "50", value: 50 },
+  { label: "100", value: 100 },
+  { label: "All", value: "all" }
+];
+
 function TradesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [trades, setTrades] = useState(() => tradeService.peekTrades(initialFilters) || []);
   const [selectedTrade, setSelectedTrade] = useState(null);
   const [activeTradeId, setActiveTradeId] = useState(null);
   const [filters, setFilters] = useState(initialFilters);
+  const [pageSize, setPageSize] = useState(25);
+  const [currentPage, setCurrentPage] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [message, setMessage] = useState("");
@@ -62,12 +71,37 @@ function TradesPage() {
     () => trades.find((trade) => trade.id === activeTradeId) ?? null,
     [activeTradeId, trades]
   );
+  const totalPages = useMemo(() => {
+    if (pageSize === "all") {
+      return 1;
+    }
+
+    return Math.max(1, Math.ceil(trades.length / pageSize));
+  }, [pageSize, trades.length]);
+  const paginatedTrades = useMemo(() => {
+    if (pageSize === "all") {
+      return trades;
+    }
+
+    const startIndex = (currentPage - 1) * pageSize;
+    return trades.slice(startIndex, startIndex + pageSize);
+  }, [currentPage, pageSize, trades]);
 
   useEffect(() => {
     if (activeTradeId && !activeTrade) {
       setActiveTradeId(null);
     }
   }, [activeTrade, activeTradeId]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters.symbol, filters.side, filters.strategy, filters.from, filters.to, pageSize]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   useEffect(() => {
     if (selectedTrade && !isImportMode) {
@@ -200,6 +234,65 @@ function TradesPage() {
     }
   }
 
+  function handleExportTrades() {
+    if (trades.length === 0) {
+      return;
+    }
+
+    const headers = [
+      "date",
+      "symbol",
+      "entry_price",
+      "exit_price",
+      "quantity",
+      "gross_pnl",
+      "net_pnl",
+      "fees",
+      "strategy",
+      "tags",
+      "notes"
+    ];
+
+    const escapeCsvValue = (value) => {
+      if (value === null || value === undefined) {
+        return "";
+      }
+
+      const stringValue = String(value);
+      if (/[",\n]/.test(stringValue)) {
+        return `"${stringValue.replace(/"/g, "\"\"")}"`;
+      }
+
+      return stringValue;
+    };
+
+    const rows = trades.map((trade) => [
+      trade.entryDate,
+      trade.symbol,
+      trade.entryPrice,
+      trade.exitPrice ?? "",
+      trade.quantity,
+      trade.grossPnl ?? "",
+      trade.netPnl ?? "",
+      trade.fees ?? "",
+      trade.strategy ?? "",
+      trade.tags ?? "",
+      trade.notes ?? ""
+    ]);
+
+    const csvContent = [headers, ...rows]
+      .map((row) => row.map(escapeCsvValue).join(","))
+      .join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `trades-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="space-y-6">
       {isImportMode && (
@@ -258,6 +351,14 @@ function TradesPage() {
             >
               Delete All Trades
             </button>
+            <button
+              type="button"
+              onClick={handleExportTrades}
+              disabled={trades.length === 0}
+              className="ui-button text-sm"
+            >
+              Export CSV
+            </button>
           </div>
         }
       >
@@ -282,12 +383,69 @@ function TradesPage() {
             description="Try relaxing your filters or open Import Trades to bring history into the journal."
           />
         ) : (
-          <TradeTable
-            trades={trades}
-            onEdit={setSelectedTrade}
-            onDelete={handleDelete}
-            onSelectTrade={(trade) => setActiveTradeId(trade.id)}
-          />
+          <div className="space-y-4">
+            <div className="flex flex-col gap-3 rounded-[12px] border border-white/8 bg-white/[0.02] px-4 py-3 md:flex-row md:items-center md:justify-between">
+              <div className="text-sm text-white/62">
+                Showing{" "}
+                <span className="font-semibold text-white">
+                  {paginatedTrades.length === 0 ? 0 : (pageSize === "all" ? 1 : (currentPage - 1) * pageSize + 1)}
+                </span>
+                {" "}to{" "}
+                <span className="font-semibold text-white">
+                  {pageSize === "all" ? trades.length : Math.min(currentPage * pageSize, trades.length)}
+                </span>
+                {" "}of <span className="font-semibold text-white">{trades.length}</span> trades
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="flex items-center gap-2 text-sm text-white/62">
+                  <span>Rows</span>
+                  <select
+                    value={pageSize}
+                    onChange={(event) =>
+                      setPageSize(event.target.value === "all" ? "all" : Number(event.target.value))
+                    }
+                    className="ui-input !w-[92px] !px-3 !py-2 text-sm"
+                  >
+                    {pageSizeOptions.map((option) => (
+                      <option key={option.label} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                    disabled={pageSize === "all" || currentPage === 1}
+                    className="ui-button text-sm disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Prev
+                  </button>
+                  <div className="ui-chip text-xs">
+                    Page {pageSize === "all" ? 1 : currentPage} / {totalPages}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                    disabled={pageSize === "all" || currentPage === totalPages}
+                    className="ui-button text-sm disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <TradeTable
+              trades={paginatedTrades}
+              onEdit={setSelectedTrade}
+              onDelete={handleDelete}
+              onSelectTrade={(trade) => setActiveTradeId(trade.id)}
+            />
+          </div>
         )}
       </Card>
 
