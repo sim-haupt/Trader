@@ -64,7 +64,7 @@ function AppShell() {
               <button
                 type="button"
                 onClick={() => navigate("/trades?mode=import")}
-                className="ui-button px-4 py-3 text-[11px] !bg-[var(--orange)] !text-black"
+                className="ui-button px-4 py-3 text-[11px] !bg-white !text-black"
               >
                 Import Trades
               </button>

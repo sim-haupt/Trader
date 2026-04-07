@@ -4,9 +4,6 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -45,11 +42,6 @@ function AnalyticsCharts({ analytics }) {
     averagePnl: day.trades ? Number((day.pnl / day.trades).toFixed(2)) : 0
   }));
 
-  const winLossData = [
-    { name: "Wins", value: summary.wins, color: "#56f0a9" },
-    { name: "Losses", value: summary.losses, color: "#ff6b6b" }
-  ];
-
   return (
     <div className="space-y-6">
       <div className="ui-panel p-5">
@@ -71,19 +63,6 @@ function AnalyticsCharts({ analytics }) {
             </div>
           ))}
         </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
-        <StatCard
-          label="Net P&L Today"
-          value={formatCurrency(summary.totalTodayPnl)}
-          accent={summary.totalTodayPnl >= 0 ? "mint" : "coral"}
-        />
-        <StatCard
-          label="Expectancy"
-          value={formatCurrency(summary.expectancy)}
-          accent={summary.expectancy >= 0 ? "mint" : "coral"}
-        />
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[1.28fr_0.64fr_0.64fr]">
@@ -120,7 +99,13 @@ function AnalyticsCharts({ analytics }) {
                   </linearGradient>
                 </defs>
                 <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
-                <XAxis dataKey="date" stroke="#6e7585" tickLine={false} axisLine={false} />
+                <XAxis
+                  dataKey="date"
+                  stroke="#6e7585"
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fill: "#f3f3f3", fontSize: 10 }}
+                />
                 <YAxis stroke="#6e7585" tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={tooltipStyle()} />
                 <Area
@@ -136,18 +121,6 @@ function AnalyticsCharts({ analytics }) {
         </Card>
 
         <Card title="WINNING VS LOSING TRADES">
-          <div className="h-[220px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={winLossData} dataKey="value" innerRadius={62} outerRadius={88} paddingAngle={3} stroke="none">
-                  {winLossData.map((entry) => (
-                    <Cell key={entry.name} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={tooltipStyle()} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
           <div className="grid grid-cols-3 gap-3">
             <MiniMetric label="WINS" value={summary.wins} tone="text-mint" />
             <MiniMetric label="LOSSES" value={summary.losses} tone="text-coral" />
@@ -156,48 +129,41 @@ function AnalyticsCharts({ analytics }) {
         </Card>
 
         <Card title="HOLD TIME WINNING TRADES VS LOSING TRADES">
-          <div className="space-y-6 pt-2">
-            <div>
-              <div className="mb-2 flex items-center justify-between text-sm">
-                <span className="ui-title text-xs uppercase text-white">WINNING HOLD</span>
-                <span className="text-mint">
-                  {Number(summary.averageWinningHoldMinutes.toFixed(1))} min
-                </span>
-              </div>
-              <div className="h-3 bg-white/10">
-                <div
-                  className="h-3 bg-[linear-gradient(90deg,#d9dde6,#18a36b)]"
-                  style={{ width: `${Math.min(100, summary.averageWinningHoldMinutes * 6)}%` }}
-                />
-              </div>
-            </div>
-
-            <div>
-              <div className="mb-2 flex items-center justify-between text-sm">
-                <span className="ui-title text-xs uppercase text-white">LOSING HOLD</span>
-                <span className="text-coral">
-                  {Number(summary.averageLosingHoldMinutes.toFixed(1))} min
-                </span>
-              </div>
-              <div className="h-3 bg-white/10">
-                <div
-                  className="h-3 bg-[linear-gradient(90deg,#ff6b6b,#ff8a76)]"
-                  style={{ width: `${Math.min(100, summary.averageLosingHoldMinutes * 6)}%` }}
-                />
-              </div>
-            </div>
+          <div className="grid gap-3 pt-2 md:grid-cols-2">
+            <MiniMetric
+              label="WINNING HOLD"
+              value={`${Number(summary.averageWinningHoldMinutes.toFixed(1))} min`}
+              tone="text-mint"
+            />
+            <MiniMetric
+              label="LOSING HOLD"
+              value={`${Number(summary.averageLosingHoldMinutes.toFixed(1))} min`}
+              tone="text-coral"
+            />
           </div>
         </Card>
 
         <Card title="AVERAGE TRADE P&L">
-          <div className="h-[260px]">
+          <div className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={averageTradeDayData}>
                 <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
-                <XAxis dataKey="weekday" stroke="#6e7585" tickLine={false} axisLine={false} />
-                <YAxis stroke="#6e7585" tickLine={false} axisLine={false} />
+                <XAxis
+                  dataKey="label"
+                  stroke="#a9a9a9"
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fill: "#f3f3f3", fontSize: 11 }}
+                />
+                <YAxis
+                  stroke="#a9a9a9"
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(value) => `$${value}`}
+                  tick={{ fill: "#f3f3f3", fontSize: 11 }}
+                />
                 <Tooltip contentStyle={tooltipStyle()} />
-                <Bar dataKey="averagePnl" radius={[0, 0, 0, 0]}>
+                <Bar dataKey="averagePnl" barSize={32} radius={[0, 0, 0, 0]}>
                   {averageTradeDayData.map((entry) => (
                     <Cell key={entry.date} fill={entry.averagePnl >= 0 ? "#56f0a9" : "#ff6b6b"} />
                   ))}
@@ -208,31 +174,17 @@ function AnalyticsCharts({ analytics }) {
         </Card>
 
         <Card title="LARGEST GAIN VS LARGEST LOSS">
-          <div className="space-y-5 pt-2">
-            <div>
-              <div className="mb-2 flex items-center justify-between text-sm">
-                <span className="ui-title text-xs uppercase text-white">LARGEST GAIN</span>
-                <span className="text-mint">{formatCurrency(summary.largestWin)}</span>
-              </div>
-              <div className="h-3 bg-white/10">
-                <div
-                  className="h-3 bg-[linear-gradient(90deg,#d9dde6,#18a36b)]"
-                  style={{ width: `${Math.min(100, Math.abs(summary.largestWin) * 2)}%` }}
-                />
-              </div>
-            </div>
-            <div>
-              <div className="mb-2 flex items-center justify-between text-sm">
-                <span className="ui-title text-xs uppercase text-white">LARGEST LOSS</span>
-                <span className="text-coral">{formatCurrency(summary.largestLoss)}</span>
-              </div>
-              <div className="h-3 bg-white/10">
-                <div
-                  className="h-3 bg-[linear-gradient(90deg,#ff6174,#ff8b98)]"
-                  style={{ width: `${Math.min(100, Math.abs(summary.largestLoss) * 2)}%` }}
-                />
-              </div>
-            </div>
+          <div className="grid gap-3 pt-2 md:grid-cols-2">
+            <MiniMetric
+              label="LARGEST GAIN"
+              value={formatCurrency(summary.largestWin)}
+              tone="text-mint"
+            />
+            <MiniMetric
+              label="LARGEST LOSS"
+              value={formatCurrency(summary.largestLoss)}
+              tone="text-coral"
+            />
           </div>
         </Card>
       </div>
