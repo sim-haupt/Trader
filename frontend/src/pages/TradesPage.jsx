@@ -238,6 +238,7 @@ function TradesPage() {
 
       <Card
         title="TRADE HISTORY"
+        subtitle="Browse, filter, and review your trades. Click any row to open the full execution review."
         action={
           <div className="flex flex-wrap items-center gap-3">
             <button

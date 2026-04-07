@@ -5,7 +5,7 @@ function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = tru
     <div className="ui-table-shell">
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-white/10 text-sm">
-          <thead className="bg-white/[0.04]">
+          <thead className="bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.015))]">
             <tr className="ui-title text-left text-[11px] text-white/58">
               <th className="px-4 py-4">DATE</th>
               <th className="px-4 py-4">SYMBOL</th>
@@ -38,11 +38,11 @@ function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = tru
                   className="cursor-pointer transition hover:bg-white/[0.035] focus:bg-white/[0.035] focus:outline-none"
                 >
                   <td className="px-4 py-4 text-white/88">{formatDate(trade.entryDate)}</td>
-                  <td className="px-4 py-4 text-base font-semibold text-white">{trade.symbol}</td>
-                  <td className="px-4 py-4 text-white/90">{trade.entryPrice}</td>
-                  <td className="px-4 py-4 text-white/90">{trade.exitPrice ?? "-"}</td>
-                  <td className="px-4 py-4 text-white/90">{trade.quantity}</td>
-                  <td className="px-4 py-4 text-white/90">{executionCount || "-"}</td>
+                  <td className="px-4 py-4 text-[15px] font-semibold tracking-[-0.02em] text-white">{trade.symbol}</td>
+                  <td className="px-4 py-4 text-white/84">{trade.entryPrice}</td>
+                  <td className="px-4 py-4 text-white/84">{trade.exitPrice ?? "-"}</td>
+                  <td className="px-4 py-4 text-white/84">{trade.quantity}</td>
+                  <td className="px-4 py-4 text-white/84">{executionCount || "-"}</td>
                   <td
                     className={`px-4 py-4 font-semibold ${
                       pnl >= 0 ? "text-mint" : "text-coral"
