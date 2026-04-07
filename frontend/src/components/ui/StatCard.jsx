@@ -3,8 +3,9 @@ import Card from "./Card";
 function StatCard({ label, value, accent = "mint" }) {
   const accentMap = {
     mint: "text-mint",
-    coral: "text-[#ffb44d]",
-    gold: "text-[#59b9ff]"
+    coral: "text-coral",
+    gold: "text-[#59b9ff]",
+    neutral: "text-phosphor"
   };
 
   return (

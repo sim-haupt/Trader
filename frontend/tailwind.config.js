@@ -9,7 +9,7 @@ export default {
         line: "#2b1f3c",
         mist: "#a39ab8",
         mint: "#8a67ff",
-        coral: "#c786ff",
+        coral: "#ff6b6b",
         gold: "#e5dcff",
         phosphor: "#f0eaff",
         coal: "#030504",

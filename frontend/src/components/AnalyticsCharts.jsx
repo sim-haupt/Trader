@@ -60,10 +60,18 @@ function AnalyticsCharts({ analytics }) {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Net P&L" value={formatCurrency(summary.totalPnl)} accent="mint" />
-        <StatCard label="Win Rate" value={formatPercent(summary.winRate)} accent="gold" />
-        <StatCard label="Expectancy" value={formatCurrency(summary.expectancy)} accent="mint" />
-        <StatCard label="Trades" value={summary.tradeCount} accent="coral" />
+        <StatCard
+          label="Net P&L"
+          value={formatCurrency(summary.totalPnl)}
+          accent={summary.totalPnl >= 0 ? "mint" : "coral"}
+        />
+        <StatCard label="Win Rate" value={formatPercent(summary.winRate)} accent="mint" />
+        <StatCard
+          label="Expectancy"
+          value={formatCurrency(summary.expectancy)}
+          accent={summary.expectancy >= 0 ? "mint" : "coral"}
+        />
+        <StatCard label="Trades" value={summary.tradeCount} accent="neutral" />
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[1.28fr_0.64fr_0.64fr]">
@@ -158,7 +166,7 @@ function AnalyticsCharts({ analytics }) {
             <div>
               <div className="mb-2 flex items-center justify-between text-sm">
                 <span className="ui-title text-xs text-[#fff8df]">Losing Hold</span>
-                <span className="text-[#ffb44d]">
+                <span className="text-coral">
                   {Number(summary.averageLosingHoldMinutes.toFixed(1))} min
                 </span>
               </div>

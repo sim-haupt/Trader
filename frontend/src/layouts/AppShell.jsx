@@ -32,10 +32,7 @@ function AppShell() {
           <div className="ui-panel overflow-hidden px-0 py-0">
             <div className="border-b border-cyan/25 bg-[linear-gradient(90deg,rgba(138,103,255,0.26),rgba(83,189,255,0.08),rgba(255,180,77,0.08))] px-4 py-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-4">
-                  <p className="ui-title text-lg text-[#fff8df]">Trader Journal</p>
-                  <div className="ui-chip">Mk-II</div>
-                </div>
+                <div className="ui-chip">Mk-II</div>
               </div>
             </div>
 
