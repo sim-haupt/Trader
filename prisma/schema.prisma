@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum TradeSide {
+  LONG
+  SHORT
+}
+
+enum ImportStatus {
+  SUCCESS
+  PARTIAL
+  FAILED
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  passwordHash String
+  name         String
+  role         UserRole      @default(USER)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  trades       Trade[]
+  imports      TradeImport[]
+}
+
+model Trade {
+  id         String    @id @default(cuid())
+  userId     String
+  symbol     String
+  side       TradeSide
+  quantity   Decimal   @db.Decimal(18, 4)
+  entryPrice Decimal   @db.Decimal(18, 4)
+  exitPrice  Decimal?  @db.Decimal(18, 4)
+  entryDate  DateTime
+  exitDate   DateTime?
+  fees       Decimal   @default(0) @db.Decimal(18, 4)
+  strategy   String?
+  notes      String?
+  grossPnl   Decimal?  @db.Decimal(18, 4)
+  netPnl     Decimal?  @db.Decimal(18, 4)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, entryDate])
+  @@index([userId, symbol])
+  @@index([userId, strategy])
+}
+
+model TradeImport {
+  id             String        @id @default(cuid())
+  userId         String
+  fileName       String
+  status         ImportStatus
+  totalRows      Int
+  successfulRows Int
+  failedRows     Int
+  createdAt      DateTime      @default(now())
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  errors         ImportError[]
+
+  @@index([userId, createdAt])
+}
+
+model ImportError {
+  id          String      @id @default(cuid())
+  importId    String
+  rowNumber   Int
+  rawData     Json
+  errorMessage String
+  tradeImport TradeImport @relation(fields: [importId], references: [id], onDelete: Cascade)
+
+  @@index([importId])
+}
