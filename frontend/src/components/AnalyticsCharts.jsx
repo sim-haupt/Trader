@@ -489,8 +489,12 @@ function AnalyticsCharts({
       </div>
 
       <div
-        className="grid grid-flow-row-dense items-start gap-5 md:grid-cols-2 xl:grid-cols-4"
-        style={{ gridAutoRows: `${MASONRY_ROW_HEIGHT}px` }}
+        className="grid grid-flow-row-dense items-start md:grid-cols-2 xl:grid-cols-4"
+        style={{
+          gridAutoRows: `${MASONRY_ROW_HEIGHT}px`,
+          rowGap: `${MASONRY_GAP}px`,
+          columnGap: `${MASONRY_GAP}px`
+        }}
       >
         {orderedWidgets.map(({ id, span, widget }) => {
           const cardAction = editing ? (
