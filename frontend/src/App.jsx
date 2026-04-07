@@ -9,6 +9,7 @@ import TradesPage from "./pages/TradesPage";
 import AdminPage from "./pages/AdminPage";
 import CalendarPage from "./pages/CalendarPage";
 import SectionPlaceholderPage from "./pages/SectionPlaceholderPage";
+import SettingsPage from "./pages/SettingsPage";
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
           }
         />
         <Route path="/trades" element={<TradesPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
         <Route
           path="/journal"
           element={

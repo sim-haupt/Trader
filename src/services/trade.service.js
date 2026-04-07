@@ -1,6 +1,7 @@
 const prisma = require("../config/prisma");
 const ApiError = require("../utils/ApiError");
 const buildTradePayload = require("../utils/buildTradePayload");
+const tagService = require("./tag.service");
 
 const adminTradeInclude = {
   user: {
@@ -81,9 +82,15 @@ async function findAccessibleTrade(actor, tradeId) {
 }
 
 async function createTrade(userId, data) {
-  return prisma.trade.create({
+  const trade = await prisma.trade.create({
     data: buildTradePayload(data, userId)
   });
+
+  if (data.tags) {
+    await tagService.ensureTags(userId, data.tags);
+  }
+
+  return trade;
 }
 
 async function getTrades(actor, filters) {
@@ -99,19 +106,8 @@ async function getTrades(actor, filters) {
 }
 
 async function getTradeTags(actor) {
-  const trades = await prisma.trade.findMany({
-    where: actor.role === "ADMIN" ? undefined : { userId: actor.id },
-    select: {
-      tags: true
-    }
-  });
-
-  return [...new Set(
-    trades
-      .flatMap((trade) => String(trade.tags || "").split(","))
-      .map((tag) => tag.trim())
-      .filter(Boolean)
-  )].sort((left, right) => left.localeCompare(right));
+  const tags = await tagService.listTags(actor);
+  return tags.map((tag) => tag.name);
 }
 
 async function getTradeById(actor, tradeId) {
@@ -133,10 +129,16 @@ async function getTradeById(actor, tradeId) {
 async function updateTrade(actor, tradeId, data) {
   const existingTrade = await findAccessibleTrade(actor, tradeId);
 
-  return prisma.trade.update({
+  const trade = await prisma.trade.update({
     where: { id: tradeId },
     data: buildTradePayload(data, existingTrade.userId)
   });
+
+  if (data.tags) {
+    await tagService.ensureTags(existingTrade.userId, data.tags);
+  }
+
+  return trade;
 }
 
 async function updateTradeMeta(actor, tradeId, payload) {
@@ -165,11 +167,17 @@ async function updateTradeMeta(actor, tradeId, payload) {
     data.notes = notes;
   }
 
-  return prisma.trade.update({
+  const trade = await prisma.trade.update({
     where: { id: tradeId },
     data,
     include: tradeDetailInclude
   });
+
+  if (nextTags) {
+    await tagService.ensureTags(existingTrade.userId, nextTags);
+  }
+
+  return trade;
 }
 
 async function deleteTrade(actor, tradeId) {
@@ -283,6 +291,21 @@ async function bulkUpdateTrades(actor, payload) {
       });
     })
   );
+
+  if (payload.tags) {
+    const userIds = actor.role === "ADMIN"
+      ? [...new Set((await prisma.trade.findMany({
+          where: {
+            id: {
+              in: trades.map((trade) => trade.id)
+            }
+          },
+          select: { userId: true }
+        })).map((trade) => trade.userId))]
+      : [actor.id];
+
+    await Promise.all(userIds.map((userId) => tagService.ensureTags(userId, payload.tags)));
+  }
 
   return {
     updatedCount: trades.length
