@@ -80,6 +80,7 @@ function calculateMacdSeries(bars) {
 function buildExecutionMarkers(trade) {
   return (trade.executions || []).map((execution, index) => ({
     time: Math.floor(new Date(execution.occurredAt).getTime() / 1000),
+    price: asNumber(execution.price),
     position: execution.action === "BUY" ? "belowBar" : "aboveBar",
     color: execution.action === "BUY" ? "#6ef0c3" : "#ff7e6b",
     shape: execution.action === "BUY" ? "arrowUp" : "arrowDown",
