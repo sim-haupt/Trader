@@ -87,7 +87,7 @@ function ChartTooltipContent({ active, payload, label }) {
 
 function MiniMetric({ label, value, tone = "text-white" }) {
   return (
-    <div className="rounded-[12px] border border-[#e5e7eb42] bg-white/[0.025] px-4 py-4">
+    <div className="h-full rounded-[12px] border border-[#e5e7eb42] bg-white/[0.025] px-4 py-4">
       <p className="ui-title text-[10px] text-white/48">{label}</p>
       <p className={`mt-3 text-2xl font-bold tracking-[-0.04em] ${tone}`}>{value}</p>
     </div>
@@ -214,11 +214,13 @@ function AnalyticsCharts({
         title: "EXPECTANCY",
         defaultSpan: 1,
         body: (
-          <MiniMetric
-            label="EXPECTANCY PER TRADE"
-            value={formatCurrency(summary.expectancyPerTrade)}
-            tone={toneForValue(summary.expectancyPerTrade)}
-          />
+          <div className="grid h-full">
+            <MiniMetric
+              label="EXPECTANCY PER TRADE"
+              value={formatCurrency(summary.expectancyPerTrade)}
+              tone={toneForValue(summary.expectancyPerTrade)}
+            />
+          </div>
         )
       },
       {
@@ -226,11 +228,13 @@ function AnalyticsCharts({
         title: "RISK REWARD RATIO",
         defaultSpan: 1,
         body: (
-          <MiniMetric
-            label="R:R"
-            value={summary.riskRewardRatio ? `${summary.riskRewardRatio.toFixed(2)} : 1` : "0.00 : 1"}
-            tone={summary.riskRewardRatio >= 1 ? "text-mint" : "text-coral"}
-          />
+          <div className="grid h-full">
+            <MiniMetric
+              label="R:R"
+              value={summary.riskRewardRatio ? `${summary.riskRewardRatio.toFixed(2)} : 1` : "0.00 : 1"}
+              tone={summary.riskRewardRatio >= 1 ? "text-mint" : "text-coral"}
+            />
+          </div>
         )
       },
       {
@@ -396,7 +400,7 @@ function AnalyticsCharts({
         title: "STREAKS",
         defaultSpan: 1,
         body: (
-          <div className="grid gap-3">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
             <MiniMetric label="WINNING STREAK" value={summary.longestWinStreak} tone="text-mint" />
             <MiniMetric label="LOSING STREAK" value={summary.longestLossStreak} tone="text-coral" />
           </div>
@@ -526,6 +530,7 @@ function AnalyticsCharts({
               onDragOver={(event) => {
                 if (editing) {
                   event.preventDefault();
+                  event.dataTransfer.dropEffect = "move";
                   if (draggedId && draggedId !== id && dropTargetId !== id) {
                     setDropTargetId(id);
                   }
@@ -534,7 +539,7 @@ function AnalyticsCharts({
               onDrop={() => handleDrop(id)}
               className={`${widgetSpanClass(span)} ${editing && draggedId === id ? "opacity-60" : ""} ${
                 editing && dropTargetId === id && draggedId !== id
-                  ? "rounded-[16px] bg-mint/8 p-[3px] ring-2 ring-mint/90"
+                  ? "rounded-[16px] bg-mint/8 p-[3px] ring-2 ring-mint/90 shadow-[0_0_0_1px_rgba(86,240,169,0.35)]"
                   : ""
               }`}
               style={{ gridRowEnd: `span ${rowSpans[id] || 1}` }}

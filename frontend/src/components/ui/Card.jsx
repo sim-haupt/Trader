@@ -1,6 +1,6 @@
 function Card({ title, subtitle, action, children, className = "" }) {
   return (
-    <section className={`ui-panel border-[#e5e7eb42] p-0 ${className}`}>
+    <section className={`ui-panel flex h-full flex-col border-[#e5e7eb42] p-0 ${className}`}>
       {(title || subtitle || action) && (
         <div className="border-b border-[#e5e7eb42] bg-[linear-gradient(180deg,rgba(255,255,255,0.026),rgba(255,255,255,0.008))] px-6 py-5">
           <div className="flex items-start justify-between gap-4">
@@ -12,7 +12,7 @@ function Card({ title, subtitle, action, children, className = "" }) {
           </div>
         </div>
       )}
-      <div className="p-6">{children}</div>
+      <div className="flex-1 p-6">{children}</div>
     </section>
   );
 }
