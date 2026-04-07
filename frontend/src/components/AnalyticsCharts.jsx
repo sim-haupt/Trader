@@ -18,10 +18,11 @@ import { formatCurrency, formatPercent } from "../utils/formatters";
 
 function tooltipStyle() {
   return {
-    background: "#120b1a",
-    border: "2px solid rgba(89,185,255,0.32)",
+    background: "rgba(255,255,255,0.98)",
+    border: "2px solid rgba(107,125,255,0.28)",
     borderRadius: "0px",
-    color: "#fff8df"
+    color: "#252933",
+    boxShadow: "0 18px 40px rgba(18,27,45,0.08)"
   };
 }
 
@@ -31,17 +32,6 @@ function MiniMetric({ label, value, tone = "text-gold", note }) {
       <p className="ui-title text-xs text-mist">{label}</p>
       <p className={`mt-3 text-3xl font-semibold ${tone}`}>{value}</p>
       {note ? <p className="mt-2 text-sm text-mist">{note}</p> : null}
-    </div>
-  );
-}
-
-function RowMetric({ label, value, tone = "text-mint" }) {
-  return (
-    <div className="border-b border-cyan/20 py-4 last:border-b-0">
-      <div className="flex items-center justify-between gap-4">
-        <span className="ui-title text-xs text-[#fff8df]">{label}</span>
-        <span className={`text-2xl font-semibold ${tone}`}>{value}</span>
-      </div>
     </div>
   );
 }
@@ -106,19 +96,19 @@ function AnalyticsCharts({ analytics }) {
               <AreaChart data={equityCurve}>
                 <defs>
                   <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#59b9ff" stopOpacity={0.38} />
-                    <stop offset="45%" stopColor="#56f0a9" stopOpacity={0.22} />
-                    <stop offset="95%" stopColor="#56f0a9" stopOpacity={0.04} />
+                    <stop offset="5%" stopColor="#6b7dff" stopOpacity={0.24} />
+                    <stop offset="45%" stopColor="#18a36b" stopOpacity={0.18} />
+                    <stop offset="95%" stopColor="#18a36b" stopOpacity={0.04} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid stroke="rgba(89,185,255,0.16)" vertical={false} />
-                <XAxis dataKey="date" stroke="#59b9ff" tickLine={false} axisLine={false} />
-                <YAxis stroke="#59b9ff" tickLine={false} axisLine={false} />
+                <CartesianGrid stroke="rgba(107,125,255,0.12)" vertical={false} />
+                <XAxis dataKey="date" stroke="#6e7585" tickLine={false} axisLine={false} />
+                <YAxis stroke="#6e7585" tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={tooltipStyle()} />
                 <Area
                   type="monotone"
                   dataKey="equity"
-                  stroke="#56f0a9"
+                  stroke="#18a36b"
                   strokeWidth={3}
                   fill="url(#equityGradient)"
                 />
@@ -150,14 +140,14 @@ function AnalyticsCharts({ analytics }) {
           <div className="space-y-6 pt-2">
             <div>
               <div className="mb-2 flex items-center justify-between text-sm">
-                <span className="ui-title text-xs text-[#fff8df]">Winning Hold</span>
-                <span className="text-[#59b9ff]">
+                <span className="ui-title text-xs text-phosphor">Winning Hold</span>
+                <span className="text-mint">
                   {Number(summary.averageWinningHoldMinutes.toFixed(1))} min
                 </span>
               </div>
-              <div className="h-3 bg-black/35">
+              <div className="h-3 bg-[#e9edf4]">
                 <div
-                  className="h-3 bg-[linear-gradient(90deg,#59b9ff,#56f0a9)]"
+                  className="h-3 bg-[linear-gradient(90deg,#6b7dff,#18a36b)]"
                   style={{ width: `${Math.min(100, summary.averageWinningHoldMinutes * 6)}%` }}
                 />
               </div>
@@ -165,12 +155,12 @@ function AnalyticsCharts({ analytics }) {
 
             <div>
               <div className="mb-2 flex items-center justify-between text-sm">
-                <span className="ui-title text-xs text-[#fff8df]">Losing Hold</span>
+                <span className="ui-title text-xs text-phosphor">Losing Hold</span>
                 <span className="text-coral">
                   {Number(summary.averageLosingHoldMinutes.toFixed(1))} min
                 </span>
               </div>
-              <div className="h-3 bg-black/35">
+              <div className="h-3 bg-[#e9edf4]">
                 <div
                   className="h-3 bg-[linear-gradient(90deg,#ff6b6b,#ff8a76)]"
                   style={{ width: `${Math.min(100, summary.averageLosingHoldMinutes * 6)}%` }}
@@ -190,10 +180,10 @@ function AnalyticsCharts({ analytics }) {
         <Card title="Recent Sessions" subtitle="The latest daily snapshots.">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
             {recentDays.map((day) => (
-              <div key={day.date} className="ui-panel bg-[linear-gradient(180deg,rgba(138,103,255,0.12),rgba(18,12,27,0.96))] px-4 py-4">
+              <div key={day.date} className="ui-panel bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(244,246,250,0.98))] px-4 py-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="ui-title text-sm text-[#fff8df]">{day.weekday}</p>
+                    <p className="ui-title text-sm text-phosphor">{day.weekday}</p>
                     <p className="mt-1 text-sm text-mist">{day.date}</p>
                   </div>
                   <div className={`text-2xl font-semibold ${day.pnl >= 0 ? "text-mint" : "text-coral"}`}>
@@ -212,9 +202,9 @@ function AnalyticsCharts({ analytics }) {
           <div className="h-[260px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={performanceByWeekday}>
-                <CartesianGrid stroke="rgba(89,185,255,0.14)" vertical={false} />
-                <XAxis dataKey="day" stroke="#59b9ff" tickLine={false} axisLine={false} />
-                <YAxis stroke="#59b9ff" tickLine={false} axisLine={false} />
+                <CartesianGrid stroke="rgba(107,125,255,0.12)" vertical={false} />
+                <XAxis dataKey="day" stroke="#6e7585" tickLine={false} axisLine={false} />
+                <YAxis stroke="#6e7585" tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={tooltipStyle()} />
                 <Bar dataKey="pnl" radius={[0, 0, 0, 0]}>
                   {performanceByWeekday.map((entry) => (

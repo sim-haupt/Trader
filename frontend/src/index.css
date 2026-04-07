@@ -5,12 +5,12 @@
 @tailwind utilities;
 
 :root {
-  color: #f0eaff;
+  color: #252933;
   background:
-    radial-gradient(circle at top left, rgba(138, 103, 255, 0.18), transparent 20%),
-    radial-gradient(circle at 82% 12%, rgba(83, 189, 255, 0.12), transparent 16%),
-    radial-gradient(circle at bottom right, rgba(255, 180, 77, 0.08), transparent 20%),
-    linear-gradient(180deg, #0a0711 0%, #120b1a 54%, #050309 100%);
+    radial-gradient(circle at top left, rgba(140, 108, 255, 0.14), transparent 22%),
+    radial-gradient(circle at 82% 12%, rgba(107, 125, 255, 0.1), transparent 20%),
+    radial-gradient(circle at bottom right, rgba(255, 184, 77, 0.12), transparent 24%),
+    linear-gradient(180deg, #fbfcfe 0%, #f2f4f8 52%, #eaedf3 100%);
   font-family:
     "VT323",
     "IBM Plex Mono",
@@ -26,12 +26,12 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  color: #e7def7;
+  color: #252933;
   background:
-    radial-gradient(circle at top left, rgba(138, 103, 255, 0.18), transparent 20%),
-    radial-gradient(circle at 82% 12%, rgba(83, 189, 255, 0.12), transparent 16%),
-    radial-gradient(circle at bottom right, rgba(255, 180, 77, 0.08), transparent 20%),
-    linear-gradient(180deg, #0a0711 0%, #120b1a 54%, #050309 100%);
+    radial-gradient(circle at top left, rgba(140, 108, 255, 0.14), transparent 22%),
+    radial-gradient(circle at 82% 12%, rgba(107, 125, 255, 0.1), transparent 20%),
+    radial-gradient(circle at bottom right, rgba(255, 184, 77, 0.12), transparent 24%),
+    linear-gradient(180deg, #fbfcfe 0%, #f2f4f8 52%, #eaedf3 100%);
   letter-spacing: 0.03em;
 }
 
@@ -46,13 +46,13 @@ body::before {
   pointer-events: none;
   z-index: 100;
   background:
-    linear-gradient(rgba(255, 255, 255, 0.02) 50%, rgba(0, 0, 0, 0.06) 50%),
-    linear-gradient(90deg, rgba(138, 103, 255, 0.025), transparent 18%, rgba(138, 103, 255, 0.015)),
-    linear-gradient(rgba(138, 103, 255, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(138, 103, 255, 0.06) 1px, transparent 1px);
+    linear-gradient(rgba(255, 255, 255, 0.1) 50%, rgba(215, 220, 232, 0.06) 50%),
+    linear-gradient(90deg, rgba(140, 108, 255, 0.018), transparent 18%, rgba(107, 125, 255, 0.012)),
+    linear-gradient(rgba(107, 125, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(107, 125, 255, 0.04) 1px, transparent 1px);
   background-size: 100% 4px, 100% 100%, 24px 24px, 24px 24px;
-  mix-blend-mode: screen;
-  opacity: 0.26;
+  mix-blend-mode: multiply;
+  opacity: 0.35;
 }
 
 input,
@@ -65,17 +65,17 @@ button {
 input,
 select,
 textarea {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 ::selection {
-  background: rgba(138, 103, 255, 0.3);
-  color: #effff6;
+  background: rgba(107, 125, 255, 0.24);
+  color: #10131a;
 }
 
 @layer components {
   .ui-panel {
-    @apply border-2 border-mint/35 bg-[linear-gradient(180deg,rgba(26,18,38,0.96),rgba(14,10,20,0.98))] shadow-[0_0_0_2px_rgba(0,0,0,0.72),0_0_26px_rgba(138,103,255,0.14)];
+    @apply border-2 border-[#d7dbe3] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(242,244,248,0.98))] shadow-[0_0_0_1px_rgba(255,255,255,0.85),0_14px_36px_rgba(19,27,46,0.08)];
     border-radius: 0;
   }
 
@@ -85,37 +85,37 @@ textarea {
   }
 
   .ui-input {
-    @apply w-full border-2 border-mint/20 bg-black/55 px-4 py-3 text-gold outline-none transition focus:border-mint;
+    @apply w-full border-2 border-[#d3d8e2] bg-white px-4 py-3 text-phosphor outline-none transition focus:border-cyan;
     border-radius: 0;
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.45);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8);
   }
 
   .ui-button {
-    @apply border-2 border-mint/35 bg-[linear-gradient(180deg,rgba(138,103,255,0.18),rgba(138,103,255,0.08))] px-5 py-3 font-semibold uppercase tracking-[0.12em] text-gold transition hover:bg-mint/20 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply border-2 border-[#d3d8e2] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(236,239,245,0.98))] px-5 py-3 font-semibold uppercase tracking-[0.12em] text-phosphor transition hover:border-cyan/45 hover:bg-[#eef2ff] disabled:cursor-not-allowed disabled:opacity-60;
     border-radius: 0;
     font-family: "Silkscreen", monospace;
   }
 
   .ui-button-solid {
-    @apply border-2 border-cyan bg-[linear-gradient(180deg,#59b9ff,#8a67ff)] px-5 py-3 font-semibold uppercase tracking-[0.12em] text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply border-2 border-cyan bg-[linear-gradient(180deg,#7d90ff,#5f70e8)] px-5 py-3 font-semibold uppercase tracking-[0.12em] text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60;
     border-radius: 0;
     font-family: "Silkscreen", monospace;
   }
 
   .ui-chip {
-    @apply inline-flex items-center border border-cyan/35 bg-[linear-gradient(180deg,rgba(89,185,255,0.18),rgba(138,103,255,0.08))] px-3 py-1 uppercase tracking-[0.12em] text-gold;
+    @apply inline-flex items-center border border-cyan/30 bg-[linear-gradient(180deg,rgba(125,144,255,0.18),rgba(255,255,255,0.9))] px-3 py-1 uppercase tracking-[0.12em] text-phosphor;
     border-radius: 0;
     font-family: "Silkscreen", monospace;
     font-size: 0.7rem;
   }
 
   .ui-notice {
-    @apply border-2 border-cyan/25 bg-[linear-gradient(180deg,rgba(89,185,255,0.14),rgba(138,103,255,0.08))] px-4 py-3 text-sm text-gold;
+    @apply border-2 border-cyan/25 bg-[linear-gradient(180deg,rgba(125,144,255,0.14),rgba(255,255,255,0.96))] px-4 py-3 text-sm text-phosphor;
     border-radius: 0;
   }
 
   .ui-table-shell {
-    @apply overflow-hidden border-2 border-mint/20 bg-black/35;
+    @apply overflow-hidden border-2 border-[#d3d8e2] bg-white;
     border-radius: 0;
   }
 }

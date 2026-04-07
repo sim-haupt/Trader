@@ -4,28 +4,28 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink: "#040706",
-        panel: "#0d0914",
-        line: "#2b1f3c",
-        mist: "#a39ab8",
-        mint: "#8a67ff",
+        ink: "#15171b",
+        panel: "#f3f4f7",
+        line: "#d7dbe3",
+        mist: "#6e7585",
+        mint: "#18a36b",
         coral: "#ff6b6b",
-        gold: "#e5dcff",
-        phosphor: "#f0eaff",
-        coal: "#030504",
-        arcade: "#130d1d",
-        arcade2: "#1a1226",
-        arcade3: "#09070f",
-        cyan: "#b59cff",
-        amber: "#d9c8ff",
-        pink: "#9d7cff"
+        gold: "#ffffff",
+        phosphor: "#252933",
+        coal: "#eef1f6",
+        arcade: "#ffffff",
+        arcade2: "#f7f8fb",
+        arcade3: "#e8ebf1",
+        cyan: "#6b7dff",
+        amber: "#ffb84d",
+        pink: "#8c6cff"
       },
       boxShadow: {
-        glow: "0 18px 60px rgba(0, 0, 0, 0.45)",
-        crt: "0 0 0 1px rgba(138, 103, 255, 0.16), inset 0 0 0 1px rgba(138, 103, 255, 0.1), 0 0 34px rgba(138, 103, 255, 0.12)"
+        glow: "0 18px 60px rgba(18, 27, 45, 0.08)",
+        crt: "0 0 0 1px rgba(107, 125, 255, 0.14), inset 0 0 0 1px rgba(255,255,255,0.55), 0 10px 30px rgba(107, 125, 255, 0.1)"
       },
       backgroundImage: {
-        grid: "linear-gradient(rgba(138,103,255,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(138,103,255,0.08) 1px, transparent 1px)"
+        grid: "linear-gradient(rgba(107,125,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(107,125,255,0.06) 1px, transparent 1px)"
       }
     }
   },

@@ -27,20 +27,21 @@ function AppShell() {
 
   return (
     <div className="min-h-screen bg-grid bg-[length:24px_24px]">
-      <header className="sticky top-0 z-20 border-b-2 border-mint/30 bg-[rgba(10,7,17,0.96)] backdrop-blur">
-        <div className="px-4 py-3 sm:px-6 xl:px-8">
+      <header className="sticky top-0 z-20 border-b border-[#d7dbe3] bg-[rgba(251,252,254,0.92)] backdrop-blur">
+        <div className="px-4 py-2 sm:px-6 xl:px-8">
           <div className="ui-panel overflow-hidden px-0 py-0">
-            <div className="border-b border-cyan/25 bg-[linear-gradient(90deg,rgba(138,103,255,0.26),rgba(83,189,255,0.08),rgba(255,180,77,0.08))] px-4 py-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="ui-chip">Mk-II</div>
+            <div className="border-b border-[#d7dbe3] bg-[linear-gradient(90deg,rgba(140,108,255,0.16),rgba(107,125,255,0.08),rgba(255,184,77,0.08))] px-4 py-2">
+              <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-mist">
+                <div className="ui-chip">Workspace</div>
+                <div className="hidden sm:block ui-title text-[10px] text-mist">Trading Journal System</div>
               </div>
             </div>
 
             <div className="flex flex-col gap-3 px-4 py-3 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex items-center gap-4">
                 <div>
-                  <p className="ui-title text-xs text-[#59b9ff]">Workspace</p>
-                  <h2 className="ui-title mt-1 text-lg text-gold">{sectionTitle}</h2>
+                  <p className="ui-title text-[10px] text-cyan">Active Section</p>
+                  <h2 className="ui-title mt-1 text-base text-phosphor">{sectionTitle}</h2>
                 </div>
               </div>
 
@@ -50,14 +51,14 @@ function AppShell() {
                     key={item.path}
                     to={item.path}
                     className={({ isActive }) =>
-                      `flex items-center gap-3 border-2 px-4 py-3 text-sm font-medium uppercase tracking-[0.08em] transition ${
+                      `flex items-center gap-3 border-2 px-4 py-2.5 text-sm font-medium uppercase tracking-[0.08em] transition ${
                         isActive
-                          ? "border-cyan bg-[linear-gradient(180deg,rgba(89,185,255,0.22),rgba(138,103,255,0.12))] text-[#fff8df]"
-                          : "border-transparent text-mist hover:border-mint/20 hover:bg-mint/8 hover:text-gold"
+                          ? "border-cyan bg-[linear-gradient(180deg,rgba(125,144,255,0.18),rgba(255,255,255,0.92))] text-phosphor"
+                          : "border-transparent text-mist hover:border-cyan/25 hover:bg-white/70 hover:text-phosphor"
                       }`
                     }
                   >
-                    <span className={location.pathname.startsWith(item.path) ? "text-[#59b9ff]" : "text-mint"}>
+                    <span className={location.pathname.startsWith(item.path) ? "text-cyan" : "text-mist"}>
                       <NavIcon path={item.icon} />
                     </span>
                     {item.label}
@@ -68,14 +69,14 @@ function AppShell() {
                   <NavLink
                     to="/admin"
                     className={({ isActive }) =>
-                      `flex items-center gap-3 border-2 px-4 py-3 text-sm font-medium uppercase tracking-[0.08em] transition ${
+                      `flex items-center gap-3 border-2 px-4 py-2.5 text-sm font-medium uppercase tracking-[0.08em] transition ${
                         isActive
-                          ? "border-cyan bg-[linear-gradient(180deg,rgba(89,185,255,0.22),rgba(138,103,255,0.12))] text-[#fff8df]"
-                          : "border-transparent text-mist hover:border-mint/20 hover:bg-mint/8 hover:text-gold"
+                          ? "border-cyan bg-[linear-gradient(180deg,rgba(125,144,255,0.18),rgba(255,255,255,0.92))] text-phosphor"
+                          : "border-transparent text-mist hover:border-cyan/25 hover:bg-white/70 hover:text-phosphor"
                       }`
                     }
                   >
-                    <span className={location.pathname.startsWith("/admin") ? "text-[#59b9ff]" : "text-mint"}>
+                    <span className={location.pathname.startsWith("/admin") ? "text-cyan" : "text-mist"}>
                       <NavIcon path="M12 3l7 4v10l-7 4-7-4V7l7-4zm0 5v4m0 4h.01" />
                     </span>
                     Admin
@@ -92,7 +93,7 @@ function AppShell() {
                   Import Trades
                 </button>
                 <div className="text-right">
-                  <p className="ui-title text-xs text-gold">{user?.name}</p>
+                  <p className="ui-title text-xs text-phosphor">{user?.name}</p>
                   <p className="mt-2 text-xs uppercase tracking-[0.18em] text-mist">{user?.role}</p>
                 </div>
                 <button
