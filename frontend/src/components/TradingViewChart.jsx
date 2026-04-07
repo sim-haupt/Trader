@@ -1,50 +1,50 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo } from "react";
+
+function buildTradingViewSymbol(symbol) {
+  const normalized = String(symbol || "").trim().toUpperCase();
+
+  if (!normalized) {
+    return "";
+  }
+
+  if (normalized.includes(":")) {
+    return normalized;
+  }
+
+  // Default to NASDAQ for US equities. Users can still open the symbol on TradingView
+  // if a ticker lives on a different venue.
+  return `NASDAQ:${normalized}`;
+}
+
+function buildIframeSrc(symbol) {
+  const tradingViewSymbol = buildTradingViewSymbol(symbol);
+  const params = new URLSearchParams({
+    symbol: tradingViewSymbol,
+    interval: "1",
+    symboledit: "1",
+    saveimage: "1",
+    toolbarbg: "#12192b",
+    theme: "dark",
+    style: "1",
+    timezone: "Europe/Berlin",
+    studies: "[]",
+    withdateranges: "1",
+    hide_top_toolbar: "0",
+    hide_legend: "0",
+    hide_side_toolbar: "0",
+    allow_symbol_change: "1"
+  });
+
+  return `https://s.tradingview.com/widgetembed/?${params.toString()}`;
+}
 
 function TradingViewChart({ symbol }) {
-  const containerRef = useRef(null);
-  const widgetId = useMemo(
-    () => `tradingview_${String(symbol || "symbol").replace(/[^a-z0-9]/gi, "_").toLowerCase()}`,
-    [symbol]
-  );
-
-  useEffect(() => {
-    if (!containerRef.current || !symbol) {
-      return undefined;
-    }
-
-    containerRef.current.innerHTML = `<div id="${widgetId}" class="h-full w-full"></div>`;
-
-    // The public TradingView widget script builds the interactive chart client-side.
-    const script = document.createElement("script");
-    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
-    script.async = true;
-    script.innerHTML = JSON.stringify({
-      autosize: true,
-      symbol,
-      interval: "1",
-      timezone: "Europe/Berlin",
-      theme: "dark",
-      style: "1",
-      locale: "en",
-      backgroundColor: "#12192b",
-      gridColor: "rgba(255, 255, 255, 0.08)",
-      hide_top_toolbar: false,
-      hide_legend: false,
-      allow_symbol_change: true,
-      details: true,
-      studies: ["Volume@tv-basicstudies"],
-      withdateranges: true,
-      container_id: widgetId
-    });
-
-    containerRef.current.appendChild(script);
-
-    return () => {
-      if (containerRef.current) {
-        containerRef.current.innerHTML = "";
-      }
-    };
-  }, [symbol, widgetId]);
+  const normalizedSymbol = useMemo(() => buildTradingViewSymbol(symbol), [symbol]);
+  const iframeSrc = useMemo(() => buildIframeSrc(symbol), [symbol]);
+  const publicSymbolUrl = useMemo(() => {
+    const plainSymbol = String(symbol || "").trim().toUpperCase();
+    return plainSymbol ? `https://www.tradingview.com/symbols/${plainSymbol}/` : "";
+  }, [symbol]);
 
   if (!symbol) {
     return (
@@ -55,8 +55,33 @@ function TradingViewChart({ symbol }) {
   }
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-white/10 bg-[#12192b]">
-      <div ref={containerRef} className="h-[420px] w-full" />
+    <div className="space-y-3">
+      <div className="overflow-hidden rounded-3xl border border-white/10 bg-[#12192b]">
+        <iframe
+          key={normalizedSymbol}
+          title={`${symbol} 1 minute chart`}
+          src={iframeSrc}
+          className="h-[420px] w-full border-0"
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          allowTransparency
+        />
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm">
+        <p className="text-mist">
+          If the symbol does not render correctly, it may be listed on a different exchange than the
+          default <span className="text-white">{normalizedSymbol}</span>.
+        </p>
+        <a
+          href={publicSymbolUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="rounded-full border border-white/15 px-4 py-2 font-medium text-white transition hover:border-mint hover:text-mint"
+        >
+          Open On TradingView
+        </a>
+      </div>
     </div>
   );
 }
