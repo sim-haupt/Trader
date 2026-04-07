@@ -30,7 +30,7 @@ function AppShell() {
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex min-w-0 flex-col gap-4 xl:flex-row xl:items-center xl:gap-6">
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-[16px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                <div className="flex h-11 w-11 items-center justify-center rounded-[16px] border border-[var(--line)] bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                   <div className="flex h-8 w-8 items-center justify-center rounded-[12px] bg-[linear-gradient(180deg,#77b4ff,#4d89ff)] text-sm font-extrabold text-[#07111c]">
                     T
                   </div>
@@ -90,7 +90,7 @@ function AppShell() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3 xl:justify-end">
-              <div className="rounded-[14px] border border-white/10 bg-white/[0.035] px-4 py-3 text-right shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+              <div className="rounded-[14px] border border-[var(--line)] bg-white/[0.035] px-4 py-3 text-right shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                 <p className="text-sm font-semibold text-white">{user?.name}</p>
                 <p className="mt-1 text-xs uppercase tracking-[0.16em] text-white/42">{user?.role}</p>
               </div>
