@@ -26,7 +26,7 @@ import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 
 function SummaryMetric({ label, value, accent = "text-white" }) {
   return (
-    <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
+    <div className="rounded-[18px] border border-black/30 bg-white/[0.03] p-4">
       <p className="ui-title text-[10px] text-white/48">{label}</p>
       <p className={`mt-3 text-2xl font-bold tracking-[-0.04em] ${accent}`}>{value}</p>
     </div>
@@ -39,7 +39,7 @@ function ChartTooltip({ active, payload, label }) {
   }
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#0d1016]/95 px-3 py-2 text-xs text-phosphor shadow-[0_20px_50px_rgba(0,0,0,0.42)]">
+    <div className="rounded-2xl border border-black/30 bg-[#0d1016]/95 px-3 py-2 text-xs text-phosphor shadow-[0_20px_50px_rgba(0,0,0,0.42)]">
       <div className="font-medium text-white">{label}</div>
       <div className="mt-1 text-mint">{formatCurrency(payload[0].value)}</div>
     </div>
@@ -136,8 +136,8 @@ function TradeDetailModal({ trade, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 p-4 backdrop-blur">
-      <div className="w-full max-w-[1520px] rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(16,19,26,0.98),rgba(9,11,16,0.98))] shadow-glow">
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))] px-6 py-5 backdrop-blur">
+      <div className="w-full max-w-[1520px] rounded-[30px] border border-black/30 bg-[linear-gradient(180deg,rgba(16,19,26,0.98),rgba(9,11,16,0.98))] shadow-glow">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-black/30 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))] px-6 py-5 backdrop-blur">
           <div>
             <div className="flex flex-wrap items-center gap-3">
               <h2 className="text-4xl font-bold tracking-[-0.05em] text-white">{activeTrade.symbol}</h2>
@@ -293,21 +293,21 @@ function TradeDetailModal({ trade, onClose }) {
 
             <Card title="Trade Notes" subtitle="Quick context around the setup and result.">
               <div className="space-y-4">
-                <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
+                <div className="rounded-[18px] border border-black/30 bg-white/[0.03] p-4">
                   <p className="ui-title text-xs text-white/48">Strategy</p>
                   <p className="mt-2 text-sm text-phosphor">{activeTrade.strategy || "No strategy tagged"}</p>
                 </div>
-                <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
+                <div className="rounded-[18px] border border-black/30 bg-white/[0.03] p-4">
                   <p className="ui-title text-xs text-white/48">Tags</p>
                   <p className="mt-2 text-sm text-phosphor">{activeTrade.tags || "No tags added"}</p>
                 </div>
-                <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
+                <div className="rounded-[18px] border border-black/30 bg-white/[0.03] p-4">
                   <p className="ui-title text-xs text-white/48">Notes</p>
                   <p className="mt-2 whitespace-pre-wrap text-sm text-white/60">
                     {activeTrade.notes || "No notes captured for this trade yet."}
                   </p>
                 </div>
-                <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
+                <div className="rounded-[18px] border border-black/30 bg-white/[0.03] p-4">
                   <p className="ui-title text-xs text-white/48">Execution Coverage</p>
                   <p className="mt-2 text-sm text-white/60">
                     {Array.isArray(activeTrade.executions) && activeTrade.executions.length > 2

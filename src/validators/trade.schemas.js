@@ -53,6 +53,22 @@ const bulkDeleteSchema = z.object({
   tradeIds: z.array(z.string().min(1)).min(1)
 });
 
+const bulkUpdateTradesSchema = z
+  .object({
+    tradeIds: z.array(z.string().min(1)).min(1),
+    tags: z.string().trim().max(500).optional(),
+    notes: z.string().trim().max(2000).optional(),
+    tagsMode: z.enum(["append", "replace"]).optional()
+  })
+  .superRefine((data, context) => {
+    if (!data.tags && !data.notes) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "At least one of tags or notes is required"
+      });
+    }
+  });
+
 const deleteAllTradesSchema = z.object({
   scope: z.enum(["all"]).optional()
 });
@@ -120,6 +136,7 @@ function validateImportTradeRow(row) {
 module.exports = {
   tradeSchema,
   bulkDeleteSchema,
+  bulkUpdateTradesSchema,
   deleteAllTradesSchema,
   tradeQuerySchema,
   tradeTextImportSchema,

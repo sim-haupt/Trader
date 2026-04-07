@@ -124,6 +124,12 @@ const tradeService = {
     return response.data.data;
   },
 
+  async bulkUpdateTrades(payload) {
+    const response = await api.post("/trades/bulk-update", payload);
+    clearTradeCaches();
+    return response.data.data;
+  },
+
   async deleteAllTrades(scope) {
     const response = await api.post("/trades/delete-all", scope ? { scope } : {});
     clearTradeCaches();

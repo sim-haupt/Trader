@@ -6,6 +6,7 @@ const upload = require("../middleware/upload.middleware");
 const {
   tradeSchema,
   bulkDeleteSchema,
+  bulkUpdateTradesSchema,
   deleteAllTradesSchema,
   tradeQuerySchema,
   tradeTextImportSchema
@@ -21,6 +22,7 @@ router.get("/:id", tradeController.getTradeById);
 router.put("/:id", validate(tradeSchema), tradeController.updateTrade);
 router.delete("/:id", tradeController.deleteTrade);
 router.post("/delete-all", validate(deleteAllTradesSchema), tradeController.deleteAllTrades);
+router.post("/bulk-update", validate(bulkUpdateTradesSchema), tradeController.bulkUpdateTrades);
 router.post(
   "/bulk-delete",
   authorizeRoles("ADMIN"),

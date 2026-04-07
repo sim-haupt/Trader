@@ -31,8 +31,8 @@ function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-10">
-      <div className="grid w-full max-w-5xl overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(14,16,22,0.96),rgba(8,10,14,0.98))] shadow-glow lg:grid-cols-[1.15fr_0.85fr]">
-        <section className="hidden border-r border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(99,167,255,0.12),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(25,195,125,0.08),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] p-10 lg:block">
+      <div className="grid w-full max-w-5xl overflow-hidden rounded-[28px] border border-black/30 bg-[linear-gradient(180deg,rgba(14,16,22,0.96),rgba(8,10,14,0.98))] shadow-glow lg:grid-cols-[1.15fr_0.85fr]">
+        <section className="hidden border-r border-black/30 bg-[radial-gradient(circle_at_top_left,rgba(99,167,255,0.12),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(25,195,125,0.08),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] p-10 lg:block">
           <p className="ui-title text-xs text-white/45">Trading Journal</p>
           <h1 className="mt-6 max-w-md text-5xl font-bold leading-[1.05] tracking-[-0.05em] text-white">
             Review the tape. Preserve the edge.

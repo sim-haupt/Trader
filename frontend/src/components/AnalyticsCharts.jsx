@@ -26,7 +26,7 @@ function tooltipStyle() {
 
 function MiniMetric({ label, value, tone = "text-white", note }) {
   return (
-    <div className="rounded-[12px] border border-white/8 bg-white/[0.025] px-4 py-4">
+    <div className="rounded-[12px] border border-[#e5e7eb42] bg-white/[0.025] px-4 py-4">
       <p className="ui-title text-[10px] text-white/48">{label}</p>
       <p className={`mt-3 text-3xl font-bold tracking-[-0.04em] ${tone}`}>{value}</p>
       {note ? <p className="mt-2 text-sm text-white/56">{note}</p> : null}
@@ -45,12 +45,12 @@ function AnalyticsCharts({ analytics }) {
 
   return (
     <div className="space-y-6">
-      <div className="ui-panel p-5">
+      <div className="ui-panel border-[#e5e7eb42] p-5">
         <div className="grid gap-3 md:grid-cols-7">
           {lastSevenDays.map((day) => (
             <div
               key={day.date}
-              className="rounded-[10px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.008))] px-4 py-4"
+              className="rounded-[10px] border border-[#e5e7eb42] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.008))] px-4 py-4"
             >
               <p className="ui-title text-[10px] uppercase text-white/45">{day.weekday}</p>
               <p className="mt-2 text-sm text-white/62">{day.label}</p>

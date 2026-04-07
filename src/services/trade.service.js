@@ -161,6 +161,85 @@ async function bulkDeleteTrades(actor, tradeIds) {
   };
 }
 
+function mergeTagStrings(existingTags, incomingTags) {
+  const current = String(existingTags || "")
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+  const incoming = String(incomingTags || "")
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+
+  return [...new Set([...current, ...incoming])].join(", ");
+}
+
+async function bulkUpdateTrades(actor, payload) {
+  const uniqueTradeIds = [...new Set(payload.tradeIds)];
+
+  if (uniqueTradeIds.length === 0) {
+    throw new ApiError(400, "At least one trade id is required");
+  }
+
+  const where = {
+    id: {
+      in: uniqueTradeIds
+    }
+  };
+
+  if (actor.role !== "ADMIN") {
+    where.userId = actor.id;
+  }
+
+  const trades = await prisma.trade.findMany({
+    where,
+    select: {
+      id: true,
+      tags: true
+    }
+  });
+
+  if (trades.length === 0) {
+    return { updatedCount: 0 };
+  }
+
+  const notes =
+    payload.notes === undefined ? undefined : payload.notes === "" ? null : payload.notes;
+  const tagsMode = payload.tagsMode || "append";
+
+  await prisma.$transaction(
+    trades.map((trade) => {
+      const nextTags =
+        payload.tags === undefined
+          ? undefined
+          : payload.tags === ""
+            ? null
+            : tagsMode === "replace"
+              ? payload.tags
+              : mergeTagStrings(trade.tags, payload.tags);
+
+      const data = {};
+
+      if (nextTags !== undefined) {
+        data.tags = nextTags;
+      }
+
+      if (notes !== undefined) {
+        data.notes = notes;
+      }
+
+      return prisma.trade.update({
+        where: { id: trade.id },
+        data
+      });
+    })
+  );
+
+  return {
+    updatedCount: trades.length
+  };
+}
+
 async function deleteAllTrades(actor, options = {}) {
   const where = {};
 
@@ -192,6 +271,7 @@ module.exports = {
   updateTrade,
   deleteTrade,
   bulkDeleteTrades,
+  bulkUpdateTrades,
   deleteAllTrades,
   createManyTrades
 };

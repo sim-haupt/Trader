@@ -61,6 +61,15 @@ const bulkDeleteTrades = asyncHandler(async (req, res) => {
   });
 });
 
+const bulkUpdateTrades = asyncHandler(async (req, res) => {
+  const result = await tradeService.bulkUpdateTrades(req.user, req.validatedBody);
+
+  res.status(200).json({
+    success: true,
+    data: result
+  });
+});
+
 const deleteAllTrades = asyncHandler(async (req, res) => {
   const result = await tradeService.deleteAllTrades(req.user, req.validatedBody || {});
 
@@ -99,6 +108,7 @@ module.exports = {
   updateTrade,
   deleteTrade,
   bulkDeleteTrades,
+  bulkUpdateTrades,
   deleteAllTrades,
   importTrades,
   importTradesFromText

@@ -30,11 +30,17 @@ function TradesPage() {
   const [trades, setTrades] = useState(() => tradeService.peekTrades(initialFilters) || []);
   const [selectedTrade, setSelectedTrade] = useState(null);
   const [activeTradeId, setActiveTradeId] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkTags, setBulkTags] = useState("");
+  const [bulkNotes, setBulkNotes] = useState("");
+  const [bulkTagsMode, setBulkTagsMode] = useState("append");
   const [filters, setFilters] = useState(initialFilters);
   const [pageSize, setPageSize] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isBulkSaving, setIsBulkSaving] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(() => !tradeService.peekTrades(initialFilters));
@@ -52,6 +58,7 @@ function TradesPage() {
       );
       const data = await tradeService.getTrades(cleanedFilters);
       setTrades(data);
+      setSelectedIds((current) => current.filter((id) => data.some((trade) => trade.id === id)));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -104,6 +111,16 @@ function TradesPage() {
   }, [currentPage, totalPages]);
 
   useEffect(() => {
+    const visibleIds = paginatedTrades.map((trade) => trade.id);
+
+    setSelectedIds((current) => current.filter((id) => trades.some((trade) => trade.id === id)));
+
+    if (visibleIds.length === 0) {
+      setSelectedIds((current) => current.filter((id) => trades.some((trade) => trade.id === id)));
+    }
+  }, [paginatedTrades, trades]);
+
+  useEffect(() => {
     if (selectedTrade && !isImportMode) {
       const nextParams = new URLSearchParams(searchParams);
       nextParams.set("mode", "import");
@@ -113,6 +130,37 @@ function TradesPage() {
 
   function handleFilterChange(key, value) {
     setFilters((current) => ({ ...current, [key]: value }));
+  }
+
+  function resetBulkForm() {
+    setBulkTags("");
+    setBulkNotes("");
+    setBulkTagsMode("append");
+  }
+
+  function clearSelection() {
+    setSelectedIds([]);
+    resetBulkForm();
+  }
+
+  function handleToggleSelection(tradeId) {
+    setSelectedIds((current) =>
+      current.includes(tradeId)
+        ? current.filter((id) => id !== tradeId)
+        : [...current, tradeId]
+    );
+  }
+
+  function handleToggleAll(visibleTrades, shouldSelectAll) {
+    const visibleIds = visibleTrades.map((trade) => trade.id);
+
+    setSelectedIds((current) => {
+      if (shouldSelectAll) {
+        return Array.from(new Set([...current, ...visibleIds]));
+      }
+
+      return current.filter((id) => !visibleIds.includes(id));
+    });
   }
 
   async function handleApplyFilters() {
@@ -169,9 +217,85 @@ function TradesPage() {
       if (activeTradeId === trade.id) {
         setActiveTradeId(null);
       }
+      setSelectedIds((current) => current.filter((id) => id !== trade.id));
       await loadTrades(filters);
     } catch (err) {
       setError(err.message);
+    }
+  }
+
+  async function handleBulkUpdate() {
+    const trimmedTags = bulkTags.trim();
+    const trimmedNotes = bulkNotes.trim();
+
+    if (selectedIds.length === 0) {
+      setError("Select at least one trade first.");
+      return;
+    }
+
+    if (!trimmedTags && !trimmedNotes) {
+      setError("Add tags or notes before applying bulk changes.");
+      return;
+    }
+
+    setIsBulkSaving(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const result = await tradeService.bulkUpdateTrades({
+        tradeIds: selectedIds,
+        ...(trimmedTags ? { tags: trimmedTags } : {}),
+        ...(trimmedNotes ? { notes: trimmedNotes } : {}),
+        ...(trimmedTags ? { tagsMode: bulkTagsMode } : {})
+      });
+
+      setMessage(`Updated ${result.updatedCount} trades.`);
+      clearSelection();
+      await loadTrades(filters);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsBulkSaving(false);
+    }
+  }
+
+  async function handleBulkDelete() {
+    if (selectedIds.length === 0) {
+      setError("Select at least one trade first.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Delete ${selectedIds.length} selected ${selectedIds.length === 1 ? "trade" : "trades"}?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setIsBulkDeleting(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const result = await tradeService.bulkDeleteTrades(selectedIds);
+
+      if (activeTradeId && selectedIds.includes(activeTradeId)) {
+        setActiveTradeId(null);
+      }
+
+      if (selectedTrade && selectedIds.includes(selectedTrade.id)) {
+        setSelectedTrade(null);
+      }
+
+      setMessage(`Deleted ${result.deletedCount} selected trades.`);
+      clearSelection();
+      await loadTrades(filters);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsBulkDeleting(false);
     }
   }
 
@@ -226,6 +350,7 @@ function TradesPage() {
       const result = await tradeService.deleteAllTrades();
       setSelectedTrade(null);
       setActiveTradeId(null);
+      clearSelection();
       setMessage(`Deleted ${result.deletedCount} trades.`);
       await loadTrades(initialFilters);
     } catch (err) {
@@ -312,7 +437,7 @@ function TradesPage() {
 
             <Card title="CSV IMPORT">
               <UploadCSV onUpload={handleUpload} isUploading={isUploading} />
-              <div className="ui-notice mt-4 border-dashed border-white/15 text-white/72">
+              <div className="ui-notice mt-4 border-dashed border-black/30 text-white/72">
                 Supported CSVs: <span className="text-phosphor">app format and broker exports with Open Datetime / Entry Price / Exit Price columns</span>
                 <br />
                 Normalized format: <span className="text-phosphor">symbol, side, quantity, entryPrice, entryDate, exitPrice, exitDate, fees, strategy, notes</span>
@@ -384,7 +509,66 @@ function TradesPage() {
           />
         ) : (
           <div className="space-y-4">
-            <div className="flex flex-col gap-3 rounded-[12px] border border-white/8 bg-white/[0.02] px-4 py-3 md:flex-row md:items-center md:justify-between">
+            {selectedIds.length > 0 && (
+              <div className="rounded-[16px] border border-black/30 bg-white/[0.035] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="text-sm text-white/72">
+                    <span className="font-semibold text-white">{selectedIds.length}</span>{" "}
+                    {selectedIds.length === 1 ? "trade selected" : "trades selected"}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={clearSelection}
+                    className="ui-button px-3 py-2 text-xs"
+                  >
+                    Clear Selection
+                  </button>
+                </div>
+
+                <div className="mt-4 grid gap-3 lg:grid-cols-[1.2fr_1.2fr_180px_auto_auto]">
+                  <input
+                    type="text"
+                    value={bulkTags}
+                    onChange={(event) => setBulkTags(event.target.value)}
+                    placeholder="Add tags, comma separated"
+                    className="ui-input"
+                  />
+                  <input
+                    type="text"
+                    value={bulkNotes}
+                    onChange={(event) => setBulkNotes(event.target.value)}
+                    placeholder="Add or replace notes"
+                    className="ui-input"
+                  />
+                  <select
+                    value={bulkTagsMode}
+                    onChange={(event) => setBulkTagsMode(event.target.value)}
+                    className="ui-input"
+                  >
+                    <option value="append">Append Tags</option>
+                    <option value="replace">Replace Tags</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={handleBulkUpdate}
+                    disabled={isBulkSaving}
+                    className="ui-button-solid text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isBulkSaving ? "Saving..." : "Apply to Selected"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleBulkDelete}
+                    disabled={isBulkDeleting}
+                    className="ui-button border-coral/25 bg-coral/10 text-sm text-coral disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isBulkDeleting ? "Deleting..." : "Delete Selected"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-col gap-3 rounded-[12px] border border-black/30 bg-white/[0.02] px-4 py-3 md:flex-row md:items-center md:justify-between">
               <div className="text-sm text-white/62">
                 Showing{" "}
                 <span className="font-semibold text-white">
@@ -444,6 +628,9 @@ function TradesPage() {
               onEdit={setSelectedTrade}
               onDelete={handleDelete}
               onSelectTrade={(trade) => setActiveTradeId(trade.id)}
+              selectedIds={selectedIds}
+              onToggleSelection={handleToggleSelection}
+              onToggleAll={handleToggleAll}
             />
           </div>
         )}

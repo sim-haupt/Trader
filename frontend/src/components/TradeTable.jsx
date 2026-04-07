@@ -1,12 +1,33 @@
 import { formatCurrency, formatDate } from "../utils/formatters";
 
-function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = true }) {
+function TradeTable({
+  trades,
+  onEdit,
+  onDelete,
+  onSelectTrade,
+  showActions = true,
+  selectedIds = [],
+  onToggleSelection,
+  onToggleAll
+}) {
+  const allSelected = trades.length > 0 && trades.every((trade) => selectedIds.includes(trade.id));
+
   return (
     <div className="ui-table-shell">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-white/10 text-sm">
+        <table className="min-w-full divide-y divide-black/30 text-sm">
           <thead className="bg-[linear-gradient(180deg,rgba(255,255,255,0.024),rgba(255,255,255,0.008))]">
             <tr className="ui-title text-left text-[11px] text-white/58">
+              {onToggleSelection && (
+                <th className="px-4 py-4">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={() => onToggleAll?.(trades, !allSelected)}
+                    className="h-4 w-4 rounded border-black/40 bg-transparent"
+                  />
+                </th>
+              )}
               <th className="px-4 py-4">DATE</th>
               <th className="px-4 py-4">SYMBOL</th>
               <th className="px-4 py-4">ENTRY</th>
@@ -17,7 +38,7 @@ function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = tru
               {showActions && <th className="px-4 py-4">ACTIONS</th>}
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/10 bg-transparent">
+          <tbody className="divide-y divide-black/30 bg-transparent">
             {trades.map((trade, index) => {
               const pnl = Number(trade.netPnl ?? trade.grossPnl ?? 0);
               const executionCount =
@@ -39,10 +60,24 @@ function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = tru
                     }
                   }}
                   className={`cursor-pointer transition hover:bg-white/[0.025] focus:bg-white/[0.025] focus:outline-none ${
-                    startsNewDay ? "border-t border-white/20" : ""
+                    startsNewDay ? "border-t border-black/40" : ""
                   }`}
-                  style={startsNewDay ? { boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12)" } : undefined}
+                  style={startsNewDay ? { boxShadow: "inset 0 1px 0 rgba(0,0,0,0.35)" } : undefined}
                 >
+                  {onToggleSelection && (
+                    <td className="px-4 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(trade.id)}
+                        onChange={(event) => {
+                          event.stopPropagation();
+                          onToggleSelection(trade.id);
+                        }}
+                        onClick={(event) => event.stopPropagation()}
+                        className="h-4 w-4 rounded border-black/40 bg-transparent"
+                      />
+                    </td>
+                  )}
                   <td className="px-4 py-4 text-white/88">{formatDate(trade.entryDate)}</td>
                   <td className="px-4 py-4">
                     <div className="text-[15px] font-semibold tracking-[-0.02em] text-white">{trade.symbol}</div>

@@ -85,18 +85,38 @@ function getDayTone(stats, isCurrentMonth) {
   }
 
   if (!stats) {
-    return "bg-white/[0.01] text-slate-400";
+    return "border border-[#e5e7eb42] bg-white/[0.01] text-slate-400";
   }
 
   if (stats.pnl > 0) {
-    return "border border-white/8 bg-[linear-gradient(180deg,rgba(24,200,122,0.12),rgba(24,200,122,0.04))] text-mint";
+    return "border border-mint/45 bg-[linear-gradient(180deg,rgba(24,200,122,0.12),rgba(24,200,122,0.04))] text-mint";
   }
 
   if (stats.pnl < 0) {
-    return "border border-white/8 bg-[linear-gradient(180deg,rgba(255,93,87,0.12),rgba(255,93,87,0.04))] text-coral";
+    return "border border-coral/45 bg-[linear-gradient(180deg,rgba(255,93,87,0.12),rgba(255,93,87,0.04))] text-coral";
   }
 
-  return "border border-white/8 bg-white/[0.03] text-phosphor";
+  return "border border-[#e5e7eb42] bg-white/[0.03] text-phosphor";
+}
+
+function getDayBorderStyle(stats, isCurrentMonth) {
+  if (!isCurrentMonth) {
+    return undefined;
+  }
+
+  if (!stats) {
+    return { borderColor: "rgba(229, 231, 235, 0.26)" };
+  }
+
+  if (stats.pnl > 0) {
+    return { borderColor: "rgba(45, 212, 143, 0.55)" };
+  }
+
+  if (stats.pnl < 0) {
+    return { borderColor: "rgba(255, 107, 107, 0.55)" };
+  }
+
+  return { borderColor: "rgba(229, 231, 235, 0.26)" };
 }
 
 function MonthCard({ month, onOpen }) {
@@ -152,7 +172,7 @@ function MonthDetailSection({ month, onClose }) {
                 ? "border-mint/25 bg-mint/10 text-mint"
                 : month.monthPnl < 0
                   ? "border-coral/25 bg-[#2a1111] text-coral"
-                  : "border-white/10 bg-white/5 text-mist"
+                  : "border-black/30 bg-white/5 text-mist"
             }`}
           >
             {formatCurrency(month.monthPnl)}
@@ -164,16 +184,16 @@ function MonthDetailSection({ month, onClose }) {
       }
       className="p-6 shadow-none"
     >
-      <div className="grid grid-cols-8 gap-0 overflow-hidden rounded-[12px] border border-white/10 bg-white/[0.015]">
+      <div className="grid grid-cols-8 gap-0 overflow-hidden rounded-[12px] border border-black/30 bg-white/[0.015]">
         {weekdayLabels.map((label) => (
           <div
             key={label}
-            className="ui-title border-b border-r border-white/10 px-3 py-3 text-center text-xs text-white/78"
+            className="ui-title border-b border-r border-black/30 px-3 py-3 text-center text-xs text-white/78"
           >
             {label}
           </div>
         ))}
-        <div className="ui-title border-b border-white/10 px-3 py-3 text-center text-xs text-white/78">
+        <div className="ui-title border-b border-black/30 px-3 py-3 text-center text-xs text-white/78">
           Total
         </div>
 
@@ -197,10 +217,11 @@ function MonthDetailSection({ month, onClose }) {
               {week.map((day) => (
                 <div
                   key={day.dayKey}
-                  className={`min-h-[118px] border-b border-r border-white/10 px-3 py-3 text-left transition ${getDayTone(
+                  className={`min-h-[118px] border-b border-r px-3 py-3 text-left transition ${getDayTone(
                     day.stats,
                     day.isCurrentMonth
                   )}`}
+                  style={getDayBorderStyle(day.stats, day.isCurrentMonth)}
                 >
                   <div className="text-lg font-semibold">{day.dayNumber}</div>
                   {day.isCurrentMonth && (
@@ -226,7 +247,7 @@ function MonthDetailSection({ month, onClose }) {
                 </div>
               ))}
 
-              <div className="min-h-[118px] border-b border-white/10 px-3 py-3 bg-white/[0.02]">
+              <div className="min-h-[118px] border-b border-black/30 px-3 py-3 bg-white/[0.02]">
                 <div className="ui-title text-sm text-white">Week {index + 1}</div>
                 <div
                   className={`mt-4 text-base font-semibold ${
