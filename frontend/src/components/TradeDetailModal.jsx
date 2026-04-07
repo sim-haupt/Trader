@@ -486,7 +486,7 @@ function TradeDetailModal({ trade, onClose }) {
             <TradeReviewCharts trade={activeTrade} />
           </Card>
 
-          <div className="grid gap-6 xl:grid-cols-[1.1fr_1.1fr_0.8fr]">
+          <div className="grid gap-6 xl:grid-cols-2">
             <Card
               title="Trade Running P&L"
               subtitle="Realized progression across the executions we have stored for this trade."
@@ -579,27 +579,6 @@ function TradeDetailModal({ trade, onClose }) {
                   </ResponsiveContainer>
                 </div>
               )}
-            </Card>
-
-            <Card title="TRADE CONTEXT" subtitle="Quick context around the setup and result.">
-              <div className="space-y-4">
-                <div className="rounded-[18px] border border-black/30 bg-white/[0.03] p-4">
-                  <p className="ui-title text-xs text-white/48">Strategy</p>
-                  <p className="mt-2 text-sm text-phosphor">{activeTrade.strategy || "No strategy tagged"}</p>
-                </div>
-                <div className="rounded-[18px] border border-black/30 bg-white/[0.03] p-4">
-                  <p className="ui-title text-xs text-white/48">Tags</p>
-                  <p className="mt-2 text-sm text-phosphor">{activeTrade.tags || "No tags added"}</p>
-                </div>
-                <div className="rounded-[18px] border border-black/30 bg-white/[0.03] p-4">
-                  <p className="ui-title text-xs text-white/48">Execution Coverage</p>
-                  <p className="mt-2 text-sm text-white/60">
-                    {Array.isArray(activeTrade.executions) && activeTrade.executions.length > 2
-                      ? "This trade includes stored execution rows and the review charts use them directly."
-                      : "This trade currently has aggregate execution coverage only. TradeVue CSV exports give the merged trade plus execution count, not the original fill timestamps."}
-                  </p>
-                </div>
-              </div>
             </Card>
           </div>
         </div>
