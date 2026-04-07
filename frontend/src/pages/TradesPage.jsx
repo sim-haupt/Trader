@@ -203,14 +203,14 @@ function TradesPage() {
   return (
     <div className="space-y-6">
       <section className="ui-panel overflow-hidden">
-        <div className="border-b border-[#2a2240] bg-[linear-gradient(90deg,rgba(52,52,60,0.88),rgba(27,27,33,0.82),rgba(14,14,18,0.82))] px-6 py-5">
+        <div className="border-b border-white/10 bg-[linear-gradient(90deg,rgba(28,28,28,0.95),rgba(18,18,18,0.9),rgba(10,10,10,0.88))] px-6 py-5">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div>
-              <p className="ui-title text-xs text-mist">Trade Deck</p>
-              <h2 className="ui-title mt-3 text-2xl text-white">
+              <p className="ui-title text-xs uppercase text-[#ffc14d]">TRADE DECK</p>
+              <h2 className="ui-title mt-3 text-2xl uppercase text-white">
                 {isImportMode ? "Import / Entry Console" : "Execution Ledger"}
               </h2>
-              <p className="mt-3 max-w-2xl text-base text-mist">
+              <p className="mt-3 max-w-2xl text-base leading-7 text-white/80">
                 {isImportMode
                   ? "Bring in broker exports, paste raw fills, or capture a manual trade in one focused workspace."
                   : "Review the journal, inspect executions, and move into import mode only when you actually need to add data."}
@@ -219,17 +219,17 @@ function TradesPage() {
 
             <div className="grid gap-3 sm:grid-cols-2 xl:min-w-[420px] xl:grid-cols-3">
               <div className="ui-panel px-4 py-4">
-                <p className="ui-title text-xs text-mist">Visible Trades</p>
+                <p className="ui-title text-xs uppercase text-[#ffc14d]">VISIBLE TRADES</p>
                 <p className="mt-3 text-3xl font-semibold text-white">{trades.length}</p>
               </div>
               <div className="ui-panel px-4 py-4">
-                <p className="ui-title text-xs text-mist">Mode</p>
+                <p className="ui-title text-xs uppercase text-[#ffc14d]">MODE</p>
                 <p className="mt-3 text-2xl font-semibold text-white">
                   {isImportMode ? "Import" : "Review"}
                 </p>
               </div>
               <div className="ui-panel px-4 py-4">
-                <p className="ui-title text-xs text-mist">Active Filter</p>
+                <p className="ui-title text-xs uppercase text-[#ffc14d]">ACTIVE FILTER</p>
                 <p className="mt-3 text-2xl font-semibold text-white">
                   {filters.symbol || filters.strategy || filters.side ? "Scoped" : "All"}
                 </p>
@@ -240,8 +240,7 @@ function TradesPage() {
       </section>
 
       <Card
-        title="Trade Workspace"
-        subtitle={isImportMode ? "Import history or add manual trades from this workspace." : "Filter and review your trade ledger."}
+        title="TRADE WORKSPACE"
         action={
           <button
             type="button"
@@ -278,8 +277,7 @@ function TradesPage() {
           <div className="grid gap-6 xl:grid-cols-[1.05fr_1.35fr]">
             <Card
               title={title}
-              subtitle="Keep each trade rich enough to be reviewable later."
-              className="bg-[linear-gradient(180deg,rgba(28,24,37,0.98),rgba(16,13,23,0.96))]"
+              className="bg-[linear-gradient(180deg,rgba(18,18,18,0.96),rgba(10,10,10,0.98))]"
             >
               <TradeForm
                 trade={selectedTrade}
@@ -293,9 +291,8 @@ function TradesPage() {
             </Card>
 
             <Card
-              title="CSV Import"
-              subtitle="Import a broker export with one drag-and-drop style action."
-              className="bg-[linear-gradient(180deg,rgba(28,24,37,0.98),rgba(16,13,23,0.96))]"
+              title="CSV IMPORT"
+              className="bg-[linear-gradient(180deg,rgba(18,18,18,0.96),rgba(10,10,10,0.98))]"
             >
               <UploadCSV onUpload={handleUpload} isUploading={isUploading} />
               <div className="ui-notice mt-4 border-dashed border-[#3b334e] text-mist">
@@ -307,9 +304,8 @@ function TradesPage() {
           </div>
 
           <Card
-            title="Text Import"
-            subtitle="Paste execution lines directly and the app will combine fills into closed trades."
-            className="bg-[linear-gradient(180deg,rgba(28,24,37,0.98),rgba(16,13,23,0.96))]"
+            title="TEXT IMPORT"
+            className="bg-[linear-gradient(180deg,rgba(18,18,18,0.96),rgba(10,10,10,0.98))]"
           >
             <TradeTextImport onImport={handleTextImport} isImporting={isUploading} />
           </Card>
@@ -320,8 +316,7 @@ function TradesPage() {
       {error && <div className="ui-notice border-coral/30 bg-[#2a1111] text-coral">{error}</div>}
 
       <Card
-        title="Trade History"
-        subtitle="A searchable ledger of your recent executions."
+        title="TRADE HISTORY"
         action={
           <button
             type="button"

@@ -136,9 +136,9 @@ export function buildAnalytics(trades) {
     0
   );
 
-  const lastFiveDays = Array.from({ length: 5 }, (_, index) => {
+  const lastSevenDays = Array.from({ length: 7 }, (_, index) => {
     const day = new Date(latestDayStart);
-    day.setDate(latestDayStart.getDate() - (4 - index));
+    day.setDate(latestDayStart.getDate() - (6 - index));
     const dayKey = day.toISOString().slice(0, 10);
     const stats = dailyMap.get(dayKey);
 
@@ -172,7 +172,7 @@ export function buildAnalytics(trades) {
       averageLosingHoldMinutes: losingHoldCount ? totalLosingHoldMinutes / losingHoldCount : 0
     },
     equityCurve,
-    lastFiveDays,
+    lastSevenDays,
     performanceByWeekday: Array.from(weekdayMap.entries()).map(([day, pnl]) => ({
       day,
       pnl

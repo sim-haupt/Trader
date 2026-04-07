@@ -145,7 +145,7 @@ function MonthDetailModal({ month, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 p-4 backdrop-blur">
-      <div className="w-full max-w-6xl border-2 border-[#2a2240] bg-[linear-gradient(180deg,rgba(22,16,32,0.98),rgba(10,8,16,0.98))] shadow-crt">
+      <div className="w-full max-w-6xl border-2 border-white/10 bg-[linear-gradient(180deg,rgba(18,18,18,0.98),rgba(10,10,10,0.98))] shadow-crt">
         <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b-2 border-[#2a2240] bg-[linear-gradient(90deg,rgba(56,56,66,0.72),rgba(34,34,41,0.42),rgba(18,18,22,0.18))] px-6 py-5">
           <div>
             <p className="ui-title text-xs text-mist">Calendar</p>
@@ -153,12 +153,12 @@ function MonthDetailModal({ month, onClose }) {
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="ui-chip normal-case tracking-[0.08em] text-sm text-mist">
+            <div className="ui-chip normal-case tracking-[0.08em] text-sm text-white">
               {month.monthTrades} trade{month.monthTrades === 1 ? "" : "s"}
             </div>
             <div
               className={`border px-4 py-2 text-sm font-semibold ${
-                month.monthPnl >= 0 ? "bg-mint/10 text-mint" : "bg-coral/10 text-coral"
+                month.monthPnl >= 0 ? "border-mint/25 bg-mint/10 text-mint" : "border-coral/25 bg-[#2a1111] text-coral"
               }`}
             >
               {formatCurrency(month.monthPnl)}
@@ -170,7 +170,7 @@ function MonthDetailModal({ month, onClose }) {
         </div>
 
         <div className="grid gap-6 p-6 xl:grid-cols-[1.2fr_0.8fr]">
-          <div className="ui-panel bg-[linear-gradient(180deg,rgba(24,18,36,0.94),rgba(12,10,18,0.98))] p-5">
+          <div className="ui-panel bg-[linear-gradient(180deg,rgba(18,18,18,0.96),rgba(10,10,10,0.98))] p-5">
             <div className="mb-5 grid grid-cols-7 gap-3 text-center">
               {weekdayLabels.map((label) => (
                 <div key={label} className="ui-title pb-2 text-xs text-mist">
@@ -200,7 +200,7 @@ function MonthDetailModal({ month, onClose }) {
             </div>
           </div>
 
-          <div className="ui-panel bg-[linear-gradient(180deg,rgba(20,16,32,0.96),rgba(10,8,16,0.98))] p-5">
+          <div className="ui-panel bg-[linear-gradient(180deg,rgba(18,18,18,0.96),rgba(10,10,10,0.98))] p-5">
             <h3 className="ui-title text-lg text-white">Daily Breakdown</h3>
             <div className="mt-5 space-y-3">
               {monthTradeDays.length === 0 ? (
@@ -308,8 +308,7 @@ function CalendarPage() {
     <div className="space-y-6">
       {refreshing && <div className="ui-chip text-xs">Refreshing Calendar</div>}
       <Card
-        title="Calendar Overview"
-        subtitle="A year-level view of green and red trading days. Open any month to drill into the details in a focused window."
+        title="CALENDAR OVERVIEW"
         action={
           <div className="ui-chip text-base">
             {calendarData.year}

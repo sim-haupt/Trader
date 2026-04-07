@@ -1,6 +1,8 @@
 import {
   Area,
   AreaChart,
+  Bar,
+  BarChart,
   CartesianGrid,
   Cell,
   Pie,
@@ -35,9 +37,13 @@ function MiniMetric({ label, value, tone = "text-white", note }) {
 }
 
 function AnalyticsCharts({ analytics }) {
-  const { summary, equityCurve, lastFiveDays, latestDateLabel } = analytics;
+  const { summary, equityCurve, lastSevenDays } = analytics;
   const winRateAccent =
     summary.winRate >= 68 ? "mint" : summary.winRate < 50 ? "coral" : "warning";
+  const averageTradeDayData = lastSevenDays.map((day) => ({
+    ...day,
+    averagePnl: day.trades ? Number((day.pnl / day.trades).toFixed(2)) : 0
+  }));
 
   const winLossData = [
     { name: "Wins", value: summary.wins, color: "#56f0a9" },
@@ -46,14 +52,11 @@ function AnalyticsCharts({ analytics }) {
 
   return (
     <div className="space-y-6">
-      <Card
-        title="Last Five Days"
-        subtitle={`Daily snapshots ending ${latestDateLabel}. Days with no trades still appear.`}
-      >
-        <div className="grid gap-3 md:grid-cols-5">
-          {lastFiveDays.map((day) => (
+      <div className="ui-panel p-5">
+        <div className="grid gap-3 md:grid-cols-7">
+          {lastSevenDays.map((day) => (
             <div key={day.date} className="ui-panel px-4 py-4">
-              <p className="ui-title text-xs text-white">{day.weekday}</p>
+              <p className="ui-title text-xs uppercase text-[#ffc14d]">{day.weekday}</p>
               <p className="mt-2 text-sm text-white/70">{day.label}</p>
               <p className={`mt-4 text-2xl font-semibold ${day.pnl >= 0 ? "text-mint" : "text-coral"}`}>
                 {formatCurrency(day.pnl)}
@@ -64,7 +67,7 @@ function AnalyticsCharts({ analytics }) {
             </div>
           ))}
         </div>
-      </Card>
+      </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <StatCard
@@ -93,27 +96,23 @@ function AnalyticsCharts({ analytics }) {
       <div className="grid gap-5 xl:grid-cols-[1.28fr_0.64fr_0.64fr]">
         <Card
           title="Cumulative P&L"
-          subtitle="A running snapshot of how your P&L evolves across the full trade history."
           className="xl:row-span-2"
         >
           <div className="mb-5 grid gap-3 md:grid-cols-3">
             <MiniMetric
-              label="Average Trade P&L"
-              value={formatCurrency(summary.averageTradePnl)}
-              tone={summary.averageTradePnl >= 0 ? "text-mint" : "text-coral"}
-              note={`${summary.tradeCount} trade${summary.tradeCount === 1 ? "" : "s"}`}
+              label="NET P&L TOTAL"
+              value={formatCurrency(summary.totalPnl)}
+              tone={summary.totalPnl >= 0 ? "text-mint" : "text-coral"}
             />
             <MiniMetric
-              label="Largest Gain"
-              value={formatCurrency(summary.largestWin)}
-              tone="text-mint"
-              note="Best single trade"
+              label="NET P&L MONTH"
+              value={formatCurrency(summary.totalMonthPnl)}
+              tone={summary.totalMonthPnl >= 0 ? "text-mint" : "text-coral"}
             />
             <MiniMetric
-              label="Largest Loss"
-              value={formatCurrency(summary.largestLoss)}
-              tone="text-coral"
-              note="Worst single trade"
+              label="NET P&L WEEK"
+              value={formatCurrency(summary.totalWeekPnl)}
+              tone={summary.totalWeekPnl >= 0 ? "text-mint" : "text-coral"}
             />
           </div>
 
@@ -143,7 +142,7 @@ function AnalyticsCharts({ analytics }) {
           </div>
         </Card>
 
-        <Card title="Winning vs Losing Trades" subtitle="Fast pulse on trade balance.">
+        <Card title="WINNING VS LOSING TRADES">
           <div className="h-[220px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -157,16 +156,16 @@ function AnalyticsCharts({ analytics }) {
             </ResponsiveContainer>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <MiniMetric label="Wins" value={summary.wins} tone="text-mint" />
-            <MiniMetric label="Losses" value={summary.losses} tone="text-coral" />
+            <MiniMetric label="WINS" value={summary.wins} tone="text-mint" />
+            <MiniMetric label="LOSSES" value={summary.losses} tone="text-coral" />
           </div>
         </Card>
 
-        <Card title="Hold Time Winning Trades vs Losing Trades" subtitle="Average hold time split by result.">
+        <Card title="HOLD TIME WINNING TRADES VS LOSING TRADES">
           <div className="space-y-6 pt-2">
             <div>
               <div className="mb-2 flex items-center justify-between text-sm">
-                <span className="ui-title text-xs text-phosphor">Winning Hold</span>
+                <span className="ui-title text-xs uppercase text-white">WINNING HOLD</span>
                 <span className="text-mint">
                   {Number(summary.averageWinningHoldMinutes.toFixed(1))} min
                 </span>
@@ -181,7 +180,7 @@ function AnalyticsCharts({ analytics }) {
 
             <div>
               <div className="mb-2 flex items-center justify-between text-sm">
-                <span className="ui-title text-xs text-phosphor">Losing Hold</span>
+                <span className="ui-title text-xs uppercase text-white">LOSING HOLD</span>
                 <span className="text-coral">
                   {Number(summary.averageLosingHoldMinutes.toFixed(1))} min
                 </span>
@@ -193,20 +192,32 @@ function AnalyticsCharts({ analytics }) {
                 />
               </div>
             </div>
-            <MiniMetric
-              label="Average Trade P&L"
-              value={formatCurrency(summary.averageTradePnl)}
-              tone={summary.averageTradePnl >= 0 ? "text-mint" : "text-coral"}
-              note="Across all closed trades"
-            />
           </div>
         </Card>
 
-        <Card title="Largest Gain vs Largest Loss" subtitle="Best and worst trade results side by side.">
+        <Card title="AVERAGE TRADE P&L">
+          <div className="h-[260px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={averageTradeDayData}>
+                <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
+                <XAxis dataKey="weekday" stroke="#6e7585" tickLine={false} axisLine={false} />
+                <YAxis stroke="#6e7585" tickLine={false} axisLine={false} />
+                <Tooltip contentStyle={tooltipStyle()} />
+                <Bar dataKey="averagePnl" radius={[0, 0, 0, 0]}>
+                  {averageTradeDayData.map((entry) => (
+                    <Cell key={entry.date} fill={entry.averagePnl >= 0 ? "#56f0a9" : "#ff6b6b"} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+
+        <Card title="LARGEST GAIN VS LARGEST LOSS">
           <div className="space-y-5 pt-2">
             <div>
               <div className="mb-2 flex items-center justify-between text-sm">
-                <span className="ui-title text-xs text-white">Largest Gain</span>
+                <span className="ui-title text-xs uppercase text-white">LARGEST GAIN</span>
                 <span className="text-mint">{formatCurrency(summary.largestWin)}</span>
               </div>
               <div className="h-3 bg-white/10">
@@ -218,7 +229,7 @@ function AnalyticsCharts({ analytics }) {
             </div>
             <div>
               <div className="mb-2 flex items-center justify-between text-sm">
-                <span className="ui-title text-xs text-white">Largest Loss</span>
+                <span className="ui-title text-xs uppercase text-white">LARGEST LOSS</span>
                 <span className="text-coral">{formatCurrency(summary.largestLoss)}</span>
               </div>
               <div className="h-3 bg-white/10">

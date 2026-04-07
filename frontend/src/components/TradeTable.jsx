@@ -7,16 +7,16 @@ function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = tru
         <table className="min-w-full divide-y divide-white/10 text-sm">
           <thead className="bg-[linear-gradient(90deg,rgba(58,58,66,0.82),rgba(33,33,39,0.78),rgba(20,20,24,0.78))]">
             <tr className="ui-title text-left text-[11px] text-mist">
-              <th className="px-4 py-4">Symbol</th>
-              <th className="px-4 py-4">Side</th>
-              <th className="px-4 py-4">Entry</th>
-              <th className="px-4 py-4">Exit</th>
-              <th className="px-4 py-4">Quantity</th>
-              <th className="px-4 py-4">Executions</th>
+              <th className="px-4 py-4">SYMBOL</th>
+              <th className="px-4 py-4">SIDE</th>
+              <th className="px-4 py-4">ENTRY</th>
+              <th className="px-4 py-4">EXIT</th>
+              <th className="px-4 py-4">QUANTITY</th>
+              <th className="px-4 py-4">EXECUTIONS</th>
               <th className="px-4 py-4">P&amp;L</th>
-              <th className="px-4 py-4">Strategy</th>
-              <th className="px-4 py-4">Date</th>
-              {showActions && <th className="px-4 py-4">Actions</th>}
+              <th className="px-4 py-4">STRATEGY</th>
+              <th className="px-4 py-4">DATE</th>
+              {showActions && <th className="px-4 py-4">ACTIONS</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-white/10 bg-[linear-gradient(180deg,rgba(16,12,24,0.78),rgba(8,6,12,0.82))]">
@@ -39,7 +39,7 @@ function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = tru
                   }}
                   className="cursor-pointer transition hover:bg-white/5 focus:bg-white/5 focus:outline-none"
                 >
-                  <td className="px-4 py-4 ui-title text-phosphor">{trade.symbol}</td>
+                  <td className="px-4 py-4 ui-title text-white">{trade.symbol}</td>
                   <td className="px-4 py-4">
                     <span
                       className={`inline-flex border px-3 py-1 text-[11px] font-medium ${
@@ -51,10 +51,10 @@ function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = tru
                       {trade.side}
                     </span>
                   </td>
-                  <td className="px-4 py-4 text-mist">{trade.entryPrice}</td>
-                  <td className="px-4 py-4 text-mist">{trade.exitPrice ?? "-"}</td>
-                  <td className="px-4 py-4 text-mist">{trade.quantity}</td>
-                  <td className="px-4 py-4 text-mist">{executionCount || "-"}</td>
+                  <td className="px-4 py-4 text-white/90">{trade.entryPrice}</td>
+                  <td className="px-4 py-4 text-white/90">{trade.exitPrice ?? "-"}</td>
+                  <td className="px-4 py-4 text-white/90">{trade.quantity}</td>
+                  <td className="px-4 py-4 text-white/90">{executionCount || "-"}</td>
                   <td
                     className={`px-4 py-4 font-semibold ${
                       pnl >= 0 ? "text-mint" : "text-coral"
@@ -62,11 +62,11 @@ function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = tru
                   >
                     {formatCurrency(pnl)}
                   </td>
-                  <td className="px-4 py-4 text-mist">{trade.strategy || "-"}</td>
-                  <td className="px-4 py-4 text-mist">{formatDate(trade.entryDate)}</td>
+                  <td className="px-4 py-4 text-white/90">{trade.strategy || "-"}</td>
+                  <td className="px-4 py-4 text-white/90">{formatDate(trade.entryDate)}</td>
                   {showActions && (
                     <td className="px-4 py-4">
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-nowrap gap-2">
                         <button
                           type="button"
                           onClick={(event) => {
