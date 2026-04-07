@@ -12,7 +12,13 @@ export default {
         coral: "#76c8a8",
         gold: "#baf7de",
         phosphor: "#b8ffd9",
-        coal: "#030504"
+        coal: "#030504",
+        arcade: "#231733",
+        arcade2: "#2d1d46",
+        arcade3: "#171126",
+        cyan: "#59b9ff",
+        amber: "#ffb53f",
+        pink: "#ff75c8"
       },
       boxShadow: {
         glow: "0 18px 60px rgba(0, 0, 0, 0.45)",

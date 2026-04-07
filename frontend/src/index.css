@@ -5,9 +5,10 @@
 :root {
   color: #d5f7e6;
   background:
-    radial-gradient(circle at top left, rgba(114, 243, 198, 0.12), transparent 28%),
-    radial-gradient(circle at bottom right, rgba(114, 243, 198, 0.08), transparent 34%),
-    linear-gradient(180deg, #020403 0%, #07100d 56%, #040806 100%);
+    linear-gradient(180deg, rgba(112, 90, 190, 0.12), transparent 18%),
+    radial-gradient(circle at top left, rgba(129, 104, 230, 0.18), transparent 26%),
+    radial-gradient(circle at top right, rgba(89, 185, 255, 0.08), transparent 30%),
+    linear-gradient(180deg, #120d1d 0%, #181126 48%, #0b0913 100%);
   font-family:
     "Space Mono",
     "IBM Plex Mono",
@@ -25,9 +26,10 @@ body {
   min-height: 100vh;
   color: #d5f7e6;
   background:
-    radial-gradient(circle at top left, rgba(114, 243, 198, 0.12), transparent 28%),
-    radial-gradient(circle at bottom right, rgba(114, 243, 198, 0.08), transparent 34%),
-    linear-gradient(180deg, #020403 0%, #07100d 56%, #040806 100%);
+    linear-gradient(180deg, rgba(112, 90, 190, 0.12), transparent 18%),
+    radial-gradient(circle at top left, rgba(129, 104, 230, 0.18), transparent 26%),
+    radial-gradient(circle at top right, rgba(89, 185, 255, 0.08), transparent 30%),
+    linear-gradient(180deg, #120d1d 0%, #181126 48%, #0b0913 100%);
   letter-spacing: 0.01em;
 }
 
@@ -42,11 +44,13 @@ body::before {
   pointer-events: none;
   z-index: 100;
   background:
-    linear-gradient(rgba(114, 243, 198, 0.025) 50%, rgba(0, 0, 0, 0.06) 50%),
-    linear-gradient(90deg, rgba(114, 243, 198, 0.03), transparent 18%, rgba(114, 243, 198, 0.015));
-  background-size: 100% 4px, 100% 100%;
+    linear-gradient(rgba(255, 255, 255, 0.015) 50%, rgba(0, 0, 0, 0.06) 50%),
+    linear-gradient(90deg, rgba(114, 243, 198, 0.025), transparent 18%, rgba(89, 185, 255, 0.015)),
+    linear-gradient(rgba(129, 104, 230, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(129, 104, 230, 0.08) 1px, transparent 1px);
+  background-size: 100% 4px, 100% 100%, 24px 24px, 24px 24px;
   mix-blend-mode: screen;
-  opacity: 0.35;
+  opacity: 0.3;
 }
 
 input,
