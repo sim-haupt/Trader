@@ -1,16 +1,16 @@
-@import url("https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=VT323&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  color: #252933;
+  color: #f0f1f7;
   background:
-    radial-gradient(circle at top left, rgba(140, 108, 255, 0.14), transparent 22%),
-    radial-gradient(circle at 82% 12%, rgba(107, 125, 255, 0.1), transparent 20%),
-    radial-gradient(circle at bottom right, rgba(255, 184, 77, 0.12), transparent 24%),
-    linear-gradient(180deg, #fbfcfe 0%, #f2f4f8 52%, #eaedf3 100%);
+    radial-gradient(circle at top left, rgba(140, 108, 255, 0.16), transparent 22%),
+    radial-gradient(circle at 82% 12%, rgba(107, 125, 255, 0.12), transparent 18%),
+    radial-gradient(circle at bottom right, rgba(255, 184, 77, 0.1), transparent 22%),
+    linear-gradient(180deg, #17131f 0%, #120f19 58%, #0d0a12 100%);
   font-family:
     "VT323",
     "IBM Plex Mono",
@@ -26,12 +26,12 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  color: #252933;
+  color: #f0f1f7;
   background:
-    radial-gradient(circle at top left, rgba(140, 108, 255, 0.14), transparent 22%),
-    radial-gradient(circle at 82% 12%, rgba(107, 125, 255, 0.1), transparent 20%),
-    radial-gradient(circle at bottom right, rgba(255, 184, 77, 0.12), transparent 24%),
-    linear-gradient(180deg, #fbfcfe 0%, #f2f4f8 52%, #eaedf3 100%);
+    radial-gradient(circle at top left, rgba(140, 108, 255, 0.16), transparent 22%),
+    radial-gradient(circle at 82% 12%, rgba(107, 125, 255, 0.12), transparent 18%),
+    radial-gradient(circle at bottom right, rgba(255, 184, 77, 0.1), transparent 22%),
+    linear-gradient(180deg, #17131f 0%, #120f19 58%, #0d0a12 100%);
   letter-spacing: 0.03em;
 }
 
@@ -46,13 +46,13 @@ body::before {
   pointer-events: none;
   z-index: 100;
   background:
-    linear-gradient(rgba(255, 255, 255, 0.1) 50%, rgba(215, 220, 232, 0.06) 50%),
-    linear-gradient(90deg, rgba(140, 108, 255, 0.018), transparent 18%, rgba(107, 125, 255, 0.012)),
-    linear-gradient(rgba(107, 125, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(107, 125, 255, 0.04) 1px, transparent 1px);
+    linear-gradient(rgba(255, 255, 255, 0.02) 50%, rgba(0, 0, 0, 0.08) 50%),
+    linear-gradient(90deg, rgba(140, 108, 255, 0.02), transparent 18%, rgba(107, 125, 255, 0.015)),
+    linear-gradient(rgba(107, 125, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(107, 125, 255, 0.045) 1px, transparent 1px);
   background-size: 100% 4px, 100% 100%, 24px 24px, 24px 24px;
-  mix-blend-mode: multiply;
-  opacity: 0.35;
+  mix-blend-mode: screen;
+  opacity: 0.26;
 }
 
 input,
@@ -65,57 +65,63 @@ button {
 input,
 select,
 textarea {
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 ::selection {
-  background: rgba(107, 125, 255, 0.24);
-  color: #10131a;
+  background: rgba(107, 125, 255, 0.3);
+  color: #f8f9ff;
 }
 
 @layer components {
   .ui-panel {
-    @apply border-2 border-[#d7dbe3] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(242,244,248,0.98))] shadow-[0_0_0_1px_rgba(255,255,255,0.85),0_14px_36px_rgba(19,27,46,0.08)];
+    @apply border-2 border-[#241c33] bg-[linear-gradient(180deg,rgba(33,26,47,0.98),rgba(20,16,29,0.98))] shadow-[0_0_0_2px_rgba(5,5,7,0.85),6px_6px_0_0_rgba(8,8,11,0.7)];
     border-radius: 0;
   }
 
   .ui-title {
-    font-family: "Silkscreen", monospace;
+    font-family: "Press Start 2P", monospace;
     letter-spacing: 0.08em;
+    line-height: 1.35;
   }
 
   .ui-input {
-    @apply w-full border-2 border-[#d3d8e2] bg-white px-4 py-3 text-phosphor outline-none transition focus:border-cyan;
+    @apply w-full border-2 border-[#2b2240] bg-[#110e18] px-4 py-3 text-[#f1eff9] outline-none transition focus:border-cyan;
     border-radius: 0;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+    box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.45);
   }
 
   .ui-button {
-    @apply border-2 border-[#d3d8e2] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(236,239,245,0.98))] px-5 py-3 font-semibold uppercase tracking-[0.12em] text-phosphor transition hover:border-cyan/45 hover:bg-[#eef2ff] disabled:cursor-not-allowed disabled:opacity-60;
+    @apply border-[3px] border-[#050608] bg-[linear-gradient(180deg,#21443d,#16312d)] px-5 py-3 font-semibold uppercase tracking-[0.08em] text-[#f5f7fb] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60;
     border-radius: 0;
-    font-family: "Silkscreen", monospace;
+    box-shadow: inset -3px -3px 0 rgba(8, 12, 11, 0.55), inset 3px 3px 0 rgba(112, 201, 173, 0.14), 4px 4px 0 rgba(4, 5, 7, 0.85);
+    font-family: "Press Start 2P", monospace;
+    font-size: 0.7rem;
   }
 
   .ui-button-solid {
-    @apply border-2 border-cyan bg-[linear-gradient(180deg,#7d90ff,#5f70e8)] px-5 py-3 font-semibold uppercase tracking-[0.12em] text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply border-[3px] border-[#050608] bg-[linear-gradient(180deg,#8ff0df,#59dac2)] px-5 py-3 font-semibold uppercase tracking-[0.08em] text-[#07110f] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60;
     border-radius: 0;
-    font-family: "Silkscreen", monospace;
+    box-shadow: inset -3px -3px 0 rgba(13, 91, 78, 0.45), inset 3px 3px 0 rgba(235, 255, 251, 0.45), 4px 4px 0 rgba(4, 5, 7, 0.85);
+    font-family: "Press Start 2P", monospace;
+    font-size: 0.7rem;
   }
 
   .ui-chip {
-    @apply inline-flex items-center border border-cyan/30 bg-[linear-gradient(180deg,rgba(125,144,255,0.18),rgba(255,255,255,0.9))] px-3 py-1 uppercase tracking-[0.12em] text-phosphor;
+    @apply inline-flex items-center border-[3px] border-[#050608] bg-[linear-gradient(180deg,#2d2740,#1c1827)] px-3 py-2 uppercase tracking-[0.08em] text-[#f5f7fb];
     border-radius: 0;
-    font-family: "Silkscreen", monospace;
+    box-shadow: inset -3px -3px 0 rgba(7, 7, 11, 0.5), inset 3px 3px 0 rgba(159, 127, 255, 0.12), 4px 4px 0 rgba(4, 5, 7, 0.8);
+    font-family: "Press Start 2P", monospace;
     font-size: 0.7rem;
   }
 
   .ui-notice {
-    @apply border-2 border-cyan/25 bg-[linear-gradient(180deg,rgba(125,144,255,0.14),rgba(255,255,255,0.96))] px-4 py-3 text-sm text-phosphor;
+    @apply border-2 border-[#2a2240] bg-[linear-gradient(180deg,rgba(35,28,49,0.98),rgba(19,15,28,0.98))] px-4 py-3 text-sm text-[#f1eff9];
     border-radius: 0;
   }
 
   .ui-table-shell {
-    @apply overflow-hidden border-2 border-[#d3d8e2] bg-white;
+    @apply overflow-hidden border-2 border-[#2a2240] bg-[#120f19];
     border-radius: 0;
   }
 }
