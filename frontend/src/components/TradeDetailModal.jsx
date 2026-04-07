@@ -88,7 +88,7 @@ function formatInlineMarkdown(text) {
 
 function SummaryMetric({ label, value, accent = "text-white" }) {
   return (
-    <div className="rounded-[18px] border border-black/30 bg-white/[0.03] p-4">
+    <div className="rounded-[18px] border border-[#e5e7eb42] bg-white/[0.03] p-4">
       <p className="ui-title text-[10px] text-white/48">{label}</p>
       <p className={`mt-3 text-2xl font-bold tracking-[-0.04em] ${accent}`}>{value}</p>
     </div>
@@ -101,7 +101,7 @@ function ChartTooltip({ active, payload, label }) {
   }
 
   return (
-    <div className="rounded-2xl border border-black/30 bg-[#0d1016]/95 px-3 py-2 text-xs text-phosphor shadow-[0_20px_50px_rgba(0,0,0,0.42)]">
+    <div className="rounded-2xl border border-[#e5e7eb42] bg-[#0d1016]/95 px-3 py-2 text-xs text-phosphor shadow-[0_20px_50px_rgba(0,0,0,0.42)]">
       <div className="font-medium text-white">{label}</div>
       <div className="mt-1 text-mint">{formatCurrency(payload[0].value)}</div>
     </div>
@@ -307,8 +307,8 @@ function TradeDetailModal({ trade, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 p-4 backdrop-blur">
-      <div className="w-full max-w-[1520px] rounded-[30px] border border-black/30 bg-[linear-gradient(180deg,rgba(16,19,26,0.98),rgba(9,11,16,0.98))] shadow-glow">
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-black/30 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))] px-6 py-5 backdrop-blur">
+      <div className="w-full max-w-[1520px] rounded-[30px] border border-[#e5e7eb42] bg-[linear-gradient(180deg,rgba(16,19,26,0.98),rgba(9,11,16,0.98))] shadow-glow">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-[#e5e7eb42] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))] px-6 py-5 backdrop-blur">
           <div>
             <div className="flex flex-wrap items-center gap-3">
               <h2 className="text-4xl font-bold tracking-[-0.05em] text-white">{activeTrade.symbol}</h2>
@@ -355,7 +355,7 @@ function TradeDetailModal({ trade, onClose }) {
 
           <Card title="TRADER NOTES">
             <div className="space-y-5">
-              <div className="rounded-[18px] border border-black/30 bg-white/[0.03] p-4">
+              <div className="rounded-[18px] border border-[#e5e7eb42] bg-white/[0.03] p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="ui-title text-xs text-white/48">Tags</p>
                   <button
@@ -413,7 +413,7 @@ function TradeDetailModal({ trade, onClose }) {
                 )}
               </div>
 
-              <div className="rounded-[18px] border border-black/30 bg-white/[0.03] p-4">
+              <div className="rounded-[18px] border border-[#e5e7eb42] bg-white/[0.03] p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="ui-title text-xs text-white/48">Notes</p>
                   <button
@@ -455,7 +455,7 @@ function TradeDetailModal({ trade, onClose }) {
                     </div>
                   </div>
                 ) : (
-                  <div className="mt-2 rounded-[16px] border border-black/20 bg-black/10 px-4 py-4">
+                  <div className="mt-2 rounded-[16px] border border-[#e5e7eb33] bg-black/10 px-4 py-4">
                     {activeTrade.notes ? (
                       <div
                         className="prose prose-invert max-w-none text-sm leading-7 text-white/70"

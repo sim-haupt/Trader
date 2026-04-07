@@ -30,7 +30,7 @@ function RegisterPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-10">
-      <div className="w-full max-w-xl rounded-[28px] border border-black/30 bg-[linear-gradient(180deg,rgba(14,16,22,0.96),rgba(8,10,14,0.98))] p-8 shadow-glow sm:p-10">
+      <div className="w-full max-w-xl rounded-[28px] border border-[#e5e7eb42] bg-[linear-gradient(180deg,rgba(14,16,22,0.96),rgba(8,10,14,0.98))] p-8 shadow-glow sm:p-10">
         <div className="mb-8 flex items-center justify-between gap-4">
           <div>
             <p className="ui-title text-xs text-white/45">Start Journaling</p>

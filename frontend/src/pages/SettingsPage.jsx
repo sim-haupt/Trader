@@ -85,7 +85,7 @@ function SettingsPage() {
 
       <Card title="SETTINGS">
         <div className="grid gap-6 xl:grid-cols-[240px_1fr]">
-          <aside className="rounded-[18px] border border-black/20 bg-white/[0.03] p-4">
+          <aside className="rounded-[18px] border border-[#e5e7eb42] bg-white/[0.03] p-4">
             <div className="space-y-2">
               <div className="ui-title text-[11px] text-white/48">Navigation</div>
               <button

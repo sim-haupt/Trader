@@ -15,7 +15,7 @@ function TradeTable({
   return (
     <div className="ui-table-shell">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-black/30 text-sm">
+        <table className="min-w-full divide-y divide-[#e5e7eb1f] text-sm">
           <thead className="bg-[linear-gradient(180deg,rgba(255,255,255,0.024),rgba(255,255,255,0.008))]">
             <tr className="ui-title text-left text-[11px] text-white/58">
               {onToggleSelection && (
@@ -24,7 +24,7 @@ function TradeTable({
                     type="checkbox"
                     checked={allSelected}
                     onChange={() => onToggleAll?.(trades, !allSelected)}
-                    className="h-4 w-4 rounded border-black/40 bg-transparent"
+                    className="h-4 w-4 rounded border-[#e5e7eb42] bg-transparent"
                   />
                 </th>
               )}
@@ -38,7 +38,7 @@ function TradeTable({
               {showActions && <th className="px-4 py-4">ACTIONS</th>}
             </tr>
           </thead>
-          <tbody className="divide-y divide-black/30 bg-transparent">
+          <tbody className="divide-y divide-[#e5e7eb1f] bg-transparent">
             {trades.map((trade, index) => {
               const pnl = Number(trade.netPnl ?? trade.grossPnl ?? 0);
               const executionCount =
@@ -60,9 +60,9 @@ function TradeTable({
                     }
                   }}
                   className={`cursor-pointer transition hover:bg-white/[0.025] focus:bg-white/[0.025] focus:outline-none ${
-                    startsNewDay ? "border-t border-black/40" : ""
+                    startsNewDay ? "border-t border-[#e5e7eb26]" : ""
                   }`}
-                  style={startsNewDay ? { boxShadow: "inset 0 1px 0 rgba(0,0,0,0.35)" } : undefined}
+                  style={startsNewDay ? { boxShadow: "inset 0 1px 0 rgba(229,231,235,0.08)" } : undefined}
                 >
                   {onToggleSelection && (
                     <td className="px-4 py-4">
@@ -74,7 +74,7 @@ function TradeTable({
                           onToggleSelection(trade.id);
                         }}
                         onClick={(event) => event.stopPropagation()}
-                        className="h-4 w-4 rounded border-black/40 bg-transparent"
+                        className="h-4 w-4 rounded border-[#e5e7eb42] bg-transparent"
                       />
                     </td>
                   )}

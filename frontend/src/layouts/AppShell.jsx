@@ -90,7 +90,7 @@ function AppShell() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <div className="rounded-[12px] border border-black/30 bg-white/[0.03] px-4 py-2.5 text-right">
+              <div className="rounded-[12px] border border-[#e5e7eb42] bg-white/[0.03] px-4 py-2.5 text-right">
                 <p className="text-sm font-medium text-white">{user?.name}</p>
                 <p className="mt-0.5 text-xs uppercase tracking-[0.18em] text-white/45">{user?.role}</p>
               </div>

@@ -495,7 +495,7 @@ function TradesPage() {
 
             <Card title="CSV IMPORT">
               <UploadCSV onUpload={handleUpload} isUploading={isUploading} />
-              <div className="ui-notice mt-4 border-dashed border-black/30 text-white/72">
+              <div className="ui-notice mt-4 border-dashed border-[#e5e7eb42] text-white/72">
                 Supported CSVs: <span className="text-phosphor">app format and broker exports with Open Datetime / Entry Price / Exit Price columns</span>
                 <br />
                 Normalized format: <span className="text-phosphor">symbol, side, quantity, entryPrice, entryDate, exitPrice, exitDate, fees, strategy, notes</span>
@@ -689,7 +689,7 @@ function TradesPage() {
               </div>
             )}
 
-            <div className="flex flex-col gap-3 rounded-[12px] border border-black/30 bg-white/[0.02] px-4 py-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col gap-3 rounded-[12px] border border-[#e5e7eb42] bg-white/[0.02] px-4 py-3 md:flex-row md:items-center md:justify-between">
               <div className="text-sm text-white/62">
                 Showing{" "}
                 <span className="font-semibold text-white">

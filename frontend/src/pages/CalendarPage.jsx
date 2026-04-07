@@ -172,7 +172,7 @@ function MonthDetailSection({ month, onClose }) {
                 ? "border-mint/25 bg-mint/10 text-mint"
                 : month.monthPnl < 0
                   ? "border-coral/25 bg-[#2a1111] text-coral"
-                  : "border-black/30 bg-white/5 text-mist"
+                  : "border-[#e5e7eb42] bg-white/5 text-mist"
             }`}
           >
             {formatCurrency(month.monthPnl)}
@@ -184,16 +184,16 @@ function MonthDetailSection({ month, onClose }) {
       }
       className="p-6 shadow-none"
     >
-      <div className="grid grid-cols-8 gap-0 overflow-hidden rounded-[12px] border border-black/30 bg-white/[0.015]">
+      <div className="grid grid-cols-8 gap-0 overflow-hidden rounded-[12px] border border-[#e5e7eb42] bg-white/[0.015]">
         {weekdayLabels.map((label) => (
           <div
             key={label}
-            className="ui-title border-b border-r border-black/30 px-3 py-3 text-center text-xs text-white/78"
+            className="ui-title border-b border-r border-[#e5e7eb42] px-3 py-3 text-center text-xs text-white/78"
           >
             {label}
           </div>
         ))}
-        <div className="ui-title border-b border-black/30 px-3 py-3 text-center text-xs text-white/78">
+        <div className="ui-title border-b border-[#e5e7eb42] px-3 py-3 text-center text-xs text-white/78">
           Total
         </div>
 
@@ -247,7 +247,7 @@ function MonthDetailSection({ month, onClose }) {
                 </div>
               ))}
 
-              <div className="min-h-[118px] border-b border-black/30 px-3 py-3 bg-white/[0.02]">
+              <div className="min-h-[118px] border-b border-[#e5e7eb42] px-3 py-3 bg-white/[0.02]">
                 <div className="ui-title text-sm text-white">Week {index + 1}</div>
                 <div
                   className={`mt-4 text-base font-semibold ${
