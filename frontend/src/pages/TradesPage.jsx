@@ -202,76 +202,6 @@ function TradesPage() {
 
   return (
     <div className="space-y-6">
-      <section className="ui-panel overflow-hidden">
-        <div className="border-b border-white/10 bg-[linear-gradient(90deg,rgba(28,28,28,0.95),rgba(18,18,18,0.9),rgba(10,10,10,0.88))] px-6 py-5">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div>
-              <p className="ui-title text-xs uppercase text-[#ffc14d]">TRADE DECK</p>
-              <h2 className="ui-title mt-3 text-2xl uppercase text-white">
-                {isImportMode ? "Import / Entry Console" : "Execution Ledger"}
-              </h2>
-              <p className="mt-3 max-w-2xl text-base leading-7 text-white/80">
-                {isImportMode
-                  ? "Bring in broker exports, paste raw fills, or capture a manual trade in one focused workspace."
-                  : "Review the journal, inspect executions, and move into import mode only when you actually need to add data."}
-              </p>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2 xl:min-w-[420px] xl:grid-cols-3">
-              <div className="ui-panel px-4 py-4">
-                <p className="ui-title text-xs uppercase text-[#ffc14d]">VISIBLE TRADES</p>
-                <p className="mt-3 text-3xl font-semibold text-white">{trades.length}</p>
-              </div>
-              <div className="ui-panel px-4 py-4">
-                <p className="ui-title text-xs uppercase text-[#ffc14d]">MODE</p>
-                <p className="mt-3 text-2xl font-semibold text-white">
-                  {isImportMode ? "Import" : "Review"}
-                </p>
-              </div>
-              <div className="ui-panel px-4 py-4">
-                <p className="ui-title text-xs uppercase text-[#ffc14d]">ACTIVE FILTER</p>
-                <p className="mt-3 text-2xl font-semibold text-white">
-                  {filters.symbol || filters.strategy || filters.side ? "Scoped" : "All"}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <Card
-        title="TRADE WORKSPACE"
-        action={
-          <button
-            type="button"
-            onClick={() =>
-              setSearchParams(isImportMode ? {} : { mode: "import" }, { replace: true })
-            }
-            className="ui-button-solid text-sm"
-          >
-            {isImportMode ? "Close Import" : "Import Trades"}
-          </button>
-        }
-      >
-        <div className="space-y-4">
-          <Filters filters={filters} onChange={handleFilterChange} onReset={handleResetFilters} />
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap gap-2">
-              <span className="ui-chip">Journal</span>
-              <span className="ui-chip">Search</span>
-              <span className="ui-chip">Replay</span>
-            </div>
-            <button
-              type="button"
-              onClick={handleApplyFilters}
-              className="ui-button-solid text-sm"
-            >
-              Apply Filters
-            </button>
-          </div>
-        </div>
-      </Card>
-
       {isImportMode && (
         <>
           <div className="grid gap-6 xl:grid-cols-[1.05fr_1.35fr]">
@@ -318,16 +248,40 @@ function TradesPage() {
       <Card
         title="TRADE HISTORY"
         action={
-          <button
-            type="button"
-            onClick={handleDeleteAll}
-            disabled={loading || trades.length === 0}
-            className="ui-button border-coral/35 bg-[linear-gradient(180deg,#452222,#2d1616)] text-coral hover:brightness-110"
-          >
-            Delete All Trades
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() =>
+                setSearchParams(isImportMode ? {} : { mode: "import" }, { replace: true })
+              }
+              className="ui-button-solid text-sm"
+            >
+              {isImportMode ? "Close Import" : "Import Trades"}
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteAll}
+              disabled={loading || trades.length === 0}
+              className="ui-button border-coral/35 bg-[linear-gradient(180deg,#452222,#2d1616)] text-coral hover:brightness-110"
+            >
+              Delete All Trades
+            </button>
+          </div>
         }
       >
+        <div className="space-y-4 pb-5">
+          <Filters filters={filters} onChange={handleFilterChange} onReset={handleResetFilters} />
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={handleApplyFilters}
+              className="ui-button-solid text-sm"
+            >
+              Apply Filters
+            </button>
+          </div>
+        </div>
+
         {loading ? (
           <div className="text-sm text-mist">Loading trades...</div>
         ) : trades.length === 0 ? (

@@ -112,7 +112,7 @@ function MonthCard({ month, onOpen }) {
           Open
         </button>
       }
-      className="bg-[linear-gradient(180deg,rgba(28,24,37,0.98),rgba(16,13,23,0.96))] p-6 shadow-none"
+      className="bg-[linear-gradient(180deg,rgba(18,18,18,0.96),rgba(10,10,10,0.98))] p-6 shadow-none"
     >
       <div className="grid grid-cols-7 gap-3 text-center">
         {weekdayLabels.map((label) => (
@@ -145,8 +145,8 @@ function MonthDetailModal({ month, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 p-4 backdrop-blur">
-      <div className="w-full max-w-6xl border-2 border-white/10 bg-[linear-gradient(180deg,rgba(18,18,18,0.98),rgba(10,10,10,0.98))] shadow-crt">
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b-2 border-[#2a2240] bg-[linear-gradient(90deg,rgba(56,56,66,0.72),rgba(34,34,41,0.42),rgba(18,18,22,0.18))] px-6 py-5">
+      <div className="w-full max-w-[1600px] border-2 border-white/10 bg-[linear-gradient(180deg,rgba(18,18,18,0.98),rgba(10,10,10,0.98))] shadow-crt">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b-2 border-white/10 bg-[linear-gradient(90deg,rgba(24,24,24,0.96),rgba(16,16,16,0.92),rgba(10,10,10,0.9))] px-6 py-5">
           <div>
             <p className="ui-title text-xs text-mist">Calendar</p>
             <h2 className="ui-title mt-3 text-2xl text-white">{month.label}</h2>

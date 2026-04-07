@@ -3,6 +3,13 @@ function asNumber(value) {
   return Number.isNaN(numericValue) ? 0 : numericValue;
 }
 
+function getLocalDayKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function startOfDay(date) {
   const next = new Date(date);
   next.setHours(0, 0, 0, 0);
@@ -62,7 +69,7 @@ export function buildAnalytics(trades) {
   const equityCurve = datedTrades.map(({ trade, pnl, entryDate }) => {
     const exitDate = trade.exitDate ? new Date(trade.exitDate) : entryDate;
     const holdMinutes = Math.max(0, (exitDate.getTime() - entryDate.getTime()) / 60000);
-    const dayKey = entryDate.toISOString().slice(0, 10);
+    const dayKey = getLocalDayKey(entryDate);
     const weekday = entryDate.toLocaleDateString("en-US", { weekday: "short" });
 
     if (pnl > 0) {
@@ -139,7 +146,7 @@ export function buildAnalytics(trades) {
   const lastSevenDays = Array.from({ length: 7 }, (_, index) => {
     const day = new Date(latestDayStart);
     day.setDate(latestDayStart.getDate() - (6 - index));
-    const dayKey = day.toISOString().slice(0, 10);
+    const dayKey = getLocalDayKey(day);
     const stats = dailyMap.get(dayKey);
 
     return {

@@ -58,7 +58,11 @@ function AnalyticsCharts({ analytics }) {
             <div key={day.date} className="ui-panel px-4 py-4">
               <p className="ui-title text-xs uppercase text-[#ffc14d]">{day.weekday}</p>
               <p className="mt-2 text-sm text-white/70">{day.label}</p>
-              <p className={`mt-4 text-2xl font-semibold ${day.pnl >= 0 ? "text-mint" : "text-coral"}`}>
+              <p
+                className={`mt-4 text-2xl font-semibold ${
+                  day.trades === 0 ? "text-mist" : day.pnl >= 0 ? "text-mint" : "text-coral"
+                }`}
+              >
                 {formatCurrency(day.pnl)}
               </p>
               <p className="mt-2 text-xs text-white/70">
@@ -69,28 +73,17 @@ function AnalyticsCharts({ analytics }) {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <StatCard
-          label="Net P&L Total"
-          value={formatCurrency(summary.totalPnl)}
-          accent={summary.totalPnl >= 0 ? "mint" : "coral"}
-        />
-        <StatCard
-          label="Net P&L Month"
-          value={formatCurrency(summary.totalMonthPnl)}
-          accent={summary.totalMonthPnl >= 0 ? "mint" : "coral"}
-        />
-        <StatCard
-          label="Net P&L Week"
-          value={formatCurrency(summary.totalWeekPnl)}
-          accent={summary.totalWeekPnl >= 0 ? "mint" : "coral"}
-        />
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
         <StatCard
           label="Net P&L Today"
           value={formatCurrency(summary.totalTodayPnl)}
           accent={summary.totalTodayPnl >= 0 ? "mint" : "coral"}
         />
-        <StatCard label="Win Rate" value={formatPercent(summary.winRate)} accent={winRateAccent} />
+        <StatCard
+          label="Expectancy"
+          value={formatCurrency(summary.expectancy)}
+          accent={summary.expectancy >= 0 ? "mint" : "coral"}
+        />
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[1.28fr_0.64fr_0.64fr]">
@@ -155,9 +148,10 @@ function AnalyticsCharts({ analytics }) {
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <MiniMetric label="WINS" value={summary.wins} tone="text-mint" />
             <MiniMetric label="LOSSES" value={summary.losses} tone="text-coral" />
+            <MiniMetric label="WIN RATE" value={formatPercent(summary.winRate)} tone={winRateAccent === "mint" ? "text-mint" : winRateAccent === "coral" ? "text-coral" : "text-[#ffc14d]"} />
           </div>
         </Card>
 
