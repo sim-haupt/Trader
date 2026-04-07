@@ -205,10 +205,7 @@ function TradesPage() {
       {isImportMode && (
         <>
           <div className="grid gap-6 xl:grid-cols-[1.05fr_1.35fr]">
-            <Card
-              title={title}
-              className="bg-[linear-gradient(180deg,rgba(18,18,18,0.96),rgba(10,10,10,0.98))]"
-            >
+            <Card title={title}>
               <TradeForm
                 trade={selectedTrade}
                 onSubmit={handleSubmit}
@@ -220,12 +217,9 @@ function TradesPage() {
               />
             </Card>
 
-            <Card
-              title="CSV IMPORT"
-              className="bg-[linear-gradient(180deg,rgba(18,18,18,0.96),rgba(10,10,10,0.98))]"
-            >
+            <Card title="CSV IMPORT">
               <UploadCSV onUpload={handleUpload} isUploading={isUploading} />
-              <div className="ui-notice mt-4 border-dashed border-[#3b334e] text-mist">
+              <div className="ui-notice mt-4 border-dashed border-white/15 text-white/72">
                 Supported CSVs: <span className="text-phosphor">app format and broker exports with Open Datetime / Entry Price / Exit Price columns</span>
                 <br />
                 Normalized format: <span className="text-phosphor">symbol, side, quantity, entryPrice, entryDate, exitPrice, exitDate, fees, strategy, notes</span>
@@ -233,10 +227,7 @@ function TradesPage() {
             </Card>
           </div>
 
-          <Card
-            title="TEXT IMPORT"
-            className="bg-[linear-gradient(180deg,rgba(18,18,18,0.96),rgba(10,10,10,0.98))]"
-          >
+          <Card title="TEXT IMPORT">
             <TradeTextImport onImport={handleTextImport} isImporting={isUploading} />
           </Card>
         </>
@@ -262,7 +253,7 @@ function TradesPage() {
               type="button"
               onClick={handleDeleteAll}
               disabled={loading || trades.length === 0}
-              className="ui-button border-coral/35 bg-[linear-gradient(180deg,#452222,#2d1616)] text-coral hover:brightness-110"
+              className="ui-button border-coral/25 bg-coral/10 text-coral"
             >
               Delete All Trades
             </button>

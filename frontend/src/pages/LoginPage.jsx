@@ -31,32 +31,32 @@ function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-10">
-      <div className="grid w-full max-w-5xl overflow-hidden border-2 border-[#2a2240] bg-[linear-gradient(180deg,rgba(16,12,24,0.96),rgba(7,5,11,0.98))] shadow-crt lg:grid-cols-[1.15fr_0.85fr]">
-        <section className="hidden border-r-2 border-[#2a2240] bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.04),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] p-10 lg:block">
-          <p className="ui-title text-xs text-mist">Trading Journal</p>
-          <h1 className="ui-title mt-6 max-w-md text-4xl leading-tight text-white">
+      <div className="grid w-full max-w-5xl overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(14,16,22,0.96),rgba(8,10,14,0.98))] shadow-glow lg:grid-cols-[1.15fr_0.85fr]">
+        <section className="hidden border-r border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(99,167,255,0.12),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(25,195,125,0.08),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] p-10 lg:block">
+          <p className="ui-title text-xs text-white/45">Trading Journal</p>
+          <h1 className="mt-6 max-w-md text-5xl font-bold leading-[1.05] tracking-[-0.05em] text-white">
             Review the tape. Preserve the edge.
           </h1>
-          <p className="mt-6 max-w-lg text-xl text-mist">
+          <p className="mt-6 max-w-lg text-xl leading-8 text-white/68">
             Track execution quality, import broker history, and spot patterns with fast
             analytics built for active traders.
           </p>
           <div className="mt-10 grid gap-4 md:grid-cols-2">
             <div className="ui-panel px-4 py-4">
-              <p className="ui-title text-xs text-mist">Edge Tracking</p>
+              <p className="ui-title text-xs text-white/45">Edge Tracking</p>
               <p className="mt-3 text-2xl font-semibold text-mint">Execution Replay</p>
             </div>
             <div className="ui-panel px-4 py-4">
-              <p className="ui-title text-xs text-mist">Console Mode</p>
+              <p className="ui-title text-xs text-white/45">Console Mode</p>
               <p className="mt-3 text-2xl font-semibold text-white">Review Ready</p>
             </div>
           </div>
         </section>
 
         <section className="p-8 sm:p-10">
-          <p className="ui-title text-xs text-mist">Access Node</p>
-          <h2 className="ui-title mt-4 text-3xl text-white">Welcome Back</h2>
-          <p className="mt-3 text-lg text-mist">Sign in to continue managing your journal.</p>
+          <p className="ui-title text-xs text-white/45">Access</p>
+          <h2 className="mt-4 text-4xl font-bold tracking-[-0.04em] text-white">Welcome back</h2>
+          <p className="mt-3 text-lg text-white/64">Sign in to continue managing your journal.</p>
 
           <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
             <input
@@ -89,9 +89,9 @@ function LoginPage() {
             </button>
           </form>
 
-          <p className="mt-6 text-lg text-mist">
+          <p className="mt-6 text-lg text-white/64">
             New here?{" "}
-            <Link to="/register" className="ui-title text-white">
+            <Link to="/register" className="font-semibold text-white underline decoration-white/20 underline-offset-4">
               Create an account
             </Link>
           </p>

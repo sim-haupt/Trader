@@ -26,8 +26,8 @@ import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 
 function SummaryMetric({ label, value, accent = "text-white" }) {
   return (
-    <div className="ui-panel bg-[linear-gradient(180deg,rgba(26,21,36,0.92),rgba(14,10,20,0.98))] p-4">
-      <p className="ui-title text-xs text-mist">{label}</p>
+    <div className="ui-panel p-4">
+      <p className="ui-title text-xs text-white/58">{label}</p>
       <p className={`mt-3 text-2xl font-semibold ${accent}`}>{value}</p>
     </div>
   );
@@ -136,13 +136,13 @@ function TradeDetailModal({ trade, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 p-4 backdrop-blur">
-      <div className="w-full max-w-[1500px] border-2 border-[#2a2240] bg-[linear-gradient(180deg,rgba(18,13,28,0.98),rgba(8,6,12,0.98))] shadow-crt">
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b-2 border-[#2a2240] bg-[linear-gradient(90deg,rgba(56,56,66,0.72),rgba(34,34,41,0.42),rgba(18,18,22,0.18))] px-6 py-5 backdrop-blur">
+      <div className="w-full max-w-[1500px] rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(14,16,22,0.98),rgba(8,10,14,0.98))] shadow-glow">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))] px-6 py-5 backdrop-blur">
           <div>
             <div className="flex flex-wrap items-center gap-3">
               <h2 className="ui-title text-3xl text-white">{activeTrade.symbol}</h2>
               <span
-                className={`inline-flex border px-3 py-1 text-[11px] font-semibold ${
+                className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold ${
                   activeTrade.side === "LONG" ? "bg-mint/15 text-mint" : "bg-coral/15 text-coral"
                 }`}
               >
@@ -158,7 +158,7 @@ function TradeDetailModal({ trade, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="ui-button border-coral/35 bg-[linear-gradient(180deg,#452222,#2d1616)] text-sm text-coral hover:brightness-110"
+              className="ui-button border-coral/25 bg-coral/10 text-sm text-coral"
             >
               Close
             </button>
@@ -185,7 +185,6 @@ function TradeDetailModal({ trade, onClose }) {
           <Card
             title="Executions"
             subtitle="Stored execution rows for this trade. This table is pinned near the top so it is visible immediately when the trade opens."
-            className="bg-[linear-gradient(180deg,rgba(28,24,37,0.98),rgba(16,13,23,0.96))]"
           >
             <TimelineTable rows={tradeTimeline} />
           </Card>
@@ -193,7 +192,6 @@ function TradeDetailModal({ trade, onClose }) {
           <Card
             title="Execution Review Charts"
             subtitle="Custom 1 minute chart with execution markers drawn at the exact execution price."
-            className="bg-[linear-gradient(180deg,rgba(28,24,37,0.98),rgba(16,13,23,0.96))]"
           >
             <TradeReviewCharts trade={activeTrade} />
           </Card>

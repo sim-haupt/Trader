@@ -21,7 +21,7 @@ function UploadCSV({ onUpload, isUploading }) {
         type="file"
         accept=".csv,text/csv"
         onChange={(event) => setFile(event.target.files?.[0] || null)}
-        className="block w-full border-2 border-dashed border-white/15 bg-black/55 px-4 py-3 text-sm text-white file:mr-4 file:border-[3px] file:border-[#050608] file:bg-[linear-gradient(180deg,#2e3139,#1e2128)] file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:brightness-110"
+        className="block w-full rounded-2xl border border-dashed border-white/15 bg-white/[0.03] px-4 py-3 text-sm text-white file:mr-4 file:rounded-xl file:border file:border-white/10 file:bg-white/90 file:px-4 file:py-2 file:text-sm file:font-medium file:text-black hover:file:brightness-105"
       />
       <button
         type="submit"

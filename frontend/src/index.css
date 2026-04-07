@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -7,49 +7,22 @@
 :root,
 body,
 body[data-theme="dark"] {
-  --bg: #000000;
-  --panel: #0a0a0a;
-  --panel-2: #141414;
-  --ink: #f3f3f3;
-  --navy: #111111;
-  --line: #000000;
-  --shadow: #000000;
-  --paper: #111111;
-  --blue: #7bc6ff;
-  --green: #74f0a7;
-  --orange: #ffc14d;
-  --red: #ff6174;
-  --pink: #ff8fd9;
-  --purple: #2f2f2f;
-  --grid: rgba(255, 255, 255, 0.07);
-  --body-top: rgba(255, 255, 255, 0.08);
-  --body-start: #050505;
-  --body-end: #000000;
-  --overlay-opacity: 0.2;
-  --scanline-opacity: 0.15;
-  --frame-outline: #1d1d1d;
-  --frame-highlight: rgba(255, 255, 255, 0.05);
-  --status-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 45%), var(--panel);
-  --widget-title-bg: linear-gradient(90deg, #111111, #1b1b1b);
-  --widget-body-bg:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 40%),
-    linear-gradient(180deg, var(--panel-2), var(--panel));
-  --hero-bg:
-    radial-gradient(circle at center, rgba(255, 255, 255, 0.06), transparent 42%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 60%),
-    #0d0d0d;
-  --notes-bg:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
-    var(--paper);
-  --footer-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 45%), var(--panel);
-  --button-bg: linear-gradient(180deg, #1b1b1b, #0f0f0f);
-  --action-bg: linear-gradient(180deg, #2a2a2a, #111111);
-  --separator: rgba(255, 255, 255, 0.16);
-  --row-line: rgba(255, 255, 255, 0.12);
-  --subtle-text: #a9a9a9;
-  --track-green: #74f0a7;
-  --track-blue: #7bc6ff;
-  --track-orange: #ffc14d;
+  --bg-0: #06070a;
+  --bg-1: #0b0d12;
+  --bg-2: #10131a;
+  --panel: rgba(16, 19, 26, 0.86);
+  --panel-strong: rgba(12, 14, 20, 0.96);
+  --panel-soft: rgba(255, 255, 255, 0.03);
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.14);
+  --text: #f4f7fb;
+  --text-soft: #a0a8b8;
+  --text-dim: #7a8291;
+  --mint: #19c37d;
+  --red: #ff5d6c;
+  --yellow: #f6c453;
+  --blue: #63a7ff;
+  --shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
 }
 
 * {
@@ -64,11 +37,12 @@ body {
 }
 
 body {
-  font-family: "Press Start 2P", cursive;
+  font-family: "Space Grotesk", sans-serif;
   background:
-    radial-gradient(circle at top, var(--body-top), transparent 30%),
-    linear-gradient(180deg, var(--body-start), var(--body-end) 80%);
-  color: var(--ink);
+    radial-gradient(circle at top left, rgba(99, 167, 255, 0.1), transparent 28%),
+    radial-gradient(circle at top right, rgba(25, 195, 125, 0.08), transparent 24%),
+    linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 38%, var(--bg-0) 100%);
+  color: var(--text);
 }
 
 #root {
@@ -80,11 +54,12 @@ body::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background-image:
-    linear-gradient(var(--grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-  background-size: 22px 22px;
-  opacity: var(--overlay-opacity);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(circle at center, black, transparent 92%);
+  opacity: 0.5;
 }
 
 body::after {
@@ -92,13 +67,7 @@ body::after {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background: repeating-linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.04) 0 2px,
-    rgba(0, 0, 0, 0.04) 2px 4px
-  );
-  mix-blend-mode: soft-light;
-  opacity: var(--scanline-opacity);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 20%);
 }
 
 input,
@@ -115,8 +84,8 @@ textarea {
 }
 
 ::selection {
-  background: rgba(123, 198, 255, 0.25);
-  color: var(--ink);
+  background: rgba(99, 167, 255, 0.25);
+  color: var(--text);
 }
 
 @layer components {
@@ -125,148 +94,157 @@ textarea {
     min-height: 100vh;
     display: grid;
     place-items: start center;
-    padding: 18px;
+    padding: 28px;
   }
 
   .desktop-frame {
-    width: min(100%, 1980px);
-    min-height: calc(100vh - 36px);
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 30%),
-      linear-gradient(180deg, var(--panel-2), var(--panel));
-    border: 4px solid var(--line);
-    box-shadow:
-      0 0 0 4px var(--frame-outline),
-      0 0 0 8px var(--line),
-      12px 12px 0 var(--shadow);
+    width: min(100%, 1680px);
+    min-height: calc(100vh - 56px);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 22%);
     display: grid;
     grid-template-rows: auto 1fr;
-    gap: 16px;
-    padding: 18px;
+    gap: 20px;
+    padding: 0;
   }
 
   .top-status {
-    border: 4px solid var(--line);
-    box-shadow:
-      0 0 0 3px var(--frame-highlight),
-      6px 6px 0 var(--shadow);
-    background: var(--status-bg);
-    padding: 14px 18px;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015)),
+      rgba(10, 12, 18, 0.84);
+    backdrop-filter: blur(18px);
+    box-shadow: var(--shadow);
+    padding: 16px 20px;
   }
 
   .ui-panel {
-    border: 4px solid var(--line);
-    box-shadow:
-      0 0 0 3px var(--frame-highlight),
-      6px 6px 0 var(--shadow);
-    background: var(--widget-body-bg);
-    border-radius: 0;
     overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015) 24%, transparent 100%),
+      var(--panel);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(14px);
   }
 
   .ui-title {
-    font-family: "Press Start 2P", cursive;
-    line-height: 1.5;
-    letter-spacing: 0.04em;
-    text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35);
+    font-family: "IBM Plex Mono", monospace;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    line-height: 1.35;
   }
 
   .ui-input {
     width: 100%;
-    border: 4px solid var(--line);
-    background: var(--panel);
-    color: var(--ink);
-    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text);
+    padding: 13px 15px;
     outline: none;
-    transition: filter 120ms ease;
-    border-radius: 0;
-    box-shadow: 4px 4px 0 var(--shadow);
-    font-size: 0.7rem;
+    font-size: 0.92rem;
+    transition:
+      border-color 140ms ease,
+      background-color 140ms ease,
+      box-shadow 140ms ease;
   }
 
   .ui-input:focus {
-    filter: brightness(1.08);
+    border-color: rgba(99, 167, 255, 0.45);
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 0 0 4px rgba(99, 167, 255, 0.12);
   }
 
   .ui-button,
   .ui-button-solid,
   .ui-chip {
-    border: 4px solid var(--line);
-    font-family: "Press Start 2P", cursive;
-    border-radius: 0;
-    text-transform: uppercase;
-    box-shadow: 4px 4px 0 var(--shadow);
-  }
-
-  .ui-button {
-    background: var(--button-bg);
-    color: var(--ink);
-    padding: 10px 12px;
-    transition: filter 120ms ease;
-    font-size: 0.52rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    transition:
+      transform 120ms ease,
+      border-color 120ms ease,
+      background-color 120ms ease,
+      filter 120ms ease;
   }
 
   .ui-button:hover,
   .ui-button-solid:hover,
   .ui-chip:hover {
-    filter: brightness(1.08);
+    transform: translateY(-1px);
+    filter: brightness(1.03);
+  }
+
+  .ui-button {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text);
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    font-weight: 500;
   }
 
   .ui-button-solid {
-    background: var(--blue);
-    color: var(--line);
-    padding: 10px 12px;
-    font-size: 0.52rem;
+    background: linear-gradient(180deg, #ffffff, #dfe6ef);
+    color: #090b0f;
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    font-weight: 700;
   }
 
   .ui-chip {
-    background: var(--button-bg);
-    color: var(--ink);
-    padding: 8px 10px 6px;
-    display: inline-flex;
-    align-items: center;
-    font-size: 0.46rem;
-    line-height: 1.4;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-soft);
+    padding: 8px 12px;
+    font-size: 0.74rem;
+    font-weight: 500;
   }
 
   .ui-notice {
-    border: 4px solid var(--line);
-    box-shadow:
-      0 0 0 3px var(--frame-highlight),
-      6px 6px 0 var(--shadow);
-    background: var(--notes-bg);
-    color: var(--ink);
-    padding: 14px 18px;
-    border-radius: 0;
-    font-size: 0.65rem;
-    line-height: 1.7;
+    border: 1px solid var(--line-strong);
+    border-radius: 18px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015));
+    color: var(--text);
+    padding: 14px 16px;
+    font-size: 0.92rem;
+    line-height: 1.6;
+    box-shadow: var(--shadow);
   }
 
   .ui-table-shell {
     overflow: hidden;
-    border: 4px solid var(--line);
-    box-shadow:
-      0 0 0 3px var(--frame-highlight),
-      6px 6px 0 var(--shadow);
-    background: var(--panel);
-    border-radius: 0;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    background: var(--panel-strong);
+    box-shadow: var(--shadow);
   }
 }
 
 @media (max-width: 1180px) {
   .app-shell {
-    padding: 10px;
+    padding: 16px;
   }
 
   .desktop-frame {
-    min-height: calc(100vh - 20px);
-    padding: 12px;
-    gap: 12px;
+    min-height: calc(100vh - 32px);
+    gap: 16px;
   }
 }
 
 @media (max-width: 700px) {
+  .app-shell {
+    padding: 12px;
+  }
+
   .desktop-frame {
-    min-height: calc(100vh - 20px);
+    min-height: calc(100vh - 24px);
   }
 }

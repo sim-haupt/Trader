@@ -26,19 +26,21 @@ function AppShell() {
     <div className="app-shell">
       <div className="desktop-frame">
         <header className="top-status sticky top-0 z-20">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-            <nav className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <nav className="flex flex-wrap items-center gap-2">
               {navigationItems.map((item) => (
                 <NavLink
                   key={item.path}
                   to={item.path}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 text-[11px] uppercase transition ${
-                      isActive ? "ui-button-solid" : "ui-button"
+                    `flex items-center gap-2 px-4 py-2.5 text-sm transition ${
+                      isActive
+                        ? "ui-button-solid shadow-[0_10px_30px_rgba(255,255,255,0.14)]"
+                        : "ui-button bg-white/[0.03] text-white/92"
                     }`
                   }
                 >
-                  <span className={location.pathname.startsWith(item.path) ? "text-black" : "text-white"}>
+                  <span className={location.pathname.startsWith(item.path) ? "text-black" : "text-white/80"}>
                     <NavIcon path={item.icon} />
                   </span>
                   {item.label}
@@ -49,12 +51,14 @@ function AppShell() {
                 <NavLink
                   to="/admin"
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 text-[11px] uppercase transition ${
-                      isActive ? "ui-button-solid" : "ui-button"
+                    `flex items-center gap-2 px-4 py-2.5 text-sm transition ${
+                      isActive
+                        ? "ui-button-solid shadow-[0_10px_30px_rgba(255,255,255,0.14)]"
+                        : "ui-button bg-white/[0.03] text-white/92"
                     }`
                   }
                 >
-                  <span className={location.pathname.startsWith("/admin") ? "text-black" : "text-white"}>
+                  <span className={location.pathname.startsWith("/admin") ? "text-black" : "text-white/80"}>
                     <NavIcon path="M12 3l7 4v10l-7 4-7-4V7l7-4zm0 5v4m0 4h.01" />
                   </span>
                   Admin
@@ -64,20 +68,21 @@ function AppShell() {
               <button
                 type="button"
                 onClick={() => navigate("/trades?mode=import")}
-                className="ui-button px-4 py-3 text-[11px] !bg-white !text-black"
+                className="ui-button-solid px-4 py-2.5 text-sm !bg-[#f6c453] !text-black shadow-[0_10px_30px_rgba(246,196,83,0.22)]"
               >
                 Import Trades
               </button>
             </nav>
 
             <div className="flex flex-wrap items-center gap-3">
-              <div className="text-right">
-                <p className="ui-title text-[10px] text-white">{user?.name}</p>
+              <div className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-right">
+                <p className="text-sm font-medium text-white">{user?.name}</p>
+                <p className="mt-0.5 text-xs uppercase tracking-[0.18em] text-white/45">{user?.role}</p>
               </div>
               <button
                 type="button"
                 onClick={logout}
-                className="ui-button px-4 py-3 text-[11px]"
+                className="ui-button px-4 py-2.5 text-sm text-white/92"
               >
                 Logout
               </button>
@@ -85,7 +90,7 @@ function AppShell() {
           </div>
         </header>
 
-        <main className="min-h-0 px-1 py-2 sm:px-2 xl:px-2">
+        <main className="min-h-0 px-1 py-1 sm:px-1 xl:px-1">
           <Outlet />
         </main>
       </div>

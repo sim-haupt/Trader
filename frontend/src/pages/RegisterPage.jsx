@@ -30,15 +30,15 @@ function RegisterPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-10">
-      <div className="w-full max-w-xl border-2 border-[#2a2240] bg-[linear-gradient(180deg,rgba(16,12,24,0.96),rgba(7,5,11,0.98))] p-8 shadow-crt sm:p-10">
+      <div className="w-full max-w-xl rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(14,16,22,0.96),rgba(8,10,14,0.98))] p-8 shadow-glow sm:p-10">
         <div className="mb-8 flex items-center justify-between gap-4">
           <div>
-            <p className="ui-title text-xs text-mist">Start Journaling</p>
-            <h1 className="ui-title mt-4 text-3xl text-white">Create Your Account</h1>
+            <p className="ui-title text-xs text-white/45">Start Journaling</p>
+            <h1 className="mt-4 text-4xl font-bold tracking-[-0.04em] text-white">Create your account</h1>
           </div>
-          <div className="ui-chip">New Pilot</div>
+          <div className="ui-chip">New</div>
         </div>
-        <p className="mt-3 text-lg text-mist">
+        <p className="mt-3 text-lg text-white/64">
           Build a repeatable review process around every trade you take.
         </p>
 
@@ -81,9 +81,9 @@ function RegisterPage() {
           </button>
         </form>
 
-        <p className="mt-6 text-lg text-mist">
+        <p className="mt-6 text-lg text-white/64">
           Already have an account?{" "}
-          <Link to="/login" className="ui-title text-white">
+          <Link to="/login" className="font-semibold text-white underline decoration-white/20 underline-offset-4">
             Sign in
           </Link>
         </p>

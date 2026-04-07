@@ -5,8 +5,8 @@ function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = tru
     <div className="ui-table-shell">
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-white/10 text-sm">
-          <thead className="bg-[linear-gradient(90deg,rgba(24,24,24,0.96),rgba(16,16,16,0.92),rgba(10,10,10,0.9))]">
-            <tr className="ui-title text-left text-[11px] text-mist">
+          <thead className="bg-white/[0.04]">
+            <tr className="ui-title text-left text-[11px] text-white/58">
               <th className="px-4 py-4">DATE</th>
               <th className="px-4 py-4">SYMBOL</th>
               <th className="px-4 py-4">ENTRY</th>
@@ -17,7 +17,7 @@ function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = tru
               {showActions && <th className="px-4 py-4">ACTIONS</th>}
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/10 bg-[linear-gradient(180deg,rgba(16,16,16,0.86),rgba(8,8,8,0.92))]">
+          <tbody className="divide-y divide-white/10 bg-transparent">
             {trades.map((trade) => {
               const pnl = Number(trade.netPnl ?? trade.grossPnl ?? 0);
               const executionCount =
@@ -35,10 +35,10 @@ function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = tru
                       onSelectTrade?.(trade);
                     }
                   }}
-                  className="cursor-pointer transition hover:bg-white/5 focus:bg-white/5 focus:outline-none"
+                  className="cursor-pointer transition hover:bg-white/[0.035] focus:bg-white/[0.035] focus:outline-none"
                 >
-                  <td className="px-4 py-4 text-white/90">{formatDate(trade.entryDate)}</td>
-                  <td className="px-4 py-4 ui-title text-white">{trade.symbol}</td>
+                  <td className="px-4 py-4 text-white/88">{formatDate(trade.entryDate)}</td>
+                  <td className="px-4 py-4 text-base font-semibold text-white">{trade.symbol}</td>
                   <td className="px-4 py-4 text-white/90">{trade.entryPrice}</td>
                   <td className="px-4 py-4 text-white/90">{trade.exitPrice ?? "-"}</td>
                   <td className="px-4 py-4 text-white/90">{trade.quantity}</td>
@@ -69,7 +69,7 @@ function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = tru
                             event.stopPropagation();
                             onDelete(trade);
                           }}
-                          className="ui-button border-coral/35 bg-[linear-gradient(180deg,#452222,#2d1616)] px-3 py-1.5 text-[11px] text-coral hover:brightness-110"
+                          className="ui-button border-coral/25 bg-coral/10 px-3 py-1.5 text-[11px] text-coral"
                         >
                           Delete
                         </button>

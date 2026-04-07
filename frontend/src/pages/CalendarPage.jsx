@@ -112,7 +112,7 @@ function MonthCard({ month, onOpen }) {
           Open
         </button>
       }
-      className="bg-[linear-gradient(180deg,rgba(18,18,18,0.96),rgba(10,10,10,0.98))] p-6 shadow-none"
+      className="p-6 shadow-none"
     >
       <div className="grid grid-cols-7 gap-3 text-center">
         {weekdayLabels.map((label) => (
@@ -162,7 +162,7 @@ function MonthDetailSection({ month, onClose }) {
           </button>
         </div>
       }
-      className="bg-[linear-gradient(180deg,rgba(18,18,18,0.98),rgba(10,10,10,0.98))] p-6 shadow-none"
+      className="p-6 shadow-none"
     >
       <div className="grid grid-cols-8 gap-0 overflow-hidden border-2 border-white/10">
         {weekdayLabels.map((label) => (
