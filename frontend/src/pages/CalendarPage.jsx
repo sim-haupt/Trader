@@ -89,14 +89,14 @@ function getDayTone(stats, isCurrentMonth) {
   }
 
   if (stats.pnl > 0) {
-    return "border border-mint/45 bg-[linear-gradient(180deg,rgba(24,200,122,0.12),rgba(24,200,122,0.04))] text-mint";
+    return "bg-[linear-gradient(180deg,rgba(24,200,122,0.12),rgba(24,200,122,0.04))] text-mint";
   }
 
   if (stats.pnl < 0) {
-    return "border border-coral/45 bg-[linear-gradient(180deg,rgba(255,93,87,0.12),rgba(255,93,87,0.04))] text-coral";
+    return "bg-[linear-gradient(180deg,rgba(255,93,87,0.12),rgba(255,93,87,0.04))] text-coral";
   }
 
-  return "border border-[#e5e7eb42] bg-white/[0.03] text-phosphor";
+  return "bg-white/[0.03] text-phosphor";
 }
 
 function getDayBorderStyle(stats, isCurrentMonth) {
@@ -105,18 +105,18 @@ function getDayBorderStyle(stats, isCurrentMonth) {
   }
 
   if (!stats) {
-    return { borderColor: "transparent" };
+    return undefined;
   }
 
   if (stats.pnl > 0) {
-    return { borderColor: "rgba(45, 212, 143, 0.55)" };
+    return { boxShadow: "inset 0 0 0 1px rgba(45, 212, 143, 0.55)" };
   }
 
   if (stats.pnl < 0) {
-    return { borderColor: "rgba(255, 107, 107, 0.55)" };
+    return { boxShadow: "inset 0 0 0 1px rgba(255, 107, 107, 0.55)" };
   }
 
-  return { borderColor: "rgba(229, 231, 235, 0.26)" };
+  return { boxShadow: "inset 0 0 0 1px rgba(229, 231, 235, 0.26)" };
 }
 
 function MonthCard({ month, onOpen }) {
@@ -144,7 +144,7 @@ function MonthCard({ month, onOpen }) {
         {month.weeks.flat().map((day) => (
           <div
             key={day.dayKey}
-            className={`rounded-[10px] px-2 py-3 text-lg font-medium transition ${getDayTone(
+            className={`rounded-[2px] px-2 py-3 text-lg font-medium transition ${getDayTone(
               day.stats,
               day.isCurrentMonth
             )}`}
@@ -217,7 +217,7 @@ function MonthDetailSection({ month, onClose }) {
               {week.map((day) => (
                 <div
                   key={day.dayKey}
-                  className={`min-h-[118px] border-b border-r px-3 py-3 text-left transition ${getDayTone(
+                  className={`min-h-[118px] rounded-[2px] border-b border-r px-3 py-3 text-left transition ${getDayTone(
                     day.stats,
                     day.isCurrentMonth
                   )}`}

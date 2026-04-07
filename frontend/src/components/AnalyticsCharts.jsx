@@ -102,13 +102,22 @@ function ChartTooltipContent({ active, payload, label }) {
     return null;
   }
 
-  const value = Number(payload[0].value || 0);
+  const item = payload[0];
+  const value = Number(item.value || 0);
+  const dataKey = item.dataKey;
+  let formattedValue = formatCurrency(value);
+
+  if (dataKey === "winRate") {
+    formattedValue = `${value}%`;
+  } else if (dataKey === "volume") {
+    formattedValue = value.toLocaleString("en-US");
+  }
 
   return (
     <div className="rounded-[12px] border border-white/10 bg-[#171d29]/95 px-3 py-2 shadow-[0_18px_40px_rgba(0,0,0,0.32)] backdrop-blur">
       <div className="text-xs font-medium text-white/72">{label}</div>
       <div className={`mt-1 text-sm font-semibold ${value >= 0 ? "text-mint" : "text-coral"}`}>
-        {typeof value === "number" && label?.includes("%") ? `${value}%` : formatCurrency(value)}
+        {formattedValue}
       </div>
     </div>
   );
