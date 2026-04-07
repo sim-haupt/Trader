@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -12,6 +13,50 @@ import {
 } from "recharts";
 import Card from "./ui/Card";
 import { formatCurrency, formatPercent } from "../utils/formatters";
+
+export const DEFAULT_DASHBOARD_LAYOUT = [
+  { id: "cumulative", span: 2 },
+  { id: "expectancy", span: 1 },
+  { id: "riskReward", span: 1 },
+  { id: "winStats", span: 2 },
+  { id: "drawdown", span: 2 },
+  { id: "performanceWeekday", span: 1 },
+  { id: "performancePrice", span: 1 },
+  { id: "performanceHourSummary", span: 1 },
+  { id: "performanceTimeChart", span: 2 },
+  { id: "grossDaily", span: 2 },
+  { id: "winPct", span: 2 },
+  { id: "dailyVolume", span: 2 },
+  { id: "streaks", span: 1 }
+];
+
+const WIDGET_IDS = new Set(DEFAULT_DASHBOARD_LAYOUT.map((item) => item.id));
+
+export function normalizeDashboardLayout(layout) {
+  const safeLayout = Array.isArray(layout) ? layout : [];
+  const seen = new Set();
+  const normalized = [];
+
+  for (const item of safeLayout) {
+    if (!item || !WIDGET_IDS.has(item.id) || seen.has(item.id)) {
+      continue;
+    }
+
+    seen.add(item.id);
+    normalized.push({
+      id: item.id,
+      span: item.span === 2 ? 2 : 1
+    });
+  }
+
+  for (const fallback of DEFAULT_DASHBOARD_LAYOUT) {
+    if (!seen.has(fallback.id)) {
+      normalized.push(fallback);
+    }
+  }
+
+  return normalized;
+}
 
 function tooltipStyle() {
   return {
@@ -31,12 +76,10 @@ function ChartTooltipContent({ active, payload, label }) {
   const value = Number(payload[0].value || 0);
 
   return (
-    <div
-      className="rounded-[12px] border border-white/10 bg-[#171d29]/95 px-3 py-2 shadow-[0_18px_40px_rgba(0,0,0,0.32)] backdrop-blur"
-    >
+    <div className="rounded-[12px] border border-white/10 bg-[#171d29]/95 px-3 py-2 shadow-[0_18px_40px_rgba(0,0,0,0.32)] backdrop-blur">
       <div className="text-xs font-medium text-white/72">{label}</div>
       <div className={`mt-1 text-sm font-semibold ${value >= 0 ? "text-mint" : "text-coral"}`}>
-        {formatCurrency(value)}
+        {typeof value === "number" && label?.includes("%") ? `${value}%` : formatCurrency(value)}
       </div>
     </div>
   );
@@ -86,7 +129,10 @@ function BreakdownRows({ entries }) {
               </div>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-white/10">
-              <div className={`h-full rounded-full ${tone}`} style={{ width: `${width}%`, opacity: entry.pnl === 0 ? 0.22 : 0.9 }} />
+              <div
+                className={`h-full rounded-full ${tone}`}
+                style={{ width: `${width}%`, opacity: entry.pnl === 0 ? 0.22 : 0.9 }}
+              />
             </div>
           </div>
         );
@@ -95,7 +141,17 @@ function BreakdownRows({ entries }) {
   );
 }
 
-function AnalyticsCharts({ analytics }) {
+function widgetSpanClass(span) {
+  return span === 2 ? "md:col-span-2 xl:col-span-2" : "";
+}
+
+function AnalyticsCharts({
+  analytics,
+  layout = DEFAULT_DASHBOARD_LAYOUT,
+  editing = false,
+  onReorder,
+  onToggleSpan
+}) {
   const {
     summary,
     equityCurve,
@@ -110,78 +166,72 @@ function AnalyticsCharts({ analytics }) {
     dailyVolumeThirtyDays
   } = analytics;
 
-  return (
-    <div className="space-y-6">
-      <div className="ui-panel border-[#e5e7eb42] p-5">
-        <div className="grid gap-3 md:grid-cols-7">
-          {lastSevenDays.map((day) => (
-            <div
-              key={day.date}
-              className="rounded-[10px] border border-[#e5e7eb42] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.008))] px-4 py-4"
-            >
-              <p className="ui-title text-[10px] uppercase text-white/45">{day.weekday}</p>
-              <p className="mt-2 text-sm text-white/62">{day.label}</p>
-              <p
-                className={`mt-4 text-2xl font-bold tracking-[-0.04em] ${
-                  day.trades === 0 ? "text-mist" : day.pnl >= 0 ? "text-mint" : "text-coral"
-                }`}
-              >
-                {formatCurrency(day.pnl)}
-              </p>
-              <p className="mt-2 text-xs text-white/56">
-                {day.trades} trade{day.trades === 1 ? "" : "s"}
-              </p>
+  const [draggedId, setDraggedId] = useState(null);
+
+  const widgets = useMemo(
+    () => [
+      {
+        id: "cumulative",
+        title: "CUMULATIVE P&L",
+        defaultSpan: 2,
+        body: (
+          <>
+            <div className="mb-5 grid gap-3 md:grid-cols-4">
+              <MiniMetric label="TOTAL" value={formatCurrency(summary.totalPnl)} tone={toneForValue(summary.totalPnl)} />
+              <MiniMetric label="MONTH" value={formatCurrency(summary.totalMonthPnl)} tone={toneForValue(summary.totalMonthPnl)} />
+              <MiniMetric label="WEEK" value={formatCurrency(summary.totalWeekPnl)} tone={toneForValue(summary.totalWeekPnl)} />
+              <MiniMetric label="TODAY" value={formatCurrency(summary.totalTodayPnl)} tone={toneForValue(summary.totalTodayPnl)} />
             </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid gap-5 xl:grid-cols-4">
-        <Card title="CUMULATIVE P&L" className="xl:col-span-2 xl:row-span-2">
-          <div className="mb-5 grid gap-3 md:grid-cols-4">
-            <MiniMetric label="TOTAL" value={formatCurrency(summary.totalPnl)} tone={toneForValue(summary.totalPnl)} />
-            <MiniMetric label="MONTH" value={formatCurrency(summary.totalMonthPnl)} tone={toneForValue(summary.totalMonthPnl)} />
-            <MiniMetric label="WEEK" value={formatCurrency(summary.totalWeekPnl)} tone={toneForValue(summary.totalWeekPnl)} />
-            <MiniMetric label="TODAY" value={formatCurrency(summary.totalTodayPnl)} tone={toneForValue(summary.totalTodayPnl)} />
-          </div>
-
-          <div className="h-[420px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={equityCurve}>
-                <defs>
-                  <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#2be28c" stopOpacity={0.22} />
-                    <stop offset="55%" stopColor="#2be28c" stopOpacity={0.08} />
-                    <stop offset="100%" stopColor="#2be28c" stopOpacity={0.01} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                <Tooltip contentStyle={tooltipStyle()} />
-                <Area type="monotone" dataKey="equity" stroke="#18c87a" strokeWidth={3} fill="url(#equityGradient)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-
-        <Card title="EXPECTANCY">
+            <div className="h-[420px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={equityCurve}>
+                  <defs>
+                    <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#2be28c" stopOpacity={0.22} />
+                      <stop offset="55%" stopColor="#2be28c" stopOpacity={0.08} />
+                      <stop offset="100%" stopColor="#2be28c" stopOpacity={0.01} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
+                  <Tooltip contentStyle={tooltipStyle()} />
+                  <Area type="monotone" dataKey="equity" stroke="#18c87a" strokeWidth={3} fill="url(#equityGradient)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </>
+        )
+      },
+      {
+        id: "expectancy",
+        title: "EXPECTANCY",
+        defaultSpan: 1,
+        body: (
           <MiniMetric
             label="EXPECTANCY PER TRADE"
             value={formatCurrency(summary.expectancyPerTrade)}
             tone={toneForValue(summary.expectancyPerTrade)}
           />
-        </Card>
-
-        <Card title="RISK REWARD RATIO">
+        )
+      },
+      {
+        id: "riskReward",
+        title: "RISK REWARD RATIO",
+        defaultSpan: 1,
+        body: (
           <MiniMetric
             label="R:R"
             value={summary.riskRewardRatio ? `${summary.riskRewardRatio.toFixed(2)} : 1` : "0.00 : 1"}
             tone={summary.riskRewardRatio >= 1 ? "text-mint" : "text-coral"}
           />
-        </Card>
-
-        <Card title="WIN RATE / AVG WIN / AVG LOSS">
+        )
+      },
+      {
+        id: "winStats",
+        title: "WIN RATE / AVG WIN / AVG LOSS",
+        defaultSpan: 2,
+        body: (
           <div className="grid gap-3">
             <MiniMetric
               label="WIN RATE"
@@ -197,70 +247,68 @@ function AnalyticsCharts({ analytics }) {
               <MiniMetric label="AVG LOSS / SHARE" value={formatCurrency(summary.averageLossPerShare)} tone="text-coral" />
             </div>
           </div>
-        </Card>
-
-        <Card title="DRAWDOWN TRACKER" className="xl:col-span-2">
-          <div className="mb-4 grid gap-3 md:grid-cols-2">
-            <MiniMetric label="MAX DRAWDOWN" value={formatCurrency(summary.maxDrawdown)} tone="text-coral" />
-            <MiniMetric label="CURRENT DRAWDOWN" value={formatCurrency(summary.currentDrawdown)} tone="text-coral" />
-          </div>
-          <div className="h-[220px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={drawdownCurve}>
-                <defs>
-                  <linearGradient id="drawdownGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#ff6b6b" stopOpacity={0.22} />
-                    <stop offset="100%" stopColor="#ff6b6b" stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                <Tooltip contentStyle={tooltipStyle()} />
-                <Area type="monotone" dataKey="drawdown" stroke="#ff6b6b" strokeWidth={2.5} fill="url(#drawdownGradient)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-      </div>
-
-      <div className="grid gap-5 xl:grid-cols-4">
-        <Card title="PERFORMANCE BY DAY OF WEEK">
-          <BreakdownRows entries={performanceByWeekday} />
-        </Card>
-
-        <Card title="PERFORMANCE BY PRICE">
-          <BreakdownRows entries={performanceByPrice} />
-        </Card>
-
-        <Card title="PERFORMANCE BY HOUR OF DAY">
-          <BreakdownRows entries={performanceByTimeOfDaySummary} />
-        </Card>
-
-        <Card title="PERFORMANCE BY TIME OF DAY" className="xl:col-span-2">
+        )
+      },
+      {
+        id: "drawdown",
+        title: "DRAWDOWN TRACKER",
+        defaultSpan: 2,
+        body: (
+          <>
+            <div className="mb-4 grid gap-3 md:grid-cols-2">
+              <MiniMetric label="MAX DRAWDOWN" value={formatCurrency(summary.maxDrawdown)} tone="text-coral" />
+              <MiniMetric label="CURRENT DRAWDOWN" value={formatCurrency(summary.currentDrawdown)} tone="text-coral" />
+            </div>
+            <div className="h-[220px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={drawdownCurve}>
+                  <defs>
+                    <linearGradient id="drawdownGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#ff6b6b" stopOpacity={0.22} />
+                      <stop offset="100%" stopColor="#ff6b6b" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
+                  <Tooltip contentStyle={tooltipStyle()} />
+                  <Area type="monotone" dataKey="drawdown" stroke="#ff6b6b" strokeWidth={2.5} fill="url(#drawdownGradient)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </>
+        )
+      },
+      {
+        id: "performanceWeekday",
+        title: "PERFORMANCE BY DAY OF WEEK",
+        defaultSpan: 1,
+        body: <BreakdownRows entries={performanceByWeekday} />
+      },
+      {
+        id: "performancePrice",
+        title: "PERFORMANCE BY PRICE",
+        defaultSpan: 1,
+        body: <BreakdownRows entries={performanceByPrice} />
+      },
+      {
+        id: "performanceHourSummary",
+        title: "PERFORMANCE BY HOUR OF DAY",
+        defaultSpan: 1,
+        body: <BreakdownRows entries={performanceByTimeOfDaySummary} />
+      },
+      {
+        id: "performanceTimeChart",
+        title: "PERFORMANCE BY TIME OF DAY",
+        defaultSpan: 2,
+        body: (
           <div className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={hourlyPerformance} layout="vertical" margin={{ top: 4, right: 18, left: 6, bottom: 4 }}>
                 <CartesianGrid stroke="rgba(255,255,255,0.05)" horizontal={false} />
-                <XAxis
-                  type="number"
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(value) => `$${value}`}
-                  tick={{ fill: "#c6cedb", fontSize: 11 }}
-                />
-                <YAxis
-                  type="category"
-                  dataKey="label"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "#c6cedb", fontSize: 11 }}
-                  width={48}
-                />
-                <Tooltip
-                  cursor={{ fill: "rgba(255,255,255,0.03)" }}
-                  content={<ChartTooltipContent />}
-                />
+                <XAxis type="number" axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} tick={{ fill: "#c6cedb", fontSize: 11 }} />
+                <YAxis type="category" dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} width={48} />
+                <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<ChartTooltipContent />} />
                 <Bar dataKey="pnl" barSize={18}>
                   {hourlyPerformance.map((entry) => (
                     <Cell key={entry.label} fill={entry.pnl >= 0 ? "#56f0a9" : "#ff6b6b"} />
@@ -269,30 +317,20 @@ function AnalyticsCharts({ analytics }) {
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </Card>
-
-        <Card title="GROSS DAILY P&L (30 DAYS)" className="xl:col-span-2">
+        )
+      },
+      {
+        id: "grossDaily",
+        title: "GROSS DAILY P&L (30 DAYS)",
+        defaultSpan: 2,
+        body: (
           <div className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={grossDailyThirtyDays}>
                 <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis
-                  dataKey="label"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "#c6cedb", fontSize: 11 }}
-                  minTickGap={18}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(value) => `$${value}`}
-                  tick={{ fill: "#c6cedb", fontSize: 11 }}
-                />
-                <Tooltip
-                  cursor={{ fill: "rgba(255,255,255,0.03)" }}
-                  content={<ChartTooltipContent />}
-                />
+                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} minTickGap={18} />
+                <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} tick={{ fill: "#c6cedb", fontSize: 11 }} />
+                <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<ChartTooltipContent />} />
                 <Bar dataKey="grossPnl" barSize={20}>
                   {grossDailyThirtyDays.map((entry) => (
                     <Cell key={entry.date} fill={entry.grossPnl >= 0 ? "#56f0a9" : "#ff6b6b"} />
@@ -301,30 +339,20 @@ function AnalyticsCharts({ analytics }) {
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </Card>
-
-        <Card title="WIN %" className="xl:col-span-2">
+        )
+      },
+      {
+        id: "winPct",
+        title: "WIN %",
+        defaultSpan: 2,
+        body: (
           <div className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={winRateThirtyDays}>
                 <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis
-                  dataKey="label"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "#c6cedb", fontSize: 11 }}
-                  minTickGap={18}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  domain={[0, 100]}
-                  tick={{ fill: "#c6cedb", fontSize: 11 }}
-                />
-                <Tooltip
-                  cursor={{ fill: "rgba(255,255,255,0.03)" }}
-                  content={<ChartTooltipContent />}
-                />
+                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} minTickGap={18} />
+                <YAxis axisLine={false} tickLine={false} domain={[0, 100]} tick={{ fill: "#c6cedb", fontSize: 11 }} />
+                <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<ChartTooltipContent />} />
                 <Bar dataKey="winRate" barSize={20}>
                   {winRateThirtyDays.map((entry) => (
                     <Cell key={entry.date} fill="#56f0a9" />
@@ -333,29 +361,20 @@ function AnalyticsCharts({ analytics }) {
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </Card>
-
-        <Card title="DAILY VOLUME" className="xl:col-span-2">
+        )
+      },
+      {
+        id: "dailyVolume",
+        title: "DAILY VOLUME",
+        defaultSpan: 2,
+        body: (
           <div className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={dailyVolumeThirtyDays}>
                 <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis
-                  dataKey="label"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "#c6cedb", fontSize: 11 }}
-                  minTickGap={18}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "#c6cedb", fontSize: 11 }}
-                />
-                <Tooltip
-                  cursor={{ fill: "rgba(255,255,255,0.03)" }}
-                  content={<ChartTooltipContent />}
-                />
+                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} minTickGap={18} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
+                <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<ChartTooltipContent />} />
                 <Bar dataKey="volume" barSize={20}>
                   {dailyVolumeThirtyDays.map((entry) => (
                     <Cell key={entry.date} fill="#56f0a9" />
@@ -364,14 +383,100 @@ function AnalyticsCharts({ analytics }) {
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </Card>
-
-        <Card title="STREAKS">
+        )
+      },
+      {
+        id: "streaks",
+        title: "STREAKS",
+        defaultSpan: 1,
+        body: (
           <div className="grid gap-3">
             <MiniMetric label="WINNING STREAK" value={summary.longestWinStreak} tone="text-mint" />
             <MiniMetric label="LOSING STREAK" value={summary.longestLossStreak} tone="text-coral" />
           </div>
-        </Card>
+        )
+      }
+    ],
+    [summary, equityCurve, drawdownCurve, performanceByWeekday, performanceByPrice, performanceByTimeOfDaySummary, hourlyPerformance, grossDailyThirtyDays, winRateThirtyDays, dailyVolumeThirtyDays]
+  );
+
+  const widgetMap = new Map(widgets.map((widget) => [widget.id, widget]));
+  const orderedWidgets = normalizeDashboardLayout(layout)
+    .map((item) => ({ ...item, widget: widgetMap.get(item.id) }))
+    .filter((item) => item.widget);
+
+  function handleDrop(targetId) {
+    if (!draggedId || draggedId === targetId) {
+      return;
+    }
+
+    onReorder?.(draggedId, targetId);
+    setDraggedId(null);
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="ui-panel border-[#e5e7eb42] p-5">
+        <div className="grid gap-3 md:grid-cols-7">
+          {lastSevenDays.map((day) => (
+            <div
+              key={day.date}
+              className="rounded-[10px] border border-[#e5e7eb42] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.008))] px-4 py-4"
+            >
+              <p className="ui-title text-[10px] uppercase text-white/45">{day.weekday}</p>
+              <p className="mt-2 text-sm text-white/62">{day.label}</p>
+              <p className={`mt-4 text-2xl font-bold tracking-[-0.04em] ${day.trades === 0 ? "text-mist" : day.pnl >= 0 ? "text-mint" : "text-coral"}`}>
+                {formatCurrency(day.pnl)}
+              </p>
+              <p className="mt-2 text-xs text-white/56">
+                {day.trades} trade{day.trades === 1 ? "" : "s"}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+        {orderedWidgets.map(({ id, span, widget }) => {
+          const cardAction = editing ? (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onToggleSpan?.(id)}
+                className="rounded-[10px] border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/76 hover:bg-white/[0.08]"
+              >
+                {span === 2 ? "Normal" : "Wide"}
+              </button>
+              <span className="cursor-grab select-none rounded-[10px] border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/48">
+                Drag
+              </span>
+            </div>
+          ) : null;
+
+          return (
+            <div
+              key={id}
+              draggable={editing}
+              onDragStart={() => setDraggedId(id)}
+              onDragEnd={() => setDraggedId(null)}
+              onDragOver={(event) => {
+                if (editing) {
+                  event.preventDefault();
+                }
+              }}
+              onDrop={() => handleDrop(id)}
+              className={`${widgetSpanClass(span)} ${editing && draggedId === id ? "opacity-60" : ""}`}
+            >
+              <Card
+                title={widget.title}
+                action={cardAction}
+                className={`${editing ? "ring-1 ring-white/10" : ""}`}
+              >
+                {widget.body}
+              </Card>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
