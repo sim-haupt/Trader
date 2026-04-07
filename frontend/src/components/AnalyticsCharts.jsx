@@ -174,27 +174,6 @@ function widgetSpanClass(span) {
   return span === 2 ? "md:col-span-2 xl:col-span-2" : "";
 }
 
-const MASONRY_ROW_HEIGHT = 8;
-const MASONRY_GAP = 20;
-const WIDGET_ROW_SPANS = {
-  cumulative: 21,
-  summaryMetrics: 9,
-  avgStats: 9,
-  drawdown: 13,
-  performanceWeekday: 12,
-  performancePrice: 12,
-  performanceHourSummary: 12,
-  performanceTimeChart: 13,
-  grossDaily: 13,
-  winPct: 13,
-  dailyVolume: 13,
-  streaks: 8
-};
-
-function widgetRowSpan(id) {
-  return WIDGET_ROW_SPANS[id] || 9;
-}
-
 function AnalyticsCharts({
   analytics,
   layout = DEFAULT_DASHBOARD_LAYOUT,
@@ -491,14 +470,7 @@ function AnalyticsCharts({
         </div>
       </div>
 
-      <div
-        className="grid grid-flow-row-dense items-start md:grid-cols-2 xl:grid-cols-4"
-        style={{
-          gridAutoRows: `${MASONRY_ROW_HEIGHT}px`,
-          rowGap: `${MASONRY_GAP}px`,
-          columnGap: `${MASONRY_GAP}px`
-        }}
-      >
+      <div className="grid items-start gap-5 md:grid-cols-2 xl:grid-cols-4">
         {orderedWidgets.map(({ id, span, widget }) => {
           const cardAction = editing ? (
             <div className="flex items-center gap-2">
@@ -547,7 +519,6 @@ function AnalyticsCharts({
                   ? "rounded-[16px] bg-mint/8 p-[3px] ring-2 ring-mint/90 shadow-[0_0_0_1px_rgba(86,240,169,0.35)]"
                   : ""
               }`}
-              style={{ gridRowEnd: `span ${widgetRowSpan(id)}` }}
             >
               <Card
                 title={widget.title}

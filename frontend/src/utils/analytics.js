@@ -161,6 +161,19 @@ function buildTimeOfDaySummary(performanceByTimeOfDay) {
   }));
 }
 
+function buildWeekdaySummary(weekdayMap) {
+  const entries = Array.from(weekdayMap.entries()).map(([day, pnl]) => ({
+    day,
+    pnl
+  }));
+  const totalAbsolute = entries.reduce((sum, entry) => sum + Math.abs(entry.pnl), 0);
+
+  return entries.map((entry) => ({
+    ...entry,
+    percentage: totalAbsolute ? (Math.abs(entry.pnl) / totalAbsolute) * 100 : 0
+  }));
+}
+
 export function buildAnalytics(trades) {
   const sortedTrades = [...trades].sort(
     (a, b) => new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime()
@@ -396,10 +409,7 @@ export function buildAnalytics(trades) {
     equityCurve,
     drawdownCurve,
     lastSevenDays,
-    performanceByWeekday: Array.from(weekdayMap.entries()).map(([day, pnl]) => ({
-      day,
-      pnl
-    })),
+    performanceByWeekday: buildWeekdaySummary(weekdayMap),
     performanceByTimeOfDay: Array.from(timeBucketMap.values()),
     performanceByTimeOfDaySummary: buildTimeOfDaySummary(Array.from(timeBucketMap.values())),
     hourlyPerformance: buildHourlyPerformance(processedTrades),
