@@ -60,16 +60,17 @@ function AppShell() {
                   Admin
                 </NavLink>
               )}
-            </nav>
 
-            <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
                 onClick={() => navigate("/trades?mode=import")}
-                className="ui-button-solid px-4 py-3 text-[11px]"
+                className="ui-button px-4 py-3 text-[11px] !bg-[var(--orange)] !text-black"
               >
                 Import Trades
               </button>
+            </nav>
+
+            <div className="flex flex-wrap items-center gap-3">
               <div className="text-right">
                 <p className="ui-title text-[10px] text-white">{user?.name}</p>
               </div>

@@ -4,7 +4,8 @@ function StatCard({ label, value, accent = "mint" }) {
   const accentMap = {
     mint: "text-mint",
     coral: "text-coral",
-    gold: "text-white",
+    gold: "text-[#ffc14d]",
+    warning: "text-[#ffc14d]",
     neutral: "text-phosphor"
   };
 

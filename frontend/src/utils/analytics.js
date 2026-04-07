@@ -3,6 +3,30 @@ function asNumber(value) {
   return Number.isNaN(numericValue) ? 0 : numericValue;
 }
 
+function startOfDay(date) {
+  const next = new Date(date);
+  next.setHours(0, 0, 0, 0);
+  return next;
+}
+
+function endOfDay(date) {
+  const next = new Date(date);
+  next.setHours(23, 59, 59, 999);
+  return next;
+}
+
+function startOfWeek(date) {
+  const next = startOfDay(date);
+  const day = next.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  next.setDate(next.getDate() + diff);
+  return next;
+}
+
+function startOfMonth(date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
 export function buildAnalytics(trades) {
   const sortedTrades = [...trades].sort(
     (a, b) => new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime()
@@ -29,10 +53,13 @@ export function buildAnalytics(trades) {
     ["Fri", 0],
     ["Sat", 0]
   ]);
+  const datedTrades = sortedTrades.map((trade) => ({
+    trade,
+    pnl: asNumber(trade.netPnl ?? trade.grossPnl),
+    entryDate: new Date(trade.entryDate)
+  }));
 
-  const equityCurve = sortedTrades.map((trade) => {
-    const pnl = asNumber(trade.netPnl ?? trade.grossPnl);
-    const entryDate = new Date(trade.entryDate);
+  const equityCurve = datedTrades.map(({ trade, pnl, entryDate }) => {
     const exitDate = trade.exitDate ? new Date(trade.exitDate) : entryDate;
     const holdMinutes = Math.max(0, (exitDate.getTime() - entryDate.getTime()) / 60000);
     const dayKey = entryDate.toISOString().slice(0, 10);
@@ -77,24 +104,67 @@ export function buildAnalytics(trades) {
   const winRate = tradeCount ? (wins / tradeCount) * 100 : 0;
   const averageWin = wins ? totalWin / wins : 0;
   const averageLoss = lossCount ? totalLoss / lossCount : 0;
+  const totalPnl = datedTrades.reduce(
+    (sum, item) => sum + item.pnl,
+    0
+  );
+  const averageTradePnl = tradeCount ? totalPnl / tradeCount : 0;
   const expectancy = tradeCount
     ? (wins / tradeCount) * averageWin - (lossCount / tradeCount) * averageLoss
     : 0;
-  const totalPnl = sortedTrades.reduce(
-    (sum, trade) => sum + asNumber(trade.netPnl ?? trade.grossPnl),
+  const latestTradeDate = datedTrades.length
+    ? new Date(datedTrades[datedTrades.length - 1].entryDate)
+    : new Date();
+  const latestDayStart = startOfDay(latestTradeDate);
+  const latestDayEnd = endOfDay(latestTradeDate);
+  const latestWeekStart = startOfWeek(latestTradeDate);
+  const latestMonthStart = startOfMonth(latestTradeDate);
+
+  const totalMonthPnl = datedTrades.reduce(
+    (sum, item) =>
+      item.entryDate >= latestMonthStart && item.entryDate <= latestDayEnd ? sum + item.pnl : sum,
     0
   );
+  const totalWeekPnl = datedTrades.reduce(
+    (sum, item) =>
+      item.entryDate >= latestWeekStart && item.entryDate <= latestDayEnd ? sum + item.pnl : sum,
+    0
+  );
+  const totalTodayPnl = datedTrades.reduce(
+    (sum, item) =>
+      item.entryDate >= latestDayStart && item.entryDate <= latestDayEnd ? sum + item.pnl : sum,
+    0
+  );
+
+  const lastFiveDays = Array.from({ length: 5 }, (_, index) => {
+    const day = new Date(latestDayStart);
+    day.setDate(latestDayStart.getDate() - (4 - index));
+    const dayKey = day.toISOString().slice(0, 10);
+    const stats = dailyMap.get(dayKey);
+
+    return {
+      date: dayKey,
+      label: day.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      weekday: day.toLocaleDateString("en-US", { weekday: "short" }),
+      pnl: Number((stats?.pnl || 0).toFixed(2)),
+      trades: stats?.trades || 0
+    };
+  });
 
   return {
     summary: {
       tradeCount,
       totalPnl,
+      totalMonthPnl,
+      totalWeekPnl,
+      totalTodayPnl,
       winRate,
       lossRate: tradeCount ? (lossCount / tradeCount) * 100 : 0,
       wins,
       losses: lossCount,
       averageWin,
       averageLoss,
+      averageTradePnl,
       expectancy,
       largestWin,
       largestLoss,
@@ -102,10 +172,15 @@ export function buildAnalytics(trades) {
       averageLosingHoldMinutes: losingHoldCount ? totalLosingHoldMinutes / losingHoldCount : 0
     },
     equityCurve,
-    recentDays: Array.from(dailyMap.values()).slice(-7),
+    lastFiveDays,
     performanceByWeekday: Array.from(weekdayMap.entries()).map(([day, pnl]) => ({
       day,
       pnl
-    }))
+    })),
+    latestDateLabel: latestTradeDate.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric"
+    })
   };
 }
