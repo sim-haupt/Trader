@@ -93,7 +93,7 @@ async function fetchMinuteBars(symbol, from, to) {
       toDatePath(from)
     )}/${encodeURIComponent(toDatePath(to))}`,
     {
-      adjusted: "true",
+      adjusted: "false",
       sort: "asc",
       limit: "50000"
     }
