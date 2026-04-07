@@ -112,13 +112,16 @@ function buildLastThirtyDayGross(processedTrades, latestDayStart) {
 function buildPriceBuckets(processedTrades) {
   const bucketDefinitions = [
     { label: "< $2.00", min: -Infinity, max: 2 },
-    { label: "$2 - $4.99", min: 2, max: 5 },
-    { label: "$5 - $9.99", min: 5, max: 10 },
-    { label: "$10 - $19.99", min: 10, max: 20 },
-    { label: "$20 - $49.99", min: 20, max: 50 },
-    { label: "$50 - $99.99", min: 50, max: 100 },
-    { label: "$100 - $199.99", min: 100, max: 200 },
-    { label: "$200 - $499.99", min: 200, max: 500 }
+    { label: "$2 - $3.99", min: 2, max: 4 },
+    { label: "$4 - $5.99", min: 4, max: 6 },
+    { label: "$6 - $7.99", min: 6, max: 8 },
+    { label: "$8 - $9.99", min: 8, max: 10 },
+    { label: "$10 - $11.99", min: 10, max: 12 },
+    { label: "$12 - $13.99", min: 12, max: 14 },
+    { label: "$14 - $15.99", min: 14, max: 16 },
+    { label: "$16 - $17.99", min: 16, max: 18 },
+    { label: "$18 - $19.99", min: 18, max: 20 },
+    { label: "> $20.00", min: 20, max: Infinity }
   ];
 
   const buckets = bucketDefinitions.map((bucket) => ({

@@ -72,11 +72,12 @@ function BreakdownRows({ entries }) {
         const pct = entry.percentage ?? 0;
         const width = entry.pnl === 0 ? 0 : Math.max(4, (Math.abs(entry.pnl) / maxMagnitude) * 100);
         const tone = entry.pnl >= 0 ? "bg-mint" : "bg-coral";
+        const label = entry.label ?? entry.day;
 
         return (
-          <div key={entry.label}>
+          <div key={label}>
             <div className="mb-2 flex items-center justify-between gap-4">
-              <span className="text-sm font-medium text-white/88">{entry.label}</span>
+              <span className="text-sm font-medium text-white/88">{label}</span>
               <div className="flex items-center gap-2 text-right">
                 <span className={`text-sm font-semibold ${entry.pnl >= 0 ? "text-mint" : "text-coral"}`}>
                   {formatCurrency(entry.pnl)}
@@ -101,7 +102,6 @@ function AnalyticsCharts({ analytics }) {
     drawdownCurve,
     lastSevenDays,
     performanceByWeekday,
-    performanceByTimeOfDay,
     performanceByTimeOfDaySummary,
     performanceByPrice,
     hourlyPerformance,
@@ -221,24 +221,9 @@ function AnalyticsCharts({ analytics }) {
         </Card>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[0.9fr_0.95fr_0.95fr_1.1fr_0.8fr]">
+      <div className="grid gap-5 lg:grid-cols-2 2xl:grid-cols-[0.9fr_0.95fr_0.95fr_1.1fr_0.8fr]">
         <Card title="PERFORMANCE BY DAY OF WEEK">
-          <div className="space-y-3">
-            {performanceByWeekday.map((entry) => (
-              <div key={entry.day} className="rounded-[12px] border border-[#e5e7eb42] bg-white/[0.02] px-4 py-3">
-                <div className="mb-2 flex items-center justify-between text-sm text-white/72">
-                  <span>{entry.day}</span>
-                  <span className={entry.pnl >= 0 ? "text-mint" : "text-coral"}>{formatCurrency(entry.pnl)}</span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-white/10">
-                  <div
-                    className={`h-full rounded-full ${entry.pnl >= 0 ? "bg-mint" : "bg-coral"}`}
-                    style={{ width: `${Math.min(100, Math.max(8, Math.abs(entry.pnl) / Math.max(1, Math.max(...performanceByWeekday.map((item) => Math.abs(item.pnl)))) * 100))}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
+          <BreakdownRows entries={performanceByWeekday} />
         </Card>
 
         <Card title="PERFORMANCE BY PRICE">
@@ -249,7 +234,7 @@ function AnalyticsCharts({ analytics }) {
           <BreakdownRows entries={performanceByTimeOfDaySummary} />
         </Card>
 
-        <Card title="PERFORMANCE BY TIME OF DAY">
+        <Card title="PERFORMANCE BY TIME OF DAY" className="lg:col-span-2 2xl:col-span-1">
           <div className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={hourlyPerformance} layout="vertical" margin={{ top: 4, right: 18, left: 6, bottom: 4 }}>
@@ -283,7 +268,7 @@ function AnalyticsCharts({ analytics }) {
           </div>
         </Card>
 
-        <Card title="GROSS DAILY P&L (30 DAYS)">
+        <Card title="GROSS DAILY P&L (30 DAYS)" className="lg:col-span-2 2xl:col-span-1">
           <div className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={grossDailyThirtyDays}>
