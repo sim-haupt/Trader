@@ -1,6 +1,6 @@
 import { formatCurrency, formatDate } from "../utils/formatters";
 
-function TradeTable({ trades, onEdit, onDelete, showActions = true }) {
+function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = true }) {
   return (
     <div className="overflow-hidden rounded-3xl border border-white/10">
       <div className="overflow-x-auto">
@@ -23,7 +23,19 @@ function TradeTable({ trades, onEdit, onDelete, showActions = true }) {
               const pnl = Number(trade.netPnl ?? trade.grossPnl ?? 0);
 
               return (
-                <tr key={trade.id} className="transition hover:bg-white/5">
+                <tr
+                  key={trade.id}
+                  tabIndex={0}
+                  role="button"
+                  onClick={() => onSelectTrade?.(trade)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      onSelectTrade?.(trade);
+                    }
+                  }}
+                  className="cursor-pointer transition hover:bg-white/5 focus:bg-white/5 focus:outline-none"
+                >
                   <td className="px-4 py-4 font-semibold text-white">{trade.symbol}</td>
                   <td className="px-4 py-4">
                     <span
@@ -53,14 +65,20 @@ function TradeTable({ trades, onEdit, onDelete, showActions = true }) {
                       <div className="flex flex-wrap gap-2">
                         <button
                           type="button"
-                          onClick={() => onEdit(trade)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onEdit(trade);
+                          }}
                           className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-medium text-white transition hover:border-mint hover:text-mint"
                         >
                           Edit
                         </button>
                         <button
                           type="button"
-                          onClick={() => onDelete(trade)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onDelete(trade);
+                          }}
                           className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-medium text-white transition hover:border-coral hover:text-coral"
                         >
                           Delete

@@ -233,7 +233,7 @@ function AnalyticsCharts({ analytics }) {
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );

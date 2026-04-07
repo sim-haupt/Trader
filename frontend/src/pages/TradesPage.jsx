@@ -3,6 +3,7 @@ import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
 import Filters from "../components/Filters";
 import TradeForm from "../components/TradeForm";
+import TradeDetailModal from "../components/TradeDetailModal";
 import TradeTable from "../components/TradeTable";
 import UploadCSV from "../components/UploadCSV";
 import TradeTextImport from "../components/TradeTextImport";
@@ -19,6 +20,7 @@ const initialFilters = {
 function TradesPage() {
   const [trades, setTrades] = useState([]);
   const [selectedTrade, setSelectedTrade] = useState(null);
+  const [activeTradeId, setActiveTradeId] = useState(null);
   const [filters, setFilters] = useState(initialFilters);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -51,6 +53,16 @@ function TradesPage() {
     () => (selectedTrade ? `Editing ${selectedTrade.symbol}` : "Add a new trade"),
     [selectedTrade]
   );
+  const activeTrade = useMemo(
+    () => trades.find((trade) => trade.id === activeTradeId) ?? null,
+    [activeTradeId, trades]
+  );
+
+  useEffect(() => {
+    if (activeTradeId && !activeTrade) {
+      setActiveTradeId(null);
+    }
+  }, [activeTrade, activeTradeId]);
 
   function handleFilterChange(key, value) {
     setFilters((current) => ({ ...current, [key]: value }));
@@ -103,6 +115,9 @@ function TradesPage() {
       setMessage("Trade deleted successfully.");
       if (selectedTrade?.id === trade.id) {
         setSelectedTrade(null);
+      }
+      if (activeTradeId === trade.id) {
+        setActiveTradeId(null);
       }
       await loadTrades(filters);
     } catch (err) {
@@ -160,6 +175,7 @@ function TradesPage() {
     try {
       const result = await tradeService.deleteAllTrades();
       setSelectedTrade(null);
+      setActiveTradeId(null);
       setMessage(`Deleted ${result.deletedCount} trades.`);
       await loadTrades(initialFilters);
     } catch (err) {
@@ -240,9 +256,16 @@ function TradesPage() {
             description="Try relaxing your filters or create your first trade from the form above."
           />
         ) : (
-          <TradeTable trades={trades} onEdit={setSelectedTrade} onDelete={handleDelete} />
+          <TradeTable
+            trades={trades}
+            onEdit={setSelectedTrade}
+            onDelete={handleDelete}
+            onSelectTrade={(trade) => setActiveTradeId(trade.id)}
+          />
         )}
       </Card>
+
+      {activeTrade && <TradeDetailModal trade={activeTrade} onClose={() => setActiveTradeId(null)} />}
     </div>
   );
 }
