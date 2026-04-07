@@ -21,6 +21,15 @@ const getTrades = asyncHandler(async (req, res) => {
   });
 });
 
+const getTradeById = asyncHandler(async (req, res) => {
+  const trade = await tradeService.getTradeById(req.user, req.params.id);
+
+  res.status(200).json({
+    success: true,
+    data: trade
+  });
+});
+
 const updateTrade = asyncHandler(async (req, res) => {
   const trade = await tradeService.updateTrade(
     req.user,
@@ -86,6 +95,7 @@ const importTradesFromText = asyncHandler(async (req, res) => {
 module.exports = {
   createTrade,
   getTrades,
+  getTradeById,
   updateTrade,
   deleteTrade,
   bulkDeleteTrades,

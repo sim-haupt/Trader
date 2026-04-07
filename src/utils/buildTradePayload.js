@@ -15,7 +15,10 @@ function buildTradePayload(data, userId) {
   const providedGrossPnl = toNumber(data.grossPnl);
   const providedNetPnl = toNumber(data.netPnl);
   const grossPnl = providedGrossPnl ?? metrics.grossPnl;
-  const netPnl = providedNetPnl ?? (grossPnl !== null ? Number((grossPnl - fees).toFixed(4)) : metrics.netPnl);
+  const netPnl =
+    providedNetPnl ??
+    (grossPnl !== null ? Number((grossPnl - fees).toFixed(4)) : metrics.netPnl);
+  const reportedExecutionCount = toNumber(data.reportedExecutionCount);
 
   return {
     userId,
@@ -30,7 +33,9 @@ function buildTradePayload(data, userId) {
     strategy: data.strategy ?? null,
     notes: data.notes ?? null,
     grossPnl,
-    netPnl
+    netPnl,
+    reportedExecutionCount:
+      reportedExecutionCount === null ? null : Math.max(0, Math.round(reportedExecutionCount))
   };
 }
 

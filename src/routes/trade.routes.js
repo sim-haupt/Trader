@@ -17,6 +17,7 @@ router.use(authenticate);
 
 router.post("/", validate(tradeSchema), tradeController.createTrade);
 router.get("/", validate(tradeQuerySchema, "query"), tradeController.getTrades);
+router.get("/:id", tradeController.getTradeById);
 router.put("/:id", validate(tradeSchema), tradeController.updateTrade);
 router.delete("/:id", tradeController.deleteTrade);
 router.post("/delete-all", validate(deleteAllTradesSchema), tradeController.deleteAllTrades);

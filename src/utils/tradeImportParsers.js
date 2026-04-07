@@ -41,6 +41,15 @@ function sanitizeNotes(value) {
   return plainText || null;
 }
 
+function toNumber(value) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : null;
+}
+
 function mapCsvSide(side) {
   const normalizedSide = String(side || "").trim().toUpperCase();
 
@@ -55,6 +64,85 @@ function mapCsvSide(side) {
   return normalizedSide;
 }
 
+function getExecutionAction(side, phase) {
+  if (phase === "ENTRY") {
+    return side === "LONG" ? "BUY" : "SELL";
+  }
+
+  return side === "LONG" ? "SELL" : "BUY";
+}
+
+function getSignedPosition(side, quantity) {
+  return side === "LONG" ? quantity : -quantity;
+}
+
+function createExecution({
+  occurredAt,
+  quantity,
+  price,
+  action,
+  sequence,
+  positionAfter,
+  source
+}) {
+  return {
+    occurredAt,
+    quantity: Number(quantity.toFixed(4)),
+    price: Number(price.toFixed(4)),
+    action,
+    sequence,
+    positionAfter:
+      positionAfter === null || positionAfter === undefined
+        ? null
+        : Number(positionAfter.toFixed(4)),
+    source
+  };
+}
+
+function buildSyntheticExecutions({
+  side,
+  quantity,
+  entryPrice,
+  entryDate,
+  exitPrice,
+  exitDate
+}) {
+  const executionRows = [];
+  const parsedQuantity = toNumber(quantity);
+  const parsedEntryPrice = toNumber(entryPrice);
+  const parsedExitPrice = toNumber(exitPrice);
+
+  if (parsedQuantity && parsedEntryPrice && entryDate) {
+    executionRows.push(
+      createExecution({
+        occurredAt: entryDate,
+        quantity: parsedQuantity,
+        price: parsedEntryPrice,
+        action: getExecutionAction(side, "ENTRY"),
+        sequence: 1,
+        positionAfter: getSignedPosition(side, parsedQuantity),
+        source: "SYNTHETIC"
+      })
+    );
+  }
+
+  if (parsedQuantity && parsedExitPrice && exitDate) {
+    executionRows.push(
+      createExecution({
+        occurredAt: exitDate,
+        quantity: parsedQuantity,
+        price: parsedExitPrice,
+        action: getExecutionAction(side, "EXIT"),
+        sequence: executionRows.length + 1,
+        positionAfter: 0,
+        source: "SYNTHETIC"
+      })
+    );
+  }
+
+  return executionRows;
+}
+
 function normalizeImportedCsvRow(row) {
   if (row.symbol || row.entryPrice || row.entryDate) {
     return row;
@@ -64,19 +152,35 @@ function normalizeImportedCsvRow(row) {
     return row;
   }
 
+  const side = mapCsvSide(row.Side);
+  const quantity = toNumber(row.Volume);
+  const entryPrice = toNumber(row["Entry Price"]);
+  const exitPrice = toNumber(row["Exit Price"]);
+  const entryDate = normalizeDateTime(row["Open Datetime"]);
+  const exitDate = normalizeDateTime(row["Close Datetime"]);
+
   return {
     symbol: String(row.Symbol).trim().toUpperCase(),
-    side: mapCsvSide(row.Side),
-    quantity: row.Volume,
-    entryPrice: row["Entry Price"],
-    exitPrice: row["Exit Price"],
-    entryDate: normalizeDateTime(row["Open Datetime"]),
-    exitDate: normalizeDateTime(row["Close Datetime"]),
+    side,
+    quantity,
+    entryPrice,
+    exitPrice,
+    entryDate,
+    exitDate,
     fees: 0,
     grossPnl: row["Gross P&L"],
     netPnl: row["Gross P&L"],
+    reportedExecutionCount: toNumber(row["Exec Count"]),
     strategy: row.Tags ? String(row.Tags).trim() : null,
-    notes: sanitizeNotes(row.Notes)
+    notes: sanitizeNotes(row.Notes),
+    executions: buildSyntheticExecutions({
+      side,
+      quantity: quantity || 0,
+      entryPrice: entryPrice || 0,
+      entryDate,
+      exitPrice,
+      exitDate
+    })
   };
 }
 
@@ -124,8 +228,21 @@ function parseTradeText(text) {
     .filter(Boolean);
 }
 
+function makeExecutionFromFill(fill, sequence, quantity, positionAfter) {
+  return createExecution({
+    occurredAt: fill.datetime,
+    quantity,
+    price: fill.price,
+    action: fill.action === "B" ? "BUY" : "SELL",
+    sequence,
+    positionAfter,
+    source: "IMPORTED"
+  });
+}
+
 function createTradeState(fill, quantityOverride = fill.quantity) {
   const side = fill.action === "B" ? "LONG" : "SHORT";
+  const signedOpenQuantity = getSignedPosition(side, quantityOverride);
 
   return {
     symbol: fill.symbol,
@@ -136,7 +253,9 @@ function createTradeState(fill, quantityOverride = fill.quantity) {
     openQuantity: quantityOverride,
     closedQuantity: 0,
     exitValue: 0,
-    exitDate: null
+    exitDate: null,
+    reportedExecutionCount: 1,
+    executions: [makeExecutionFromFill(fill, 1, quantityOverride, signedOpenQuantity)]
   };
 }
 
@@ -148,14 +267,16 @@ function buildClosedTrade(state) {
   return {
     symbol: state.symbol,
     side: state.side,
-    quantity: state.entryQuantity,
+    quantity: Number(state.entryQuantity.toFixed(4)),
     entryPrice: Number((state.entryValue / state.entryQuantity).toFixed(4)),
     exitPrice: Number((state.exitValue / state.closedQuantity).toFixed(4)),
     entryDate: state.entryDate,
     exitDate: state.exitDate,
     fees: 0,
     strategy: null,
-    notes: "Imported from trade text"
+    notes: "Imported from trade text",
+    reportedExecutionCount: state.reportedExecutionCount,
+    executions: state.executions
   };
 }
 
@@ -181,6 +302,15 @@ function convertFillsToTrades(fills) {
       state.entryQuantity += fill.quantity;
       state.entryValue += fill.quantity * fill.price;
       state.openQuantity += fill.quantity;
+      state.reportedExecutionCount += 1;
+      state.executions.push(
+        makeExecutionFromFill(
+          fill,
+          state.executions.length + 1,
+          fill.quantity,
+          getSignedPosition(state.side, state.openQuantity)
+        )
+      );
       continue;
     }
 
@@ -193,6 +323,15 @@ function convertFillsToTrades(fills) {
       state.exitValue += closeQuantity * fill.price;
       state.openQuantity -= closeQuantity;
       state.exitDate = fill.datetime;
+      state.reportedExecutionCount += 1;
+      state.executions.push(
+        makeExecutionFromFill(
+          fill,
+          state.executions.length + 1,
+          closeQuantity,
+          getSignedPosition(state.side, state.openQuantity)
+        )
+      );
       remainingQuantity -= closeQuantity;
 
       if (state.openQuantity === 0) {
@@ -277,7 +416,9 @@ function parseTradesFromText(text) {
     invalidRows.push({
       rowNumber: null,
       rawData: position,
-      errors: [`Open ${position.side.toLowerCase()} position for ${position.symbol} was not fully closed`]
+      errors: [
+        `Open ${position.side.toLowerCase()} position for ${position.symbol} was not fully closed`
+      ]
     });
   });
 

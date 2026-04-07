@@ -18,6 +18,16 @@ enum TradeSide {
   SHORT
 }
 
+enum ExecutionAction {
+  BUY
+  SELL
+}
+
+enum ExecutionSource {
+  IMPORTED
+  SYNTHETIC
+}
+
 enum ImportStatus {
   SUCCESS
   PARTIAL
@@ -37,27 +47,46 @@ model User {
 }
 
 model Trade {
-  id         String    @id @default(cuid())
-  userId     String
-  symbol     String
-  side       TradeSide
-  quantity   Decimal   @db.Decimal(18, 4)
-  entryPrice Decimal   @db.Decimal(18, 4)
-  exitPrice  Decimal?  @db.Decimal(18, 4)
-  entryDate  DateTime
-  exitDate   DateTime?
-  fees       Decimal   @default(0) @db.Decimal(18, 4)
-  strategy   String?
-  notes      String?
-  grossPnl   Decimal?  @db.Decimal(18, 4)
-  netPnl     Decimal?  @db.Decimal(18, 4)
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                   String           @id @default(cuid())
+  userId               String
+  symbol               String
+  side                 TradeSide
+  quantity             Decimal          @db.Decimal(18, 4)
+  entryPrice           Decimal          @db.Decimal(18, 4)
+  exitPrice            Decimal?         @db.Decimal(18, 4)
+  entryDate            DateTime
+  exitDate             DateTime?
+  fees                 Decimal          @default(0) @db.Decimal(18, 4)
+  strategy             String?
+  notes                String?
+  grossPnl             Decimal?         @db.Decimal(18, 4)
+  netPnl               Decimal?         @db.Decimal(18, 4)
+  reportedExecutionCount Int?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  user                 User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  executions           TradeExecution[]
 
   @@index([userId, entryDate])
   @@index([userId, symbol])
   @@index([userId, strategy])
+}
+
+model TradeExecution {
+  id            String          @id @default(cuid())
+  tradeId        String
+  occurredAt     DateTime
+  quantity       Decimal         @db.Decimal(18, 4)
+  price          Decimal         @db.Decimal(18, 4)
+  action         ExecutionAction
+  sequence       Int
+  positionAfter  Decimal?        @db.Decimal(18, 4)
+  source         ExecutionSource @default(IMPORTED)
+  createdAt      DateTime        @default(now())
+  trade          Trade           @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+
+  @@index([tradeId, occurredAt])
+  @@unique([tradeId, sequence])
 }
 
 model TradeImport {

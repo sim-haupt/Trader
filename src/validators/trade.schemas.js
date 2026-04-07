@@ -60,6 +60,25 @@ const tradeTextImportSchema = z.object({
   text: z.string().trim().min(1)
 });
 
+const executionImportSchema = z.object({
+  occurredAt: z.string().min(1).refine(isValidDateString, "execution occurredAt must be a valid date"),
+  quantity: z.coerce.number().positive(),
+  price: z.coerce.number().positive(),
+  action: z.enum(["BUY", "SELL"]),
+  sequence: z.coerce.number().int().positive(),
+  positionAfter: z.coerce.number().nullable().optional(),
+  source: z.enum(["IMPORTED", "SYNTHETIC"]).optional()
+});
+
+const importTradeSchema = tradeSchema.and(
+  z.object({
+    grossPnl: z.coerce.number().nullable().optional(),
+    netPnl: z.coerce.number().nullable().optional(),
+    reportedExecutionCount: z.coerce.number().int().positive().nullable().optional(),
+    executions: z.array(executionImportSchema).optional()
+  })
+);
+
 const tradeQuerySchema = z.object({
   symbol: z.string().trim().max(20).optional(),
   side: z.enum(["LONG", "SHORT"]).optional(),
@@ -79,6 +98,13 @@ function mapImportRowToPayload(row) {
     entryDate: row.entryDate,
     exitDate: row.exitDate === "" || row.exitDate === undefined ? null : row.exitDate,
     fees: row.fees === "" || row.fees === undefined ? 0 : row.fees,
+    grossPnl: row.grossPnl === "" || row.grossPnl === undefined ? null : row.grossPnl,
+    netPnl: row.netPnl === "" || row.netPnl === undefined ? null : row.netPnl,
+    reportedExecutionCount:
+      row.reportedExecutionCount === "" || row.reportedExecutionCount === undefined
+        ? null
+        : row.reportedExecutionCount,
+    executions: Array.isArray(row.executions) ? row.executions : [],
     strategy: row.strategy ? String(row.strategy).trim() : null,
     notes: row.notes ? String(row.notes).trim() : null
   };
@@ -86,7 +112,7 @@ function mapImportRowToPayload(row) {
 
 function validateImportTradeRow(row) {
   const normalizedRow = mapImportRowToPayload(row);
-  return tradeSchema.safeParse(normalizedRow);
+  return importTradeSchema.safeParse(normalizedRow);
 }
 
 module.exports = {

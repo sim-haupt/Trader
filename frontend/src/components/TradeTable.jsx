@@ -12,6 +12,7 @@ function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = tru
               <th className="px-4 py-4">Entry</th>
               <th className="px-4 py-4">Exit</th>
               <th className="px-4 py-4">Quantity</th>
+              <th className="px-4 py-4">Executions</th>
               <th className="px-4 py-4">P&amp;L</th>
               <th className="px-4 py-4">Strategy</th>
               <th className="px-4 py-4">Date</th>
@@ -21,6 +22,8 @@ function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = tru
           <tbody className="divide-y divide-white/10 bg-slate-950/20">
             {trades.map((trade) => {
               const pnl = Number(trade.netPnl ?? trade.grossPnl ?? 0);
+              const executionCount =
+                Number(trade.reportedExecutionCount ?? trade.executions?.length ?? 0) || 0;
 
               return (
                 <tr
@@ -51,6 +54,7 @@ function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = tru
                   <td className="px-4 py-4 text-slate-200">{trade.entryPrice}</td>
                   <td className="px-4 py-4 text-slate-200">{trade.exitPrice ?? "-"}</td>
                   <td className="px-4 py-4 text-slate-200">{trade.quantity}</td>
+                  <td className="px-4 py-4 text-slate-200">{executionCount || "-"}</td>
                   <td
                     className={`px-4 py-4 font-semibold ${
                       pnl >= 0 ? "text-mint" : "text-coral"

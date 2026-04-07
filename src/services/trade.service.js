@@ -12,6 +12,21 @@ const adminTradeInclude = {
   }
 };
 
+const tradeDetailInclude = {
+  executions: {
+    orderBy: {
+      sequence: "asc"
+    }
+  },
+  user: {
+    select: {
+      id: true,
+      name: true,
+      email: true
+    }
+  }
+};
+
 function hasGlobalTradeScope(actor, filters = {}) {
   return actor.role === "ADMIN" && filters.scope === "all";
 }
@@ -81,6 +96,22 @@ async function getTrades(actor, filters) {
       entryDate: "desc"
     }
   });
+}
+
+async function getTradeById(actor, tradeId) {
+  const trade = await prisma.trade.findFirst({
+    where: {
+      id: tradeId,
+      ...(actor.role === "ADMIN" ? {} : { userId: actor.id })
+    },
+    include: tradeDetailInclude
+  });
+
+  if (!trade) {
+    throw new ApiError(404, "Trade not found");
+  }
+
+  return trade;
 }
 
 async function updateTrade(actor, tradeId, data) {
@@ -157,6 +188,7 @@ async function createManyTrades(userId, trades) {
 module.exports = {
   createTrade,
   getTrades,
+  getTradeById,
   updateTrade,
   deleteTrade,
   bulkDeleteTrades,

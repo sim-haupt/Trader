@@ -28,6 +28,18 @@ function parseCsv(buffer) {
   }).map(normalizeHeaders);
 }
 
+function buildExecutionCreateInput(execution) {
+  return {
+    occurredAt: new Date(execution.occurredAt),
+    quantity: execution.quantity,
+    price: execution.price,
+    action: execution.action,
+    sequence: execution.sequence,
+    positionAfter: execution.positionAfter ?? null,
+    source: execution.source || "IMPORTED"
+  };
+}
+
 async function importTradesFromCsv(userId, file) {
   let records;
 
@@ -89,16 +101,28 @@ async function persistImportedTrades(userId, sourceName, validTrades, invalidRow
       });
     }
 
-    const inserted =
-      validTrades.length > 0
-        ? await tx.trade.createMany({
-            data: validTrades.map((trade) => buildTradePayload(trade, userId))
-          })
-        : { count: 0 };
+    let insertedCount = 0;
+
+    if (validTrades.length > 0) {
+      for (const trade of validTrades) {
+        const executions = Array.isArray(trade.executions) ? trade.executions : [];
+        await tx.trade.create({
+          data: {
+            ...buildTradePayload(trade, userId),
+            executions: executions.length
+              ? {
+                  create: executions.map(buildExecutionCreateInput)
+                }
+              : undefined
+          }
+        });
+        insertedCount += 1;
+      }
+    }
 
     return {
       importId: importRecord.id,
-      insertedCount: inserted.count || 0
+      insertedCount
     };
   });
 

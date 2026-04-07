@@ -20,6 +20,11 @@ const tradeService = {
     return extractTrades(response);
   },
 
+  async getTrade(id) {
+    const response = await api.get(`/trades/${id}`);
+    return response.data.data;
+  },
+
   async createTrade(payload) {
     const response = await api.post("/trades", payload);
     return response.data.data;
