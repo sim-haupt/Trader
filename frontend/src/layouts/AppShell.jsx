@@ -26,15 +26,15 @@ function AppShell() {
     (location.pathname.startsWith("/admin") ? "Admin" : "Dashboard");
 
   return (
-    <div className="min-h-screen bg-transparent lg:grid lg:grid-cols-[320px_minmax(0,1fr)]">
-      <aside className="border-b border-white/10 bg-[linear-gradient(180deg,rgba(24,33,53,0.96),rgba(18,25,42,0.96))] px-5 py-6 backdrop-blur lg:min-h-screen lg:border-b-0 lg:border-r lg:px-6">
-        <div className="flex items-center justify-between rounded-[28px] border border-white/8 bg-white/[0.03] px-4 py-5">
+    <div className="min-h-screen bg-grid bg-[length:26px_26px] lg:grid lg:grid-cols-[320px_minmax(0,1fr)]">
+      <aside className="border-b border-mint/12 bg-[linear-gradient(180deg,rgba(7,12,10,0.98),rgba(4,7,6,0.98))] px-5 py-6 backdrop-blur lg:min-h-screen lg:border-b-0 lg:border-r lg:px-6">
+        <div className="flex items-center justify-between rounded-[22px] border border-mint/15 bg-[linear-gradient(180deg,rgba(11,18,15,0.9),rgba(5,9,7,0.92))] px-4 py-5 shadow-crt">
           <div>
-            <p className="text-xs uppercase tracking-[0.35em] text-mint">Trader Journal</p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white">TraderVue</h1>
+            <p className="text-xs uppercase tracking-[0.38em] text-mint">Arcade Ledger</p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-[0.2em] text-phosphor">TRADER</h1>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-mist">
-            Pro
+          <div className="rounded-xl border border-mint/15 bg-mint/8 px-3 py-2 text-xs uppercase tracking-[0.25em] text-mint">
+            Mk-II
           </div>
         </div>
 
@@ -44,10 +44,10 @@ function AppShell() {
               key={item.path}
               to={item.path}
               className={({ isActive }) =>
-                `flex items-center gap-4 rounded-2xl px-4 py-3 text-base font-medium transition ${
+                `flex items-center gap-4 rounded-[18px] border px-4 py-3 text-base font-medium uppercase tracking-[0.08em] transition ${
                   isActive
-                    ? "bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]"
-                    : "text-slate-300 hover:bg-white/5 hover:text-white"
+                    ? "border-mint/30 bg-mint/10 text-phosphor shadow-crt"
+                    : "border-transparent text-mist hover:border-mint/10 hover:bg-mint/5 hover:text-phosphor"
                 }`
               }
             >
@@ -62,14 +62,14 @@ function AppShell() {
             <NavLink
               to="/admin"
               className={({ isActive }) =>
-                `flex items-center gap-4 rounded-2xl px-4 py-3 text-base font-medium transition ${
+                `flex items-center gap-4 rounded-[18px] border px-4 py-3 text-base font-medium uppercase tracking-[0.08em] transition ${
                   isActive
-                    ? "bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]"
-                    : "text-slate-300 hover:bg-white/5 hover:text-white"
+                    ? "border-mint/30 bg-mint/10 text-phosphor shadow-crt"
+                    : "border-transparent text-mist hover:border-mint/10 hover:bg-mint/5 hover:text-phosphor"
                 }`
               }
             >
-              <span className="text-gold">
+              <span className="text-mint">
                 <NavIcon path="M12 3l7 4v10l-7 4-7-4V7l7-4zm0 5v4m0 4h.01" />
               </span>
               Admin
@@ -80,21 +80,21 @@ function AppShell() {
         <button
           type="button"
           onClick={() => navigate("/trades")}
-          className="mt-8 flex w-full items-center justify-center rounded-2xl bg-mint px-5 py-4 text-base font-semibold text-ink transition hover:bg-[#8df6d2]"
+          className="mt-8 flex w-full items-center justify-center rounded-[18px] border border-mint/35 bg-mint/12 px-5 py-4 text-base font-semibold uppercase tracking-[0.12em] text-phosphor transition hover:bg-mint/18"
         >
           Import Trades
         </button>
 
-        <div className="mt-8 rounded-[28px] border border-white/8 bg-white/[0.03] p-4">
+        <div className="mt-8 rounded-[22px] border border-mint/15 bg-[linear-gradient(180deg,rgba(11,18,15,0.9),rgba(5,9,7,0.92))] p-4 shadow-crt">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold text-white">{user?.name}</p>
-              <p className="mt-1 text-sm text-mist">Role: {user?.role}</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.1em] text-phosphor">{user?.name}</p>
+              <p className="mt-1 text-sm uppercase tracking-[0.18em] text-mist">Role: {user?.role}</p>
             </div>
             <button
               type="button"
               onClick={logout}
-              className="rounded-full border border-white/15 px-4 py-2 text-sm font-medium text-white transition hover:border-coral hover:text-coral"
+              className="rounded-full border border-mint/20 px-4 py-2 text-sm font-medium uppercase tracking-[0.08em] text-phosphor transition hover:border-mint hover:text-mint"
             >
               Logout
             </button>
@@ -103,27 +103,27 @@ function AppShell() {
       </aside>
 
       <div className="min-w-0">
-        <header className="sticky top-0 z-20 border-b border-white/10 bg-slate-950/70 backdrop-blur">
+        <header className="sticky top-0 z-20 border-b border-mint/12 bg-[rgba(3,6,5,0.82)] backdrop-blur">
           <div className="flex flex-col gap-4 px-4 py-5 sm:px-6 xl:flex-row xl:items-center xl:justify-between xl:px-8">
             <div>
-              <p className="text-xs uppercase tracking-[0.35em] text-mint">Workspace</p>
-              <h2 className="mt-2 text-3xl font-semibold text-white">{sectionTitle}</h2>
+              <p className="text-xs uppercase tracking-[0.38em] text-mint">Command Deck</p>
+              <h2 className="mt-2 text-3xl font-semibold uppercase tracking-[0.12em] text-phosphor">{sectionTitle}</h2>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
-                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-white/10"
+                className="rounded-[18px] border border-mint/15 bg-mint/6 px-4 py-2.5 text-sm font-medium uppercase tracking-[0.08em] text-mist transition hover:bg-mint/12 hover:text-phosphor"
               >
                 Edit Layout
               </button>
-              <div className="flex items-center rounded-2xl border border-white/10 bg-white/5 p-1">
+              <div className="flex items-center rounded-[18px] border border-mint/15 bg-[rgba(8,14,11,0.92)] p-1 shadow-crt">
                 {["30 Days", "60 Days", "90 Days"].map((label, index) => (
                   <button
                     key={label}
                     type="button"
-                    className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
-                      index === 0 ? "bg-white/10 text-white" : "text-mist hover:text-white"
+                    className={`rounded-[14px] px-4 py-2 text-sm font-medium uppercase tracking-[0.08em] transition ${
+                      index === 0 ? "bg-mint/12 text-phosphor" : "text-mist hover:text-phosphor"
                     }`}
                   >
                     {label}

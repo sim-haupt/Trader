@@ -102,8 +102,6 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
     });
     vwapSeries.setData(calculateVwapSeries(bars));
 
-    createSeriesMarkers(candleSeries, []);
-
     function renderExecutionOverlay() {
       if (!overlayRef.current) {
         return;
