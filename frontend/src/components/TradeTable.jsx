@@ -15,8 +15,8 @@ function TradeTable({
   return (
     <div className="ui-table-shell">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-[#e5e7eb1f] text-sm">
-          <thead className="bg-[linear-gradient(180deg,rgba(255,255,255,0.024),rgba(255,255,255,0.008))]">
+        <table className="min-w-full divide-y divide-[var(--line)] text-sm">
+          <thead className="bg-[linear-gradient(180deg,rgba(255,255,255,0.028),rgba(255,255,255,0.012))]">
             <tr className="ui-title text-left text-[11px] text-white/58">
               {onToggleSelection && (
                 <th className="px-4 py-4">
@@ -38,7 +38,7 @@ function TradeTable({
               {showActions && <th className="px-4 py-4">ACTIONS</th>}
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#e5e7eb1f] bg-transparent">
+          <tbody className="divide-y divide-[var(--line)] bg-transparent">
             {trades.map((trade, index) => {
               const pnl = Number(trade.netPnl ?? trade.grossPnl ?? 0);
               const executionCount =
@@ -60,9 +60,9 @@ function TradeTable({
                     }
                   }}
                   className={`cursor-pointer transition hover:bg-white/[0.025] focus:bg-white/[0.025] focus:outline-none ${
-                    startsNewDay ? "border-t border-[#e5e7eb26]" : ""
+                    startsNewDay ? "border-t border-[var(--line-strong)]" : ""
                   }`}
-                  style={startsNewDay ? { boxShadow: "inset 0 1px 0 rgba(229,231,235,0.08)" } : undefined}
+                  style={startsNewDay ? { boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)" } : undefined}
                 >
                   {onToggleSelection && (
                     <td className="px-4 py-4">
@@ -83,7 +83,7 @@ function TradeTable({
                     <div className="text-[15px] font-semibold tracking-[-0.02em] text-white">{trade.symbol}</div>
                     {trade.tags ? <div className="mt-1 text-xs text-white/52">{trade.tags}</div> : null}
                     {!trade.tags && trade.notes ? (
-                      <div className="mt-1 max-w-[220px] truncate text-xs text-white/42">{trade.notes}</div>
+                      <div className="mt-1 max-w-[220px] truncate text-xs leading-5 text-white/42">{trade.notes}</div>
                     ) : null}
                   </td>
                   <td className="px-4 py-4 text-white/84">{trade.entryPrice}</td>
@@ -116,7 +116,7 @@ function TradeTable({
                             event.stopPropagation();
                             onDelete(trade);
                           }}
-                          className="ui-button border-coral/25 bg-coral/10 px-3 py-1.5 text-[11px] text-coral"
+                          className="ui-button-danger px-3 py-1.5 text-[11px]"
                         >
                           Delete
                         </button>

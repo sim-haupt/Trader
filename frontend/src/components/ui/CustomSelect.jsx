@@ -55,55 +55,63 @@ function CustomSelect({
       <button
         type="button"
         onClick={() => setIsOpen((current) => !current)}
-        className={`ui-input flex w-full items-center justify-between gap-3 text-left ${buttonClassName}`}
+        className={`ui-input flex w-full items-center justify-between gap-3 text-left shadow-none ${buttonClassName}`}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >
-        <span className={selectedOption ? "text-white" : "text-white/42"}>
+        <span className={selectedOption ? "text-white" : "text-white/44"}>
           {selectedOption?.label ?? placeholder}
         </span>
-        <span
-          className={`text-[10px] text-white/46 transition ${isOpen ? "rotate-180" : ""}`}
+        <svg
+          viewBox="0 0 20 20"
+          fill="none"
+          className={`h-4 w-4 shrink-0 text-white/40 transition-transform ${isOpen ? "rotate-180" : ""}`}
           aria-hidden="true"
         >
-          ▼
-        </span>
+          <path d="M5 7.5 10 12.5 15 7.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
       </button>
 
       {isOpen ? (
         <div
-          className={`absolute top-[calc(100%+8px)] z-50 min-w-full overflow-hidden rounded-[14px] border border-[#e5e7eb24] bg-[#171d29]/98 p-1 shadow-[0_18px_38px_rgba(0,0,0,0.32)] backdrop-blur ${align === "right" ? "right-0" : "left-0"} ${menuClassName}`}
+          className={`ui-popover absolute top-[calc(100%+10px)] z-50 min-w-full overflow-hidden p-1 ${align === "right" ? "right-0" : "left-0"} ${menuClassName}`}
           role="listbox"
         >
-          {normalizedOptions.map((option) => {
-            const active = option.value === value;
+          <div className="max-h-72 overflow-y-auto">
+            {normalizedOptions.map((option) => {
+              const active = option.value === value;
 
-            return (
-              <button
-                key={String(option.value)}
-                type="button"
-                disabled={option.disabled}
-                onClick={() => {
-                  if (option.disabled) {
-                    return;
-                  }
+              return (
+                <button
+                  key={String(option.value)}
+                  type="button"
+                  disabled={option.disabled}
+                  onClick={() => {
+                    if (option.disabled) {
+                      return;
+                    }
 
-                  onChange(option.value);
-                  setIsOpen(false);
-                }}
-                className={`flex w-full items-center justify-between rounded-[10px] px-3 py-2.5 text-sm transition ${
-                  option.disabled
-                    ? "cursor-not-allowed text-white/24"
-                    : active
-                      ? "bg-white text-black"
-                      : "text-white/78 hover:bg-white/[0.06] hover:text-white"
-                }`}
-              >
-                <span>{option.label}</span>
-                {active ? <span className="text-[10px]">●</span> : null}
-              </button>
-            );
-          })}
+                    onChange(option.value);
+                    setIsOpen(false);
+                  }}
+                  className={`flex w-full items-center justify-between rounded-[12px] px-3 py-2.5 text-sm transition ${
+                    option.disabled
+                      ? "cursor-not-allowed text-white/24"
+                      : active
+                        ? "bg-[linear-gradient(180deg,#7fc0ff,#5f9cff)] text-[#08111d] shadow-[0_10px_22px_rgba(103,168,255,0.18)]"
+                        : "text-white/78 hover:bg-white/[0.055] hover:text-white"
+                  }`}
+                >
+                  <span>{option.label}</span>
+                  {active ? (
+                    <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
+                      <path d="m4.5 10.5 3.5 3.5 7-8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
         </div>
       ) : null}
     </div>

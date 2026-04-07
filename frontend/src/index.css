@@ -29,6 +29,7 @@ body[data-theme="dark"] {
   --danger-soft: rgba(255, 107, 114, 0.14);
   --warning: #f4c85c;
   --warning-soft: rgba(244, 200, 92, 0.14);
+  --popover: rgba(18, 24, 38, 0.98);
   --shadow-lg: 0 32px 90px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 18px 48px rgba(0, 0, 0, 0.24);
   --shadow-sm: 0 10px 24px rgba(0, 0, 0, 0.18);
@@ -114,6 +115,11 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--accent);
 }
 
 input,
@@ -350,6 +356,48 @@ button:disabled {
     border-radius: var(--radius-md);
     background: linear-gradient(180deg, rgba(255,255,255,0.028), rgba(255,255,255,0.01));
     padding: 16px;
+  }
+
+  .ui-popover {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.018)),
+      var(--popover);
+    box-shadow: var(--shadow-lg);
+    backdrop-filter: blur(18px);
+  }
+
+  .ui-segment {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.022);
+  }
+
+  .ui-segment button {
+    border: 0;
+    background: transparent;
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    transition: background-color 120ms ease, color 120ms ease;
+  }
+
+  .ui-segment button:hover {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text);
+  }
+
+  .ui-segment button[data-active="true"] {
+    background: linear-gradient(180deg, rgba(103, 168, 255, 0.96), rgba(103, 168, 255, 0.88));
+    color: #07111d;
+    box-shadow: 0 10px 22px rgba(103, 168, 255, 0.2);
   }
 }
 

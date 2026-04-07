@@ -17,12 +17,14 @@ function UploadCSV({ onUpload, isUploading }) {
 
   return (
     <form className="flex flex-col gap-4 md:flex-row md:items-center" onSubmit={handleSubmit}>
-      <input
-        type="file"
-        accept=".csv,text/csv"
-        onChange={(event) => setFile(event.target.files?.[0] || null)}
-        className="block w-full rounded-2xl border border-dashed border-[#e5e7eb42] bg-white/[0.03] px-4 py-3 text-sm text-white file:mr-4 file:rounded-xl file:border file:border-[#e5e7eb42] file:bg-white/90 file:px-4 file:py-2 file:text-sm file:font-medium file:text-black hover:file:brightness-105"
-      />
+      <div className="ui-panel flex-1 border-dashed p-3">
+        <input
+          type="file"
+          accept=".csv,text/csv"
+          onChange={(event) => setFile(event.target.files?.[0] || null)}
+          className="block w-full text-sm text-white/72 file:mr-4 file:rounded-[12px] file:border file:border-[var(--line)] file:bg-white file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-[#0c1522] hover:file:brightness-105"
+        />
+      </div>
       <button
         type="submit"
         disabled={!file || isUploading}

@@ -569,10 +569,10 @@ function TradesPage() {
         ) : (
           <div className="space-y-4">
             {selectedIds.length > 0 && (
-              <div className="rounded-[18px] border border-[#e5e7eb20] bg-[linear-gradient(180deg,rgba(255,255,255,0.028),rgba(255,255,255,0.012))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+              <div className="ui-panel p-5 shadow-none">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-white/80">
+                    <div className="ui-chip rounded-full px-3 py-1.5 text-xs uppercase tracking-[0.14em] text-white/80">
                       {selectedIds.length} selected
                     </div>
                     <div className="text-sm text-white/56">
@@ -605,7 +605,7 @@ function TradesPage() {
                         ))}
                       </div>
                     ) : (
-                      <div className="rounded-[14px] border border-white/8 bg-black/10 px-4 py-3 text-sm text-white/48">
+                      <div className="ui-surface-subtle px-4 py-3 text-sm text-white/48">
                         Choose one or more saved tags to apply to the selected trades.
                       </div>
                     )}
@@ -630,39 +630,31 @@ function TradesPage() {
                     )}
                   </div>
 
-                  <div className="flex h-full flex-col justify-between gap-4 rounded-[16px] border border-white/8 bg-black/10 p-4">
+                  <div className="ui-surface-subtle flex h-full flex-col justify-between gap-4 p-4">
                     <div className="space-y-4">
                       <div>
                         <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/42">
                           Tag Action
                         </div>
-                        <div className="grid grid-cols-2 gap-2 rounded-[12px] border border-white/8 bg-white/[0.02] p-1">
+                        <div className="ui-segment grid grid-cols-2 gap-2">
                           <button
                             type="button"
                             onClick={() => setBulkTagsMode("append")}
-                            className={`rounded-[10px] px-3 py-2 text-xs font-semibold transition ${
-                              bulkTagsMode === "append"
-                                ? "bg-white text-black"
-                                : "text-white/68 hover:bg-white/[0.05] hover:text-white"
-                            }`}
+                            data-active={bulkTagsMode === "append"}
                           >
                             Append Tags
                           </button>
                           <button
                             type="button"
                             onClick={() => setBulkTagsMode("replace")}
-                            className={`rounded-[10px] px-3 py-2 text-xs font-semibold transition ${
-                              bulkTagsMode === "replace"
-                                ? "bg-white text-black"
-                                : "text-white/68 hover:bg-white/[0.05] hover:text-white"
-                            }`}
+                            data-active={bulkTagsMode === "replace"}
                           >
                             Replace Tags
                           </button>
                         </div>
                       </div>
 
-                      <div className="rounded-[12px] border border-coral/15 bg-coral/[0.06] px-4 py-3 text-sm text-white/68">
+                      <div className="rounded-[12px] border border-coral/15 bg-coral/[0.06] px-4 py-3 text-sm leading-6 text-white/68">
                         Delete will permanently remove the selected trades.
                       </div>
                     </div>
@@ -690,7 +682,7 @@ function TradesPage() {
               </div>
             )}
 
-            <div className="flex flex-col gap-3 rounded-[12px] border border-[#e5e7eb42] bg-white/[0.02] px-4 py-3 md:flex-row md:items-center md:justify-between">
+            <div className="ui-surface-subtle flex flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between">
               <div className="text-sm text-white/62">
                 Showing{" "}
                 <span className="font-semibold text-white">

@@ -31,32 +31,35 @@ function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-10">
-      <div className="grid w-full max-w-5xl overflow-hidden rounded-[28px] border border-[#e5e7eb42] bg-[linear-gradient(180deg,rgba(14,16,22,0.96),rgba(8,10,14,0.98))] shadow-glow lg:grid-cols-[1.15fr_0.85fr]">
-        <section className="hidden border-r border-[#e5e7eb42] bg-[radial-gradient(circle_at_top_left,rgba(99,167,255,0.12),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(25,195,125,0.08),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] p-10 lg:block">
-          <p className="ui-title text-xs text-white/45">Trading Journal</p>
-          <h1 className="mt-6 max-w-md text-5xl font-bold leading-[1.05] tracking-[-0.05em] text-white">
-            Review the tape. Preserve the edge.
+      <div className="grid w-full max-w-6xl overflow-hidden rounded-[32px] border border-[var(--line)] bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(255,255,255,0.012)),var(--surface-2)] shadow-[0_32px_90px_rgba(0,0,0,0.35)] lg:grid-cols-[1.1fr_0.9fr]">
+        <section className="hidden border-r border-[var(--line)] bg-[radial-gradient(circle_at_top_left,rgba(103,168,255,0.16),transparent_28%),radial-gradient(circle_at_85%_80%,rgba(56,217,150,0.08),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.03),transparent)] p-12 lg:block">
+          <p className="ui-title text-xs text-white/42">Execution Review Platform</p>
+          <h1 className="mt-8 max-w-lg text-5xl font-bold leading-[0.98] tracking-[-0.055em] text-white">
+            Trade analytics with the clarity of a premium terminal.
           </h1>
-          <p className="mt-6 max-w-lg text-xl leading-8 text-white/68">
-            Track execution quality, import broker history, and spot patterns with fast
-            analytics built for active traders.
+          <p className="mt-6 max-w-xl text-lg leading-8 text-white/64">
+            Review executions, track behavior, compare setups, and turn every session into a system you can improve.
           </p>
           <div className="mt-10 grid gap-4 md:grid-cols-2">
-            <div className="ui-panel px-4 py-4">
-              <p className="ui-title text-xs text-white/45">Edge Tracking</p>
-              <p className="mt-3 text-2xl font-semibold text-mint">Execution Replay</p>
+            <div className="ui-metric-tile">
+              <p className="ui-title text-[10px] text-white/42">Trade Review</p>
+              <p className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-white">Execution Replay</p>
+              <p className="mt-2 text-sm leading-6 text-white/54">Click into trades and inspect fills, notes, tags, and context in one place.</p>
             </div>
-            <div className="ui-panel px-4 py-4">
-              <p className="ui-title text-xs text-white/45">Console Mode</p>
-              <p className="mt-3 text-2xl font-semibold text-white">Review Ready</p>
+            <div className="ui-metric-tile">
+              <p className="ui-title text-[10px] text-white/42">Performance</p>
+              <p className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-mint">Decision Grade</p>
+              <p className="mt-2 text-sm leading-6 text-white/54">Surface what works with cumulative P&L, streaks, win-rate, reports, and drawdown analysis.</p>
             </div>
           </div>
         </section>
 
-        <section className="p-8 sm:p-10">
-          <p className="ui-title text-xs text-white/45">Access</p>
-          <h2 className="mt-4 text-4xl font-bold tracking-[-0.04em] text-white">Welcome back</h2>
-          <p className="mt-3 text-lg text-white/64">Sign in to continue managing your journal.</p>
+        <section className="flex flex-col justify-center p-8 sm:p-12">
+          <p className="ui-title text-xs text-white/42">Access</p>
+          <h2 className="mt-4 text-[2.75rem] font-bold tracking-[-0.05em] text-white">Welcome back</h2>
+          <p className="mt-3 max-w-md text-base leading-7 text-white/62">
+            Sign in to continue reviewing your journal, imports, and performance reports.
+          </p>
 
           <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
             <input
@@ -89,7 +92,7 @@ function LoginPage() {
             </button>
           </form>
 
-          <p className="mt-6 text-lg text-white/64">
+          <p className="mt-6 text-base text-white/62">
             New here?{" "}
             <Link to="/register" className="font-semibold text-white underline decoration-white/20 underline-offset-4">
               Create an account

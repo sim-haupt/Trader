@@ -85,7 +85,7 @@ function getDayTone(stats, isCurrentMonth) {
   }
 
   if (!stats) {
-    return "bg-white/[0.01] text-slate-400";
+    return "bg-white/[0.015] text-slate-400";
   }
 
   if (stats.pnl > 0) {
@@ -144,10 +144,11 @@ function MonthCard({ month, onOpen }) {
         {month.weeks.flat().map((day) => (
           <div
             key={day.dayKey}
-            className={`rounded-[2px] px-2 py-3 text-lg font-medium transition ${getDayTone(
+            className={`min-h-[74px] rounded-[12px] border border-transparent px-2 py-4 text-lg font-medium transition ${getDayTone(
               day.stats,
               day.isCurrentMonth
             )}`}
+            style={getDayBorderStyle(day.stats, day.isCurrentMonth)}
           >
             {day.dayNumber}
           </div>
@@ -184,16 +185,16 @@ function MonthDetailSection({ month, onClose }) {
       }
       className="p-6 shadow-none"
     >
-      <div className="grid grid-cols-8 gap-0 overflow-hidden rounded-[12px] border border-[#e5e7eb42] bg-white/[0.015]">
+      <div className="grid grid-cols-8 gap-0 overflow-hidden rounded-[18px] border border-[var(--line)] bg-[linear-gradient(180deg,rgba(255,255,255,0.022),rgba(255,255,255,0.01))]">
         {weekdayLabels.map((label) => (
           <div
             key={label}
-            className="ui-title border-b border-r border-[#e5e7eb42] px-3 py-3 text-center text-xs text-white/78"
+            className="ui-title border-b border-r border-[var(--line)] px-3 py-3 text-center text-xs text-white/78"
           >
             {label}
           </div>
         ))}
-        <div className="ui-title border-b border-[#e5e7eb42] px-3 py-3 text-center text-xs text-white/78">
+        <div className="ui-title border-b border-[var(--line)] px-3 py-3 text-center text-xs text-white/78">
           Total
         </div>
 
@@ -217,7 +218,7 @@ function MonthDetailSection({ month, onClose }) {
               {week.map((day) => (
                 <div
                   key={day.dayKey}
-                  className={`min-h-[118px] rounded-[2px] border-b border-r px-3 py-3 text-left transition ${getDayTone(
+                  className={`min-h-[118px] border-b border-r border-[var(--line)] px-3 py-3 text-left transition ${getDayTone(
                     day.stats,
                     day.isCurrentMonth
                   )}`}
@@ -247,7 +248,7 @@ function MonthDetailSection({ month, onClose }) {
                 </div>
               ))}
 
-              <div className="min-h-[118px] border-b border-[#e5e7eb42] px-3 py-3 bg-white/[0.02]">
+              <div className="min-h-[118px] border-b border-[var(--line)] px-3 py-3 bg-white/[0.02]">
                 <div className="ui-title text-sm text-white">Week {index + 1}</div>
                 <div
                   className={`mt-4 text-base font-semibold ${

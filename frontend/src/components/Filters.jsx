@@ -1,8 +1,9 @@
 import CustomSelect from "./ui/CustomSelect";
+import DateRangePicker from "./ui/DateRangePicker";
 
 function Filters({ filters, onChange, onReset }) {
   return (
-    <div className="grid gap-4 rounded-[20px] border border-[#e5e7eb42] bg-white/[0.025] p-4 md:grid-cols-2 xl:grid-cols-5">
+    <div className="ui-panel grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_220px_minmax(0,1fr)_minmax(0,1.15fr)_auto]">
       <input
         placeholder="Filter by symbol"
         value={filters.symbol}
@@ -28,20 +29,17 @@ function Filters({ filters, onChange, onReset }) {
         className="ui-input"
       />
 
-      <input
-        type="date"
-        value={filters.from}
-        onChange={(event) => onChange("from", event.target.value)}
-        className="ui-input"
+      <DateRangePicker
+        from={filters.from}
+        to={filters.to}
+        onChange={({ from, to }) => {
+          onChange("from", from);
+          onChange("to", to);
+        }}
+        className="xl:min-w-[260px]"
       />
 
-      <div className="flex gap-3">
-        <input
-          type="date"
-          value={filters.to}
-          onChange={(event) => onChange("to", event.target.value)}
-          className="ui-input"
-        />
+      <div className="flex items-center justify-end">
         <button
           type="button"
           onClick={onReset}

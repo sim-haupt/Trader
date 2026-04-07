@@ -117,16 +117,21 @@ function SettingsPage() {
       {message && <div className="ui-notice">{message}</div>}
       {error && <div className="ui-notice border-coral/30 bg-[#2a1111] text-coral">{error}</div>}
 
-      <Card title="SETTINGS">
+      <Card
+        title="SETTINGS"
+        subtitle="Manage reusable workspace values and account-wide defaults."
+      >
         <div className="grid gap-6 xl:grid-cols-[240px_1fr]">
-          <aside className="rounded-[18px] border border-[#e5e7eb42] bg-white/[0.03] p-4">
+          <aside className="ui-panel p-4">
             <div className="space-y-2">
               <div className="ui-title text-[11px] text-white/48">Navigation</div>
               <button
                 type="button"
                 onClick={() => setActiveSection("tags")}
-                className={`flex w-full items-center justify-between rounded-[14px] px-4 py-3 text-left text-sm ${
-                  activeSection === "tags" ? "bg-white/[0.06] text-white" : "text-white/64 hover:bg-white/[0.03]"
+                className={`flex w-full items-center justify-between rounded-[14px] px-4 py-3 text-left text-sm transition ${
+                  activeSection === "tags"
+                    ? "border border-[var(--line-strong)] bg-white/[0.06] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+                    : "border border-transparent text-white/64 hover:bg-white/[0.03] hover:text-white"
                 }`}
               >
                 <span>Tags</span>
@@ -135,8 +140,10 @@ function SettingsPage() {
               <button
                 type="button"
                 onClick={() => setActiveSection("commissions")}
-                className={`flex w-full items-center justify-between rounded-[14px] px-4 py-3 text-left text-sm ${
-                  activeSection === "commissions" ? "bg-white/[0.06] text-white" : "text-white/64 hover:bg-white/[0.03]"
+                className={`flex w-full items-center justify-between rounded-[14px] px-4 py-3 text-left text-sm transition ${
+                  activeSection === "commissions"
+                    ? "border border-[var(--line-strong)] bg-white/[0.06] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+                    : "border border-transparent text-white/64 hover:bg-white/[0.03] hover:text-white"
                 }`}
               >
                 <span>Commissions</span>
@@ -181,7 +188,7 @@ function SettingsPage() {
                     {tags.map((tag) => (
                       <div
                         key={tag.id}
-                        className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2"
+                        className="flex items-center gap-2 rounded-full border border-[var(--line)] bg-white/[0.035] px-4 py-2"
                       >
                         <span className="text-sm text-white/82">{tag.name}</span>
                         <button
@@ -226,7 +233,7 @@ function SettingsPage() {
                   >
                     {savingCommission ? "Saving..." : "Save Commission"}
                   </button>
-                  <span className="text-sm text-white/44">
+                  <span className="rounded-[12px] border border-[var(--line)] bg-white/[0.03] px-3 py-2 text-sm text-white/50">
                     Current: ${Number(user?.defaultCommission ?? 0).toFixed(2)}
                   </span>
                 </div>

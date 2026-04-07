@@ -128,10 +128,10 @@ function DashboardPage() {
           <button
             type="button"
             onClick={() => setEditingLayout((current) => !current)}
-            className={`rounded-[12px] px-3 py-2 text-xs font-semibold tracking-[0.12em] transition ${
+            className={`px-3 py-2 text-xs font-semibold tracking-[0.12em] ${
               editingLayout
                 ? "bg-white text-black shadow-[0_10px_24px_rgba(255,255,255,0.14)]"
-                : "border border-white/10 bg-white/[0.035] text-white/70 hover:bg-white/[0.07] hover:text-white"
+                : "ui-button text-white/70 hover:text-white"
             }`}
           >
             {editingLayout ? "DONE" : "EDIT LAYOUT"}
@@ -140,7 +140,7 @@ function DashboardPage() {
             <button
               type="button"
               onClick={resetLayout}
-              className="rounded-[12px] border border-white/10 bg-white/[0.035] px-3 py-2 text-xs font-semibold tracking-[0.12em] text-white/70 transition hover:bg-white/[0.07] hover:text-white"
+              className="ui-button px-3 py-2 text-xs font-semibold tracking-[0.12em] text-white/70 hover:text-white"
             >
               RESET
             </button>
@@ -159,7 +159,7 @@ function DashboardPage() {
                 className={`rounded-[12px] px-3 py-2 text-xs font-semibold tracking-[0.12em] transition ${
                   active
                     ? "bg-white text-black shadow-[0_10px_24px_rgba(255,255,255,0.14)]"
-                    : "border border-white/10 bg-white/[0.035] text-white/70 hover:bg-white/[0.07] hover:text-white"
+                    : "ui-button text-white/70 hover:text-white"
                 }`}
               >
                 {option.label}

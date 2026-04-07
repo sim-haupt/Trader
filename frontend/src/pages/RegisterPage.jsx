@@ -30,16 +30,16 @@ function RegisterPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-10">
-      <div className="w-full max-w-xl rounded-[28px] border border-[#e5e7eb42] bg-[linear-gradient(180deg,rgba(14,16,22,0.96),rgba(8,10,14,0.98))] p-8 shadow-glow sm:p-10">
+      <div className="w-full max-w-xl rounded-[32px] border border-[var(--line)] bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(255,255,255,0.012)),var(--surface-2)] p-8 shadow-[0_32px_90px_rgba(0,0,0,0.35)] sm:p-10">
         <div className="mb-8 flex items-center justify-between gap-4">
           <div>
-            <p className="ui-title text-xs text-white/45">Start Journaling</p>
-            <h1 className="mt-4 text-4xl font-bold tracking-[-0.04em] text-white">Create your account</h1>
+            <p className="ui-title text-xs text-white/42">Start Journaling</p>
+            <h1 className="mt-4 text-4xl font-bold tracking-[-0.05em] text-white">Create your account</h1>
           </div>
           <div className="ui-chip">New</div>
         </div>
-        <p className="mt-3 text-lg text-white/64">
-          Build a repeatable review process around every trade you take.
+        <p className="mt-3 max-w-lg text-base leading-7 text-white/62">
+          Set up your workspace and start building a repeatable review process around every trade.
         </p>
 
         <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
@@ -81,7 +81,7 @@ function RegisterPage() {
           </button>
         </form>
 
-        <p className="mt-6 text-lg text-white/64">
+        <p className="mt-6 text-base text-white/62">
           Already have an account?{" "}
           <Link to="/login" className="font-semibold text-white underline decoration-white/20 underline-offset-4">
             Sign in

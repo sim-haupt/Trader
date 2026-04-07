@@ -125,7 +125,7 @@ function ChartTooltipContent({ active, payload, label }) {
 
 function MiniMetric({ label, value, tone = "text-white" }) {
   return (
-    <div className="h-full rounded-[12px] border border-[#e5e7eb42] bg-white/[0.025] px-4 py-4">
+    <div className="ui-metric-tile h-full">
       <p className="ui-title text-[10px] text-white/48">{label}</p>
       <p className={`mt-3 text-2xl font-bold tracking-[-0.04em] ${tone}`}>{value}</p>
     </div>
@@ -459,12 +459,12 @@ function AnalyticsCharts({
 
   return (
     <div className="space-y-6">
-      <div className="ui-panel border-[#e5e7eb42] p-5">
+      <div className="ui-panel p-5">
         <div className="grid gap-3 md:grid-cols-7">
           {lastSevenDays.map((day) => (
             <div
               key={day.date}
-              className="rounded-[10px] border border-[#e5e7eb42] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.008))] px-4 py-4"
+              className="ui-metric-tile rounded-[14px] px-4 py-4"
             >
               <p className="ui-title text-[10px] uppercase text-white/45">{day.weekday}</p>
               <p className="mt-2 text-sm text-white/62">{day.label}</p>
@@ -486,11 +486,11 @@ function AnalyticsCharts({
               <button
                 type="button"
                 onClick={() => onToggleSpan?.(id)}
-                className="rounded-[10px] border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/76 hover:bg-white/[0.08]"
+                className="ui-button px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/76 hover:text-white"
               >
                 {span === 2 ? "Normal" : "Wide"}
               </button>
-              <span className="cursor-grab select-none rounded-[10px] border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/48">
+              <span className="ui-button cursor-grab select-none px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/56">
                 Drag
               </span>
             </div>

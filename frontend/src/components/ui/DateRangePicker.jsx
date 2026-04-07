@@ -308,10 +308,12 @@ function DateRangePicker({
       <button
         type="button"
         onClick={openPicker}
-        className={`ui-input flex w-full items-center justify-between gap-3 text-left ${buttonClassName}`}
+        className={`ui-input flex w-full items-center justify-between gap-3 text-left shadow-none ${buttonClassName}`}
       >
         <span className="flex items-center gap-3">
-          <span className="text-white/44">🗓</span>
+          <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4 shrink-0 text-white/42">
+            <path d="M6 2.5v2M14 2.5v2M3.5 7h13M5 4.5h10A1.5 1.5 0 0 1 16.5 6v9A1.5 1.5 0 0 1 15 16.5H5A1.5 1.5 0 0 1 3.5 15V6A1.5 1.5 0 0 1 5 4.5Z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
           <span className={from || to ? "text-white" : "text-white/42"}>
             {from || to ? getLabel(initialFrom, initialTo) : placeholder}
           </span>
@@ -320,10 +322,10 @@ function DateRangePicker({
 
       {isOpen ? (
         <div
-          className={`absolute top-[calc(100%+10px)] z-50 w-[min(1040px,calc(100vw-40px))] overflow-hidden rounded-[20px] border border-[#e5e7eb24] bg-[#171d29]/98 shadow-[0_28px_80px_rgba(0,0,0,0.44)] backdrop-blur-xl ${align === "right" ? "right-0" : "left-0"}`}
+          className={`ui-popover absolute top-[calc(100%+10px)] z-50 w-[min(1040px,calc(100vw-40px))] overflow-hidden ${align === "right" ? "right-0" : "left-0"}`}
         >
           <div className="grid min-h-[520px] xl:grid-cols-[290px_1fr]">
-            <div className="border-r border-white/10 p-5">
+            <div className="border-r border-[var(--line)] p-5">
               <div className="space-y-2">
                 {PRESET_OPTIONS.map((option) => {
                   const active = option.key === activePreset;
@@ -335,7 +337,7 @@ function DateRangePicker({
                       onClick={() => applyPreset(option.key)}
                       className={`flex w-full items-center justify-between rounded-[12px] px-4 py-3 text-left text-sm font-medium transition ${
                         active
-                          ? "bg-white/[0.08] text-white"
+                          ? "bg-[linear-gradient(180deg,rgba(103,168,255,0.18),rgba(103,168,255,0.1))] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
                           : "text-white/72 hover:bg-white/[0.04] hover:text-white"
                       }`}
                     >
@@ -348,7 +350,7 @@ function DateRangePicker({
             </div>
 
             <div className="flex flex-col">
-              <div className="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-5">
+              <div className="flex items-center justify-between gap-4 border-b border-[var(--line)] px-6 py-5">
                 <button
                   type="button"
                   onClick={() => setVisibleMonth((current) => addMonths(current, -1))}
@@ -369,7 +371,7 @@ function DateRangePicker({
                 </button>
               </div>
 
-              <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-white/10 px-6 py-5">
+              <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-[var(--line)] px-6 py-5">
                 <div className="text-sm text-white/62">
                   {(draftFrom ? formatIsoDate(draftFrom) : "---- -- --").replace(/-/g, "/")} -{" "}
                   {(draftTo ? formatIsoDate(draftTo) : draftFrom ? formatIsoDate(draftFrom) : "---- -- --").replace(/-/g, "/")}
