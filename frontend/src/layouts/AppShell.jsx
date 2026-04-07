@@ -28,32 +28,22 @@ function AppShell() {
   return (
     <div className="min-h-screen bg-grid bg-[length:24px_24px]">
       <header className="sticky top-0 z-20 border-b-2 border-mint/30 bg-[rgba(10,7,17,0.96)] backdrop-blur">
-        <div className="px-4 py-5 sm:px-6 xl:px-8">
+        <div className="px-4 py-3 sm:px-6 xl:px-8">
           <div className="ui-panel overflow-hidden px-0 py-0">
-            <div className="border-b border-cyan/25 bg-[linear-gradient(90deg,rgba(138,103,255,0.26),rgba(83,189,255,0.08),rgba(255,180,77,0.08))] px-4 py-4">
-              <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="border-b border-cyan/25 bg-[linear-gradient(90deg,rgba(138,103,255,0.26),rgba(83,189,255,0.08),rgba(255,180,77,0.08))] px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-4">
-                  <div>
-                    <p className="ui-title text-xs text-mist">Trader Journal</p>
-                    <h1 className="ui-title mt-2 text-2xl text-[#fff8df]">Arcade Console</h1>
-                  </div>
+                  <p className="ui-title text-lg text-[#fff8df]">Trader Journal</p>
                   <div className="ui-chip">Mk-II</div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-3 text-sm">
-                  <span className="ui-chip">17°C</span>
-                  <span className="ui-chip">Clear Sky</span>
-                  <span className="ui-chip">Langen</span>
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-col gap-4 px-4 py-4 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex flex-col gap-3 px-4 py-3 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex items-center gap-4">
-                <div className="hidden h-12 w-[2px] bg-cyan/40 xl:block" />
                 <div>
                   <p className="ui-title text-xs text-[#59b9ff]">Workspace</p>
-                  <h2 className="ui-title mt-2 text-xl text-gold">{sectionTitle}</h2>
+                  <h2 className="ui-title mt-1 text-lg text-gold">{sectionTitle}</h2>
                 </div>
               </div>
 
@@ -100,7 +90,7 @@ function AppShell() {
                 <button
                   type="button"
                   onClick={() => navigate("/trades?mode=import")}
-                  className="ui-button-solid text-sm"
+                  className="ui-button-solid px-4 py-2 text-sm"
                 >
                   Import Trades
                 </button>
