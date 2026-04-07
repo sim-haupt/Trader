@@ -11,13 +11,15 @@ import {
   buildExecutionMarkers,
   calculateEmaSeries,
   calculateMacdSeries,
-  calculateVwapSeries
+  calculateVwapSeries,
+  toChartUnixSeconds
 } from "../utils/chartIndicators";
 
 function buildDayRange(anchorDate) {
-  const start = new Date(anchorDate);
+  const parsedTimestamp = toChartUnixSeconds(anchorDate);
+  const start = parsedTimestamp ? new Date(parsedTimestamp * 1000) : new Date(anchorDate);
   start.setHours(4, 0, 0, 0);
-  const end = new Date(anchorDate);
+  const end = parsedTimestamp ? new Date(parsedTimestamp * 1000) : new Date(anchorDate);
   end.setHours(20, 0, 0, 0);
   return { from: start.toISOString(), to: end.toISOString() };
 }
@@ -108,9 +110,19 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
       }
 
       overlayRef.current.innerHTML = "";
+      const barTimes = new Set(bars.map((bar) => bar.time));
 
       for (const marker of markers) {
-        const x = mainChart.timeScale().timeToCoordinate(marker.time);
+        const snappedTime = barTimes.has(marker.time)
+          ? marker.time
+          : Math.max(
+              ...bars
+                .map((bar) => bar.time)
+                .filter((time) => time <= (marker.rawTime || marker.time))
+            );
+        const x = Number.isFinite(snappedTime)
+          ? mainChart.timeScale().timeToCoordinate(snappedTime)
+          : null;
         const y = candleSeries.priceToCoordinate(marker.price);
 
         if (x == null || y == null) {
