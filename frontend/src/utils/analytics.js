@@ -61,6 +61,54 @@ function getTimeBucket(date) {
   return "AFTER HOURS";
 }
 
+function buildHourlyPerformance(processedTrades) {
+  const hourlyMap = new Map();
+
+  for (let hour = 4; hour <= 20; hour += 1) {
+    const label = `${hour}:00`;
+    hourlyMap.set(hour, {
+      hour,
+      label,
+      pnl: 0
+    });
+  }
+
+  for (const item of processedTrades) {
+    const hour = item.entryDate.getHours();
+
+    if (!hourlyMap.has(hour)) {
+      continue;
+    }
+
+    const current = hourlyMap.get(hour);
+    current.pnl = Number((current.pnl + item.pnl).toFixed(2));
+  }
+
+  return Array.from(hourlyMap.values());
+}
+
+function buildLastThirtyDayGross(processedTrades, latestDayStart) {
+  const grossDailyMap = new Map();
+
+  for (const item of processedTrades) {
+    const dayKey = getLocalDayKey(item.entryDate);
+    const grossPnl = asNumber(item.trade.grossPnl ?? item.trade.netPnl);
+    grossDailyMap.set(dayKey, Number(((grossDailyMap.get(dayKey) || 0) + grossPnl).toFixed(2)));
+  }
+
+  return Array.from({ length: 30 }, (_, index) => {
+    const day = new Date(latestDayStart);
+    day.setDate(latestDayStart.getDate() - (29 - index));
+    const dayKey = getLocalDayKey(day);
+
+    return {
+      date: dayKey,
+      label: day.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      grossPnl: Number((grossDailyMap.get(dayKey) || 0).toFixed(2))
+    };
+  });
+}
+
 export function buildAnalytics(trades) {
   const sortedTrades = [...trades].sort(
     (a, b) => new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime()
@@ -266,6 +314,8 @@ export function buildAnalytics(trades) {
       pnl
     })),
     performanceByTimeOfDay: Array.from(timeBucketMap.values()),
+    hourlyPerformance: buildHourlyPerformance(processedTrades),
+    grossDailyThirtyDays: buildLastThirtyDayGross(processedTrades, latestDayStart),
     latestDateLabel: latestTradeDate.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",

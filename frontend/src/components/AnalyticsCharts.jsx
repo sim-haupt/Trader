@@ -51,13 +51,10 @@ function AnalyticsCharts({ analytics }) {
     drawdownCurve,
     lastSevenDays,
     performanceByWeekday,
-    performanceByTimeOfDay
+    performanceByTimeOfDay,
+    hourlyPerformance,
+    grossDailyThirtyDays
   } = analytics;
-
-  const averageTradeDayData = lastSevenDays.map((day) => ({
-    ...day,
-    averagePnl: day.trades ? Number((day.pnl / day.trades).toFixed(2)) : 0
-  }));
 
   return (
     <div className="space-y-6">
@@ -172,7 +169,7 @@ function AnalyticsCharts({ analytics }) {
         </Card>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[0.9fr_1fr_1fr_0.8fr]">
+      <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr_0.9fr_0.8fr]">
         <Card title="PERFORMANCE BY DAY OF WEEK">
           <div className="space-y-3">
             {performanceByWeekday.map((entry) => (
@@ -193,30 +190,58 @@ function AnalyticsCharts({ analytics }) {
         </Card>
 
         <Card title="PERFORMANCE BY TIME OF DAY">
-          <div className="space-y-3">
-            {performanceByTimeOfDay.map((entry) => (
-              <div key={entry.label} className="rounded-[12px] border border-[#e5e7eb42] bg-white/[0.02] px-4 py-3">
-                <div className="flex items-center justify-between text-sm text-white/72">
-                  <span>{entry.label}</span>
-                  <span className={entry.pnl >= 0 ? "text-mint" : "text-coral"}>{formatCurrency(entry.pnl)}</span>
-                </div>
-                <p className="mt-2 text-xs text-white/48">{entry.trades} trade{entry.trades === 1 ? "" : "s"}</p>
-              </div>
-            ))}
+          <div className="h-[320px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={hourlyPerformance} layout="vertical" margin={{ top: 4, right: 18, left: 6, bottom: 4 }}>
+                <CartesianGrid stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                <XAxis
+                  type="number"
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(value) => `$${value}`}
+                  tick={{ fill: "#c6cedb", fontSize: 11 }}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="label"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#c6cedb", fontSize: 11 }}
+                  width={48}
+                />
+                <Tooltip contentStyle={tooltipStyle()} />
+                <Bar dataKey="pnl" barSize={18}>
+                  {hourlyPerformance.map((entry) => (
+                    <Cell key={entry.label} fill={entry.pnl >= 0 ? "#56f0a9" : "#ff6b6b"} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </Card>
 
-        <Card title="AVERAGE TRADE P&L">
+        <Card title="GROSS DAILY P&L (30 DAYS)">
           <div className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={averageTradeDayData}>
+              <BarChart data={grossDailyThirtyDays}>
                 <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} tick={{ fill: "#c6cedb", fontSize: 11 }} />
+                <XAxis
+                  dataKey="label"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#c6cedb", fontSize: 11 }}
+                  minTickGap={18}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(value) => `$${value}`}
+                  tick={{ fill: "#c6cedb", fontSize: 11 }}
+                />
                 <Tooltip contentStyle={tooltipStyle()} />
-                <Bar dataKey="averagePnl" barSize={24}>
-                  {averageTradeDayData.map((entry) => (
-                    <Cell key={entry.date} fill={entry.averagePnl >= 0 ? "#56f0a9" : "#ff6b6b"} />
+                <Bar dataKey="grossPnl" barSize={20}>
+                  {grossDailyThirtyDays.map((entry) => (
+                    <Cell key={entry.date} fill={entry.grossPnl >= 0 ? "#56f0a9" : "#ff6b6b"} />
                   ))}
                 </Bar>
               </BarChart>
