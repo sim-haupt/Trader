@@ -14,6 +14,7 @@ import {
   YAxis
 } from "recharts";
 import Card from "../components/ui/Card";
+import CustomSelect from "../components/ui/CustomSelect";
 import EmptyState from "../components/ui/EmptyState";
 import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 import tagService from "../services/tagService";
@@ -27,9 +28,7 @@ const TAB_ITEMS = [
   "Detailed",
   "Win vs Loss Days",
   "Drawdown",
-  "Compare",
-  "Tag Breakdown",
-  "Advanced"
+  "Compare"
 ];
 
 const RANGE_OPTIONS = [
@@ -43,7 +42,6 @@ const REPORT_FILTERS = {
   symbol: "",
   tag: "",
   side: "",
-  duration: "",
   from: "",
   to: ""
 };
@@ -52,7 +50,6 @@ const COMPARE_GROUP_FILTERS = {
   symbol: "",
   tag: "",
   side: "",
-  duration: "",
   tradePnl: "",
   from: "",
   to: ""
@@ -668,6 +665,57 @@ function WinVsLossDaysSection({ stats }) {
   );
 }
 
+function DrawdownSection() {
+  const rows = [
+    [
+      { label: "Average drawdown", value: "Locked", tone: "text-white/38", locked: true },
+      { label: "Biggest Drawdown", value: "Locked", tone: "text-white/38", locked: true }
+    ],
+    [
+      { label: "Average number of days in Drawdown", value: "Locked", tone: "text-white/38", locked: true },
+      { label: "Number of days in Drawdown", value: "Locked", tone: "text-white/38", locked: true }
+    ],
+    [
+      { label: "Average trades in Drawdown", value: "Locked", tone: "text-white/38", locked: true },
+      null
+    ]
+  ];
+
+  return (
+    <Card title="STATISTICS">
+      <div className="overflow-hidden rounded-[18px] border border-[#e5e7eb42] bg-white/[0.02]">
+        {rows.map((row, rowIndex) => (
+          <div
+            key={`drawdown-row-${rowIndex}`}
+            className="grid border-b border-[#e5e7eb42] last:border-b-0 xl:grid-cols-2"
+          >
+            {row.map((cell, cellIndex) => (
+              <div
+                key={`drawdown-cell-${rowIndex}-${cellIndex}`}
+                className={`min-h-[72px] border-r border-[#e5e7eb42] px-5 py-5 last:border-r-0 ${
+                  !cell ? "hidden xl:block" : ""
+                }`}
+              >
+                {cell ? (
+                  <div className="flex h-full items-center justify-between gap-4">
+                    <span className="text-sm font-medium text-white/70">
+                      {cell.label}
+                      {cell.locked ? <span className="ml-2 text-white/38">🔒</span> : null}
+                    </span>
+                    {!cell.locked ? (
+                      <span className={`text-sm font-semibold ${cell.tone}`}>{cell.value}</span>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
 function CompareStatsColumn({ title, rows, tradesMatched }) {
   return (
     <div className="rounded-[18px] border border-[#e5e7eb42] bg-white/[0.02]">
@@ -720,56 +768,42 @@ function CompareGroupCard({ title, filters, onChange, tags, matchedCount }) {
         </div>
         <div>
           <label className="mb-2 block text-xs font-medium text-white/72">Tags</label>
-          <select
+          <CustomSelect
             value={filters.tag}
-            onChange={(event) => onChange("tag", event.target.value)}
-            className="ui-input"
-          >
-            <option value="">Select</option>
-            {tags.map((tag) => (
-              <option key={tag.id} value={tag.name}>
-                {tag.name}
-              </option>
-            ))}
-          </select>
+            onChange={(nextValue) => onChange("tag", nextValue)}
+            options={[
+              { label: "Select", value: "" },
+              ...tags.map((tag) => ({ label: tag.name, value: tag.name }))
+            ]}
+            placeholder="Select"
+          />
         </div>
         <div>
           <label className="mb-2 block text-xs font-medium text-white/72">Side</label>
-          <select
+          <CustomSelect
             value={filters.side}
-            onChange={(event) => onChange("side", event.target.value)}
-            className="ui-input"
-          >
-            <option value="">All</option>
-            <option value="LONG">Long</option>
-            <option value="SHORT">Short</option>
-          </select>
-        </div>
-        <div>
-          <label className="mb-2 block text-xs font-medium text-white/72">Duration</label>
-          <select
-            value={filters.duration}
-            onChange={(event) => onChange("duration", event.target.value)}
-            className="ui-input"
-          >
-            <option value="">All</option>
-            <option value="SCALP">Scalp</option>
-            <option value="INTRADAY">Intraday</option>
-            <option value="SWING">Swing</option>
-          </select>
+            onChange={(nextValue) => onChange("side", nextValue)}
+            options={[
+              { label: "All", value: "" },
+              { label: "Long", value: "LONG" },
+              { label: "Short", value: "SHORT" }
+            ]}
+            placeholder="All"
+          />
         </div>
         <div>
           <label className="mb-2 block text-xs font-medium text-white/72">Trade P&L</label>
-          <select
+          <CustomSelect
             value={filters.tradePnl}
-            onChange={(event) => onChange("tradePnl", event.target.value)}
-            className="ui-input"
-          >
-            <option value="">All</option>
-            <option value="WINNERS">Winners</option>
-            <option value="LOSERS">Losers</option>
-            <option value="SCRATCH">Scratch</option>
-          </select>
+            onChange={(nextValue) => onChange("tradePnl", nextValue)}
+            options={[
+              { label: "All", value: "" },
+              { label: "Winners", value: "WINNERS" },
+              { label: "Losers", value: "LOSERS" },
+              { label: "Scratch", value: "SCRATCH" }
+            ]}
+            placeholder="All"
+          />
         </div>
         <div className="grid gap-3 md:grid-cols-2">
           <div>
@@ -817,9 +851,15 @@ function CompareSection({
         title="QUICK REPORT"
         action={
           <div className="flex items-center gap-2">
-            <select className="ui-input !w-[140px]" defaultValue="Select type">
-              <option>Select type</option>
-            </select>
+            <CustomSelect
+              value="compare"
+              onChange={() => {}}
+              options={[{ label: "Select type", value: "compare" }]}
+              className="min-w-[140px]"
+              buttonClassName="!w-[140px]"
+              menuClassName="min-w-[140px]"
+              align="right"
+            />
             <button type="button" onClick={onResetGroups} className="ui-button px-4 py-2 text-sm">
               Reset
             </button>
@@ -886,26 +926,6 @@ function applyReportFilters(trades, filters, rangeDays) {
     nextTrades = nextTrades.filter((trade) => trade.side === filters.side);
   }
 
-  if (filters.duration) {
-    nextTrades = nextTrades.filter((trade) => {
-      const holdMinutes = getHoldMinutes(trade);
-
-      if (filters.duration === "SCALP") {
-        return holdMinutes < 5;
-      }
-
-      if (filters.duration === "INTRADAY") {
-        return holdMinutes >= 5 && holdMinutes < 60;
-      }
-
-      if (filters.duration === "SWING") {
-        return holdMinutes >= 60;
-      }
-
-      return true;
-    });
-  }
-
   if (filters.from) {
     const from = new Date(filters.from);
     from.setHours(0, 0, 0, 0);
@@ -941,26 +961,6 @@ function applyCompareGroupFilters(trades, filters, options = {}) {
     nextTrades = nextTrades.filter((trade) => trade.side === filters.side);
   }
 
-  if (filters.duration) {
-    nextTrades = nextTrades.filter((trade) => {
-      const holdMinutes = getHoldMinutes(trade);
-
-      if (filters.duration === "SCALP") {
-        return holdMinutes < 5;
-      }
-
-      if (filters.duration === "INTRADAY") {
-        return holdMinutes >= 5 && holdMinutes < 60;
-      }
-
-      if (filters.duration === "SWING") {
-        return holdMinutes >= 60;
-      }
-
-      return true;
-    });
-  }
-
   if (filters.tradePnl === "WINNERS") {
     nextTrades = nextTrades.filter((trade) => getTradePnlByType(trade, pnlType, defaultCommission) > 0);
   } else if (filters.tradePnl === "LOSERS") {
@@ -992,6 +992,8 @@ function ReportsPage() {
   const [groupAFilters, setGroupAFilters] = useState(COMPARE_GROUP_FILTERS);
   const [groupBFilters, setGroupBFilters] = useState(COMPARE_GROUP_FILTERS);
   const [pnlType, setPnlType] = useState("GROSS");
+  const [viewMode, setViewMode] = useState("$ Value");
+  const [reportType, setReportType] = useState("Aggregate P&L");
   const {
     data: trades,
     loading,
@@ -1098,7 +1100,7 @@ function ReportsPage() {
     <div className="space-y-5">
       <Card>
         <div className="space-y-5">
-          <div className="grid gap-3 xl:grid-cols-[repeat(4,minmax(0,1fr))_1.2fr_auto]">
+          <div className="grid gap-3 xl:grid-cols-[repeat(3,minmax(0,1fr))_1.2fr_auto]">
             <div>
               <label className="mb-2 block text-xs font-medium text-white/72">Symbol</label>
               <input
@@ -1110,43 +1112,28 @@ function ReportsPage() {
             </div>
             <div>
               <label className="mb-2 block text-xs font-medium text-white/72">Tags</label>
-              <select
+              <CustomSelect
                 value={filters.tag}
-                onChange={(event) => updateFilter("tag", event.target.value)}
-                className="ui-input"
-              >
-                <option value="">Select</option>
-                {tags.map((tag) => (
-                  <option key={tag.id} value={tag.name}>
-                    {tag.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(nextValue) => updateFilter("tag", nextValue)}
+                options={[
+                  { label: "Select", value: "" },
+                  ...tags.map((tag) => ({ label: tag.name, value: tag.name }))
+                ]}
+                placeholder="Select"
+              />
             </div>
             <div>
               <label className="mb-2 block text-xs font-medium text-white/72">Side</label>
-              <select
+              <CustomSelect
                 value={filters.side}
-                onChange={(event) => updateFilter("side", event.target.value)}
-                className="ui-input"
-              >
-                <option value="">All</option>
-                <option value="LONG">Long</option>
-                <option value="SHORT">Short</option>
-              </select>
-            </div>
-            <div>
-              <label className="mb-2 block text-xs font-medium text-white/72">Duration</label>
-              <select
-                value={filters.duration}
-                onChange={(event) => updateFilter("duration", event.target.value)}
-                className="ui-input"
-              >
-                <option value="">All</option>
-                <option value="SCALP">Scalp</option>
-                <option value="INTRADAY">Intraday</option>
-                <option value="SWING">Swing</option>
-              </select>
+                onChange={(nextValue) => updateFilter("side", nextValue)}
+                options={[
+                  { label: "All", value: "" },
+                  { label: "Long", value: "LONG" },
+                  { label: "Short", value: "SHORT" }
+                ]}
+                placeholder="All"
+              />
             </div>
             <div className="grid gap-3 md:grid-cols-2">
               <div>
@@ -1199,21 +1186,33 @@ function ReportsPage() {
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
             <div className="flex flex-wrap items-center gap-3">
-              <select
-                className="ui-input max-w-[150px]"
-                value={pnlType === "GROSS" ? "Gross" : "Net"}
-                onChange={(event) => setPnlType(event.target.value.toUpperCase())}
-              >
-                <option>Gross</option>
-                <option>Net</option>
-              </select>
-              <select className="ui-input max-w-[160px]" defaultValue="$ Value">
-                <option>$ Value</option>
-                <option>% Return</option>
-              </select>
-              <select className="ui-input max-w-[180px]" defaultValue="Aggregate P&L">
-                <option>Aggregate P&L</option>
-              </select>
+              <CustomSelect
+                value={pnlType}
+                onChange={(nextValue) => setPnlType(nextValue)}
+                options={[
+                  { label: "Gross", value: "GROSS" },
+                  { label: "Net", value: "NET" }
+                ]}
+                className="max-w-[150px]"
+                buttonClassName="max-w-[150px]"
+              />
+              <CustomSelect
+                value={viewMode}
+                onChange={setViewMode}
+                options={[
+                  { label: "$ Value", value: "$ Value" },
+                  { label: "% Return", value: "% Return" }
+                ]}
+                className="max-w-[160px]"
+                buttonClassName="max-w-[160px]"
+              />
+              <CustomSelect
+                value={reportType}
+                onChange={setReportType}
+                options={[{ label: "Aggregate P&L", value: "Aggregate P&L" }]}
+                className="max-w-[180px]"
+                buttonClassName="max-w-[180px]"
+              />
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
@@ -1249,6 +1248,8 @@ function ReportsPage() {
         <DetailedStatsTable rows={detailedStats} />
       ) : activeTab === "Win vs Loss Days" ? (
         <WinVsLossDaysSection stats={winVsLossDayStats} />
+      ) : activeTab === "Drawdown" ? (
+        <DrawdownSection />
       ) : activeTab === "Compare" ? (
         <CompareSection
           tags={tags}

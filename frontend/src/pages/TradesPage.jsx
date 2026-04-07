@@ -8,6 +8,7 @@ import TradeDetailModal from "../components/TradeDetailModal";
 import TradeTable from "../components/TradeTable";
 import UploadCSV from "../components/UploadCSV";
 import TradeTextImport from "../components/TradeTextImport";
+import CustomSelect from "../components/ui/CustomSelect";
 import tagService from "../services/tagService";
 import tradeService from "../services/tradeService";
 
@@ -705,19 +706,17 @@ function TradesPage() {
               <div className="flex flex-wrap items-center gap-3">
                 <label className="flex items-center gap-2 text-sm text-white/62">
                   <span>Rows</span>
-                  <select
+                  <CustomSelect
                     value={pageSize}
-                    onChange={(event) =>
-                      setPageSize(event.target.value === "all" ? "all" : Number(event.target.value))
+                    onChange={(nextValue) =>
+                      setPageSize(nextValue === "all" ? "all" : Number(nextValue))
                     }
-                    className="ui-input !w-[92px] !px-3 !py-2 text-sm"
-                  >
-                    {pageSizeOptions.map((option) => (
-                      <option key={option.label} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                    options={pageSizeOptions}
+                    className="min-w-[92px]"
+                    buttonClassName="!w-[92px] !px-3 !py-2 text-sm"
+                    menuClassName="min-w-[92px]"
+                    align="right"
+                  />
                 </label>
 
                 <div className="flex items-center gap-2">

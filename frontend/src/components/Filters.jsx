@@ -1,3 +1,5 @@
+import CustomSelect from "./ui/CustomSelect";
+
 function Filters({ filters, onChange, onReset }) {
   return (
     <div className="grid gap-4 rounded-[20px] border border-[#e5e7eb42] bg-white/[0.025] p-4 md:grid-cols-2 xl:grid-cols-5">
@@ -8,15 +10,16 @@ function Filters({ filters, onChange, onReset }) {
         className="ui-input"
       />
 
-      <select
+      <CustomSelect
         value={filters.side}
-        onChange={(event) => onChange("side", event.target.value)}
-        className="ui-input"
-      >
-        <option value="">All Sides</option>
-        <option value="LONG">LONG</option>
-        <option value="SHORT">SHORT</option>
-      </select>
+        onChange={(nextValue) => onChange("side", nextValue)}
+        options={[
+          { label: "All Sides", value: "" },
+          { label: "LONG", value: "LONG" },
+          { label: "SHORT", value: "SHORT" }
+        ]}
+        placeholder="All Sides"
+      />
 
       <input
         placeholder="Strategy"
