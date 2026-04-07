@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -176,6 +176,24 @@ function widgetSpanClass(span) {
 
 const MASONRY_ROW_HEIGHT = 8;
 const MASONRY_GAP = 20;
+const WIDGET_ROW_SPANS = {
+  cumulative: 21,
+  summaryMetrics: 9,
+  avgStats: 9,
+  drawdown: 13,
+  performanceWeekday: 12,
+  performancePrice: 12,
+  performanceHourSummary: 12,
+  performanceTimeChart: 13,
+  grossDaily: 13,
+  winPct: 13,
+  dailyVolume: 13,
+  streaks: 8
+};
+
+function widgetRowSpan(id) {
+  return WIDGET_ROW_SPANS[id] || 9;
+}
 
 function AnalyticsCharts({
   analytics,
@@ -200,9 +218,6 @@ function AnalyticsCharts({
 
   const [draggedId, setDraggedId] = useState(null);
   const [dropTargetId, setDropTargetId] = useState(null);
-  const itemRefs = useRef({});
-  const [rowSpans, setRowSpans] = useState({});
-
   const widgets = useMemo(
     () => [
       {
@@ -443,40 +458,6 @@ function AnalyticsCharts({
     .map((item) => ({ ...item, widget: widgetMap.get(item.id) }))
     .filter((item) => item.widget);
 
-  useEffect(() => {
-    const observer = new ResizeObserver((entries) => {
-      setRowSpans((current) => {
-        const next = { ...current };
-        let changed = false;
-
-        for (const entry of entries) {
-          const id = entry.target.dataset.widgetId;
-          if (!id) {
-            continue;
-          }
-
-          const height = entry.contentRect.height;
-          const span = Math.max(1, Math.ceil((height + MASONRY_GAP) / (MASONRY_ROW_HEIGHT + MASONRY_GAP)));
-
-          if (next[id] !== span) {
-            next[id] = span;
-            changed = true;
-          }
-        }
-
-        return changed ? next : current;
-      });
-    });
-
-    Object.values(itemRefs.current).forEach((node) => {
-      if (node) {
-        observer.observe(node);
-      }
-    });
-
-    return () => observer.disconnect();
-  }, [orderedWidgets]);
-
   function handleDrop(targetId) {
     if (!draggedId || draggedId === targetId) {
       setDropTargetId(null);
@@ -538,14 +519,6 @@ function AnalyticsCharts({
             <div
               key={id}
               draggable={editing}
-              ref={(node) => {
-                if (node) {
-                  itemRefs.current[id] = node;
-                } else {
-                  delete itemRefs.current[id];
-                }
-              }}
-              data-widget-id={id}
               onDragStart={() => {
                 setDraggedId(id);
                 setDropTargetId(id);
@@ -574,7 +547,7 @@ function AnalyticsCharts({
                   ? "rounded-[16px] bg-mint/8 p-[3px] ring-2 ring-mint/90 shadow-[0_0_0_1px_rgba(86,240,169,0.35)]"
                   : ""
               }`}
-              style={{ gridRowEnd: `span ${rowSpans[id] || 1}` }}
+              style={{ gridRowEnd: `span ${widgetRowSpan(id)}` }}
             >
               <Card
                 title={widget.title}
