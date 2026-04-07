@@ -112,7 +112,7 @@ function MonthCard({ month, onOpen }) {
           Open
         </button>
       }
-      className="bg-black/30 p-6 shadow-none"
+      className="bg-[linear-gradient(180deg,rgba(26,18,38,0.94),rgba(12,9,18,0.98))] p-6 shadow-none"
     >
       <div className="grid grid-cols-7 gap-3 text-center">
         {weekdayLabels.map((label) => (
@@ -145,11 +145,11 @@ function MonthDetailModal({ month, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 p-4 backdrop-blur">
-      <div className="w-full max-w-6xl border-2 border-mint/25 bg-[linear-gradient(180deg,rgba(14,10,20,0.98),rgba(8,6,12,0.98))] shadow-crt">
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b-2 border-mint/20 bg-black/90 px-6 py-5">
+      <div className="w-full max-w-6xl border-2 border-mint/25 bg-[linear-gradient(180deg,rgba(22,16,32,0.98),rgba(10,8,16,0.98))] shadow-crt">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b-2 border-cyan/20 bg-[linear-gradient(90deg,rgba(138,103,255,0.28),rgba(89,185,255,0.1),rgba(255,180,77,0.08))] px-6 py-5">
           <div>
             <p className="ui-title text-xs text-mist">Calendar</p>
-            <h2 className="ui-title mt-3 text-2xl text-gold">{month.label}</h2>
+            <h2 className="ui-title mt-3 text-2xl text-[#fff8df]">{month.label}</h2>
           </div>
 
           <div className="flex items-center gap-3">
@@ -170,7 +170,7 @@ function MonthDetailModal({ month, onClose }) {
         </div>
 
         <div className="grid gap-6 p-6 xl:grid-cols-[1.2fr_0.8fr]">
-          <div className="ui-panel p-5">
+          <div className="ui-panel bg-[linear-gradient(180deg,rgba(24,18,36,0.94),rgba(12,10,18,0.98))] p-5">
             <div className="mb-5 grid grid-cols-7 gap-3 text-center">
               {weekdayLabels.map((label) => (
                 <div key={label} className="ui-title pb-2 text-xs text-mist">
@@ -200,8 +200,8 @@ function MonthDetailModal({ month, onClose }) {
             </div>
           </div>
 
-          <div className="ui-panel p-5">
-            <h3 className="ui-title text-lg text-phosphor">Daily Breakdown</h3>
+          <div className="ui-panel bg-[linear-gradient(180deg,rgba(20,16,32,0.96),rgba(10,8,16,0.98))] p-5">
+            <h3 className="ui-title text-lg text-[#fff8df]">Daily Breakdown</h3>
             <div className="mt-5 space-y-3">
               {monthTradeDays.length === 0 ? (
                 <p className="text-sm text-mist">No trades in this month.</p>

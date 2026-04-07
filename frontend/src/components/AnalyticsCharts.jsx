@@ -48,103 +48,17 @@ function RowMetric({ label, value, tone = "text-mint" }) {
 
 function AnalyticsCharts({ analytics }) {
   const { summary, equityCurve, recentDays, performanceByWeekday } = analytics;
-  const todayLabel = new Intl.DateTimeFormat("en-US", {
-    weekday: "short",
-    day: "2-digit",
-    month: "short",
-    year: "numeric"
-  }).format(new Date());
-  const sessionState = summary.totalPnl >= 0 ? "Bull Bias" : "Risk-Off";
-  const confidence = Math.max(12, Math.round(summary.winRate));
   const recentLeader = recentDays.at(-1);
   const bestWeekday = [...performanceByWeekday].sort((left, right) => right.pnl - left.pnl)[0];
   const worstWeekday = [...performanceByWeekday].sort((left, right) => left.pnl - right.pnl)[0];
 
   const winLossData = [
     { name: "Wins", value: summary.wins, color: "#56f0a9" },
-    { name: "Losses", value: summary.losses, color: "#ffb44d" }
-  ];
-
-  const recentSignals = [
-    {
-      label: "Session Context",
-      accent: "from-[#4f2d95] via-[#6f46d7] to-[#31204f]",
-      rows: [
-        { label: "Total Trades", value: summary.tradeCount, tone: "text-[#59b9ff]" },
-        { label: "Win Rate", value: formatPercent(summary.winRate), tone: "text-mint" },
-        {
-          label: "Recent Day",
-          value: recentLeader ? formatCurrency(recentLeader.pnl) : "$0.00",
-          tone: recentLeader?.pnl >= 0 ? "text-mint" : "text-[#ffb44d]"
-        }
-      ]
-    },
-    {
-      label: "Market Pulse",
-      accent: "from-[#3f2768] via-[#59369b] to-[#1f1630]",
-      rows: [
-        { label: "Expectancy", value: formatCurrency(summary.expectancy), tone: "text-mint" },
-        { label: "Average Win", value: formatCurrency(summary.averageWin), tone: "text-[#59b9ff]" },
-        { label: "Average Loss", value: formatCurrency(summary.averageLoss), tone: "text-[#ffb44d]" }
-      ]
-    },
-    {
-      label: "Trend State",
-      accent: "from-[#5d2d75] via-[#8241b8] to-[#2d183d]",
-      emphasis: sessionState,
-      emphasisTone: summary.totalPnl >= 0 ? "text-[#ffb44d]" : "text-[#59b9ff]",
-      footer: `Confidence ${confidence}`,
-      rows: [
-        { label: "Largest Win", value: formatCurrency(summary.largestWin), tone: "text-mint" },
-        { label: "Largest Loss", value: formatCurrency(summary.largestLoss), tone: "text-[#ff8a76]" }
-      ]
-    }
+    { name: "Losses", value: summary.losses, color: "#ff6b6b" }
   ];
 
   return (
     <div className="space-y-6">
-      <section className="ui-panel overflow-hidden">
-        <div className="border-b border-cyan/25 bg-[linear-gradient(90deg,rgba(138,103,255,0.26),rgba(89,185,255,0.14),rgba(255,180,77,0.12))] px-6 py-5">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div>
-              <p className="ui-title text-3xl text-[#fff8df]">{todayLabel}</p>
-              <div className="mt-5 h-[3px] w-44 bg-[linear-gradient(90deg,#59b9ff,#8a67ff,#ffb44d)]" />
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="ui-chip">17°C</div>
-              <div className="ui-chip">Clear Sky</div>
-              <div className="ui-chip">Langen</div>
-              <div className="ui-chip">Arcade Theme</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-5 px-6 py-6 xl:grid-cols-[1.2fr_0.9fr_0.9fr]">
-          {recentSignals.map((signal) => (
-            <div key={signal.label} className="ui-panel overflow-hidden">
-              <div className={`bg-gradient-to-r ${signal.accent} px-5 py-4`}>
-                <h3 className="ui-title text-xl text-[#fff8df]">{signal.label}</h3>
-              </div>
-              <div className="px-5 py-5">
-                {signal.emphasis ? (
-                  <div className="mb-5">
-                    <p className={`ui-title text-4xl ${signal.emphasisTone}`}>{signal.emphasis}</p>
-                    <p className="mt-2 text-sm text-[#59b9ff]">{signal.footer}</p>
-                  </div>
-                ) : null}
-
-                <div className="space-y-1">
-                  {signal.rows.map((row) => (
-                    <RowMetric key={row.label} label={row.label} value={row.value} tone={row.tone} />
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Net P&L" value={formatCurrency(summary.totalPnl)} accent="mint" />
         <StatCard label="Win Rate" value={formatPercent(summary.winRate)} accent="gold" />
@@ -162,20 +76,20 @@ function AnalyticsCharts({ analytics }) {
             <MiniMetric
               label="Leader"
               value={bestWeekday?.day || "---"}
-              tone="text-[#59b9ff]"
+              tone={bestWeekday?.pnl >= 0 ? "text-mint" : "text-coral"}
               note={bestWeekday ? formatCurrency(bestWeekday.pnl) : "No data"}
             />
             <MiniMetric
               label="Laggard"
               value={worstWeekday?.day || "---"}
-              tone="text-[#ffb44d]"
+              tone="text-coral"
               note={worstWeekday ? formatCurrency(worstWeekday.pnl) : "No data"}
             />
             <MiniMetric
-              label="Session State"
-              value={sessionState}
-              tone={summary.totalPnl >= 0 ? "text-mint" : "text-[#ffb44d]"}
-              note={`Confidence ${confidence}`}
+              label="Recent Day"
+              value={recentLeader ? formatCurrency(recentLeader.pnl) : "$0.00"}
+              tone={recentLeader?.pnl >= 0 ? "text-mint" : "text-coral"}
+              note={recentLeader ? `${recentLeader.trades} trades` : "No recent data"}
             />
           </div>
 
@@ -185,8 +99,8 @@ function AnalyticsCharts({ analytics }) {
                 <defs>
                   <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#59b9ff" stopOpacity={0.38} />
-                    <stop offset="45%" stopColor="#8a67ff" stopOpacity={0.22} />
-                    <stop offset="95%" stopColor="#ffb44d" stopOpacity={0.04} />
+                    <stop offset="45%" stopColor="#56f0a9" stopOpacity={0.22} />
+                    <stop offset="95%" stopColor="#56f0a9" stopOpacity={0.04} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid stroke="rgba(89,185,255,0.16)" vertical={false} />
@@ -220,7 +134,7 @@ function AnalyticsCharts({ analytics }) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <MiniMetric label="Wins" value={summary.wins} tone="text-mint" />
-            <MiniMetric label="Losses" value={summary.losses} tone="text-[#ffb44d]" />
+            <MiniMetric label="Losses" value={summary.losses} tone="text-coral" />
           </div>
         </Card>
 
@@ -250,7 +164,7 @@ function AnalyticsCharts({ analytics }) {
               </div>
               <div className="h-3 bg-black/35">
                 <div
-                  className="h-3 bg-[linear-gradient(90deg,#ffb44d,#ff7c59)]"
+                  className="h-3 bg-[linear-gradient(90deg,#ff6b6b,#ff8a76)]"
                   style={{ width: `${Math.min(100, summary.averageLosingHoldMinutes * 6)}%` }}
                 />
               </div>
@@ -259,7 +173,7 @@ function AnalyticsCharts({ analytics }) {
             <MiniMetric
               label="Loss Rate"
               value={formatPercent(summary.lossRate)}
-              tone="text-[#ffb44d]"
+              tone="text-coral"
               note="Current stress reading"
             />
           </div>
@@ -274,7 +188,7 @@ function AnalyticsCharts({ analytics }) {
                     <p className="ui-title text-sm text-[#fff8df]">{day.weekday}</p>
                     <p className="mt-1 text-sm text-mist">{day.date}</p>
                   </div>
-                  <div className={`text-2xl font-semibold ${day.pnl >= 0 ? "text-mint" : "text-[#ffb44d]"}`}>
+                  <div className={`text-2xl font-semibold ${day.pnl >= 0 ? "text-mint" : "text-coral"}`}>
                     {formatCurrency(day.pnl)}
                   </div>
                 </div>
@@ -298,7 +212,7 @@ function AnalyticsCharts({ analytics }) {
                   {performanceByWeekday.map((entry) => (
                     <Cell
                       key={entry.day}
-                      fill={entry.pnl >= 0 ? "#56f0a9" : "#ffb44d"}
+                      fill={entry.pnl >= 0 ? "#56f0a9" : "#ff6b6b"}
                     />
                   ))}
                 </Bar>

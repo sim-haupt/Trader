@@ -5,7 +5,7 @@ function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = tru
     <div className="ui-table-shell">
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-mint/10 text-sm">
-          <thead className="bg-mint/6">
+          <thead className="bg-[linear-gradient(90deg,rgba(138,103,255,0.22),rgba(89,185,255,0.08),rgba(255,180,77,0.06))]">
             <tr className="ui-title text-left text-[11px] text-mist">
               <th className="px-4 py-4">Symbol</th>
               <th className="px-4 py-4">Side</th>
@@ -19,7 +19,7 @@ function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = tru
               {showActions && <th className="px-4 py-4">Actions</th>}
             </tr>
           </thead>
-          <tbody className="divide-y divide-mint/10 bg-black/20">
+          <tbody className="divide-y divide-mint/10 bg-[linear-gradient(180deg,rgba(10,7,17,0.64),rgba(5,3,9,0.74))]">
             {trades.map((trade) => {
               const pnl = Number(trade.netPnl ?? trade.grossPnl ?? 0);
               const executionCount =
@@ -37,7 +37,7 @@ function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = tru
                       onSelectTrade?.(trade);
                     }
                   }}
-                  className="cursor-pointer transition hover:bg-mint/6 focus:bg-mint/6 focus:outline-none"
+                  className="cursor-pointer transition hover:bg-[linear-gradient(90deg,rgba(138,103,255,0.12),rgba(89,185,255,0.06))] focus:bg-[linear-gradient(90deg,rgba(138,103,255,0.12),rgba(89,185,255,0.06))] focus:outline-none"
                 >
                   <td className="px-4 py-4 ui-title text-phosphor">{trade.symbol}</td>
                   <td className="px-4 py-4">
