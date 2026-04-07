@@ -19,7 +19,27 @@ const login = asyncHandler(async (req, res) => {
   });
 });
 
+const getSettings = asyncHandler(async (req, res) => {
+  const result = await authService.getSettings(req.user);
+
+  res.status(200).json({
+    success: true,
+    data: result
+  });
+});
+
+const updateSettings = asyncHandler(async (req, res) => {
+  const result = await authService.updateSettings(req.user, req.validatedBody);
+
+  res.status(200).json({
+    success: true,
+    data: result
+  });
+});
+
 module.exports = {
   register,
-  login
+  login,
+  getSettings,
+  updateSettings
 };

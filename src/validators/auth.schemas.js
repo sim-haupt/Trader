@@ -11,7 +11,12 @@ const loginSchema = z.object({
   password: z.string().min(6).max(100)
 });
 
+const updateSettingsSchema = z.object({
+  defaultCommission: z.coerce.number().min(0).max(100000)
+});
+
 module.exports = {
   registerSchema,
-  loginSchema
+  loginSchema,
+  updateSettingsSchema
 };

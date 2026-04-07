@@ -7,6 +7,7 @@ import EmptyState from "../components/ui/EmptyState";
 import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 import tradeService from "../services/tradeService";
 import { buildAnalytics } from "../utils/analytics";
+import { useAuth } from "../context/AuthContext";
 
 const RANGE_OPTIONS = [
   { key: "30", label: "30D", days: 30 },
@@ -34,6 +35,7 @@ function filterTradesByRange(trades, days) {
 }
 
 function DashboardPage() {
+  const { user } = useAuth();
   const [rangeKey, setRangeKey] = useState("30");
   const [editingLayout, setEditingLayout] = useState(false);
   const [layout, setLayout] = useState(DEFAULT_DASHBOARD_LAYOUT);
@@ -174,7 +176,9 @@ function DashboardPage() {
         />
       ) : (
         <AnalyticsCharts
-          analytics={buildAnalytics(filteredTrades)}
+          analytics={buildAnalytics(filteredTrades, {
+            defaultCommission: user?.defaultCommission ?? 0
+          })}
           layout={layout}
           editing={editingLayout}
           onReorder={reorderLayout}

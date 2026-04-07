@@ -18,6 +18,16 @@ function generateToken(user) {
   );
 }
 
+function serializeUser(user) {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    defaultCommission: Number(user.defaultCommission || 0)
+  };
+}
+
 async function register(data) {
   const existingUser = await prisma.user.findUnique({
     where: { email: data.email }
@@ -41,12 +51,7 @@ async function register(data) {
 
   return {
     token,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role
-    }
+    user: serializeUser(user)
   };
 }
 
@@ -69,16 +74,50 @@ async function login(data) {
 
   return {
     token,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role
-    }
+    user: serializeUser(user)
   };
+}
+
+async function getSettings(actor) {
+  const user = await prisma.user.findUnique({
+    where: { id: actor.id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      defaultCommission: true
+    }
+  });
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return serializeUser(user);
+}
+
+async function updateSettings(actor, data) {
+  const user = await prisma.user.update({
+    where: { id: actor.id },
+    data: {
+      defaultCommission: data.defaultCommission
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      defaultCommission: true
+    }
+  });
+
+  return serializeUser(user);
 }
 
 module.exports = {
   register,
-  login
+  login,
+  getSettings,
+  updateSettings
 };

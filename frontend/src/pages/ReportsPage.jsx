@@ -19,6 +19,8 @@ import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 import tagService from "../services/tagService";
 import tradeService from "../services/tradeService";
 import { formatCurrency, formatPercent } from "../utils/formatters";
+import { useAuth } from "../context/AuthContext";
+import { getTradeGrossPnl, getTradeNetPnl, getTradePnlByType } from "../utils/tradePnl";
 
 const TAB_ITEMS = [
   "Overview",
@@ -42,6 +44,16 @@ const REPORT_FILTERS = {
   tag: "",
   side: "",
   duration: "",
+  from: "",
+  to: ""
+};
+
+const COMPARE_GROUP_FILTERS = {
+  symbol: "",
+  tag: "",
+  side: "",
+  duration: "",
+  tradePnl: "",
   from: "",
   to: ""
 };
@@ -127,7 +139,9 @@ const CurrencyTooltip = buildChartTooltip("currency");
 const PercentTooltip = buildChartTooltip("percent");
 const VolumeTooltip = buildChartTooltip("volume");
 
-function buildOverviewSeries(trades, rangeDays) {
+function buildOverviewSeries(trades, rangeDays, options = {}) {
+  const defaultCommission = options.defaultCommission || 0;
+  const pnlType = options.pnlType || "GROSS";
   if (trades.length === 0) {
     return {
       grossDaily: [],
@@ -161,8 +175,8 @@ function buildOverviewSeries(trades, rangeDays) {
     }
 
     const dayKey = getDayKey(entryDate);
-    const pnl = Number(trade.netPnl ?? trade.grossPnl ?? 0);
-    const grossPnl = Number(trade.grossPnl ?? trade.netPnl ?? 0);
+    const pnl = getTradePnlByType(trade, pnlType, defaultCommission);
+    const grossPnl = getTradeGrossPnl(trade);
     const quantity = Math.abs(Number(trade.quantity ?? 0));
     const dayStats = dailyMap.get(dayKey) || {
       date: dayKey,
@@ -207,7 +221,7 @@ function buildOverviewSeries(trades, rangeDays) {
 
     days.push({
       ...stats,
-      cumulativeGrossPnl: runningEquity,
+      cumulativePnl: runningEquity,
       winRate: stats.trades ? Number(((stats.wins / stats.trades) * 100).toFixed(2)) : 0
     });
 
@@ -218,12 +232,12 @@ function buildOverviewSeries(trades, rangeDays) {
     grossDaily: days.map((day) => ({
       date: day.date,
       label: day.label,
-      grossPnl: day.grossPnl
+      grossPnl: pnlType === "GROSS" ? day.grossPnl : day.netPnl
     })),
     cumulative: days.map((day) => ({
       date: day.date,
       label: day.label,
-      cumulativeGrossPnl: day.cumulativeGrossPnl
+      cumulativeGrossPnl: day.cumulativePnl
     })),
     dailyVolume: days.map((day) => ({
       date: day.date,
@@ -250,7 +264,9 @@ function calculateStandardDeviation(values) {
   return Math.sqrt(variance);
 }
 
-function summarizeTrades(trades, dayCountOverride) {
+function summarizeTrades(trades, dayCountOverride, options = {}) {
+  const defaultCommission = options.defaultCommission || 0;
+  const pnlType = options.pnlType || "NET";
   const sortedTrades = [...trades].sort(
     (a, b) => new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime()
   );
@@ -278,7 +294,7 @@ function summarizeTrades(trades, dayCountOverride) {
   const pnlSeries = [];
 
   for (const trade of sortedTrades) {
-    const pnl = asNumber(trade.netPnl ?? trade.grossPnl);
+    const pnl = getTradePnlByType(trade, pnlType, defaultCommission);
     const quantity = Math.abs(asNumber(trade.quantity));
     const perShare = quantity > 0 ? pnl / quantity : 0;
     const holdMinutes = getHoldMinutes(trade);
@@ -347,16 +363,16 @@ function summarizeTrades(trades, dayCountOverride) {
     scratchTrades,
     maxWinStreak,
     maxLossStreak,
-    totalFees: sortedTrades.reduce((sum, trade) => sum + asNumber(trade.fees), 0)
+    totalFees: sortedTrades.reduce((sum, trade) => sum + (getTradeGrossPnl(trade) - getTradeNetPnl(trade, defaultCommission)), 0)
   };
 }
 
-function buildDetailedStats(trades) {
+function buildDetailedStats(trades, options = {}) {
   if (trades.length === 0) {
     return [];
   }
 
-  const summary = summarizeTrades(trades);
+  const summary = summarizeTrades(trades, undefined, options);
 
   const rows = [
     [
@@ -443,7 +459,9 @@ function buildWinLossDayRows(summary) {
   ];
 }
 
-function buildWinVsLossDaysStats(trades) {
+function buildWinVsLossDaysStats(trades, options = {}) {
+  const defaultCommission = options.defaultCommission || 0;
+  const pnlType = options.pnlType || "NET";
   const dayMap = new Map();
 
   for (const trade of trades) {
@@ -456,7 +474,7 @@ function buildWinVsLossDaysStats(trades) {
       trades: []
     };
 
-    current.pnl = Number((current.pnl + asNumber(trade.netPnl ?? trade.grossPnl)).toFixed(2));
+    current.pnl = Number((current.pnl + getTradePnlByType(trade, pnlType, defaultCommission)).toFixed(2));
     current.trades.push(trade);
     dayMap.set(dayKey, current);
   }
@@ -492,8 +510,8 @@ function buildWinVsLossDaysStats(trades) {
   return {
     winningDayCount: winningDays.length,
     losingDayCount: losingDays.length,
-    winningSummary: summarizeTrades(winningTrades, winningDays.length),
-    losingSummary: summarizeTrades(losingTrades, losingDays.length),
+    winningSummary: summarizeTrades(winningTrades, winningDays.length, options),
+    losingSummary: summarizeTrades(losingTrades, losingDays.length, options),
     distributionByWeekday: Array.from(distributionMap.values()),
     pieData: [
       { name: "Winning Days", value: winningDays.length, fill: "#56f0a9" },
@@ -650,6 +668,196 @@ function WinVsLossDaysSection({ stats }) {
   );
 }
 
+function CompareStatsColumn({ title, rows, tradesMatched }) {
+  return (
+    <div className="rounded-[18px] border border-[#e5e7eb42] bg-white/[0.02]">
+      <div className="border-b border-[#e5e7eb42] px-4 py-3">
+        <p className="text-sm font-semibold text-white">{title}</p>
+        <p className="mt-1 text-xs text-white/44">Trades matches: {tradesMatched}</p>
+      </div>
+      <div>
+        {rows.map((row, rowIndex) => (
+          <div key={`${title}-row-${rowIndex}`} className="grid border-b border-[#e5e7eb42] last:border-b-0 xl:grid-cols-3">
+            {row.map((cell, cellIndex) => (
+              <div
+                key={`${title}-cell-${rowIndex}-${cellIndex}`}
+                className={`min-h-[70px] border-r border-[#e5e7eb42] px-4 py-4 last:border-r-0 ${!cell ? "hidden xl:block" : ""}`}
+              >
+                {cell ? (
+                  <div className="flex h-full items-center justify-between gap-4">
+                    <span className="text-sm font-medium text-white/52">{cell.label}</span>
+                    <span className={`text-sm font-semibold ${cell.tone}`}>
+                      {cell.locked ? "🔒" : cell.value}
+                    </span>
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CompareGroupCard({ title, filters, onChange, tags, matchedCount }) {
+  return (
+    <div className="rounded-[18px] border border-[#e5e7eb42] bg-white/[0.02] p-4">
+      <div className="mb-4">
+        <p className="text-sm font-semibold text-white">{title}</p>
+        <p className="mt-1 text-xs text-white/44">Trades matches: {matchedCount}</p>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2">
+        <div>
+          <label className="mb-2 block text-xs font-medium text-white/72">Symbol</label>
+          <input
+            value={filters.symbol}
+            onChange={(event) => onChange("symbol", event.target.value)}
+            placeholder="Symbol"
+            className="ui-input"
+          />
+        </div>
+        <div>
+          <label className="mb-2 block text-xs font-medium text-white/72">Tags</label>
+          <select
+            value={filters.tag}
+            onChange={(event) => onChange("tag", event.target.value)}
+            className="ui-input"
+          >
+            <option value="">Select</option>
+            {tags.map((tag) => (
+              <option key={tag.id} value={tag.name}>
+                {tag.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="mb-2 block text-xs font-medium text-white/72">Side</label>
+          <select
+            value={filters.side}
+            onChange={(event) => onChange("side", event.target.value)}
+            className="ui-input"
+          >
+            <option value="">All</option>
+            <option value="LONG">Long</option>
+            <option value="SHORT">Short</option>
+          </select>
+        </div>
+        <div>
+          <label className="mb-2 block text-xs font-medium text-white/72">Duration</label>
+          <select
+            value={filters.duration}
+            onChange={(event) => onChange("duration", event.target.value)}
+            className="ui-input"
+          >
+            <option value="">All</option>
+            <option value="SCALP">Scalp</option>
+            <option value="INTRADAY">Intraday</option>
+            <option value="SWING">Swing</option>
+          </select>
+        </div>
+        <div>
+          <label className="mb-2 block text-xs font-medium text-white/72">Trade P&L</label>
+          <select
+            value={filters.tradePnl}
+            onChange={(event) => onChange("tradePnl", event.target.value)}
+            className="ui-input"
+          >
+            <option value="">All</option>
+            <option value="WINNERS">Winners</option>
+            <option value="LOSERS">Losers</option>
+            <option value="SCRATCH">Scratch</option>
+          </select>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          <div>
+            <label className="mb-2 block text-xs font-medium text-white/72">Date range</label>
+            <input
+              type="date"
+              value={filters.from}
+              onChange={(event) => onChange("from", event.target.value)}
+              className="ui-input"
+            />
+          </div>
+          <div>
+            <label className="mb-2 block text-xs font-medium text-white/72 opacity-0">To</label>
+            <input
+              type="date"
+              value={filters.to}
+              onChange={(event) => onChange("to", event.target.value)}
+              className="ui-input"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CompareSection({
+  tags,
+  groupAFilters,
+  groupBFilters,
+  onGroupAChange,
+  onGroupBChange,
+  onResetGroups,
+  groupATrades,
+  groupBTrades,
+  pnlType,
+  defaultCommission
+}) {
+  const groupADetailed = buildDetailedStats(groupATrades, { pnlType, defaultCommission });
+  const groupBDetailed = buildDetailedStats(groupBTrades, { pnlType, defaultCommission });
+
+  return (
+    <div className="space-y-5">
+      <Card
+        title="QUICK REPORT"
+        action={
+          <div className="flex items-center gap-2">
+            <select className="ui-input !w-[140px]" defaultValue="Select type">
+              <option>Select type</option>
+            </select>
+            <button type="button" onClick={onResetGroups} className="ui-button px-4 py-2 text-sm">
+              Reset
+            </button>
+            <button type="button" className="ui-button-solid px-4 py-2 text-sm">
+              Generate Report
+            </button>
+          </div>
+        }
+      >
+        <p className="text-sm text-white/48">Or build a custom report below</p>
+        <div className="mt-5 grid gap-5 xl:grid-cols-2">
+          <CompareGroupCard
+            title="Group A"
+            filters={groupAFilters}
+            onChange={onGroupAChange}
+            tags={tags}
+            matchedCount={groupATrades.length}
+          />
+          <CompareGroupCard
+            title="Group B"
+            filters={groupBFilters}
+            onChange={onGroupBChange}
+            tags={tags}
+            matchedCount={groupBTrades.length}
+          />
+        </div>
+      </Card>
+
+      <Card title="STATISTICS">
+        <div className="grid gap-5 xl:grid-cols-2">
+          <CompareStatsColumn title="Group A" rows={groupADetailed} tradesMatched={groupATrades.length} />
+          <CompareStatsColumn title="Group B" rows={groupBDetailed} tradesMatched={groupBTrades.length} />
+        </div>
+      </Card>
+    </div>
+  );
+}
+
 function applyReportFilters(trades, filters, rangeDays) {
   let nextTrades = [...trades];
 
@@ -713,10 +921,77 @@ function applyReportFilters(trades, filters, rangeDays) {
   return nextTrades;
 }
 
+function applyCompareGroupFilters(trades, filters, options = {}) {
+  const defaultCommission = options.defaultCommission || 0;
+  const pnlType = options.pnlType || "NET";
+  let nextTrades = [...trades];
+
+  if (filters.symbol) {
+    const query = filters.symbol.trim().toLowerCase();
+    nextTrades = nextTrades.filter((trade) => String(trade.symbol || "").toLowerCase().includes(query));
+  }
+
+  if (filters.tag) {
+    nextTrades = nextTrades.filter((trade) =>
+      normalizeTagList(trade.tags).some((tag) => tag.toLowerCase() === filters.tag.toLowerCase())
+    );
+  }
+
+  if (filters.side) {
+    nextTrades = nextTrades.filter((trade) => trade.side === filters.side);
+  }
+
+  if (filters.duration) {
+    nextTrades = nextTrades.filter((trade) => {
+      const holdMinutes = getHoldMinutes(trade);
+
+      if (filters.duration === "SCALP") {
+        return holdMinutes < 5;
+      }
+
+      if (filters.duration === "INTRADAY") {
+        return holdMinutes >= 5 && holdMinutes < 60;
+      }
+
+      if (filters.duration === "SWING") {
+        return holdMinutes >= 60;
+      }
+
+      return true;
+    });
+  }
+
+  if (filters.tradePnl === "WINNERS") {
+    nextTrades = nextTrades.filter((trade) => getTradePnlByType(trade, pnlType, defaultCommission) > 0);
+  } else if (filters.tradePnl === "LOSERS") {
+    nextTrades = nextTrades.filter((trade) => getTradePnlByType(trade, pnlType, defaultCommission) < 0);
+  } else if (filters.tradePnl === "SCRATCH") {
+    nextTrades = nextTrades.filter((trade) => getTradePnlByType(trade, pnlType, defaultCommission) === 0);
+  }
+
+  if (filters.from) {
+    const from = new Date(filters.from);
+    from.setHours(0, 0, 0, 0);
+    nextTrades = nextTrades.filter((trade) => new Date(trade.entryDate) >= from);
+  }
+
+  if (filters.to) {
+    const to = new Date(filters.to);
+    to.setHours(23, 59, 59, 999);
+    nextTrades = nextTrades.filter((trade) => new Date(trade.entryDate) <= to);
+  }
+
+  return nextTrades;
+}
+
 function ReportsPage() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("Overview");
   const [rangeKey, setRangeKey] = useState("30");
   const [filters, setFilters] = useState(REPORT_FILTERS);
+  const [groupAFilters, setGroupAFilters] = useState(COMPARE_GROUP_FILTERS);
+  const [groupBFilters, setGroupBFilters] = useState(COMPARE_GROUP_FILTERS);
+  const [pnlType, setPnlType] = useState("GROSS");
   const {
     data: trades,
     loading,
@@ -740,11 +1015,40 @@ function ReportsPage() {
     [trades, filters, activeRange.days]
   );
   const reportSeries = useMemo(
-    () => buildOverviewSeries(filteredTrades, activeRange.days),
-    [filteredTrades, activeRange.days]
+    () => buildOverviewSeries(filteredTrades, activeRange.days, {
+      defaultCommission: user?.defaultCommission ?? 0,
+      pnlType
+    }),
+    [filteredTrades, activeRange.days, user?.defaultCommission, pnlType]
   );
-  const detailedStats = useMemo(() => buildDetailedStats(filteredTrades), [filteredTrades]);
-  const winVsLossDayStats = useMemo(() => buildWinVsLossDaysStats(filteredTrades), [filteredTrades]);
+  const detailedStats = useMemo(
+    () => buildDetailedStats(filteredTrades, {
+      defaultCommission: user?.defaultCommission ?? 0,
+      pnlType
+    }),
+    [filteredTrades, user?.defaultCommission, pnlType]
+  );
+  const winVsLossDayStats = useMemo(
+    () => buildWinVsLossDaysStats(filteredTrades, {
+      defaultCommission: user?.defaultCommission ?? 0,
+      pnlType
+    }),
+    [filteredTrades, user?.defaultCommission, pnlType]
+  );
+  const groupATrades = useMemo(
+    () => applyCompareGroupFilters(filteredTrades, groupAFilters, {
+      defaultCommission: user?.defaultCommission ?? 0,
+      pnlType
+    }),
+    [filteredTrades, groupAFilters, user?.defaultCommission, pnlType]
+  );
+  const groupBTrades = useMemo(
+    () => applyCompareGroupFilters(filteredTrades, groupBFilters, {
+      defaultCommission: user?.defaultCommission ?? 0,
+      pnlType
+    }),
+    [filteredTrades, groupBFilters, user?.defaultCommission, pnlType]
+  );
 
   function updateFilter(key, value) {
     setFilters((current) => ({
@@ -755,6 +1059,19 @@ function ReportsPage() {
 
   function resetFilters() {
     setFilters(REPORT_FILTERS);
+  }
+
+  function updateGroupFilters(group, key, value) {
+    const setter = group === "A" ? setGroupAFilters : setGroupBFilters;
+    setter((current) => ({
+      ...current,
+      [key]: value
+    }));
+  }
+
+  function resetCompareGroups() {
+    setGroupAFilters(COMPARE_GROUP_FILTERS);
+    setGroupBFilters(COMPARE_GROUP_FILTERS);
   }
 
   if (loading) {
@@ -775,6 +1092,7 @@ function ReportsPage() {
   }
 
   const suffix = activeRange.days ? `(${activeRange.days} Days)` : "(All)";
+  const pnlLabel = pnlType === "GROSS" ? "GROSS" : "NET";
 
   return (
     <div className="space-y-5">
@@ -881,7 +1199,11 @@ function ReportsPage() {
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
             <div className="flex flex-wrap items-center gap-3">
-              <select className="ui-input max-w-[150px]" defaultValue="Gross">
+              <select
+                className="ui-input max-w-[150px]"
+                value={pnlType === "GROSS" ? "Gross" : "Net"}
+                onChange={(event) => setPnlType(event.target.value.toUpperCase())}
+              >
                 <option>Gross</option>
                 <option>Net</option>
               </select>
@@ -927,9 +1249,22 @@ function ReportsPage() {
         <DetailedStatsTable rows={detailedStats} />
       ) : activeTab === "Win vs Loss Days" ? (
         <WinVsLossDaysSection stats={winVsLossDayStats} />
+      ) : activeTab === "Compare" ? (
+        <CompareSection
+          tags={tags}
+          groupAFilters={groupAFilters}
+          groupBFilters={groupBFilters}
+          onGroupAChange={(key, value) => updateGroupFilters("A", key, value)}
+          onGroupBChange={(key, value) => updateGroupFilters("B", key, value)}
+          onResetGroups={resetCompareGroups}
+          groupATrades={groupATrades}
+          groupBTrades={groupBTrades}
+          pnlType={pnlType}
+          defaultCommission={user?.defaultCommission ?? 0}
+        />
       ) : (
         <div className="grid gap-5 xl:grid-cols-2">
-          <Card title={`GROSS DAILY P&L ${suffix.toUpperCase()}`}>
+          <Card title={`${pnlLabel} DAILY P&L ${suffix.toUpperCase()}`}>
             <div className="h-[320px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={reportSeries.grossDaily}>
@@ -947,7 +1282,7 @@ function ReportsPage() {
             </div>
           </Card>
 
-          <Card title={`GROSS CUMULATIVE P&L ${suffix.toUpperCase()}`}>
+          <Card title={`${pnlLabel} CUMULATIVE P&L ${suffix.toUpperCase()}`}>
             <div className="h-[320px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={reportSeries.cumulative}>

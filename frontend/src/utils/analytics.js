@@ -1,3 +1,5 @@
+import { getTradeGrossPnl, getTradeNetPnl } from "./tradePnl";
+
 function asNumber(value) {
   const numericValue = Number(value || 0);
   return Number.isNaN(numericValue) ? 0 : numericValue;
@@ -92,7 +94,7 @@ function buildLastThirtyDayGross(processedTrades, latestDayStart) {
 
   for (const item of processedTrades) {
     const dayKey = getLocalDayKey(item.entryDate);
-    const grossPnl = asNumber(item.trade.grossPnl ?? item.trade.netPnl);
+    const grossPnl = getTradeGrossPnl(item.trade);
     grossDailyMap.set(dayKey, Number(((grossDailyMap.get(dayKey) || 0) + grossPnl).toFixed(2)));
   }
 
@@ -174,7 +176,8 @@ function buildWeekdaySummary(weekdayMap) {
   }));
 }
 
-export function buildAnalytics(trades) {
+export function buildAnalytics(trades, options = {}) {
+  const defaultCommission = options.defaultCommission || 0;
   const sortedTrades = [...trades].sort(
     (a, b) => new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime()
   );
@@ -217,7 +220,7 @@ export function buildAnalytics(trades) {
 
   const processedTrades = sortedTrades.map((trade) => {
     const entryDate = new Date(trade.entryDate);
-    const pnl = asNumber(trade.netPnl ?? trade.grossPnl);
+    const pnl = getTradeNetPnl(trade, defaultCommission);
     const quantity = Math.abs(asNumber(trade.quantity));
     const holdMinutes = getHoldMinutes(trade, entryDate);
     const perSharePnl = quantity > 0 ? pnl / quantity : 0;

@@ -47,6 +47,32 @@ export function AuthProvider({ children }) {
     return data;
   }
 
+  async function refreshSettings() {
+    const user = await authService.getSettings();
+    setAuth((current) => {
+      const next = {
+        ...(current || {}),
+        user
+      };
+      writeStoredAuth(next);
+      return next;
+    });
+    return user;
+  }
+
+  async function updateSettings(payload) {
+    const user = await authService.updateSettings(payload);
+    setAuth((current) => {
+      const next = {
+        ...(current || {}),
+        user
+      };
+      writeStoredAuth(next);
+      return next;
+    });
+    return user;
+  }
+
   function logout() {
     setAuth({ token: null, user: null });
     navigate("/login", { replace: true });
@@ -59,6 +85,8 @@ export function AuthProvider({ children }) {
       isAuthenticated: Boolean(auth?.token),
       login,
       register,
+      refreshSettings,
+      updateSettings,
       logout
     }),
     [auth]
