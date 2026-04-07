@@ -16,17 +16,17 @@ import { formatCurrency, formatPercent } from "../utils/formatters";
 
 function tooltipStyle() {
   return {
-    background: "rgba(11,13,18,0.96)",
-    border: "1px solid rgba(255,255,255,0.12)",
-    borderRadius: "16px",
+    background: "rgba(25,30,43,0.96)",
+    border: "1px solid rgba(255,255,255,0.08)",
+    borderRadius: "12px",
     color: "#f5f7fb",
-    boxShadow: "0 24px 60px rgba(0,0,0,0.38)"
+    boxShadow: "0 18px 40px rgba(0,0,0,0.28)"
   };
 }
 
 function MiniMetric({ label, value, tone = "text-white", note }) {
   return (
-    <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+    <div className="rounded-[12px] border border-white/8 bg-white/[0.025] px-4 py-4">
       <p className="ui-title text-[10px] text-white/48">{label}</p>
       <p className={`mt-3 text-3xl font-bold tracking-[-0.04em] ${tone}`}>{value}</p>
       {note ? <p className="mt-2 text-sm text-white/56">{note}</p> : null}
@@ -50,7 +50,7 @@ function AnalyticsCharts({ analytics }) {
           {lastSevenDays.map((day) => (
             <div
               key={day.date}
-              className="rounded-[18px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(255,255,255,0.015))] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+              className="rounded-[10px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.008))] px-4 py-4"
             >
               <p className="ui-title text-[10px] uppercase text-white/45">{day.weekday}</p>
               <p className="mt-2 text-sm text-white/62">{day.label}</p>
@@ -97,12 +97,12 @@ function AnalyticsCharts({ analytics }) {
               <AreaChart data={equityCurve}>
                 <defs>
                   <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ffffff" stopOpacity={0.16} />
-                    <stop offset="45%" stopColor="#19c37d" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#19c37d" stopOpacity={0.03} />
+                    <stop offset="0%" stopColor="#2be28c" stopOpacity={0.22} />
+                    <stop offset="55%" stopColor="#2be28c" stopOpacity={0.08} />
+                    <stop offset="100%" stopColor="#2be28c" stopOpacity={0.01} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
+                <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                 <XAxis
                   dataKey="date"
                   stroke="#8e96a6"
@@ -115,7 +115,7 @@ function AnalyticsCharts({ analytics }) {
                 <Area
                   type="monotone"
                   dataKey="equity"
-                  stroke="#19c37d"
+                  stroke="#18c87a"
                   strokeWidth={3}
                   fill="url(#equityGradient)"
                 />
@@ -151,7 +151,7 @@ function AnalyticsCharts({ analytics }) {
           <div className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={averageTradeDayData}>
-                <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
+                <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                 <XAxis
                   dataKey="label"
                   stroke="#8e96a6"
@@ -167,7 +167,7 @@ function AnalyticsCharts({ analytics }) {
                   tick={{ fill: "#c6cedb", fontSize: 11 }}
                 />
                 <Tooltip contentStyle={tooltipStyle()} />
-                <Bar dataKey="averagePnl" barSize={28} radius={[8, 8, 0, 0]}>
+                <Bar dataKey="averagePnl" barSize={26} radius={[6, 6, 0, 0]}>
                   {averageTradeDayData.map((entry) => (
                     <Cell key={entry.date} fill={entry.averagePnl >= 0 ? "#56f0a9" : "#ff6b6b"} />
                   ))}

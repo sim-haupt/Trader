@@ -29,14 +29,14 @@ function AppShell() {
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:gap-6">
               <div className="hidden items-center gap-3 xl:flex">
-                <div className="h-10 w-10 rounded-2xl bg-[linear-gradient(135deg,#63a7ff,#8b7cff_58%,#19c37d)] p-[1px] shadow-[0_16px_36px_rgba(99,167,255,0.18)]">
-                  <div className="flex h-full w-full items-center justify-center rounded-2xl bg-[#0b0f16] text-lg font-bold text-white">
+                <div className="h-10 w-10 rounded-2xl bg-[linear-gradient(135deg,rgba(255,255,255,0.28),rgba(255,255,255,0.08))] p-[1px]">
+                  <div className="flex h-full w-full items-center justify-center rounded-2xl bg-[#121723] text-lg font-bold text-white">
                     T
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold tracking-[0.14em] text-white">Trader</p>
-                  <p className="text-[11px] uppercase tracking-[0.26em] text-white/38">Journal</p>
+                  <p className="text-sm font-semibold tracking-[0.02em] text-white">Trader</p>
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-white/38">Journal</p>
                 </div>
               </div>
 
@@ -46,13 +46,13 @@ function AppShell() {
                     key={item.path}
                     to={item.path}
                     className={({ isActive }) =>
-                      `flex items-center gap-2 px-4 py-2.5 text-sm transition ${
-                        isActive
-                          ? "ui-button-solid shadow-[0_14px_30px_rgba(255,255,255,0.12)]"
-                          : "ui-button bg-white/[0.03] text-white/92"
-                      }`
-                    }
-                  >
+                    `flex items-center gap-2 px-4 py-2.5 text-sm transition ${
+                      isActive
+                        ? "ui-button-solid shadow-[0_10px_20px_rgba(255,255,255,0.08)]"
+                        : "ui-button bg-white/[0.03] text-white/92"
+                    }`
+                  }
+                >
                     <span className={location.pathname.startsWith(item.path) ? "text-black" : "text-white/80"}>
                       <NavIcon path={item.icon} />
                     </span>
@@ -64,12 +64,12 @@ function AppShell() {
                   <NavLink
                     to="/admin"
                     className={({ isActive }) =>
-                      `flex items-center gap-2 px-4 py-2.5 text-sm transition ${
-                        isActive
-                          ? "ui-button-solid shadow-[0_14px_30px_rgba(255,255,255,0.12)]"
-                          : "ui-button bg-white/[0.03] text-white/92"
-                      }`
-                    }
+                    `flex items-center gap-2 px-4 py-2.5 text-sm transition ${
+                      isActive
+                        ? "ui-button-solid shadow-[0_10px_20px_rgba(255,255,255,0.08)]"
+                        : "ui-button bg-white/[0.03] text-white/92"
+                    }`
+                  }
                   >
                     <span className={location.pathname.startsWith("/admin") ? "text-black" : "text-white/80"}>
                       <NavIcon path="M12 3l7 4v10l-7 4-7-4V7l7-4zm0 5v4m0 4h.01" />
@@ -81,7 +81,7 @@ function AppShell() {
                 <button
                   type="button"
                   onClick={() => navigate("/trades?mode=import")}
-                  className="ui-button-solid px-4 py-2.5 text-sm !bg-[#f6c453] !text-black shadow-[0_14px_30px_rgba(246,196,83,0.2)]"
+                  className="ui-button-solid px-4 py-2.5 text-sm !bg-[#f4c85c] !text-black shadow-[0_10px_20px_rgba(244,200,92,0.16)]"
                 >
                   Import Trades
                 </button>
@@ -89,7 +89,7 @@ function AppShell() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-2.5 text-right shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+              <div className="rounded-[12px] border border-white/10 bg-white/[0.03] px-4 py-2.5 text-right">
                 <p className="text-sm font-medium text-white">{user?.name}</p>
                 <p className="mt-0.5 text-xs uppercase tracking-[0.18em] text-white/45">{user?.role}</p>
               </div>

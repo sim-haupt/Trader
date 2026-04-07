@@ -5,7 +5,7 @@ function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = tru
     <div className="ui-table-shell">
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-white/10 text-sm">
-          <thead className="bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.015))]">
+          <thead className="bg-[linear-gradient(180deg,rgba(255,255,255,0.024),rgba(255,255,255,0.008))]">
             <tr className="ui-title text-left text-[11px] text-white/58">
               <th className="px-4 py-4">DATE</th>
               <th className="px-4 py-4">SYMBOL</th>
@@ -35,7 +35,7 @@ function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = tru
                       onSelectTrade?.(trade);
                     }
                   }}
-                  className="cursor-pointer transition hover:bg-white/[0.035] focus:bg-white/[0.035] focus:outline-none"
+                  className="cursor-pointer transition hover:bg-white/[0.025] focus:bg-white/[0.025] focus:outline-none"
                 >
                   <td className="px-4 py-4 text-white/88">{formatDate(trade.entryDate)}</td>
                   <td className="px-4 py-4 text-[15px] font-semibold tracking-[-0.02em] text-white">{trade.symbol}</td>
