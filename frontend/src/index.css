@@ -5,11 +5,11 @@
 @tailwind utilities;
 
 :root {
-  color: #d8ffe8;
+  color: #f0eaff;
   background:
-    radial-gradient(circle at top left, rgba(114, 243, 198, 0.12), transparent 22%),
-    radial-gradient(circle at bottom right, rgba(114, 243, 198, 0.06), transparent 26%),
-    linear-gradient(180deg, #020403 0%, #050907 54%, #010201 100%);
+    radial-gradient(circle at top left, rgba(138, 103, 255, 0.14), transparent 22%),
+    radial-gradient(circle at bottom right, rgba(138, 103, 255, 0.08), transparent 26%),
+    linear-gradient(180deg, #06040a 0%, #0b0711 54%, #030205 100%);
   font-family:
     "VT323",
     "IBM Plex Mono",
@@ -25,11 +25,11 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  color: #d5f7e6;
+  color: #e7def7;
   background:
-    radial-gradient(circle at top left, rgba(114, 243, 198, 0.12), transparent 22%),
-    radial-gradient(circle at bottom right, rgba(114, 243, 198, 0.06), transparent 26%),
-    linear-gradient(180deg, #020403 0%, #050907 54%, #010201 100%);
+    radial-gradient(circle at top left, rgba(138, 103, 255, 0.14), transparent 22%),
+    radial-gradient(circle at bottom right, rgba(138, 103, 255, 0.08), transparent 26%),
+    linear-gradient(180deg, #06040a 0%, #0b0711 54%, #030205 100%);
   letter-spacing: 0.03em;
 }
 
@@ -45,9 +45,9 @@ body::before {
   z-index: 100;
   background:
     linear-gradient(rgba(255, 255, 255, 0.02) 50%, rgba(0, 0, 0, 0.06) 50%),
-    linear-gradient(90deg, rgba(114, 243, 198, 0.025), transparent 18%, rgba(114, 243, 198, 0.015)),
-    linear-gradient(rgba(114, 243, 198, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(114, 243, 198, 0.06) 1px, transparent 1px);
+    linear-gradient(90deg, rgba(138, 103, 255, 0.025), transparent 18%, rgba(138, 103, 255, 0.015)),
+    linear-gradient(rgba(138, 103, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(138, 103, 255, 0.06) 1px, transparent 1px);
   background-size: 100% 4px, 100% 100%, 24px 24px, 24px 24px;
   mix-blend-mode: screen;
   opacity: 0.26;
@@ -67,13 +67,13 @@ textarea {
 }
 
 ::selection {
-  background: rgba(114, 243, 198, 0.3);
+  background: rgba(138, 103, 255, 0.3);
   color: #effff6;
 }
 
 @layer components {
   .ui-panel {
-    @apply border-2 border-mint/35 bg-[linear-gradient(180deg,rgba(5,9,7,0.96),rgba(2,4,3,0.98))] shadow-[0_0_0_2px_rgba(0,0,0,0.65),0_0_22px_rgba(114,243,198,0.08)];
+    @apply border-2 border-mint/35 bg-[linear-gradient(180deg,rgba(14,10,20,0.96),rgba(8,6,12,0.98))] shadow-[0_0_0_2px_rgba(0,0,0,0.65),0_0_22px_rgba(138,103,255,0.1)];
     border-radius: 0;
   }
 
@@ -83,25 +83,25 @@ textarea {
   }
 
   .ui-input {
-    @apply w-full border-2 border-mint/20 bg-black/55 px-4 py-3 text-mint outline-none transition focus:border-mint;
+    @apply w-full border-2 border-mint/20 bg-black/55 px-4 py-3 text-gold outline-none transition focus:border-mint;
     border-radius: 0;
     box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.45);
   }
 
   .ui-button {
-    @apply border-2 border-mint/35 bg-mint/10 px-5 py-3 font-semibold uppercase tracking-[0.12em] text-mint transition hover:bg-mint/20 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply border-2 border-mint/35 bg-mint/10 px-5 py-3 font-semibold uppercase tracking-[0.12em] text-gold transition hover:bg-mint/20 disabled:cursor-not-allowed disabled:opacity-60;
     border-radius: 0;
     font-family: "Silkscreen", monospace;
   }
 
   .ui-button-solid {
-    @apply border-2 border-mint bg-mint px-5 py-3 font-semibold uppercase tracking-[0.12em] text-black transition hover:bg-[#8df6d2] disabled:cursor-not-allowed disabled:opacity-60;
+    @apply border-2 border-mint bg-mint px-5 py-3 font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-[#9a7cff] disabled:cursor-not-allowed disabled:opacity-60;
     border-radius: 0;
     font-family: "Silkscreen", monospace;
   }
 
   .ui-chip {
-    @apply inline-flex items-center border border-mint/35 bg-mint/10 px-3 py-1 uppercase tracking-[0.12em] text-mint;
+    @apply inline-flex items-center border border-mint/35 bg-mint/10 px-3 py-1 uppercase tracking-[0.12em] text-gold;
     border-radius: 0;
     font-family: "Silkscreen", monospace;
     font-size: 0.7rem;

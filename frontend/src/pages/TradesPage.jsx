@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
 import Filters from "../components/Filters";
@@ -18,6 +19,7 @@ const initialFilters = {
 };
 
 function TradesPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [trades, setTrades] = useState([]);
   const [selectedTrade, setSelectedTrade] = useState(null);
   const [activeTradeId, setActiveTradeId] = useState(null);
@@ -27,6 +29,7 @@ function TradesPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const isImportMode = searchParams.get("mode") === "import";
 
   async function loadTrades(activeFilters = filters) {
     setLoading(true);
@@ -64,6 +67,14 @@ function TradesPage() {
     }
   }, [activeTrade, activeTradeId]);
 
+  useEffect(() => {
+    if (selectedTrade && !isImportMode) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.set("mode", "import");
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [selectedTrade, isImportMode, searchParams, setSearchParams]);
+
   function handleFilterChange(key, value) {
     setFilters((current) => ({ ...current, [key]: value }));
   }
@@ -85,13 +96,16 @@ function TradesPage() {
     try {
       if (selectedTrade) {
         await tradeService.updateTrade(selectedTrade.id, payload);
-        setMessage("Trade updated successfully.");
-      } else {
-        await tradeService.createTrade(payload);
-        setMessage("Trade created successfully.");
-      }
+      setMessage("Trade updated successfully.");
+    } else {
+      await tradeService.createTrade(payload);
+      setMessage("Trade created successfully.");
+    }
 
       setSelectedTrade(null);
+      if (!selectedTrade) {
+        setSearchParams({}, { replace: true });
+      }
       await loadTrades(filters);
     } catch (err) {
       setError(err.message);
@@ -188,7 +202,18 @@ function TradesPage() {
     <div className="space-y-6">
       <Card
         title="Trade Workspace"
-        subtitle="Capture your executions manually or bulk import broker exports."
+        subtitle={isImportMode ? "Import history or add manual trades from this workspace." : "Filter and review your trade ledger."}
+        action={
+          <button
+            type="button"
+            onClick={() =>
+              setSearchParams(isImportMode ? {} : { mode: "import" }, { replace: true })
+            }
+            className="ui-button-solid text-sm"
+          >
+            {isImportMode ? "Close Import" : "Import Trades"}
+          </button>
+        }
       >
         <div className="space-y-4">
           <Filters filters={filters} onChange={handleFilterChange} onReset={handleResetFilters} />
@@ -204,32 +229,39 @@ function TradesPage() {
         </div>
       </Card>
 
-      <div className="grid gap-6 xl:grid-cols-[1.05fr_1.35fr]">
-        <Card title={title} subtitle="Keep each trade rich enough to be reviewable later.">
-          <TradeForm
-            trade={selectedTrade}
-            onSubmit={handleSubmit}
-            onCancel={() => setSelectedTrade(null)}
-            isSubmitting={isSubmitting}
-          />
-        </Card>
+      {isImportMode && (
+        <>
+          <div className="grid gap-6 xl:grid-cols-[1.05fr_1.35fr]">
+            <Card title={title} subtitle="Keep each trade rich enough to be reviewable later.">
+              <TradeForm
+                trade={selectedTrade}
+                onSubmit={handleSubmit}
+                onCancel={() => {
+                  setSelectedTrade(null);
+                  setSearchParams({}, { replace: true });
+                }}
+                isSubmitting={isSubmitting}
+              />
+            </Card>
 
-        <Card title="CSV Import" subtitle="Import a broker export with one drag-and-drop style action.">
-          <UploadCSV onUpload={handleUpload} isUploading={isUploading} />
-          <div className="ui-notice mt-4 border-dashed text-mist">
-            Supported CSVs: <span className="text-phosphor">app format and broker exports with Open Datetime / Entry Price / Exit Price columns</span>
-            <br />
-            Normalized format: <span className="text-phosphor">symbol, side, quantity, entryPrice, entryDate, exitPrice, exitDate, fees, strategy, notes</span>
+            <Card title="CSV Import" subtitle="Import a broker export with one drag-and-drop style action.">
+              <UploadCSV onUpload={handleUpload} isUploading={isUploading} />
+              <div className="ui-notice mt-4 border-dashed text-mist">
+                Supported CSVs: <span className="text-phosphor">app format and broker exports with Open Datetime / Entry Price / Exit Price columns</span>
+                <br />
+                Normalized format: <span className="text-phosphor">symbol, side, quantity, entryPrice, entryDate, exitPrice, exitDate, fees, strategy, notes</span>
+              </div>
+            </Card>
           </div>
-        </Card>
-      </div>
 
-      <Card
-        title="Text Import"
-        subtitle="Paste execution lines directly and the app will combine fills into closed trades."
-      >
-        <TradeTextImport onImport={handleTextImport} isImporting={isUploading} />
-      </Card>
+          <Card
+            title="Text Import"
+            subtitle="Paste execution lines directly and the app will combine fills into closed trades."
+          >
+            <TradeTextImport onImport={handleTextImport} isImporting={isUploading} />
+          </Card>
+        </>
+      )}
 
       {message && <div className="ui-notice">{message}</div>}
       {error && <div className="ui-notice border-coral/30 bg-coral/10 text-coral">{error}</div>}
@@ -253,7 +285,7 @@ function TradesPage() {
         ) : trades.length === 0 ? (
           <EmptyState
             title="No matching trades"
-            description="Try relaxing your filters or create your first trade from the form above."
+            description="Try relaxing your filters or open Import Trades to bring history into the journal."
           />
         ) : (
           <TradeTable

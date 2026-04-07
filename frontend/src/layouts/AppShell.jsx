@@ -26,120 +26,91 @@ function AppShell() {
     (location.pathname.startsWith("/admin") ? "Admin" : "Dashboard");
 
   return (
-    <div className="min-h-screen bg-grid bg-[length:24px_24px] lg:grid lg:grid-cols-[320px_minmax(0,1fr)]">
-      <aside className="border-b-2 border-mint/30 bg-[linear-gradient(180deg,rgba(4,8,6,0.98),rgba(1,3,2,0.98))] px-5 py-6 lg:min-h-screen lg:border-b-0 lg:border-r-2 lg:px-6">
-        <div className="ui-panel flex items-center justify-between px-4 py-5">
-          <div>
-            <p className="ui-title text-xs text-mist">System</p>
-            <h1 className="ui-title mt-3 text-3xl text-[#effff6]">Trader</h1>
-          </div>
-          <div className="ui-chip">
-            Mk-II
-          </div>
-        </div>
+    <div className="min-h-screen bg-grid bg-[length:24px_24px]">
+      <header className="sticky top-0 z-20 border-b-2 border-mint/30 bg-[rgba(8,6,12,0.96)]">
+        <div className="px-4 py-5 sm:px-6 xl:px-8">
+          <div className="ui-panel px-4 py-4">
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+              <div className="flex items-center gap-4">
+                <div>
+                  <p className="ui-title text-xs text-mist">Trader Journal</p>
+                  <h1 className="ui-title mt-2 text-2xl text-gold">Command Deck</h1>
+                </div>
+                <div className="ui-chip">Mk-II</div>
+              </div>
 
-        <nav className="mt-6 space-y-2">
-          {navigationItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={({ isActive }) =>
-                `flex items-center gap-4 border-2 px-4 py-3 text-base font-medium uppercase tracking-[0.08em] transition ${
-                  isActive
-                    ? "border-mint bg-mint/12 text-[#effff6]"
-                    : "border-transparent text-mist hover:border-mint/20 hover:bg-mint/6 hover:text-[#effff6]"
-                }`
-              }
-            >
-              <span className="text-mint">
-                <NavIcon path={item.icon} />
-              </span>
-              {item.label}
-            </NavLink>
-          ))}
-
-          {user?.role === "ADMIN" && (
-            <NavLink
-              to="/admin"
-              className={({ isActive }) =>
-                `flex items-center gap-4 border-2 px-4 py-3 text-base font-medium uppercase tracking-[0.08em] transition ${
-                  isActive
-                    ? "border-mint bg-mint/12 text-[#effff6]"
-                    : "border-transparent text-mist hover:border-mint/20 hover:bg-mint/6 hover:text-[#effff6]"
-                }`
-              }
-            >
-              <span className="text-mint">
-                <NavIcon path="M12 3l7 4v10l-7 4-7-4V7l7-4zm0 5v4m0 4h.01" />
-              </span>
-              Admin
-            </NavLink>
-          )}
-        </nav>
-
-        <button
-          type="button"
-          onClick={() => navigate("/trades")}
-          className="ui-button-solid mt-8 flex w-full items-center justify-center text-base"
-        >
-          Import Trades
-        </button>
-
-        <div className="ui-panel mt-8 p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="ui-title text-sm text-[#effff6]">{user?.name}</p>
-              <p className="mt-2 text-sm uppercase tracking-[0.18em] text-mist">Role: {user?.role}</p>
-            </div>
-            <button
-              type="button"
-              onClick={logout}
-              className="ui-button px-4 py-2 text-sm"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      <div className="min-w-0">
-        <header className="sticky top-0 z-20 border-b-2 border-mint/30 bg-[rgba(2,5,4,0.94)]">
-          <div className="flex flex-col gap-4 px-4 py-5 sm:px-6 xl:flex-row xl:items-center xl:justify-between xl:px-8">
-            <div>
-              <p className="ui-title text-xs text-mist">Command Deck</p>
-              <h2 className="ui-title mt-3 text-3xl text-[#effff6]">{sectionTitle}</h2>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                className="ui-button px-4 py-2.5 text-sm"
-              >
-                Edit Layout
-              </button>
-              <div className="ui-panel flex items-center p-1">
-                {["30 Days", "60 Days", "90 Days"].map((label, index) => (
-                  <button
-                    key={label}
-                    type="button"
-                    className={`px-4 py-2 text-sm font-medium uppercase tracking-[0.08em] transition ${
-                      index === 0
-                        ? "bg-mint text-black"
-                        : "text-mist hover:bg-mint/10 hover:text-[#effff6]"
-                    }`}
+              <nav className="flex flex-wrap items-center gap-2">
+                {navigationItems.map((item) => (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 border-2 px-4 py-3 text-sm font-medium uppercase tracking-[0.08em] transition ${
+                        isActive
+                          ? "border-mint bg-mint/16 text-gold"
+                          : "border-transparent text-mist hover:border-mint/20 hover:bg-mint/8 hover:text-gold"
+                      }`
+                    }
                   >
-                    {label}
-                  </button>
+                    <span className="text-mint">
+                      <NavIcon path={item.icon} />
+                    </span>
+                    {item.label}
+                  </NavLink>
                 ))}
+
+                {user?.role === "ADMIN" && (
+                  <NavLink
+                    to="/admin"
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 border-2 px-4 py-3 text-sm font-medium uppercase tracking-[0.08em] transition ${
+                        isActive
+                          ? "border-mint bg-mint/16 text-gold"
+                          : "border-transparent text-mist hover:border-mint/20 hover:bg-mint/8 hover:text-gold"
+                      }`
+                    }
+                  >
+                    <span className="text-mint">
+                      <NavIcon path="M12 3l7 4v10l-7 4-7-4V7l7-4zm0 5v4m0 4h.01" />
+                    </span>
+                    Admin
+                  </NavLink>
+                )}
+              </nav>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => navigate("/trades?mode=import")}
+                  className="ui-button-solid text-sm"
+                >
+                  Import Trades
+                </button>
+                <div className="text-right">
+                  <p className="ui-title text-xs text-gold">{user?.name}</p>
+                  <p className="mt-2 text-xs uppercase tracking-[0.18em] text-mist">{user?.role}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="ui-button px-4 py-2 text-sm"
+                >
+                  Logout
+                </button>
               </div>
             </div>
           </div>
-        </header>
 
-        <main className="px-4 py-8 sm:px-6 xl:px-8">
-          <Outlet />
-        </main>
-      </div>
+          <div className="mt-4">
+            <p className="ui-title text-xs text-mist">Workspace</p>
+            <h2 className="ui-title mt-3 text-3xl text-gold">{sectionTitle}</h2>
+          </div>
+        </div>
+      </header>
+
+      <main className="px-4 py-8 sm:px-6 xl:px-8">
+        <Outlet />
+      </main>
     </div>
   );
 }

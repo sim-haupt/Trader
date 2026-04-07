@@ -27,18 +27,6 @@ function tooltipStyle() {
 
 function AnalyticsCharts({ analytics }) {
   const { summary, equityCurve, recentDays, performanceByWeekday } = analytics;
-  const headerDate = new Intl.DateTimeFormat("en-US", {
-    weekday: "short",
-    day: "2-digit",
-    month: "short",
-    year: "numeric"
-  }).format(new Date());
-  const headerTime = new Intl.DateTimeFormat("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false
-  }).format(new Date());
 
   const winLossData = [
     { name: "Wins", value: summary.wins, color: "#72f3c6" },
@@ -55,38 +43,6 @@ function AnalyticsCharts({ analytics }) {
 
   return (
     <div className="space-y-6">
-      <section className="ui-panel p-6">
-        <div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
-          <div>
-            <p className="ui-title text-3xl text-[#effff6]">{headerDate}</p>
-            <div className="mt-6 h-[2px] w-full max-w-[420px] bg-mint/60" />
-            <div className="mt-8 flex flex-wrap items-center gap-4">
-              <span className="ui-title text-5xl text-[#effff6]">{headerTime}</span>
-              <span className="ui-chip">CET</span>
-            </div>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2 xl:min-w-[520px] xl:grid-cols-3">
-            <div className="ui-panel p-4">
-              <p className="ui-title text-xs text-mist">Session</p>
-              <p className="mt-3 text-2xl font-semibold uppercase tracking-[0.12em] text-mint">Active</p>
-            </div>
-            <div className="ui-panel p-4">
-              <p className="ui-title text-xs text-mist">Trend State</p>
-              <p className="mt-3 text-2xl font-semibold uppercase tracking-[0.12em] text-mint">
-                {summary.totalPnl >= 0 ? "Bull Bias" : "Risk Off"}
-              </p>
-            </div>
-            <div className="ui-panel p-4">
-              <p className="ui-title text-xs text-mist">Health</p>
-              <p className="mt-3 text-2xl font-semibold uppercase tracking-[0.12em] text-[#effff6]">
-                {Math.max(0, Math.round(summary.winRate))}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <Card title="Recent Sessions" subtitle="Recent trading days at a glance.">
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-7">
           {recentDays.map((day) => (

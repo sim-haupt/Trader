@@ -47,16 +47,18 @@ function createMonthGrid(year, monthIndex, dailyStats) {
   const firstDay = new Date(year, monthIndex, 1);
   const startDay = new Date(firstDay);
   startDay.setDate(1 - firstDay.getDay());
+  const lastDay = new Date(year, monthIndex + 1, 0);
+  const endDay = new Date(lastDay);
+  endDay.setDate(lastDay.getDate() + (6 - lastDay.getDay()));
 
   const weeks = [];
+  let cursor = new Date(startDay);
 
-  // Render a fixed 6-week grid so each month card remains visually consistent.
-  for (let weekIndex = 0; weekIndex < 6; weekIndex += 1) {
+  while (cursor <= endDay) {
     const week = [];
 
     for (let dayIndex = 0; dayIndex < 7; dayIndex += 1) {
-      const currentDate = new Date(startDay);
-      currentDate.setDate(startDay.getDate() + weekIndex * 7 + dayIndex);
+      const currentDate = new Date(cursor);
       const dayKey = getDayKey(currentDate);
 
       week.push({
@@ -66,6 +68,8 @@ function createMonthGrid(year, monthIndex, dailyStats) {
         isCurrentMonth: currentDate.getMonth() === monthIndex,
         stats: dailyStats.get(dayKey) || null
       });
+
+      cursor.setDate(cursor.getDate() + 1);
     }
 
     weeks.push(week);
@@ -132,11 +136,112 @@ function MonthCard({ month, onOpen }) {
   );
 }
 
+function MonthDetailModal({ month, onClose }) {
+  const monthTradeDays = month.weeks
+    .flat()
+    .filter((day) => day.isCurrentMonth && day.stats)
+    .sort((left, right) => left.dayKey.localeCompare(right.dayKey));
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 p-4 backdrop-blur">
+      <div className="w-full max-w-6xl border-2 border-mint/25 bg-[linear-gradient(180deg,rgba(14,10,20,0.98),rgba(8,6,12,0.98))] shadow-crt">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b-2 border-mint/20 bg-black/90 px-6 py-5">
+          <div>
+            <p className="ui-title text-xs text-mist">Calendar</p>
+            <h2 className="ui-title mt-3 text-2xl text-gold">{month.label}</h2>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="ui-chip normal-case tracking-[0.08em] text-sm text-mist">
+              {month.monthTrades} trade{month.monthTrades === 1 ? "" : "s"}
+            </div>
+            <div
+              className={`border px-4 py-2 text-sm font-semibold ${
+                month.monthPnl >= 0 ? "bg-mint/10 text-mint" : "bg-coral/10 text-coral"
+              }`}
+            >
+              {formatCurrency(month.monthPnl)}
+            </div>
+            <button type="button" onClick={onClose} className="ui-button text-sm">
+              Close
+            </button>
+          </div>
+        </div>
+
+        <div className="grid gap-6 p-6 xl:grid-cols-[1.2fr_0.8fr]">
+          <div className="ui-panel p-5">
+            <div className="mb-5 grid grid-cols-7 gap-3 text-center">
+              {weekdayLabels.map((label) => (
+                <div key={label} className="ui-title pb-2 text-xs text-mist">
+                  {label}
+                </div>
+              ))}
+
+              {month.weeks.flat().map((day) => (
+                <div
+                  key={day.dayKey}
+                  className={`min-h-[74px] px-2 py-3 text-left transition ${getDayTone(
+                    day.stats,
+                    day.isCurrentMonth
+                  )}`}
+                >
+                  <div className="text-base font-semibold">{day.dayNumber}</div>
+                  {day.isCurrentMonth && day.stats && (
+                    <>
+                      <div className="mt-3 text-sm font-semibold">{formatCurrency(day.stats.pnl)}</div>
+                      <div className="mt-1 text-xs opacity-80">
+                        {day.stats.trades} trade{day.stats.trades === 1 ? "" : "s"}
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="ui-panel p-5">
+            <h3 className="ui-title text-lg text-phosphor">Daily Breakdown</h3>
+            <div className="mt-5 space-y-3">
+              {monthTradeDays.length === 0 ? (
+                <p className="text-sm text-mist">No trades in this month.</p>
+              ) : (
+                monthTradeDays.map((day) => (
+                  <div key={day.dayKey} className="ui-panel px-4 py-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-base font-semibold text-white">
+                          {new Date(day.dayKey).toLocaleDateString("en-US", {
+                            month: "long",
+                            day: "numeric",
+                            year: "numeric"
+                          })}
+                        </p>
+                        <p className="mt-1 text-sm text-mist">
+                          {day.stats.trades} trade{day.stats.trades === 1 ? "" : "s"} · {day.stats.wins} win
+                          {day.stats.wins === 1 ? "" : "s"} · {day.stats.losses} loss
+                          {day.stats.losses === 1 ? "" : "es"}
+                        </p>
+                      </div>
+                      <div className={`text-lg font-semibold ${day.stats.pnl >= 0 ? "text-mint" : "text-coral"}`}>
+                        {formatCurrency(day.stats.pnl)}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CalendarPage() {
   const [trades, setTrades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selectedMonthIndex, setSelectedMonthIndex] = useState(0);
+  const [selectedMonthIndex, setSelectedMonthIndex] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -198,23 +303,8 @@ function CalendarPage() {
     };
   }, [trades]);
 
-  useEffect(() => {
-    const currentMonth = new Date().getMonth();
-    const bestMonthIndex =
-      calendarData.months.findLastIndex((month) => month.monthTrades > 0) >= 0
-        ? calendarData.months.findLastIndex((month) => month.monthTrades > 0)
-        : currentMonth;
-
-    setSelectedMonthIndex(bestMonthIndex);
-  }, [calendarData]);
-
-  const selectedMonth = calendarData.months[selectedMonthIndex];
-  const monthTradeDays = selectedMonth
-    ? selectedMonth.weeks
-        .flat()
-        .filter((day) => day.isCurrentMonth && day.stats)
-        .sort((left, right) => left.dayKey.localeCompare(right.dayKey))
-    : [];
+  const selectedMonth =
+    selectedMonthIndex === null ? null : calendarData.months[selectedMonthIndex] ?? null;
 
   if (loading) {
     return <div className="text-sm text-mist">Loading calendar...</div>;
@@ -237,7 +327,7 @@ function CalendarPage() {
     <div className="space-y-6">
       <Card
         title="Calendar Overview"
-        subtitle="A year-level view of green and red trading days. Open any month to drill down into the details."
+        subtitle="A year-level view of green and red trading days. Open any month to drill into the details in a focused window."
         action={
           <div className="ui-chip text-base">
             {calendarData.year}
@@ -251,102 +341,7 @@ function CalendarPage() {
         </div>
       </Card>
 
-      {selectedMonth && (
-        <Card
-          title={`${selectedMonth.label} Details`}
-          subtitle="A more detailed view for the selected month."
-          action={
-            <div className="flex items-center gap-3">
-              <div className="ui-chip normal-case tracking-[0.08em] text-sm text-mist">
-                {selectedMonth.monthTrades} trade{selectedMonth.monthTrades === 1 ? "" : "s"}
-              </div>
-              <div
-                className={`border px-4 py-2 text-sm font-semibold ${
-                  selectedMonth.monthPnl >= 0
-                    ? "bg-mint/10 text-mint"
-                    : "bg-coral/10 text-coral"
-                }`}
-              >
-                {formatCurrency(selectedMonth.monthPnl)}
-              </div>
-            </div>
-          }
-        >
-          <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-            <div className="ui-panel p-5">
-              <div className="mb-5 grid grid-cols-7 gap-3 text-center">
-                {weekdayLabels.map((label) => (
-                  <div key={label} className="ui-title pb-2 text-xs text-mist">
-                    {label}
-                  </div>
-                ))}
-
-                {selectedMonth.weeks.flat().map((day) => (
-                  <div
-                    key={day.dayKey}
-                    className={`min-h-[74px] px-2 py-3 text-left transition ${getDayTone(
-                      day.stats,
-                      day.isCurrentMonth
-                    )}`}
-                  >
-                    <div className="text-base font-semibold">{day.dayNumber}</div>
-                    {day.isCurrentMonth && day.stats && (
-                      <>
-                        <div className="mt-3 text-sm font-semibold">
-                          {formatCurrency(day.stats.pnl)}
-                        </div>
-                        <div className="mt-1 text-xs opacity-80">
-                          {day.stats.trades} trade{day.stats.trades === 1 ? "" : "s"}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="ui-panel p-5">
-              <h3 className="ui-title text-lg text-phosphor">Daily Breakdown</h3>
-              <div className="mt-5 space-y-3">
-                {monthTradeDays.length === 0 ? (
-                  <p className="text-sm text-mist">No trades in this month.</p>
-                ) : (
-                  monthTradeDays.map((day) => (
-                    <div
-                      key={day.dayKey}
-                      className="ui-panel px-4 py-4"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-base font-semibold text-white">
-                            {new Date(day.dayKey).toLocaleDateString("en-US", {
-                              month: "long",
-                              day: "numeric",
-                              year: "numeric"
-                            })}
-                          </p>
-                          <p className="mt-1 text-sm text-mist">
-                            {day.stats.trades} trade{day.stats.trades === 1 ? "" : "s"} · {day.stats.wins} win
-                            {day.stats.wins === 1 ? "" : "s"} · {day.stats.losses} loss
-                            {day.stats.losses === 1 ? "" : "es"}
-                          </p>
-                        </div>
-                        <div
-                          className={`text-lg font-semibold ${
-                            day.stats.pnl >= 0 ? "text-mint" : "text-coral"
-                          }`}
-                        >
-                          {formatCurrency(day.stats.pnl)}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-        </Card>
-      )}
+      {selectedMonth && <MonthDetailModal month={selectedMonth} onClose={() => setSelectedMonthIndex(null)} />}
     </div>
   );
 }
