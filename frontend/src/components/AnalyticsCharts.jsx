@@ -213,6 +213,7 @@ function AnalyticsCharts({
         id: "expectancy",
         title: "EXPECTANCY",
         defaultSpan: 1,
+        className: "min-h-[205px]",
         body: (
           <div className="grid h-full">
             <MiniMetric
@@ -227,6 +228,7 @@ function AnalyticsCharts({
         id: "riskReward",
         title: "RISK REWARD RATIO",
         defaultSpan: 1,
+        className: "min-h-[205px]",
         body: (
           <div className="grid h-full">
             <MiniMetric
@@ -293,18 +295,21 @@ function AnalyticsCharts({
         id: "performanceWeekday",
         title: "PERFORMANCE BY DAY OF WEEK",
         defaultSpan: 1,
+        className: "min-h-[300px]",
         body: <BreakdownRows entries={performanceByWeekday} />
       },
       {
         id: "performancePrice",
         title: "PERFORMANCE BY PRICE",
         defaultSpan: 1,
+        className: "min-h-[300px]",
         body: <BreakdownRows entries={performanceByPrice} />
       },
       {
         id: "performanceHourSummary",
         title: "PERFORMANCE BY HOUR OF DAY",
         defaultSpan: 1,
+        className: "min-h-[300px]",
         body: <BreakdownRows entries={performanceByTimeOfDaySummary} />
       },
       {
@@ -399,6 +404,7 @@ function AnalyticsCharts({
         id: "streaks",
         title: "STREAKS",
         defaultSpan: 1,
+        className: "min-h-[205px]",
         body: (
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
             <MiniMetric label="WINNING STREAK" value={summary.longestWinStreak} tone="text-mint" />
@@ -547,7 +553,7 @@ function AnalyticsCharts({
               <Card
                 title={widget.title}
                 action={cardAction}
-                className={`h-full transition ${editing ? "ring-1 ring-white/10" : ""}`}
+                className={`h-full transition ${widget.className || ""} ${editing ? "ring-1 ring-white/10" : ""}`}
               >
                 {widget.body}
               </Card>
