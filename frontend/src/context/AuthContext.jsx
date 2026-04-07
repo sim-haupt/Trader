@@ -33,12 +33,16 @@ export function AuthProvider({ children }) {
 
   async function login(credentials) {
     const data = await authService.login(credentials);
+    api.defaults.headers.common.Authorization = `Bearer ${data.token}`;
+    writeStoredAuth(data);
     setAuth(data);
     return data;
   }
 
   async function register(payload) {
     const data = await authService.register(payload);
+    api.defaults.headers.common.Authorization = `Bearer ${data.token}`;
+    writeStoredAuth(data);
     setAuth(data);
     return data;
   }
