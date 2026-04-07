@@ -7,6 +7,8 @@ import RegisterPage from "./pages/RegisterPage";
 import DashboardPage from "./pages/DashboardPage";
 import TradesPage from "./pages/TradesPage";
 import AdminPage from "./pages/AdminPage";
+import CalendarPage from "./pages/CalendarPage";
+import SectionPlaceholderPage from "./pages/SectionPlaceholderPage";
 
 function App() {
   return (
@@ -23,7 +25,26 @@ function App() {
       >
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/calendar" element={<CalendarPage />} />
+        <Route
+          path="/reports"
+          element={
+            <SectionPlaceholderPage
+              title="Reports"
+              description="Performance breakdowns, exported summaries, and deeper analytics reports will live here."
+            />
+          }
+        />
         <Route path="/trades" element={<TradesPage />} />
+        <Route
+          path="/journal"
+          element={
+            <SectionPlaceholderPage
+              title="Journal"
+              description="Narrative notes, review workflows, and decision journaling will live here."
+            />
+          }
+        />
         <Route
           path="/admin"
           element={
