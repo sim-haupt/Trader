@@ -5,27 +5,27 @@ export default {
     extend: {
       colors: {
         ink: "#f4f7fb",
-        panel: "#10131a",
-        line: "rgba(255,255,255,0.08)",
-        mist: "#a0a8b8",
-        mint: "#19c37d",
-        coral: "#ff5d6c",
-        gold: "#f6c453",
-        phosphor: "#f4f7fb",
-        coal: "#0b0d12",
-        arcade: "#12161d",
-        arcade2: "#171b24",
-        arcade3: "#1e2430",
-        cyan: "#63a7ff",
-        amber: "#f6c453",
-        pink: "#8b7cff"
+        panel: "#131a27",
+        line: "rgba(229,231,235,0.14)",
+        mist: "#99a4ba",
+        mint: "#38d996",
+        coral: "#ff6b72",
+        gold: "#f4c85c",
+        phosphor: "#f5f7fb",
+        coal: "#090d14",
+        arcade: "#0f1521",
+        arcade2: "#151c2a",
+        arcade3: "#1c2536",
+        cyan: "#67a8ff",
+        amber: "#f4c85c",
+        pink: "#8ea8ff"
       },
       boxShadow: {
-        glow: "0 24px 80px rgba(0,0,0,0.42)",
-        crt: "0 24px 80px rgba(0,0,0,0.42)"
+        glow: "0 32px 90px rgba(0,0,0,0.35)",
+        crt: "0 18px 48px rgba(0,0,0,0.24)"
       },
       backgroundImage: {
-        grid: "linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)"
+        grid: "linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)"
       }
     }
   },

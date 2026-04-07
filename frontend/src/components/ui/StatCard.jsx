@@ -10,9 +10,9 @@ function StatCard({ label, value, accent = "mint" }) {
   };
 
   return (
-    <Card className="h-full overflow-hidden">
-      <p className="ui-title text-[11px] text-white/64">{label}</p>
-      <p className={`mt-4 text-4xl font-bold tracking-[-0.03em] ${accentMap[accent] || "text-phosphor"}`}>
+    <Card className="h-full">
+      <p className="ui-title text-[11px] text-white/56">{label}</p>
+      <p className={`mt-4 text-[2.1rem] font-bold tracking-[-0.05em] ${accentMap[accent] || "text-phosphor"}`}>
         {value}
       </p>
     </Card>

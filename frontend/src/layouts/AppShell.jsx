@@ -26,18 +26,18 @@ function AppShell() {
   return (
     <div className="app-shell">
       <div className="desktop-frame">
-        <header className="top-status sticky top-0 z-20">
+        <header className="top-status">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:gap-6">
-              <div className="hidden items-center gap-3 xl:flex">
-                <div className="h-10 w-10 rounded-2xl bg-[linear-gradient(135deg,rgba(255,255,255,0.28),rgba(255,255,255,0.08))] p-[1px]">
-                  <div className="flex h-full w-full items-center justify-center rounded-2xl bg-[#121723] text-lg font-bold text-white">
+            <div className="flex min-w-0 flex-col gap-4 xl:flex-row xl:items-center xl:gap-6">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-[16px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-[12px] bg-[linear-gradient(180deg,#77b4ff,#4d89ff)] text-sm font-extrabold text-[#07111c]">
                     T
                   </div>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold tracking-[0.02em] text-white">Trader</p>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-white/38">Journal</p>
+                <div className="min-w-0">
+                  <p className="text-base font-semibold tracking-[-0.02em] text-white">Trader</p>
+                  <p className="text-sm text-white/46">Execution journal and performance analytics</p>
                 </div>
               </div>
 
@@ -47,14 +47,14 @@ function AppShell() {
                     key={item.path}
                     to={item.path}
                     className={({ isActive }) =>
-                    `flex items-center gap-2 px-4 py-2.5 text-sm transition ${
-                      isActive
-                        ? "ui-button-solid shadow-[0_10px_20px_rgba(255,255,255,0.08)]"
-                        : "ui-button bg-white/[0.03] text-white/92"
-                    }`
-                  }
-                >
-                    <span className={location.pathname.startsWith(item.path) ? "text-black" : "text-white/80"}>
+                      `flex items-center gap-2 px-4 py-2.5 text-sm ${
+                        isActive
+                          ? "ui-button-solid"
+                          : "ui-button text-white/88"
+                      }`
+                    }
+                  >
+                    <span className={location.pathname.startsWith(item.path) ? "text-[#08111d]" : "text-white/72"}>
                       <NavIcon path={item.icon} />
                     </span>
                     {item.label}
@@ -65,14 +65,14 @@ function AppShell() {
                   <NavLink
                     to="/admin"
                     className={({ isActive }) =>
-                    `flex items-center gap-2 px-4 py-2.5 text-sm transition ${
-                      isActive
-                        ? "ui-button-solid shadow-[0_10px_20px_rgba(255,255,255,0.08)]"
-                        : "ui-button bg-white/[0.03] text-white/92"
-                    }`
-                  }
+                      `flex items-center gap-2 px-4 py-2.5 text-sm ${
+                        isActive
+                          ? "ui-button-solid"
+                          : "ui-button text-white/88"
+                      }`
+                    }
                   >
-                    <span className={location.pathname.startsWith("/admin") ? "text-black" : "text-white/80"}>
+                    <span className={location.pathname.startsWith("/admin") ? "text-[#08111d]" : "text-white/72"}>
                       <NavIcon path="M12 3l7 4v10l-7 4-7-4V7l7-4zm0 5v4m0 4h.01" />
                     </span>
                     Admin
@@ -82,17 +82,17 @@ function AppShell() {
                 <button
                   type="button"
                   onClick={() => navigate("/trades?mode=import")}
-                  className="ui-button-solid px-4 py-2.5 text-sm !bg-[#f4c85c] !text-black shadow-[0_10px_20px_rgba(244,200,92,0.16)]"
+                  className="ui-button-solid px-4 py-2.5 text-sm !bg-[linear-gradient(180deg,#f6d78e,#f4c85c)] !text-[#1a1200] !shadow-[0_14px_30px_rgba(244,200,92,0.2)]"
                 >
                   Import Trades
                 </button>
               </nav>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="rounded-[12px] border border-[#e5e7eb42] bg-white/[0.03] px-4 py-2.5 text-right">
-                <p className="text-sm font-medium text-white">{user?.name}</p>
-                <p className="mt-0.5 text-xs uppercase tracking-[0.18em] text-white/45">{user?.role}</p>
+            <div className="flex flex-wrap items-center gap-3 xl:justify-end">
+              <div className="rounded-[14px] border border-white/10 bg-white/[0.035] px-4 py-3 text-right shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                <p className="text-sm font-semibold text-white">{user?.name}</p>
+                <p className="mt-1 text-xs uppercase tracking-[0.16em] text-white/42">{user?.role}</p>
               </div>
               <button
                 type="button"
@@ -105,7 +105,7 @@ function AppShell() {
           </div>
         </header>
 
-        <main className="min-h-0 px-1 py-1 sm:px-1 xl:px-1">
+        <main className="min-h-0 px-0 py-0">
           <Outlet />
         </main>
       </div>
