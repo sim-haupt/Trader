@@ -27,16 +27,34 @@ function AppShell() {
 
   return (
     <div className="min-h-screen bg-grid bg-[length:24px_24px]">
-      <header className="sticky top-0 z-20 border-b-2 border-mint/30 bg-[rgba(8,6,12,0.96)]">
+      <header className="sticky top-0 z-20 border-b-2 border-mint/30 bg-[rgba(10,7,17,0.96)] backdrop-blur">
         <div className="px-4 py-5 sm:px-6 xl:px-8">
-          <div className="ui-panel px-4 py-4">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-              <div className="flex items-center gap-4">
-                <div>
-                  <p className="ui-title text-xs text-mist">Trader Journal</p>
-                  <h1 className="ui-title mt-2 text-2xl text-gold">Command Deck</h1>
+          <div className="ui-panel overflow-hidden px-0 py-0">
+            <div className="border-b border-cyan/25 bg-[linear-gradient(90deg,rgba(138,103,255,0.26),rgba(83,189,255,0.08),rgba(255,180,77,0.08))] px-4 py-4">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div>
+                    <p className="ui-title text-xs text-mist">Trader Journal</p>
+                    <h1 className="ui-title mt-2 text-2xl text-[#fff8df]">Arcade Console</h1>
+                  </div>
+                  <div className="ui-chip">Mk-II</div>
                 </div>
-                <div className="ui-chip">Mk-II</div>
+
+                <div className="flex flex-wrap items-center gap-3 text-sm">
+                  <span className="ui-chip">17°C</span>
+                  <span className="ui-chip">Clear Sky</span>
+                  <span className="ui-chip">Langen</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-4 px-4 py-4 xl:flex-row xl:items-center xl:justify-between">
+              <div className="flex items-center gap-4">
+                <div className="hidden h-12 w-[2px] bg-cyan/40 xl:block" />
+                <div>
+                  <p className="ui-title text-xs text-[#59b9ff]">Workspace</p>
+                  <h2 className="ui-title mt-2 text-xl text-gold">{sectionTitle}</h2>
+                </div>
               </div>
 
               <nav className="flex flex-wrap items-center gap-2">
@@ -47,12 +65,12 @@ function AppShell() {
                     className={({ isActive }) =>
                       `flex items-center gap-3 border-2 px-4 py-3 text-sm font-medium uppercase tracking-[0.08em] transition ${
                         isActive
-                          ? "border-mint bg-mint/16 text-gold"
+                          ? "border-cyan bg-[linear-gradient(180deg,rgba(89,185,255,0.22),rgba(138,103,255,0.12))] text-[#fff8df]"
                           : "border-transparent text-mist hover:border-mint/20 hover:bg-mint/8 hover:text-gold"
                       }`
                     }
                   >
-                    <span className="text-mint">
+                    <span className={location.pathname.startsWith(item.path) ? "text-[#59b9ff]" : "text-mint"}>
                       <NavIcon path={item.icon} />
                     </span>
                     {item.label}
@@ -65,12 +83,12 @@ function AppShell() {
                     className={({ isActive }) =>
                       `flex items-center gap-3 border-2 px-4 py-3 text-sm font-medium uppercase tracking-[0.08em] transition ${
                         isActive
-                          ? "border-mint bg-mint/16 text-gold"
+                          ? "border-cyan bg-[linear-gradient(180deg,rgba(89,185,255,0.22),rgba(138,103,255,0.12))] text-[#fff8df]"
                           : "border-transparent text-mist hover:border-mint/20 hover:bg-mint/8 hover:text-gold"
                       }`
                     }
                   >
-                    <span className="text-mint">
+                    <span className={location.pathname.startsWith("/admin") ? "text-[#59b9ff]" : "text-mint"}>
                       <NavIcon path="M12 3l7 4v10l-7 4-7-4V7l7-4zm0 5v4m0 4h.01" />
                     </span>
                     Admin
@@ -99,11 +117,6 @@ function AppShell() {
                 </button>
               </div>
             </div>
-          </div>
-
-          <div className="mt-4">
-            <p className="ui-title text-xs text-mist">Workspace</p>
-            <h2 className="ui-title mt-3 text-3xl text-gold">{sectionTitle}</h2>
           </div>
         </div>
       </header>

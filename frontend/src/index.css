@@ -7,9 +7,10 @@
 :root {
   color: #f0eaff;
   background:
-    radial-gradient(circle at top left, rgba(138, 103, 255, 0.14), transparent 22%),
-    radial-gradient(circle at bottom right, rgba(138, 103, 255, 0.08), transparent 26%),
-    linear-gradient(180deg, #06040a 0%, #0b0711 54%, #030205 100%);
+    radial-gradient(circle at top left, rgba(138, 103, 255, 0.18), transparent 20%),
+    radial-gradient(circle at 82% 12%, rgba(83, 189, 255, 0.12), transparent 16%),
+    radial-gradient(circle at bottom right, rgba(255, 180, 77, 0.08), transparent 20%),
+    linear-gradient(180deg, #0a0711 0%, #120b1a 54%, #050309 100%);
   font-family:
     "VT323",
     "IBM Plex Mono",
@@ -27,9 +28,10 @@ body {
   min-height: 100vh;
   color: #e7def7;
   background:
-    radial-gradient(circle at top left, rgba(138, 103, 255, 0.14), transparent 22%),
-    radial-gradient(circle at bottom right, rgba(138, 103, 255, 0.08), transparent 26%),
-    linear-gradient(180deg, #06040a 0%, #0b0711 54%, #030205 100%);
+    radial-gradient(circle at top left, rgba(138, 103, 255, 0.18), transparent 20%),
+    radial-gradient(circle at 82% 12%, rgba(83, 189, 255, 0.12), transparent 16%),
+    radial-gradient(circle at bottom right, rgba(255, 180, 77, 0.08), transparent 20%),
+    linear-gradient(180deg, #0a0711 0%, #120b1a 54%, #050309 100%);
   letter-spacing: 0.03em;
 }
 
@@ -73,7 +75,7 @@ textarea {
 
 @layer components {
   .ui-panel {
-    @apply border-2 border-mint/35 bg-[linear-gradient(180deg,rgba(14,10,20,0.96),rgba(8,6,12,0.98))] shadow-[0_0_0_2px_rgba(0,0,0,0.65),0_0_22px_rgba(138,103,255,0.1)];
+    @apply border-2 border-mint/35 bg-[linear-gradient(180deg,rgba(26,18,38,0.96),rgba(14,10,20,0.98))] shadow-[0_0_0_2px_rgba(0,0,0,0.72),0_0_26px_rgba(138,103,255,0.14)];
     border-radius: 0;
   }
 
@@ -89,26 +91,26 @@ textarea {
   }
 
   .ui-button {
-    @apply border-2 border-mint/35 bg-mint/10 px-5 py-3 font-semibold uppercase tracking-[0.12em] text-gold transition hover:bg-mint/20 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply border-2 border-mint/35 bg-[linear-gradient(180deg,rgba(138,103,255,0.18),rgba(138,103,255,0.08))] px-5 py-3 font-semibold uppercase tracking-[0.12em] text-gold transition hover:bg-mint/20 disabled:cursor-not-allowed disabled:opacity-60;
     border-radius: 0;
     font-family: "Silkscreen", monospace;
   }
 
   .ui-button-solid {
-    @apply border-2 border-mint bg-mint px-5 py-3 font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-[#9a7cff] disabled:cursor-not-allowed disabled:opacity-60;
+    @apply border-2 border-cyan bg-[linear-gradient(180deg,#59b9ff,#8a67ff)] px-5 py-3 font-semibold uppercase tracking-[0.12em] text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60;
     border-radius: 0;
     font-family: "Silkscreen", monospace;
   }
 
   .ui-chip {
-    @apply inline-flex items-center border border-mint/35 bg-mint/10 px-3 py-1 uppercase tracking-[0.12em] text-gold;
+    @apply inline-flex items-center border border-cyan/35 bg-[linear-gradient(180deg,rgba(89,185,255,0.18),rgba(138,103,255,0.08))] px-3 py-1 uppercase tracking-[0.12em] text-gold;
     border-radius: 0;
     font-family: "Silkscreen", monospace;
     font-size: 0.7rem;
   }
 
   .ui-notice {
-    @apply border-2 border-mint/20 bg-mint/10 px-4 py-3 text-sm text-mint;
+    @apply border-2 border-cyan/25 bg-[linear-gradient(180deg,rgba(89,185,255,0.14),rgba(138,103,255,0.08))] px-4 py-3 text-sm text-gold;
     border-radius: 0;
   }
 

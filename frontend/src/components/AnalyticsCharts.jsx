@@ -18,49 +18,132 @@ import { formatCurrency, formatPercent } from "../utils/formatters";
 
 function tooltipStyle() {
   return {
-    background: "#050907",
-    border: "2px solid rgba(114,243,198,0.3)",
+    background: "#120b1a",
+    border: "2px solid rgba(89,185,255,0.32)",
     borderRadius: "0px",
-    color: "#effff6"
+    color: "#fff8df"
   };
+}
+
+function MiniMetric({ label, value, tone = "text-gold", note }) {
+  return (
+    <div className="ui-panel px-4 py-4">
+      <p className="ui-title text-xs text-mist">{label}</p>
+      <p className={`mt-3 text-3xl font-semibold ${tone}`}>{value}</p>
+      {note ? <p className="mt-2 text-sm text-mist">{note}</p> : null}
+    </div>
+  );
+}
+
+function RowMetric({ label, value, tone = "text-mint" }) {
+  return (
+    <div className="border-b border-cyan/20 py-4 last:border-b-0">
+      <div className="flex items-center justify-between gap-4">
+        <span className="ui-title text-xs text-[#fff8df]">{label}</span>
+        <span className={`text-2xl font-semibold ${tone}`}>{value}</span>
+      </div>
+    </div>
+  );
 }
 
 function AnalyticsCharts({ analytics }) {
   const { summary, equityCurve, recentDays, performanceByWeekday } = analytics;
+  const todayLabel = new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  }).format(new Date());
+  const sessionState = summary.totalPnl >= 0 ? "Bull Bias" : "Risk-Off";
+  const confidence = Math.max(12, Math.round(summary.winRate));
+  const recentLeader = recentDays.at(-1);
+  const bestWeekday = [...performanceByWeekday].sort((left, right) => right.pnl - left.pnl)[0];
+  const worstWeekday = [...performanceByWeekday].sort((left, right) => left.pnl - right.pnl)[0];
 
   const winLossData = [
-    { name: "Wins", value: summary.wins, color: "#72f3c6" },
-    { name: "Losses", value: summary.losses, color: "#a5f5d8" }
+    { name: "Wins", value: summary.wins, color: "#56f0a9" },
+    { name: "Losses", value: summary.losses, color: "#ffb44d" }
   ];
-  const holdTimeData = [
-    { label: "Winning Trades", value: Number(summary.averageWinningHoldMinutes.toFixed(1)), color: "#72f3c6" },
-    { label: "Losing Trades", value: Number(summary.averageLosingHoldMinutes.toFixed(1)), color: "#9cebcf" }
-  ];
-  const averageTradeData = [
-    { label: "Avg Win", value: Number(summary.averageWin.toFixed(2)), color: "#72f3c6" },
-    { label: "Avg Loss", value: Number((-summary.averageLoss).toFixed(2)), color: "#9cebcf" }
+
+  const recentSignals = [
+    {
+      label: "Session Context",
+      accent: "from-[#4f2d95] via-[#6f46d7] to-[#31204f]",
+      rows: [
+        { label: "Total Trades", value: summary.tradeCount, tone: "text-[#59b9ff]" },
+        { label: "Win Rate", value: formatPercent(summary.winRate), tone: "text-mint" },
+        {
+          label: "Recent Day",
+          value: recentLeader ? formatCurrency(recentLeader.pnl) : "$0.00",
+          tone: recentLeader?.pnl >= 0 ? "text-mint" : "text-[#ffb44d]"
+        }
+      ]
+    },
+    {
+      label: "Market Pulse",
+      accent: "from-[#3f2768] via-[#59369b] to-[#1f1630]",
+      rows: [
+        { label: "Expectancy", value: formatCurrency(summary.expectancy), tone: "text-mint" },
+        { label: "Average Win", value: formatCurrency(summary.averageWin), tone: "text-[#59b9ff]" },
+        { label: "Average Loss", value: formatCurrency(summary.averageLoss), tone: "text-[#ffb44d]" }
+      ]
+    },
+    {
+      label: "Trend State",
+      accent: "from-[#5d2d75] via-[#8241b8] to-[#2d183d]",
+      emphasis: sessionState,
+      emphasisTone: summary.totalPnl >= 0 ? "text-[#ffb44d]" : "text-[#59b9ff]",
+      footer: `Confidence ${confidence}`,
+      rows: [
+        { label: "Largest Win", value: formatCurrency(summary.largestWin), tone: "text-mint" },
+        { label: "Largest Loss", value: formatCurrency(summary.largestLoss), tone: "text-[#ff8a76]" }
+      ]
+    }
   ];
 
   return (
     <div className="space-y-6">
-      <Card title="Recent Sessions" subtitle="Recent trading days at a glance.">
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-7">
-          {recentDays.map((day) => (
-            <div key={day.date} className="ui-panel px-4 py-5">
-              <div className="flex items-baseline gap-2">
-                <span className="ui-title text-3xl text-[#effff6]">{Number(day.date.slice(-2))}</span>
-                <span className="ui-title text-sm text-mist">{day.weekday}</span>
+      <section className="ui-panel overflow-hidden">
+        <div className="border-b border-cyan/25 bg-[linear-gradient(90deg,rgba(138,103,255,0.26),rgba(89,185,255,0.14),rgba(255,180,77,0.12))] px-6 py-5">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div>
+              <p className="ui-title text-3xl text-[#fff8df]">{todayLabel}</p>
+              <div className="mt-5 h-[3px] w-44 bg-[linear-gradient(90deg,#59b9ff,#8a67ff,#ffb44d)]" />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="ui-chip">17°C</div>
+              <div className="ui-chip">Clear Sky</div>
+              <div className="ui-chip">Langen</div>
+              <div className="ui-chip">Arcade Theme</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-5 px-6 py-6 xl:grid-cols-[1.2fr_0.9fr_0.9fr]">
+          {recentSignals.map((signal) => (
+            <div key={signal.label} className="ui-panel overflow-hidden">
+              <div className={`bg-gradient-to-r ${signal.accent} px-5 py-4`}>
+                <h3 className="ui-title text-xl text-[#fff8df]">{signal.label}</h3>
               </div>
-              <p className={`mt-10 text-3xl font-semibold ${day.pnl >= 0 ? "text-mint" : "text-[#9cebcf]"}`}>
-                {formatCurrency(day.pnl)}
-              </p>
-              <p className="mt-2 text-sm uppercase tracking-[0.08em] text-mist">
-                {day.trades} trade{day.trades === 1 ? "" : "s"}
-              </p>
+              <div className="px-5 py-5">
+                {signal.emphasis ? (
+                  <div className="mb-5">
+                    <p className={`ui-title text-4xl ${signal.emphasisTone}`}>{signal.emphasis}</p>
+                    <p className="mt-2 text-sm text-[#59b9ff]">{signal.footer}</p>
+                  </div>
+                ) : null}
+
+                <div className="space-y-1">
+                  {signal.rows.map((row) => (
+                    <RowMetric key={row.label} label={row.label} value={row.value} tone={row.tone} />
+                  ))}
+                </div>
+              </div>
             </div>
           ))}
         </div>
-      </Card>
+      </section>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Net P&L" value={formatCurrency(summary.totalPnl)} accent="mint" />
@@ -69,29 +152,51 @@ function AnalyticsCharts({ analytics }) {
         <StatCard label="Trades" value={summary.tradeCount} accent="coral" />
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[1.3fr_0.62fr_0.62fr]">
+      <div className="grid gap-5 xl:grid-cols-[1.28fr_0.64fr_0.64fr]">
         <Card
-          title="Cumulative P&L"
-          subtitle="A running snapshot of how your equity evolves across your trade history."
+          title="Equity Console"
+          subtitle="A running snapshot of how your P&L evolves across the full trade history."
           className="xl:row-span-2"
         >
-          <div className="h-[460px]">
+          <div className="mb-5 grid gap-3 md:grid-cols-3">
+            <MiniMetric
+              label="Leader"
+              value={bestWeekday?.day || "---"}
+              tone="text-[#59b9ff]"
+              note={bestWeekday ? formatCurrency(bestWeekday.pnl) : "No data"}
+            />
+            <MiniMetric
+              label="Laggard"
+              value={worstWeekday?.day || "---"}
+              tone="text-[#ffb44d]"
+              note={worstWeekday ? formatCurrency(worstWeekday.pnl) : "No data"}
+            />
+            <MiniMetric
+              label="Session State"
+              value={sessionState}
+              tone={summary.totalPnl >= 0 ? "text-mint" : "text-[#ffb44d]"}
+              note={`Confidence ${confidence}`}
+            />
+          </div>
+
+          <div className="h-[420px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={equityCurve}>
                 <defs>
                   <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#72f3c6" stopOpacity={0.45} />
-                    <stop offset="95%" stopColor="#72f3c6" stopOpacity={0.03} />
+                    <stop offset="5%" stopColor="#59b9ff" stopOpacity={0.38} />
+                    <stop offset="45%" stopColor="#8a67ff" stopOpacity={0.22} />
+                    <stop offset="95%" stopColor="#ffb44d" stopOpacity={0.04} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid stroke="rgba(114,243,198,0.12)" vertical={false} />
-                <XAxis dataKey="date" stroke="#72f3c6" tickLine={false} axisLine={false} />
-                <YAxis stroke="#72f3c6" tickLine={false} axisLine={false} />
+                <CartesianGrid stroke="rgba(89,185,255,0.16)" vertical={false} />
+                <XAxis dataKey="date" stroke="#59b9ff" tickLine={false} axisLine={false} />
+                <YAxis stroke="#59b9ff" tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={tooltipStyle()} />
                 <Area
                   type="monotone"
                   dataKey="equity"
-                  stroke="#72f3c6"
+                  stroke="#56f0a9"
                   strokeWidth={3}
                   fill="url(#equityGradient)"
                 />
@@ -100,11 +205,11 @@ function AnalyticsCharts({ analytics }) {
           </div>
         </Card>
 
-        <Card title="Winning vs Losing">
-          <div className="h-[250px]">
+        <Card title="Win vs Loss" subtitle="Fast pulse on trade balance.">
+          <div className="h-[220px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={winLossData} dataKey="value" innerRadius={70} outerRadius={94} paddingAngle={2} stroke="none">
+                <Pie data={winLossData} dataKey="value" innerRadius={62} outerRadius={88} paddingAngle={3} stroke="none">
                   {winLossData.map((entry) => (
                     <Cell key={entry.name} fill={entry.color} />
                   ))}
@@ -113,72 +218,88 @@ function AnalyticsCharts({ analytics }) {
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <div className="ui-panel px-4 py-3">
-              <p className="ui-title text-xs text-mist">Wins</p>
-              <p className="mt-2 text-2xl font-semibold text-mint">{summary.wins}</p>
-            </div>
-            <div className="ui-panel px-4 py-3">
-              <p className="ui-title text-xs text-mist">Losses</p>
-              <p className="mt-2 text-2xl font-semibold text-[#9cebcf]">{summary.losses}</p>
-            </div>
+          <div className="grid grid-cols-2 gap-3">
+            <MiniMetric label="Wins" value={summary.wins} tone="text-mint" />
+            <MiniMetric label="Losses" value={summary.losses} tone="text-[#ffb44d]" />
           </div>
         </Card>
 
-        <Card title="Hold Time">
-          <div className="space-y-6 pt-8">
-            {holdTimeData.map((item) => (
-              <div key={item.label}>
-                <div className="mb-2 flex items-center justify-between text-sm">
-                  <span className="text-[#effff6]">{item.label}</span>
-                  <span className="text-mint">{item.value} minutes</span>
+        <Card title="Volatility / Stress" subtitle="A quick feel for pressure and tempo.">
+          <div className="space-y-6 pt-2">
+            <div>
+              <div className="mb-2 flex items-center justify-between text-sm">
+                <span className="ui-title text-xs text-[#fff8df]">Winning Hold</span>
+                <span className="text-[#59b9ff]">
+                  {Number(summary.averageWinningHoldMinutes.toFixed(1))} min
+                </span>
+              </div>
+              <div className="h-3 bg-black/35">
+                <div
+                  className="h-3 bg-[linear-gradient(90deg,#59b9ff,#56f0a9)]"
+                  style={{ width: `${Math.min(100, summary.averageWinningHoldMinutes * 6)}%` }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="mb-2 flex items-center justify-between text-sm">
+                <span className="ui-title text-xs text-[#fff8df]">Losing Hold</span>
+                <span className="text-[#ffb44d]">
+                  {Number(summary.averageLosingHoldMinutes.toFixed(1))} min
+                </span>
+              </div>
+              <div className="h-3 bg-black/35">
+                <div
+                  className="h-3 bg-[linear-gradient(90deg,#ffb44d,#ff7c59)]"
+                  style={{ width: `${Math.min(100, summary.averageLosingHoldMinutes * 6)}%` }}
+                />
+              </div>
+            </div>
+
+            <MiniMetric
+              label="Loss Rate"
+              value={formatPercent(summary.lossRate)}
+              tone="text-[#ffb44d]"
+              note="Current stress reading"
+            />
+          </div>
+        </Card>
+
+        <Card title="Recent Sessions" subtitle="The latest daily snapshots.">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+            {recentDays.map((day) => (
+              <div key={day.date} className="ui-panel bg-[linear-gradient(180deg,rgba(138,103,255,0.12),rgba(18,12,27,0.96))] px-4 py-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="ui-title text-sm text-[#fff8df]">{day.weekday}</p>
+                    <p className="mt-1 text-sm text-mist">{day.date}</p>
+                  </div>
+                  <div className={`text-2xl font-semibold ${day.pnl >= 0 ? "text-mint" : "text-[#ffb44d]"}`}>
+                    {formatCurrency(day.pnl)}
+                  </div>
                 </div>
-                <div className="h-3 bg-black/35">
-                  <div className="h-3" style={{ width: `${Math.min(100, item.value * 6)}%`, backgroundColor: item.color }} />
-                </div>
+                <p className="mt-3 text-sm text-mist">
+                  {day.trades} trade{day.trades === 1 ? "" : "s"}
+                </p>
               </div>
             ))}
           </div>
         </Card>
 
-        <Card title="Average Trade">
-          <div className="space-y-6 pt-8">
-            {averageTradeData.map((item) => (
-              <div key={item.label}>
-                <div className="mb-2 flex items-center justify-between text-sm">
-                  <span className="text-[#effff6]">{item.label}</span>
-                  <span className={item.value >= 0 ? "text-mint" : "text-[#9cebcf]"}>{formatCurrency(item.value)}</span>
-                </div>
-                <div className="h-3 bg-black/35">
-                  <div className="h-3" style={{ width: `${Math.min(100, Math.abs(item.value) * 2.2)}%`, backgroundColor: item.color }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        <Card title="Largest Gain vs Loss">
-          <div className="grid h-[250px] place-items-center">
-            <div className="relative h-44 w-44 overflow-hidden border-[14px] border-b-0 border-mint/90">
-              <div className="absolute inset-x-0 bottom-0 flex items-end justify-between px-2 pb-3 text-xs text-mint">
-                <span>{formatCurrency(summary.largestLoss)}</span>
-                <span>{formatCurrency(summary.largestWin)}</span>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <Card title="Performance By Weekday" className="xl:col-span-2">
+        <Card title="Leadership Board" subtitle="Performance by weekday.">
           <div className="h-[260px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={performanceByWeekday}>
-                <CartesianGrid stroke="rgba(114,243,198,0.12)" vertical={false} />
-                <XAxis dataKey="day" stroke="#72f3c6" tickLine={false} axisLine={false} />
-                <YAxis stroke="#72f3c6" tickLine={false} axisLine={false} />
+                <CartesianGrid stroke="rgba(89,185,255,0.14)" vertical={false} />
+                <XAxis dataKey="day" stroke="#59b9ff" tickLine={false} axisLine={false} />
+                <YAxis stroke="#59b9ff" tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={tooltipStyle()} />
                 <Bar dataKey="pnl" radius={[0, 0, 0, 0]}>
                   {performanceByWeekday.map((entry) => (
-                    <Cell key={entry.day} fill={entry.pnl >= 0 ? "#72f3c6" : "#9cebcf"} />
+                    <Cell
+                      key={entry.day}
+                      fill={entry.pnl >= 0 ? "#56f0a9" : "#ffb44d"}
+                    />
                   ))}
                 </Bar>
               </BarChart>
