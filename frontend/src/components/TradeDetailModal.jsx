@@ -231,6 +231,20 @@ function TradeDetailModal({ trade, onClose }) {
             <SummaryMetric label="Executions" value={String(executionCount)} />
           </div>
 
+          <Card
+            title="Executions"
+            subtitle="Stored execution rows for this trade. This table is pinned near the top so it is visible immediately when the trade opens."
+          >
+            <TimelineTable rows={tradeTimeline} />
+          </Card>
+
+          <Card
+            title="Execution Review Charts"
+            subtitle="Custom 1 minute chart with execution markers drawn at the exact execution price."
+          >
+            <TradeReviewCharts trade={activeTrade} />
+          </Card>
+
           <div className="grid gap-6 xl:grid-cols-[1.1fr_1.1fr_0.8fr]">
             <Card
               title="Trade Running P&L"
@@ -349,20 +363,6 @@ function TradeDetailModal({ trade, onClose }) {
               </div>
             </Card>
           </div>
-
-          <Card
-            title="Execution Review Charts"
-            subtitle="Custom 1 minute chart with execution markers and the default study stack turned on."
-          >
-            <TradeReviewCharts trade={activeTrade} />
-          </Card>
-
-          <Card
-            title="Executions"
-            subtitle="Stored entry, exit, or imported fill events for this trade."
-          >
-            <TimelineTable rows={tradeTimeline} />
-          </Card>
         </div>
       </div>
     </div>

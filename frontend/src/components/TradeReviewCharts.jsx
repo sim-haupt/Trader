@@ -4,8 +4,7 @@ import {
   ColorType,
   HistogramSeries,
   LineSeries,
-  createChart,
-  createSeriesMarkers
+  createChart
 } from "lightweight-charts";
 import marketDataService from "../services/marketDataService";
 import {
@@ -26,9 +25,10 @@ function buildDayRange(anchorDate) {
 function TimeframeChart({ title, subtitle, bars, markers }) {
   const mainRef = useRef(null);
   const macdRef = useRef(null);
+  const overlayRef = useRef(null);
 
   useEffect(() => {
-    if (!mainRef.current || !macdRef.current || !bars.length) {
+    if (!mainRef.current || !macdRef.current || !overlayRef.current || !bars.length) {
       return undefined;
     }
 
@@ -102,7 +102,46 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
     });
     vwapSeries.setData(calculateVwapSeries(bars));
 
-    createSeriesMarkers(candleSeries, markers);
+    createSeriesMarkers(candleSeries, []);
+
+    function renderExecutionOverlay() {
+      if (!overlayRef.current) {
+        return;
+      }
+
+      overlayRef.current.innerHTML = "";
+
+      for (const marker of markers) {
+        const x = mainChart.timeScale().timeToCoordinate(marker.time);
+        const y = candleSeries.priceToCoordinate(marker.price);
+
+        if (x == null || y == null) {
+          continue;
+        }
+
+        const markerNode = document.createElement("div");
+        markerNode.className =
+          "absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-2 shadow-[0_0_0_4px_rgba(18,25,43,0.88)]";
+        markerNode.style.left = `${x}px`;
+        markerNode.style.top = `${y}px`;
+        markerNode.style.width = "14px";
+        markerNode.style.height = "14px";
+        markerNode.style.borderColor = marker.color;
+        markerNode.style.backgroundColor = "#12192b";
+
+        const labelNode = document.createElement("div");
+        labelNode.className = "absolute whitespace-nowrap rounded-full px-2 py-1 text-[10px] font-semibold";
+        labelNode.style.left = `${x + 12}px`;
+        labelNode.style.top = `${y - 16}px`;
+        labelNode.style.color = marker.color;
+        labelNode.style.backgroundColor = "rgba(18,25,43,0.92)";
+        labelNode.style.border = `1px solid ${marker.color}55`;
+        labelNode.textContent = marker.text;
+
+        overlayRef.current.appendChild(markerNode);
+        overlayRef.current.appendChild(labelNode);
+      }
+    }
 
     const { macdLine, signalLine, histogram } = calculateMacdSeries(bars);
     const histogramSeries = macdChart.addSeries(HistogramSeries, {
@@ -125,23 +164,16 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
     });
     signalLineSeries.setData(signalLine);
 
-    const syncRange = (range) => {
-      if (!range) {
-        return;
-      }
-
-      mainChart.timeScale().setVisibleLogicalRange(range);
-      macdChart.timeScale().setVisibleLogicalRange(range);
-    };
-
     const handleMainRange = (range) => macdChart.timeScale().setVisibleLogicalRange(range);
     const handleMacdRange = (range) => mainChart.timeScale().setVisibleLogicalRange(range);
+    const handleOverlayRefresh = () => renderExecutionOverlay();
 
     mainChart.timeScale().subscribeVisibleLogicalRangeChange(handleMainRange);
     macdChart.timeScale().subscribeVisibleLogicalRangeChange(handleMacdRange);
+    mainChart.timeScale().subscribeVisibleLogicalRangeChange(handleOverlayRefresh);
 
     mainChart.timeScale().fitContent();
-    syncRange(mainChart.timeScale().getVisibleLogicalRange());
+    renderExecutionOverlay();
 
     const resizeObserver = new ResizeObserver(() => {
       if (mainRef.current) {
@@ -150,6 +182,7 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
       if (macdRef.current) {
         macdChart.applyOptions({ width: macdRef.current.clientWidth });
       }
+      renderExecutionOverlay();
     });
 
     resizeObserver.observe(mainRef.current);
@@ -157,6 +190,7 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
 
     return () => {
       resizeObserver.disconnect();
+      mainChart.timeScale().unsubscribeVisibleLogicalRangeChange(handleOverlayRefresh);
       mainChart.remove();
       macdChart.remove();
     };
@@ -174,7 +208,10 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
         </div>
       </div>
 
-      <div ref={mainRef} className="overflow-hidden rounded-3xl border border-white/10 bg-[#12192b]" />
+      <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#12192b]">
+        <div ref={mainRef} />
+        <div ref={overlayRef} className="pointer-events-none absolute inset-0 z-10" />
+      </div>
       <div ref={macdRef} className="overflow-hidden rounded-3xl border border-white/10 bg-[#12192b]" />
     </div>
   );
