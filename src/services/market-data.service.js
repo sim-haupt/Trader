@@ -11,6 +11,14 @@ function toIsoDateTime(value) {
   return new Date(value).toISOString();
 }
 
+function toDatePath(value) {
+  return new Date(value).toISOString().slice(0, 10);
+}
+
+function toTimestampMs(value) {
+  return String(new Date(value).getTime());
+}
+
 async function polygonFetch(path, params) {
   if (!env.polygonApiKey) {
     throw new ApiError(
@@ -82,8 +90,8 @@ function aggregateTradesToBars(results, bucketSizeSeconds) {
 async function fetchMinuteBars(symbol, from, to) {
   const data = await polygonFetch(
     `/v2/aggs/ticker/${encodeURIComponent(symbol)}/range/1/minute/${encodeURIComponent(
-      toIsoDateTime(from)
-    )}/${encodeURIComponent(toIsoDateTime(to))}`,
+      toDatePath(from)
+    )}/${encodeURIComponent(toDatePath(to))}`,
     {
       adjusted: "true",
       sort: "asc",
@@ -103,8 +111,8 @@ async function fetchMinuteBars(symbol, from, to) {
 
 async function fetchTenSecondBars(symbol, from, to) {
   const data = await polygonFetch(`/v3/trades/${encodeURIComponent(symbol)}`, {
-    "timestamp.gte": toIsoDateTime(from),
-    "timestamp.lte": toIsoDateTime(to),
+    "timestamp.gte": toTimestampMs(from),
+    "timestamp.lte": toTimestampMs(to),
     order: "asc",
     sort: "timestamp",
     limit: "50000"
