@@ -352,7 +352,7 @@ function TradeDetailModal({ trade, onClose }) {
 
           <Card
             title="Execution Review Charts"
-            subtitle="Custom 1 minute and 10 second charts with execution markers and the default study stack turned on."
+            subtitle="Custom 1 minute chart with execution markers and the default study stack turned on."
           >
             <TradeReviewCharts trade={activeTrade} />
           </Card>

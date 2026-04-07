@@ -23,21 +23,6 @@ function buildDayRange(anchorDate) {
   return { from: start.toISOString(), to: end.toISOString() };
 }
 
-function buildExecutionWindow(executions, fallbackDate) {
-  if (!executions?.length) {
-    const center = new Date(fallbackDate);
-    const from = new Date(center.getTime() - 30 * 60 * 1000);
-    const to = new Date(center.getTime() + 30 * 60 * 1000);
-    return { from: from.toISOString(), to: to.toISOString() };
-  }
-
-  const times = executions.map((execution) => new Date(execution.occurredAt).getTime());
-  const from = new Date(Math.min(...times) - 15 * 60 * 1000);
-  const to = new Date(Math.max(...times) + 15 * 60 * 1000);
-
-  return { from: from.toISOString(), to: to.toISOString() };
-}
-
 function TimeframeChart({ title, subtitle, bars, markers }) {
   const mainRef = useRef(null);
   const macdRef = useRef(null);
@@ -197,7 +182,6 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
 
 function TradeReviewCharts({ trade }) {
   const [minuteBars, setMinuteBars] = useState([]);
-  const [secondBars, setSecondBars] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -212,28 +196,16 @@ function TradeReviewCharts({ trade }) {
 
       try {
         const dayRange = buildDayRange(trade.entryDate);
-        const executionRange = buildExecutionWindow(trade.executions, trade.entryDate);
-
-        const [minuteResponse, secondResponse] = await Promise.all([
-          marketDataService.getBars({
-            symbol: trade.symbol,
-            resolution: "1m",
-            from: dayRange.from,
-            to: dayRange.to,
-            includeExtended: true
-          }),
-          marketDataService.getBars({
-            symbol: trade.symbol,
-            resolution: "10s",
-            from: executionRange.from,
-            to: executionRange.to,
-            includeExtended: true
-          })
-        ]);
+        const minuteResponse = await marketDataService.getBars({
+          symbol: trade.symbol,
+          resolution: "1m",
+          from: dayRange.from,
+          to: dayRange.to,
+          includeExtended: true
+        });
 
         if (active) {
           setMinuteBars(minuteResponse.bars || []);
-          setSecondBars(secondResponse.bars || []);
         }
       } catch (loadError) {
         if (active) {
@@ -269,7 +241,7 @@ function TradeReviewCharts({ trade }) {
     );
   }
 
-  if (!minuteBars.length && !secondBars.length) {
+  if (!minuteBars.length) {
     return (
       <div className="rounded-3xl border border-white/10 bg-slate-950/30 p-5 text-sm text-mist">
         No market bars were returned for this trade window.
@@ -284,14 +256,6 @@ function TradeReviewCharts({ trade }) {
           title="1 Minute Review"
           subtitle="Full-session context with extended hours included by default."
           bars={minuteBars}
-          markers={markers}
-        />
-      )}
-      {secondBars.length > 0 && (
-        <TimeframeChart
-          title="10 Second Review"
-          subtitle="Execution-focused zoom around the selected trade."
-          bars={secondBars}
           markers={markers}
         />
       )}
