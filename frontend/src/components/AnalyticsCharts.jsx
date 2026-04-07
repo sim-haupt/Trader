@@ -63,6 +63,37 @@ function toneForValue(value) {
   return "text-mist";
 }
 
+function BreakdownRows({ entries }) {
+  const maxMagnitude = Math.max(1, ...entries.map((entry) => Math.abs(entry.pnl || 0)));
+
+  return (
+    <div className="space-y-4">
+      {entries.map((entry) => {
+        const pct = entry.percentage ?? 0;
+        const width = entry.pnl === 0 ? 0 : Math.max(4, (Math.abs(entry.pnl) / maxMagnitude) * 100);
+        const tone = entry.pnl >= 0 ? "bg-mint" : "bg-coral";
+
+        return (
+          <div key={entry.label}>
+            <div className="mb-2 flex items-center justify-between gap-4">
+              <span className="text-sm font-medium text-white/88">{entry.label}</span>
+              <div className="flex items-center gap-2 text-right">
+                <span className={`text-sm font-semibold ${entry.pnl >= 0 ? "text-mint" : "text-coral"}`}>
+                  {formatCurrency(entry.pnl)}
+                </span>
+                <span className="text-xs text-white/46">{pct.toFixed(2)}%</span>
+              </div>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-white/10">
+              <div className={`h-full rounded-full ${tone}`} style={{ width: `${width}%`, opacity: entry.pnl === 0 ? 0.22 : 0.9 }} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function AnalyticsCharts({ analytics }) {
   const {
     summary,
@@ -71,6 +102,8 @@ function AnalyticsCharts({ analytics }) {
     lastSevenDays,
     performanceByWeekday,
     performanceByTimeOfDay,
+    performanceByTimeOfDaySummary,
+    performanceByPrice,
     hourlyPerformance,
     grossDailyThirtyDays
   } = analytics;
@@ -188,7 +221,7 @@ function AnalyticsCharts({ analytics }) {
         </Card>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr_0.9fr_0.8fr]">
+      <div className="grid gap-5 xl:grid-cols-[0.9fr_0.95fr_0.95fr_1.1fr_0.8fr]">
         <Card title="PERFORMANCE BY DAY OF WEEK">
           <div className="space-y-3">
             {performanceByWeekday.map((entry) => (
@@ -206,6 +239,14 @@ function AnalyticsCharts({ analytics }) {
               </div>
             ))}
           </div>
+        </Card>
+
+        <Card title="PERFORMANCE BY PRICE">
+          <BreakdownRows entries={performanceByPrice} />
+        </Card>
+
+        <Card title="PERFORMANCE BY HOUR OF DAY">
+          <BreakdownRows entries={performanceByTimeOfDaySummary} />
         </Card>
 
         <Card title="PERFORMANCE BY TIME OF DAY">

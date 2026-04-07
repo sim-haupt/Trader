@@ -109,6 +109,55 @@ function buildLastThirtyDayGross(processedTrades, latestDayStart) {
   });
 }
 
+function buildPriceBuckets(processedTrades) {
+  const bucketDefinitions = [
+    { label: "< $2.00", min: -Infinity, max: 2 },
+    { label: "$2 - $4.99", min: 2, max: 5 },
+    { label: "$5 - $9.99", min: 5, max: 10 },
+    { label: "$10 - $19.99", min: 10, max: 20 },
+    { label: "$20 - $49.99", min: 20, max: 50 },
+    { label: "$50 - $99.99", min: 50, max: 100 },
+    { label: "$100 - $199.99", min: 100, max: 200 },
+    { label: "$200 - $499.99", min: 200, max: 500 }
+  ];
+
+  const buckets = bucketDefinitions.map((bucket) => ({
+    ...bucket,
+    pnl: 0
+  }));
+
+  for (const item of processedTrades) {
+    const price = asNumber(item.trade.entryPrice);
+    const bucket = buckets.find((candidate) => price >= candidate.min && price < candidate.max);
+
+    if (!bucket) {
+      continue;
+    }
+
+    bucket.pnl = Number((bucket.pnl + item.pnl).toFixed(2));
+  }
+
+  const totalAbsolute = buckets.reduce((sum, bucket) => sum + Math.abs(bucket.pnl), 0);
+
+  return buckets.map((bucket) => ({
+    label: bucket.label,
+    pnl: bucket.pnl,
+    percentage: totalAbsolute ? (Math.abs(bucket.pnl) / totalAbsolute) * 100 : 0
+  }));
+}
+
+function buildTimeOfDaySummary(performanceByTimeOfDay) {
+  const totalAbsolute = performanceByTimeOfDay.reduce(
+    (sum, entry) => sum + Math.abs(entry.pnl),
+    0
+  );
+
+  return performanceByTimeOfDay.map((entry) => ({
+    ...entry,
+    percentage: totalAbsolute ? (Math.abs(entry.pnl) / totalAbsolute) * 100 : 0
+  }));
+}
+
 export function buildAnalytics(trades) {
   const sortedTrades = [...trades].sort(
     (a, b) => new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime()
@@ -314,7 +363,9 @@ export function buildAnalytics(trades) {
       pnl
     })),
     performanceByTimeOfDay: Array.from(timeBucketMap.values()),
+    performanceByTimeOfDaySummary: buildTimeOfDaySummary(Array.from(timeBucketMap.values())),
     hourlyPerformance: buildHourlyPerformance(processedTrades),
+    performanceByPrice: buildPriceBuckets(processedTrades),
     grossDailyThirtyDays: buildLastThirtyDayGross(processedTrades, latestDayStart),
     latestDateLabel: latestTradeDate.toLocaleDateString("en-US", {
       month: "short",
