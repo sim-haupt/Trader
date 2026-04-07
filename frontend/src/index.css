@@ -112,19 +112,19 @@ textarea {
     top: 0;
     z-index: 20;
     border: 1px solid var(--line);
-    border-radius: 24px;
+    border-radius: 22px;
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015)),
       rgba(10, 12, 18, 0.84);
     backdrop-filter: blur(18px);
     box-shadow: var(--shadow);
-    padding: 16px 20px;
+    padding: 14px 18px;
   }
 
   .ui-panel {
     overflow: hidden;
     border: 1px solid var(--line);
-    border-radius: 24px;
+    border-radius: 22px;
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015) 24%, transparent 100%),
       var(--panel);
@@ -134,8 +134,8 @@ textarea {
 
   .ui-title {
     font-family: "IBM Plex Mono", monospace;
-    font-weight: 600;
-    letter-spacing: 0.12em;
+    font-weight: 500;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
     line-height: 1.35;
   }
@@ -143,10 +143,10 @@ textarea {
   .ui-input {
     width: 100%;
     border: 1px solid var(--line);
-    border-radius: 16px;
+    border-radius: 14px;
     background: rgba(255, 255, 255, 0.03);
     color: var(--text);
-    padding: 13px 15px;
+    padding: 12px 14px;
     outline: none;
     font-size: 0.92rem;
     transition:
@@ -168,7 +168,7 @@ textarea {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    border-radius: 14px;
+    border-radius: 999px;
     border: 1px solid var(--line);
     transition:
       transform 120ms ease,
@@ -185,23 +185,23 @@ textarea {
   }
 
   .ui-button {
-    background: rgba(255, 255, 255, 0.04);
+    background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
     color: var(--text);
-    padding: 10px 14px;
+    padding: 10px 15px;
     font-size: 0.85rem;
     font-weight: 500;
   }
 
   .ui-button-solid {
-    background: linear-gradient(180deg, #ffffff, #dfe6ef);
+    background: linear-gradient(180deg, #ffffff, #e8eef6);
     color: #090b0f;
-    padding: 10px 14px;
+    padding: 10px 15px;
     font-size: 0.85rem;
-    font-weight: 700;
+    font-weight: 600;
   }
 
   .ui-chip {
-    background: rgba(255, 255, 255, 0.04);
+    background: rgba(255, 255, 255, 0.05);
     color: var(--text-soft);
     padding: 8px 12px;
     font-size: 0.74rem;
@@ -210,7 +210,7 @@ textarea {
 
   .ui-notice {
     border: 1px solid var(--line-strong);
-    border-radius: 18px;
+    border-radius: 16px;
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015));
     color: var(--text);
     padding: 14px 16px;
@@ -222,7 +222,7 @@ textarea {
   .ui-table-shell {
     overflow: hidden;
     border: 1px solid var(--line);
-    border-radius: 20px;
+    border-radius: 18px;
     background: var(--panel-strong);
     box-shadow: var(--shadow);
   }

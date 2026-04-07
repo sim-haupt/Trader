@@ -1,6 +1,6 @@
 function Filters({ filters, onChange, onReset }) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+    <div className="grid gap-4 rounded-[20px] border border-white/8 bg-white/[0.025] p-4 md:grid-cols-2 xl:grid-cols-5">
       <input
         placeholder="Filter by symbol"
         value={filters.symbol}

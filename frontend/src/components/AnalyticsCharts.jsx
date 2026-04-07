@@ -16,20 +16,20 @@ import { formatCurrency, formatPercent } from "../utils/formatters";
 
 function tooltipStyle() {
   return {
-    background: "rgba(17,17,22,0.98)",
-    border: "2px solid rgba(255,255,255,0.1)",
-    borderRadius: "0px",
+    background: "rgba(11,13,18,0.96)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: "16px",
     color: "#f5f7fb",
-    boxShadow: "0 18px 40px rgba(0,0,0,0.32)"
+    boxShadow: "0 24px 60px rgba(0,0,0,0.38)"
   };
 }
 
 function MiniMetric({ label, value, tone = "text-white", note }) {
   return (
-    <div className="ui-panel px-4 py-4">
-      <p className="ui-title text-xs text-white">{label}</p>
-      <p className={`mt-3 text-3xl font-semibold ${tone}`}>{value}</p>
-      {note ? <p className="mt-2 text-sm text-white/70">{note}</p> : null}
+    <div className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+      <p className="ui-title text-[10px] text-white/48">{label}</p>
+      <p className={`mt-3 text-3xl font-bold tracking-[-0.04em] ${tone}`}>{value}</p>
+      {note ? <p className="mt-2 text-sm text-white/56">{note}</p> : null}
     </div>
   );
 }
@@ -48,17 +48,17 @@ function AnalyticsCharts({ analytics }) {
       <div className="ui-panel p-5">
         <div className="grid gap-3 md:grid-cols-7">
           {lastSevenDays.map((day) => (
-            <div key={day.date} className="ui-panel px-4 py-4">
-              <p className="ui-title text-xs uppercase text-[#ffc14d]">{day.weekday}</p>
-              <p className="mt-2 text-sm text-white/70">{day.label}</p>
+            <div key={day.date} className="rounded-[18px] border border-white/8 bg-white/[0.03] px-4 py-4">
+              <p className="ui-title text-[10px] uppercase text-white/45">{day.weekday}</p>
+              <p className="mt-2 text-sm text-white/62">{day.label}</p>
               <p
-                className={`mt-4 text-2xl font-semibold ${
+                className={`mt-4 text-2xl font-bold tracking-[-0.04em] ${
                   day.trades === 0 ? "text-mist" : day.pnl >= 0 ? "text-mint" : "text-coral"
                 }`}
               >
                 {formatCurrency(day.pnl)}
               </p>
-              <p className="mt-2 text-xs text-white/70">
+              <p className="mt-2 text-xs text-white/56">
                 {day.trades} trade{day.trades === 1 ? "" : "s"}
               </p>
             </div>
@@ -102,12 +102,12 @@ function AnalyticsCharts({ analytics }) {
                 <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
                 <XAxis
                   dataKey="date"
-                  stroke="#6e7585"
+                  stroke="#8e96a6"
                   tickLine={false}
                   axisLine={false}
-                  tick={{ fill: "#f3f3f3", fontSize: 10 }}
+                  tick={{ fill: "#c6cedb", fontSize: 11 }}
                 />
-                <YAxis stroke="#6e7585" tickLine={false} axisLine={false} />
+                <YAxis stroke="#8e96a6" tickLine={false} axisLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
                 <Tooltip contentStyle={tooltipStyle()} />
                 <Area
                   type="monotone"
@@ -151,17 +151,17 @@ function AnalyticsCharts({ analytics }) {
                 <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
                 <XAxis
                   dataKey="label"
-                  stroke="#a9a9a9"
+                  stroke="#8e96a6"
                   tickLine={false}
                   axisLine={false}
-                  tick={{ fill: "#f3f3f3", fontSize: 11 }}
+                  tick={{ fill: "#c6cedb", fontSize: 11 }}
                 />
                 <YAxis
-                  stroke="#a9a9a9"
+                  stroke="#8e96a6"
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(value) => `$${value}`}
-                  tick={{ fill: "#f3f3f3", fontSize: 11 }}
+                  tick={{ fill: "#c6cedb", fontSize: 11 }}
                 />
                 <Tooltip contentStyle={tooltipStyle()} />
                 <Bar dataKey="averagePnl" barSize={32} radius={[0, 0, 0, 0]}>

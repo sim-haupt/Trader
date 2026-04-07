@@ -24,7 +24,7 @@ function TradeTextImport({ onImport, isImporting }) {
         className="ui-input min-h-[220px] text-sm text-phosphor"
       />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-mist">
+        <p className="text-sm text-white/58">
           Supports pasted fill data with `date,time,symbol,quantity,price,B/S`.
         </p>
         <button

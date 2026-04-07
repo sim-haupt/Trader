@@ -26,9 +26,9 @@ import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 
 function SummaryMetric({ label, value, accent = "text-white" }) {
   return (
-    <div className="ui-panel p-4">
-      <p className="ui-title text-xs text-white/58">{label}</p>
-      <p className={`mt-3 text-2xl font-semibold ${accent}`}>{value}</p>
+    <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
+      <p className="ui-title text-[10px] text-white/48">{label}</p>
+      <p className={`mt-3 text-2xl font-bold tracking-[-0.04em] ${accent}`}>{value}</p>
     </div>
   );
 }
@@ -39,8 +39,8 @@ function ChartTooltip({ active, payload, label }) {
   }
 
   return (
-    <div className="border-2 border-white/10 bg-black/95 px-3 py-2 text-xs text-phosphor shadow-xl">
-      <div className="font-medium">{label}</div>
+    <div className="rounded-2xl border border-white/10 bg-[#0d1016]/95 px-3 py-2 text-xs text-phosphor shadow-[0_20px_50px_rgba(0,0,0,0.42)]">
+      <div className="font-medium text-white">{label}</div>
       <div className="mt-1 text-mint">{formatCurrency(payload[0].value)}</div>
     </div>
   );
@@ -51,8 +51,8 @@ function TimelineTable({ rows }) {
     <div className="ui-table-shell">
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-white/10 text-sm">
-          <thead className="bg-white/5">
-            <tr className="ui-title text-left text-[11px] text-mist">
+          <thead className="bg-white/[0.04]">
+            <tr className="ui-title text-left text-[11px] text-white/52">
               <th className="px-4 py-3">Event</th>
               <th className="px-4 py-3">Date / Time</th>
               <th className="px-4 py-3">Symbol</th>
@@ -61,7 +61,7 @@ function TimelineTable({ rows }) {
               <th className="px-4 py-3">Position</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/10 bg-black/20">
+          <tbody className="divide-y divide-white/10 bg-transparent">
             {rows.map((row) => (
               <tr key={row.id}>
                 <td className="px-4 py-4 font-medium text-phosphor">{row.label}</td>
@@ -136,11 +136,11 @@ function TradeDetailModal({ trade, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 p-4 backdrop-blur">
-      <div className="w-full max-w-[1500px] rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(14,16,22,0.98),rgba(8,10,14,0.98))] shadow-glow">
+      <div className="w-full max-w-[1520px] rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(16,19,26,0.98),rgba(9,11,16,0.98))] shadow-glow">
         <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))] px-6 py-5 backdrop-blur">
           <div>
             <div className="flex flex-wrap items-center gap-3">
-              <h2 className="ui-title text-3xl text-white">{activeTrade.symbol}</h2>
+              <h2 className="text-4xl font-bold tracking-[-0.05em] text-white">{activeTrade.symbol}</h2>
               <span
                 className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold ${
                   activeTrade.side === "LONG" ? "bg-mint/15 text-mint" : "bg-coral/15 text-coral"
@@ -149,7 +149,7 @@ function TradeDetailModal({ trade, onClose }) {
                 {activeTrade.side}
               </span>
             </div>
-            <p className="mt-2 text-base text-mist">
+            <p className="mt-2 text-base text-white/60">
               {formatDate(activeTrade.entryDate)} · Entry {formatCurrency(activeTrade.entryPrice)} · Exit{" "}
               {activeTrade.exitPrice != null ? formatCurrency(activeTrade.exitPrice) : "Open"}
             </p>
@@ -212,13 +212,13 @@ function TradeDetailModal({ trade, onClose }) {
                       <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
                       <XAxis
                         dataKey="label"
-                        tick={{ fill: "#94a3b8", fontSize: 12 }}
+                        tick={{ fill: "#bcc4d4", fontSize: 12 }}
                         axisLine={false}
                         tickLine={false}
                       />
                       <YAxis
                         tickFormatter={(value) => `$${value}`}
-                        tick={{ fill: "#94a3b8", fontSize: 12 }}
+                        tick={{ fill: "#bcc4d4", fontSize: 12 }}
                         axisLine={false}
                         tickLine={false}
                       />
@@ -255,13 +255,13 @@ function TradeDetailModal({ trade, onClose }) {
                       <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
                       <XAxis
                         dataKey="label"
-                        tick={{ fill: "#94a3b8", fontSize: 12 }}
+                        tick={{ fill: "#bcc4d4", fontSize: 12 }}
                         axisLine={false}
                         tickLine={false}
                       />
                       <YAxis
                         tickFormatter={(value) => `$${value}`}
-                        tick={{ fill: "#94a3b8", fontSize: 12 }}
+                        tick={{ fill: "#bcc4d4", fontSize: 12 }}
                         axisLine={false}
                         tickLine={false}
                       />
@@ -293,19 +293,19 @@ function TradeDetailModal({ trade, onClose }) {
 
             <Card title="Trade Notes" subtitle="Quick context around the setup and result.">
               <div className="space-y-4">
-                <div className="ui-panel p-4">
-                  <p className="ui-title text-xs text-mist">Strategy</p>
+                <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
+                  <p className="ui-title text-xs text-white/48">Strategy</p>
                   <p className="mt-2 text-sm text-phosphor">{activeTrade.strategy || "No strategy tagged"}</p>
                 </div>
-                <div className="ui-panel p-4">
-                  <p className="ui-title text-xs text-mist">Notes</p>
-                  <p className="mt-2 whitespace-pre-wrap text-sm text-mist">
+                <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
+                  <p className="ui-title text-xs text-white/48">Notes</p>
+                  <p className="mt-2 whitespace-pre-wrap text-sm text-white/60">
                     {activeTrade.notes || "No notes captured for this trade yet."}
                   </p>
                 </div>
-                <div className="ui-panel p-4">
-                  <p className="ui-title text-xs text-mist">Execution Coverage</p>
-                  <p className="mt-2 text-sm text-mist">
+                <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4">
+                  <p className="ui-title text-xs text-white/48">Execution Coverage</p>
+                  <p className="mt-2 text-sm text-white/60">
                     {Array.isArray(activeTrade.executions) && activeTrade.executions.length > 2
                       ? "This trade includes stored execution rows and the review charts use them directly."
                       : "This trade currently has aggregate execution coverage only. TradeVue CSV exports give the merged trade plus execution count, not the original fill timestamps."}
