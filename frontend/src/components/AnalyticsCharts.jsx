@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -145,6 +145,9 @@ function widgetSpanClass(span) {
   return span === 2 ? "md:col-span-2 xl:col-span-2" : "";
 }
 
+const MASONRY_ROW_HEIGHT = 8;
+const MASONRY_GAP = 20;
+
 function AnalyticsCharts({
   analytics,
   layout = DEFAULT_DASHBOARD_LAYOUT,
@@ -168,6 +171,8 @@ function AnalyticsCharts({
 
   const [draggedId, setDraggedId] = useState(null);
   const [dropTargetId, setDropTargetId] = useState(null);
+  const itemRefs = useRef({});
+  const [rowSpans, setRowSpans] = useState({});
 
   const widgets = useMemo(
     () => [
@@ -406,6 +411,40 @@ function AnalyticsCharts({
     .map((item) => ({ ...item, widget: widgetMap.get(item.id) }))
     .filter((item) => item.widget);
 
+  useEffect(() => {
+    const observer = new ResizeObserver((entries) => {
+      setRowSpans((current) => {
+        const next = { ...current };
+        let changed = false;
+
+        for (const entry of entries) {
+          const id = entry.target.dataset.widgetId;
+          if (!id) {
+            continue;
+          }
+
+          const height = entry.contentRect.height;
+          const span = Math.max(1, Math.ceil((height + MASONRY_GAP) / (MASONRY_ROW_HEIGHT + MASONRY_GAP)));
+
+          if (next[id] !== span) {
+            next[id] = span;
+            changed = true;
+          }
+        }
+
+        return changed ? next : current;
+      });
+    });
+
+    Object.values(itemRefs.current).forEach((node) => {
+      if (node) {
+        observer.observe(node);
+      }
+    });
+
+    return () => observer.disconnect();
+  }, [orderedWidgets]);
+
   function handleDrop(targetId) {
     if (!draggedId || draggedId === targetId) {
       setDropTargetId(null);
@@ -439,7 +478,10 @@ function AnalyticsCharts({
         </div>
       </div>
 
-      <div className="grid auto-rows-max grid-flow-row-dense items-start gap-5 md:grid-cols-2 xl:grid-cols-4">
+      <div
+        className="grid grid-flow-row-dense items-start gap-5 md:grid-cols-2 xl:grid-cols-4"
+        style={{ gridAutoRows: `${MASONRY_ROW_HEIGHT}px` }}
+      >
         {orderedWidgets.map(({ id, span, widget }) => {
           const cardAction = editing ? (
             <div className="flex items-center gap-2">
@@ -460,6 +502,14 @@ function AnalyticsCharts({
             <div
               key={id}
               draggable={editing}
+              ref={(node) => {
+                if (node) {
+                  itemRefs.current[id] = node;
+                } else {
+                  delete itemRefs.current[id];
+                }
+              }}
+              data-widget-id={id}
               onDragStart={() => {
                 setDraggedId(id);
                 setDropTargetId(id);
@@ -482,16 +532,17 @@ function AnalyticsCharts({
                 }
               }}
               onDrop={() => handleDrop(id)}
-              className={`${widgetSpanClass(span)} ${editing && draggedId === id ? "opacity-60" : ""}`}
+              className={`${widgetSpanClass(span)} ${editing && draggedId === id ? "opacity-60" : ""} ${
+                editing && dropTargetId === id && draggedId !== id
+                  ? "rounded-[16px] bg-mint/8 p-[3px] ring-2 ring-mint/90"
+                  : ""
+              }`}
+              style={{ gridRowEnd: `span ${rowSpans[id] || 1}` }}
             >
               <Card
                 title={widget.title}
                 action={cardAction}
-                className={`transition ${editing ? "ring-1 ring-white/10" : ""} ${
-                  editing && dropTargetId === id && draggedId !== id
-                    ? "border-white/0 ring-2 ring-mint/80 ring-offset-2 ring-offset-transparent"
-                    : ""
-                }`}
+                className={`h-full transition ${editing ? "ring-1 ring-white/10" : ""}`}
               >
                 {widget.body}
               </Card>
