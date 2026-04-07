@@ -41,7 +41,7 @@ function DashboardPage() {
   }
 
   if (error) {
-    return <div className="rounded-2xl bg-coral/10 px-4 py-3 text-sm text-coral">{error}</div>;
+    return <div className="ui-notice border-coral/30 bg-coral/10 text-coral">{error}</div>;
   }
 
   if (trades.length === 0) {

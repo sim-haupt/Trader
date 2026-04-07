@@ -63,11 +63,11 @@ function AdminTradeTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-white/10">
+    <div className="ui-table-shell">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-white/10 text-sm">
-          <thead className="bg-white/5">
-            <tr className="text-left text-xs uppercase tracking-[0.25em] text-mist">
+        <table className="min-w-full divide-y divide-mint/10 text-sm">
+          <thead className="bg-mint/6">
+            <tr className="ui-title text-left text-[11px] text-mist">
               <th className="px-4 py-4">
                 <input
                   type="checkbox"
@@ -89,13 +89,13 @@ function AdminTradeTable({
               <th className="px-4 py-4">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/10 bg-slate-950/20">
+          <tbody className="divide-y divide-mint/10 bg-black/20">
             {trades.map((trade) => {
               const isEditing = editingId === trade.id;
               const pnl = Number(trade.netPnl ?? trade.grossPnl ?? 0);
 
               return (
-                <tr key={trade.id} className="align-top transition hover:bg-white/5">
+                <tr key={trade.id} className="align-top transition hover:bg-mint/6">
                   <td className="px-4 py-4">
                     <input
                       type="checkbox"
@@ -104,8 +104,8 @@ function AdminTradeTable({
                       className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent"
                     />
                   </td>
-                  <td className="px-4 py-4 text-slate-200">
-                    <div className="font-medium text-white">{trade.user?.name || "-"}</div>
+                  <td className="px-4 py-4 text-mist">
+                    <div className="font-medium text-phosphor">{trade.user?.name || "-"}</div>
                     <div className="text-xs text-mist">{trade.user?.email || "-"}</div>
                   </td>
 
@@ -116,7 +116,7 @@ function AdminTradeTable({
                           name="symbol"
                           value={draft.symbol}
                           onChange={handleChange}
-                          className="w-24 rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-white outline-none focus:border-mint"
+                          className="ui-input w-24 px-3 py-2"
                         />
                       </td>
                       <td className="px-4 py-4">
@@ -124,7 +124,7 @@ function AdminTradeTable({
                           name="side"
                           value={draft.side}
                           onChange={handleChange}
-                          className="w-24 rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-white outline-none focus:border-mint"
+                          className="ui-input w-24 px-3 py-2"
                         >
                           <option value="LONG">LONG</option>
                           <option value="SHORT">SHORT</option>
@@ -137,7 +137,7 @@ function AdminTradeTable({
                           step="0.0001"
                           value={draft.entryPrice}
                           onChange={handleChange}
-                          className="w-28 rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-white outline-none focus:border-mint"
+                          className="ui-input w-28 px-3 py-2"
                         />
                       </td>
                       <td className="px-4 py-4">
@@ -147,7 +147,7 @@ function AdminTradeTable({
                           step="0.0001"
                           value={draft.exitPrice}
                           onChange={handleChange}
-                          className="w-28 rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-white outline-none focus:border-mint"
+                          className="ui-input w-28 px-3 py-2"
                         />
                       </td>
                       <td className="px-4 py-4">
@@ -157,7 +157,7 @@ function AdminTradeTable({
                           step="0.0001"
                           value={draft.quantity}
                           onChange={handleChange}
-                          className="w-28 rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-white outline-none focus:border-mint"
+                          className="ui-input w-28 px-3 py-2"
                         />
                       </td>
                       <td className="px-4 py-4">
@@ -167,7 +167,7 @@ function AdminTradeTable({
                           step="0.0001"
                           value={draft.fees}
                           onChange={handleChange}
-                          className="w-24 rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-white outline-none focus:border-mint"
+                          className="ui-input w-24 px-3 py-2"
                         />
                       </td>
                       <td className="px-4 py-4 text-slate-300">{formatCurrency(pnl)}</td>
@@ -176,7 +176,7 @@ function AdminTradeTable({
                           name="strategy"
                           value={draft.strategy}
                           onChange={handleChange}
-                          className="w-32 rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-white outline-none focus:border-mint"
+                          className="ui-input w-32 px-3 py-2"
                         />
                       </td>
                       <td className="px-4 py-4">
@@ -186,14 +186,14 @@ function AdminTradeTable({
                             type="datetime-local"
                             value={draft.entryDate}
                             onChange={handleChange}
-                            className="w-48 rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-white outline-none focus:border-mint"
+                            className="ui-input w-48 px-3 py-2"
                           />
                           <input
                             name="exitDate"
                             type="datetime-local"
                             value={draft.exitDate}
                             onChange={handleChange}
-                            className="w-48 rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-white outline-none focus:border-mint"
+                            className="ui-input w-48 px-3 py-2"
                           />
                         </div>
                       </td>
@@ -203,14 +203,14 @@ function AdminTradeTable({
                             type="button"
                             onClick={() => handleSave(trade.id)}
                             disabled={isSaving}
-                            className="block rounded-full bg-mint px-4 py-2 text-xs font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-70"
+                            className="ui-button-solid block px-4 py-2 text-[11px]"
                           >
                             {isSaving ? "Saving..." : "Save"}
                           </button>
                           <button
                             type="button"
                             onClick={cancelEdit}
-                            className="block rounded-full border border-white/15 px-4 py-2 text-xs font-medium text-white"
+                            className="ui-button block px-4 py-2 text-[11px]"
                           >
                             Cancel
                           </button>
@@ -219,12 +219,12 @@ function AdminTradeTable({
                     </>
                   ) : (
                     <>
-                      <td className="px-4 py-4 font-semibold text-white">{trade.symbol}</td>
-                      <td className="px-4 py-4 text-slate-200">{trade.side}</td>
-                      <td className="px-4 py-4 text-slate-200">{trade.entryPrice}</td>
-                      <td className="px-4 py-4 text-slate-200">{trade.exitPrice ?? "-"}</td>
-                      <td className="px-4 py-4 text-slate-200">{trade.quantity}</td>
-                      <td className="px-4 py-4 text-slate-200">{trade.fees ?? 0}</td>
+                      <td className="px-4 py-4 ui-title text-phosphor">{trade.symbol}</td>
+                      <td className="px-4 py-4 text-mist">{trade.side}</td>
+                      <td className="px-4 py-4 text-mist">{trade.entryPrice}</td>
+                      <td className="px-4 py-4 text-mist">{trade.exitPrice ?? "-"}</td>
+                      <td className="px-4 py-4 text-mist">{trade.quantity}</td>
+                      <td className="px-4 py-4 text-mist">{trade.fees ?? 0}</td>
                       <td
                         className={`px-4 py-4 font-semibold ${
                           pnl >= 0 ? "text-mint" : "text-coral"
@@ -232,14 +232,14 @@ function AdminTradeTable({
                       >
                         {formatCurrency(pnl)}
                       </td>
-                      <td className="px-4 py-4 text-slate-200">{trade.strategy || "-"}</td>
-                      <td className="px-4 py-4 text-slate-200">{formatDate(trade.entryDate)}</td>
+                      <td className="px-4 py-4 text-mist">{trade.strategy || "-"}</td>
+                      <td className="px-4 py-4 text-mist">{formatDate(trade.entryDate)}</td>
                       <td className="px-4 py-4">
                         <div className="flex flex-wrap gap-2">
                           <button
                             type="button"
                             onClick={() => beginEdit(trade)}
-                            className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-medium text-white transition hover:border-mint hover:text-mint"
+                            className="ui-button px-3 py-1.5 text-[11px]"
                           >
                             Edit
                           </button>
@@ -247,7 +247,7 @@ function AdminTradeTable({
                             type="button"
                             onClick={() => onDelete(trade.id)}
                             disabled={isDeleting}
-                            className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-medium text-white transition hover:border-coral hover:text-coral disabled:cursor-not-allowed disabled:opacity-70"
+                            className="ui-button border-coral/35 bg-coral/10 px-3 py-1.5 text-[11px] text-coral hover:bg-coral/20 disabled:cursor-not-allowed disabled:opacity-70"
                           >
                             Delete
                           </button>

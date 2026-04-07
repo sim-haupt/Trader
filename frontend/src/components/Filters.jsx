@@ -5,13 +5,13 @@ function Filters({ filters, onChange, onReset }) {
         placeholder="Filter by symbol"
         value={filters.symbol}
         onChange={(event) => onChange("symbol", event.target.value)}
-        className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-white outline-none transition focus:border-mint"
+        className="ui-input"
       />
 
       <select
         value={filters.side}
         onChange={(event) => onChange("side", event.target.value)}
-        className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-white outline-none transition focus:border-mint"
+        className="ui-input"
       >
         <option value="">All Sides</option>
         <option value="LONG">LONG</option>
@@ -22,14 +22,14 @@ function Filters({ filters, onChange, onReset }) {
         placeholder="Strategy"
         value={filters.strategy}
         onChange={(event) => onChange("strategy", event.target.value)}
-        className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-white outline-none transition focus:border-mint"
+        className="ui-input"
       />
 
       <input
         type="date"
         value={filters.from}
         onChange={(event) => onChange("from", event.target.value)}
-        className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-white outline-none transition focus:border-mint"
+        className="ui-input"
       />
 
       <div className="flex gap-3">
@@ -37,12 +37,12 @@ function Filters({ filters, onChange, onReset }) {
           type="date"
           value={filters.to}
           onChange={(event) => onChange("to", event.target.value)}
-          className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-white outline-none transition focus:border-mint"
+          className="ui-input"
         />
         <button
           type="button"
           onClick={onReset}
-          className="rounded-full border border-white/15 px-5 py-3 text-sm font-medium text-white transition hover:border-white/30"
+          className="ui-button text-sm"
         >
           Reset
         </button>

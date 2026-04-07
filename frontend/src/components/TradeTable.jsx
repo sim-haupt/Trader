@@ -2,11 +2,11 @@ import { formatCurrency, formatDate } from "../utils/formatters";
 
 function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = true }) {
   return (
-    <div className="overflow-hidden rounded-3xl border border-white/10">
+    <div className="ui-table-shell">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-white/10 text-sm">
-          <thead className="bg-white/5">
-            <tr className="text-left text-xs uppercase tracking-[0.25em] text-mist">
+        <table className="min-w-full divide-y divide-mint/10 text-sm">
+          <thead className="bg-mint/6">
+            <tr className="ui-title text-left text-[11px] text-mist">
               <th className="px-4 py-4">Symbol</th>
               <th className="px-4 py-4">Side</th>
               <th className="px-4 py-4">Entry</th>
@@ -19,7 +19,7 @@ function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = tru
               {showActions && <th className="px-4 py-4">Actions</th>}
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/10 bg-slate-950/20">
+          <tbody className="divide-y divide-mint/10 bg-black/20">
             {trades.map((trade) => {
               const pnl = Number(trade.netPnl ?? trade.grossPnl ?? 0);
               const executionCount =
@@ -37,24 +37,24 @@ function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = tru
                       onSelectTrade?.(trade);
                     }
                   }}
-                  className="cursor-pointer transition hover:bg-white/5 focus:bg-white/5 focus:outline-none"
+                  className="cursor-pointer transition hover:bg-mint/6 focus:bg-mint/6 focus:outline-none"
                 >
-                  <td className="px-4 py-4 font-semibold text-white">{trade.symbol}</td>
+                  <td className="px-4 py-4 ui-title text-phosphor">{trade.symbol}</td>
                   <td className="px-4 py-4">
                     <span
-                      className={`rounded-full px-3 py-1 text-xs font-medium ${
+                      className={`inline-flex border px-3 py-1 text-[11px] font-medium ${
                         trade.side === "LONG"
-                          ? "bg-mint/15 text-mint"
-                          : "bg-coral/15 text-coral"
+                          ? "border-mint/35 bg-mint/10 text-mint"
+                          : "border-coral/35 bg-coral/10 text-coral"
                       }`}
                     >
                       {trade.side}
                     </span>
                   </td>
-                  <td className="px-4 py-4 text-slate-200">{trade.entryPrice}</td>
-                  <td className="px-4 py-4 text-slate-200">{trade.exitPrice ?? "-"}</td>
-                  <td className="px-4 py-4 text-slate-200">{trade.quantity}</td>
-                  <td className="px-4 py-4 text-slate-200">{executionCount || "-"}</td>
+                  <td className="px-4 py-4 text-mist">{trade.entryPrice}</td>
+                  <td className="px-4 py-4 text-mist">{trade.exitPrice ?? "-"}</td>
+                  <td className="px-4 py-4 text-mist">{trade.quantity}</td>
+                  <td className="px-4 py-4 text-mist">{executionCount || "-"}</td>
                   <td
                     className={`px-4 py-4 font-semibold ${
                       pnl >= 0 ? "text-mint" : "text-coral"
@@ -62,8 +62,8 @@ function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = tru
                   >
                     {formatCurrency(pnl)}
                   </td>
-                  <td className="px-4 py-4 text-slate-200">{trade.strategy || "-"}</td>
-                  <td className="px-4 py-4 text-slate-200">{formatDate(trade.entryDate)}</td>
+                  <td className="px-4 py-4 text-mist">{trade.strategy || "-"}</td>
+                  <td className="px-4 py-4 text-mist">{formatDate(trade.entryDate)}</td>
                   {showActions && (
                     <td className="px-4 py-4">
                       <div className="flex flex-wrap gap-2">
@@ -73,7 +73,7 @@ function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = tru
                             event.stopPropagation();
                             onEdit(trade);
                           }}
-                          className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-medium text-white transition hover:border-mint hover:text-mint"
+                          className="ui-button px-3 py-1.5 text-[11px]"
                         >
                           Edit
                         </button>
@@ -83,7 +83,7 @@ function TradeTable({ trades, onEdit, onDelete, onSelectTrade, showActions = tru
                             event.stopPropagation();
                             onDelete(trade);
                           }}
-                          className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-medium text-white transition hover:border-coral hover:text-coral"
+                          className="ui-button border-coral/35 bg-coral/10 px-3 py-1.5 text-[11px] text-coral hover:bg-coral/20"
                         >
                           Delete
                         </button>

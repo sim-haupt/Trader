@@ -84,14 +84,14 @@ function getDayTone(stats, isCurrentMonth) {
   }
 
   if (stats.pnl > 0) {
-    return "bg-mint/10 text-mint";
+    return "border border-mint/20 bg-mint/10 text-mint";
   }
 
   if (stats.pnl < 0) {
-    return "bg-coral/10 text-coral";
+    return "border border-coral/20 bg-coral/10 text-coral";
   }
 
-  return "bg-white/5 text-white";
+  return "border border-mint/10 bg-mint/6 text-phosphor";
 }
 
 function MonthCard({ month, onOpen }) {
@@ -102,16 +102,16 @@ function MonthCard({ month, onOpen }) {
         <button
           type="button"
           onClick={() => onOpen(month)}
-          className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
+          className="ui-button px-4 py-2 text-[11px]"
         >
           Open
         </button>
       }
-      className="rounded-none border-white/8 bg-white/[0.03] p-6 shadow-none"
+      className="bg-black/30 p-6 shadow-none"
     >
       <div className="grid grid-cols-7 gap-3 text-center">
         {weekdayLabels.map((label) => (
-          <div key={label} className="pb-2 text-sm font-semibold text-slate-200">
+          <div key={label} className="ui-title pb-2 text-xs text-mist">
             {label}
           </div>
         ))}
@@ -119,7 +119,7 @@ function MonthCard({ month, onOpen }) {
         {month.weeks.flat().map((day) => (
           <div
             key={day.dayKey}
-            className={`rounded-2xl px-2 py-3 text-lg font-medium transition ${getDayTone(
+            className={`px-2 py-3 text-lg font-medium transition ${getDayTone(
               day.stats,
               day.isCurrentMonth
             )}`}
@@ -221,7 +221,7 @@ function CalendarPage() {
   }
 
   if (error) {
-    return <div className="rounded-2xl bg-coral/10 px-4 py-3 text-sm text-coral">{error}</div>;
+    return <div className="ui-notice border-coral/30 bg-coral/10 text-coral">{error}</div>;
   }
 
   if (trades.length === 0) {
@@ -239,7 +239,7 @@ function CalendarPage() {
         title="Calendar Overview"
         subtitle="A year-level view of green and red trading days. Open any month to drill down into the details."
         action={
-          <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-xl font-semibold text-white">
+          <div className="ui-chip text-base">
             {calendarData.year}
           </div>
         }
@@ -257,11 +257,11 @@ function CalendarPage() {
           subtitle="A more detailed view for the selected month."
           action={
             <div className="flex items-center gap-3">
-              <div className="rounded-2xl bg-white/5 px-4 py-2 text-sm text-mist">
+              <div className="ui-chip normal-case tracking-[0.08em] text-sm text-mist">
                 {selectedMonth.monthTrades} trade{selectedMonth.monthTrades === 1 ? "" : "s"}
               </div>
               <div
-                className={`rounded-2xl px-4 py-2 text-sm font-semibold ${
+                className={`border px-4 py-2 text-sm font-semibold ${
                   selectedMonth.monthPnl >= 0
                     ? "bg-mint/10 text-mint"
                     : "bg-coral/10 text-coral"
@@ -273,10 +273,10 @@ function CalendarPage() {
           }
         >
           <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-            <div className="rounded-3xl border border-white/8 bg-slate-950/25 p-5">
+            <div className="ui-panel p-5">
               <div className="mb-5 grid grid-cols-7 gap-3 text-center">
                 {weekdayLabels.map((label) => (
-                  <div key={label} className="pb-2 text-sm font-semibold text-slate-200">
+                  <div key={label} className="ui-title pb-2 text-xs text-mist">
                     {label}
                   </div>
                 ))}
@@ -284,7 +284,7 @@ function CalendarPage() {
                 {selectedMonth.weeks.flat().map((day) => (
                   <div
                     key={day.dayKey}
-                    className={`min-h-[74px] rounded-2xl px-2 py-3 text-left transition ${getDayTone(
+                    className={`min-h-[74px] px-2 py-3 text-left transition ${getDayTone(
                       day.stats,
                       day.isCurrentMonth
                     )}`}
@@ -305,8 +305,8 @@ function CalendarPage() {
               </div>
             </div>
 
-            <div className="rounded-3xl border border-white/8 bg-slate-950/25 p-5">
-              <h3 className="text-lg font-semibold text-white">Daily Breakdown</h3>
+            <div className="ui-panel p-5">
+              <h3 className="ui-title text-lg text-phosphor">Daily Breakdown</h3>
               <div className="mt-5 space-y-3">
                 {monthTradeDays.length === 0 ? (
                   <p className="text-sm text-mist">No trades in this month.</p>
@@ -314,7 +314,7 @@ function CalendarPage() {
                   monthTradeDays.map((day) => (
                     <div
                       key={day.dayKey}
-                      className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-4"
+                      className="ui-panel px-4 py-4"
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div>

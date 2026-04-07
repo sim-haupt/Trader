@@ -21,12 +21,12 @@ function UploadCSV({ onUpload, isUploading }) {
         type="file"
         accept=".csv,text/csv"
         onChange={(event) => setFile(event.target.files?.[0] || null)}
-        className="block w-full rounded-2xl border border-dashed border-white/20 bg-slate-950/50 px-4 py-3 text-sm text-slate-200 file:mr-4 file:rounded-full file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-white/20"
+        className="block w-full border-2 border-dashed border-mint/25 bg-black/55 px-4 py-3 text-sm text-mint file:mr-4 file:border-2 file:border-mint/35 file:bg-mint/10 file:px-4 file:py-2 file:text-sm file:font-medium file:text-mint hover:file:bg-mint/18"
       />
       <button
         type="submit"
         disabled={!file || isUploading}
-        className="rounded-full bg-gold px-5 py-3 text-sm font-semibold text-ink transition hover:bg-[#ffe08d] disabled:cursor-not-allowed disabled:opacity-70"
+        className="ui-button-solid text-sm"
       >
         {isUploading ? "Uploading..." : "Upload CSV"}
       </button>

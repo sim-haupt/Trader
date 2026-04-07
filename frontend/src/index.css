@@ -1,16 +1,17 @@
+@import url("https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=VT323&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  color: #d5f7e6;
+  color: #d8ffe8;
   background:
-    linear-gradient(180deg, rgba(112, 90, 190, 0.12), transparent 18%),
-    radial-gradient(circle at top left, rgba(129, 104, 230, 0.18), transparent 26%),
-    radial-gradient(circle at top right, rgba(89, 185, 255, 0.08), transparent 30%),
-    linear-gradient(180deg, #120d1d 0%, #181126 48%, #0b0913 100%);
+    radial-gradient(circle at top left, rgba(114, 243, 198, 0.12), transparent 22%),
+    radial-gradient(circle at bottom right, rgba(114, 243, 198, 0.06), transparent 26%),
+    linear-gradient(180deg, #020403 0%, #050907 54%, #010201 100%);
   font-family:
-    "Space Mono",
+    "VT323",
     "IBM Plex Mono",
     "Courier New",
     monospace;
@@ -26,11 +27,10 @@ body {
   min-height: 100vh;
   color: #d5f7e6;
   background:
-    linear-gradient(180deg, rgba(112, 90, 190, 0.12), transparent 18%),
-    radial-gradient(circle at top left, rgba(129, 104, 230, 0.18), transparent 26%),
-    radial-gradient(circle at top right, rgba(89, 185, 255, 0.08), transparent 30%),
-    linear-gradient(180deg, #120d1d 0%, #181126 48%, #0b0913 100%);
-  letter-spacing: 0.01em;
+    radial-gradient(circle at top left, rgba(114, 243, 198, 0.12), transparent 22%),
+    radial-gradient(circle at bottom right, rgba(114, 243, 198, 0.06), transparent 26%),
+    linear-gradient(180deg, #020403 0%, #050907 54%, #010201 100%);
+  letter-spacing: 0.03em;
 }
 
 #root {
@@ -44,13 +44,13 @@ body::before {
   pointer-events: none;
   z-index: 100;
   background:
-    linear-gradient(rgba(255, 255, 255, 0.015) 50%, rgba(0, 0, 0, 0.06) 50%),
-    linear-gradient(90deg, rgba(114, 243, 198, 0.025), transparent 18%, rgba(89, 185, 255, 0.015)),
-    linear-gradient(rgba(129, 104, 230, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(129, 104, 230, 0.08) 1px, transparent 1px);
+    linear-gradient(rgba(255, 255, 255, 0.02) 50%, rgba(0, 0, 0, 0.06) 50%),
+    linear-gradient(90deg, rgba(114, 243, 198, 0.025), transparent 18%, rgba(114, 243, 198, 0.015)),
+    linear-gradient(rgba(114, 243, 198, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(114, 243, 198, 0.06) 1px, transparent 1px);
   background-size: 100% 4px, 100% 100%, 24px 24px, 24px 24px;
   mix-blend-mode: screen;
-  opacity: 0.3;
+  opacity: 0.26;
 }
 
 input,
@@ -69,4 +69,51 @@ textarea {
 ::selection {
   background: rgba(114, 243, 198, 0.3);
   color: #effff6;
+}
+
+@layer components {
+  .ui-panel {
+    @apply border-2 border-mint/35 bg-[linear-gradient(180deg,rgba(5,9,7,0.96),rgba(2,4,3,0.98))] shadow-[0_0_0_2px_rgba(0,0,0,0.65),0_0_22px_rgba(114,243,198,0.08)];
+    border-radius: 0;
+  }
+
+  .ui-title {
+    font-family: "Silkscreen", monospace;
+    letter-spacing: 0.08em;
+  }
+
+  .ui-input {
+    @apply w-full border-2 border-mint/20 bg-black/55 px-4 py-3 text-mint outline-none transition focus:border-mint;
+    border-radius: 0;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.45);
+  }
+
+  .ui-button {
+    @apply border-2 border-mint/35 bg-mint/10 px-5 py-3 font-semibold uppercase tracking-[0.12em] text-mint transition hover:bg-mint/20 disabled:cursor-not-allowed disabled:opacity-60;
+    border-radius: 0;
+    font-family: "Silkscreen", monospace;
+  }
+
+  .ui-button-solid {
+    @apply border-2 border-mint bg-mint px-5 py-3 font-semibold uppercase tracking-[0.12em] text-black transition hover:bg-[#8df6d2] disabled:cursor-not-allowed disabled:opacity-60;
+    border-radius: 0;
+    font-family: "Silkscreen", monospace;
+  }
+
+  .ui-chip {
+    @apply inline-flex items-center border border-mint/35 bg-mint/10 px-3 py-1 uppercase tracking-[0.12em] text-mint;
+    border-radius: 0;
+    font-family: "Silkscreen", monospace;
+    font-size: 0.7rem;
+  }
+
+  .ui-notice {
+    @apply border-2 border-mint/20 bg-mint/10 px-4 py-3 text-sm text-mint;
+    border-radius: 0;
+  }
+
+  .ui-table-shell {
+    @apply overflow-hidden border-2 border-mint/20 bg-black/35;
+    border-radius: 0;
+  }
 }

@@ -34,25 +34,25 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
 
     const chartOptions = {
       layout: {
-        background: { type: ColorType.Solid, color: "#12192b" },
-        textColor: "#c9d2e3",
+        background: { type: ColorType.Solid, color: "#050907" },
+        textColor: "#b8ffd9",
         attributionLogo: true
       },
       grid: {
-        vertLines: { color: "rgba(255,255,255,0.06)" },
-        horzLines: { color: "rgba(255,255,255,0.06)" }
+        vertLines: { color: "rgba(114,243,198,0.08)" },
+        horzLines: { color: "rgba(114,243,198,0.08)" }
       },
       rightPriceScale: {
-        borderColor: "rgba(255,255,255,0.08)"
+        borderColor: "rgba(114,243,198,0.14)"
       },
       timeScale: {
-        borderColor: "rgba(255,255,255,0.08)",
+        borderColor: "rgba(114,243,198,0.14)",
         timeVisible: true,
         secondsVisible: true
       },
       crosshair: {
-        vertLine: { color: "rgba(255,255,255,0.18)" },
-        horzLine: { color: "rgba(255,255,255,0.18)" }
+        vertLine: { color: "rgba(114,243,198,0.22)" },
+        horzLine: { color: "rgba(114,243,198,0.22)" }
       }
     };
 
@@ -78,7 +78,7 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
     candleSeries.setData(bars);
 
     const ema9Series = mainChart.addSeries(LineSeries, {
-      color: "#1a9cff",
+      color: "#72f3c6",
       lineWidth: 2,
       priceLineVisible: false,
       lastValueVisible: true
@@ -86,7 +86,7 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
     ema9Series.setData(calculateEmaSeries(bars, 9));
 
     const ema20Series = mainChart.addSeries(LineSeries, {
-      color: "#3aa7ff",
+      color: "#a8ffd8",
       lineWidth: 2,
       lineStyle: 2,
       priceLineVisible: false,
@@ -95,7 +95,7 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
     ema20Series.setData(calculateEmaSeries(bars, 20));
 
     const vwapSeries = mainChart.addSeries(LineSeries, {
-      color: "#5bc3ff",
+      color: "#5ea389",
       lineWidth: 2,
       priceLineVisible: false,
       lastValueVisible: true
@@ -119,20 +119,20 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
 
         const markerNode = document.createElement("div");
         markerNode.className =
-          "absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-2 shadow-[0_0_0_4px_rgba(18,25,43,0.88)]";
+          "absolute -translate-x-1/2 -translate-y-1/2 border-2 shadow-[0_0_0_4px_rgba(5,9,7,0.92)]";
         markerNode.style.left = `${x}px`;
         markerNode.style.top = `${y}px`;
         markerNode.style.width = "14px";
         markerNode.style.height = "14px";
         markerNode.style.borderColor = marker.color;
-        markerNode.style.backgroundColor = "#12192b";
+        markerNode.style.backgroundColor = "#050907";
 
         const labelNode = document.createElement("div");
-        labelNode.className = "absolute whitespace-nowrap rounded-full px-2 py-1 text-[10px] font-semibold";
+        labelNode.className = "absolute whitespace-nowrap border px-2 py-1 text-[10px] font-semibold";
         labelNode.style.left = `${x + 12}px`;
         labelNode.style.top = `${y - 16}px`;
         labelNode.style.color = marker.color;
-        labelNode.style.backgroundColor = "rgba(18,25,43,0.92)";
+        labelNode.style.backgroundColor = "rgba(5,9,7,0.94)";
         labelNode.style.border = `1px solid ${marker.color}55`;
         labelNode.textContent = marker.text;
 
@@ -149,14 +149,14 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
     histogramSeries.setData(histogram);
 
     const macdLineSeries = macdChart.addSeries(LineSeries, {
-      color: "#ff8f1f",
+      color: "#a8ffd8",
       lineWidth: 2,
       priceLineVisible: false
     });
     macdLineSeries.setData(macdLine);
 
     const signalLineSeries = macdChart.addSeries(LineSeries, {
-      color: "#2d8cff",
+      color: "#72f3c6",
       lineWidth: 2,
       priceLineVisible: false
     });
@@ -198,19 +198,19 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h3 className="text-lg font-semibold text-white">{title}</h3>
+          <h3 className="ui-title text-lg text-phosphor">{title}</h3>
           <p className="mt-1 text-sm text-mist">{subtitle}</p>
         </div>
-        <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.25em] text-mint">
+        <div className="ui-chip">
           EMA 9 · EMA 20 · VWAP · MACD · ETH
         </div>
       </div>
 
-      <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#12192b]">
+      <div className="relative overflow-hidden border-2 border-mint/20 bg-black/70">
         <div ref={mainRef} />
         <div ref={overlayRef} className="pointer-events-none absolute inset-0 z-10" />
       </div>
-      <div ref={macdRef} className="overflow-hidden rounded-3xl border border-white/10 bg-[#12192b]" />
+      <div ref={macdRef} className="overflow-hidden border-2 border-mint/20 bg-black/70" />
     </div>
   );
 }
@@ -262,7 +262,7 @@ function TradeReviewCharts({ trade }) {
 
   if (loading) {
     return (
-      <div className="flex h-[360px] items-center justify-center rounded-3xl border border-white/10 bg-slate-950/30 text-sm text-mist">
+      <div className="flex h-[360px] items-center justify-center border-2 border-mint/20 bg-black/40 text-sm text-mist">
         Loading market data...
       </div>
     );
@@ -270,7 +270,7 @@ function TradeReviewCharts({ trade }) {
 
   if (error) {
     return (
-      <div className="rounded-3xl border border-coral/20 bg-coral/10 p-5 text-sm text-coral">
+      <div className="border-2 border-coral/30 bg-coral/10 p-5 text-sm text-coral">
         {error}
       </div>
     );
@@ -278,7 +278,7 @@ function TradeReviewCharts({ trade }) {
 
   if (!minuteBars.length) {
     return (
-      <div className="rounded-3xl border border-white/10 bg-slate-950/30 p-5 text-sm text-mist">
+      <div className="border-2 border-mint/20 bg-black/40 p-5 text-sm text-mist">
         No market bars were returned for this trade window.
       </div>
     );

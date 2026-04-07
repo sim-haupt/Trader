@@ -68,7 +68,7 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
           value={form.symbol}
           onChange={handleChange}
           required
-          className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-white outline-none transition focus:border-mint"
+          className="ui-input"
         />
       </FormField>
 
@@ -77,7 +77,7 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
           name="side"
           value={form.side}
           onChange={handleChange}
-          className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-white outline-none transition focus:border-mint"
+          className="ui-input"
         >
           <option value="LONG">LONG</option>
           <option value="SHORT">SHORT</option>
@@ -93,7 +93,7 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
           value={form.quantity}
           onChange={handleChange}
           required
-          className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-white outline-none transition focus:border-mint"
+          className="ui-input"
         />
       </FormField>
 
@@ -106,7 +106,7 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
           value={form.entryPrice}
           onChange={handleChange}
           required
-          className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-white outline-none transition focus:border-mint"
+          className="ui-input"
         />
       </FormField>
 
@@ -118,7 +118,7 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
           min="0"
           value={form.exitPrice}
           onChange={handleChange}
-          className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-white outline-none transition focus:border-mint"
+          className="ui-input"
         />
       </FormField>
 
@@ -130,7 +130,7 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
           min="0"
           value={form.fees}
           onChange={handleChange}
-          className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-white outline-none transition focus:border-mint"
+          className="ui-input"
         />
       </FormField>
 
@@ -141,7 +141,7 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
           value={form.entryDate}
           onChange={handleChange}
           required
-          className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-white outline-none transition focus:border-mint"
+          className="ui-input"
         />
       </FormField>
 
@@ -151,7 +151,7 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
           type="datetime-local"
           value={form.exitDate}
           onChange={handleChange}
-          className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-white outline-none transition focus:border-mint"
+          className="ui-input"
         />
       </FormField>
 
@@ -161,7 +161,7 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
             name="strategy"
             value={form.strategy}
             onChange={handleChange}
-            className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-white outline-none transition focus:border-mint"
+            className="ui-input"
           />
         </FormField>
       </div>
@@ -173,7 +173,7 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
             rows="4"
             value={form.notes}
             onChange={handleChange}
-            className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-white outline-none transition focus:border-mint"
+            className="ui-input"
           />
         </FormField>
       </div>
@@ -183,7 +183,7 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-full border border-white/15 px-5 py-3 text-sm font-medium text-white transition hover:border-white/30"
+            className="ui-button text-sm"
           >
             Cancel
           </button>
@@ -191,7 +191,7 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="rounded-full bg-mint px-5 py-3 text-sm font-semibold text-ink transition hover:bg-[#8df6d2] disabled:cursor-not-allowed disabled:opacity-70"
+          className="ui-button-solid text-sm"
         >
           {isSubmitting ? "Saving..." : trade ? "Update Trade" : "Create Trade"}
         </button>

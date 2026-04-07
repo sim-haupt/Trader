@@ -21,7 +21,7 @@ function TradeTextImport({ onImport, isImporting }) {
         value={text}
         onChange={(event) => setText(event.target.value)}
         placeholder="Paste executions like: 02/26/26,09:38:39,XWEL,1000,1.32,S,"
-        className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-sm text-white outline-none transition focus:border-mint"
+        className="ui-input min-h-[220px] text-sm text-phosphor"
       />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-mist">
@@ -30,7 +30,7 @@ function TradeTextImport({ onImport, isImporting }) {
         <button
           type="submit"
           disabled={!text.trim() || isImporting}
-          className="rounded-full bg-mint px-5 py-3 text-sm font-semibold text-ink transition hover:bg-[#8df6d2] disabled:cursor-not-allowed disabled:opacity-70"
+          className="ui-button-solid text-sm"
         >
           {isImporting ? "Importing..." : "Import Text Trades"}
         </button>

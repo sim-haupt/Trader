@@ -30,10 +30,10 @@ function RegisterPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-10">
-      <div className="w-full max-w-xl rounded-[32px] border border-white/10 bg-slate-950/50 p-8 shadow-glow backdrop-blur sm:p-10">
-        <p className="text-xs uppercase tracking-[0.35em] text-gold">Start Journaling</p>
-        <h1 className="mt-4 text-3xl font-semibold text-white">Create your account</h1>
-        <p className="mt-2 text-sm text-mist">
+      <div className="w-full max-w-xl border-2 border-mint/25 bg-black/60 p-8 shadow-crt sm:p-10">
+        <p className="ui-title text-xs text-mint">Start Journaling</p>
+        <h1 className="ui-title mt-4 text-3xl text-phosphor">Create Your Account</h1>
+        <p className="mt-3 text-lg text-mist">
           Build a repeatable review process around every trade you take.
         </p>
 
@@ -44,7 +44,7 @@ function RegisterPage() {
             value={form.name}
             onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
             required
-            className="w-full rounded-2xl border border-white/10 bg-slate-900/70 px-4 py-3 text-white outline-none transition focus:border-gold"
+            className="ui-input"
           />
           <input
             type="email"
@@ -52,33 +52,33 @@ function RegisterPage() {
             value={form.email}
             onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
             required
-            className="w-full rounded-2xl border border-white/10 bg-slate-900/70 px-4 py-3 text-white outline-none transition focus:border-gold"
+            className="ui-input"
           />
           <input
             type="password"
             placeholder="Password"
             value={form.password}
             onChange={(event) =>
-              setForm((current) => ({ ...current, password: event.target.value }))
+                setForm((current) => ({ ...current, password: event.target.value }))
             }
             required
-            className="w-full rounded-2xl border border-white/10 bg-slate-900/70 px-4 py-3 text-white outline-none transition focus:border-gold"
+            className="ui-input"
           />
 
-          {error && <p className="rounded-2xl bg-coral/10 px-4 py-3 text-sm text-coral">{error}</p>}
+          {error && <p className="ui-notice border-coral/30 bg-coral/10 text-coral">{error}</p>}
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-full bg-gold px-5 py-3 text-sm font-semibold text-ink transition hover:bg-[#ffe08d] disabled:cursor-not-allowed disabled:opacity-70"
+            className="ui-button-solid w-full text-sm"
           >
             {isSubmitting ? "Creating account..." : "Register"}
           </button>
         </form>
 
-        <p className="mt-6 text-sm text-mist">
+        <p className="mt-6 text-lg text-mist">
           Already have an account?{" "}
-          <Link to="/login" className="font-semibold text-gold">
+          <Link to="/login" className="ui-title text-mint">
             Sign in
           </Link>
         </p>

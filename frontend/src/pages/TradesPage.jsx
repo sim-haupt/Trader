@@ -196,7 +196,7 @@ function TradesPage() {
             <button
               type="button"
               onClick={handleApplyFilters}
-              className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-ink transition hover:bg-slate-200"
+              className="ui-button-solid text-sm"
             >
               Apply Filters
             </button>
@@ -216,10 +216,10 @@ function TradesPage() {
 
         <Card title="CSV Import" subtitle="Import a broker export with one drag-and-drop style action.">
           <UploadCSV onUpload={handleUpload} isUploading={isUploading} />
-          <div className="mt-4 rounded-2xl border border-dashed border-white/10 bg-slate-950/30 p-4 text-sm text-mist">
-            Supported CSVs: <span className="text-white">app format and broker exports with Open Datetime / Entry Price / Exit Price columns</span>
+          <div className="ui-notice mt-4 border-dashed text-mist">
+            Supported CSVs: <span className="text-phosphor">app format and broker exports with Open Datetime / Entry Price / Exit Price columns</span>
             <br />
-            Normalized format: <span className="text-white">symbol, side, quantity, entryPrice, entryDate, exitPrice, exitDate, fees, strategy, notes</span>
+            Normalized format: <span className="text-phosphor">symbol, side, quantity, entryPrice, entryDate, exitPrice, exitDate, fees, strategy, notes</span>
           </div>
         </Card>
       </div>
@@ -231,8 +231,8 @@ function TradesPage() {
         <TradeTextImport onImport={handleTextImport} isImporting={isUploading} />
       </Card>
 
-      {message && <div className="rounded-2xl bg-mint/10 px-4 py-3 text-sm text-mint">{message}</div>}
-      {error && <div className="rounded-2xl bg-coral/10 px-4 py-3 text-sm text-coral">{error}</div>}
+      {message && <div className="ui-notice">{message}</div>}
+      {error && <div className="ui-notice border-coral/30 bg-coral/10 text-coral">{error}</div>}
 
       <Card
         title="Trade History"
@@ -242,7 +242,7 @@ function TradesPage() {
             type="button"
             onClick={handleDeleteAll}
             disabled={loading || trades.length === 0}
-            className="rounded-full border border-coral/40 px-4 py-2 text-sm font-semibold text-coral transition hover:bg-coral/10 disabled:cursor-not-allowed disabled:opacity-60"
+            className="ui-button border-coral/35 bg-coral/10 text-coral hover:bg-coral/20"
           >
             Delete All Trades
           </button>

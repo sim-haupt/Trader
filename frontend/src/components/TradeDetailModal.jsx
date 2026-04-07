@@ -25,8 +25,8 @@ import {
 
 function SummaryMetric({ label, value, accent = "text-white" }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-      <p className="text-xs uppercase tracking-[0.25em] text-mist">{label}</p>
+    <div className="ui-panel p-4">
+      <p className="ui-title text-xs text-mist">{label}</p>
       <p className={`mt-3 text-2xl font-semibold ${accent}`}>{value}</p>
     </div>
   );
@@ -38,7 +38,7 @@ function ChartTooltip({ active, payload, label }) {
   }
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-slate-950/95 px-3 py-2 text-xs text-white shadow-xl">
+    <div className="border-2 border-mint/20 bg-black/95 px-3 py-2 text-xs text-phosphor shadow-xl">
       <div className="font-medium">{label}</div>
       <div className="mt-1 text-mint">{formatCurrency(payload[0].value)}</div>
     </div>
@@ -47,11 +47,11 @@ function ChartTooltip({ active, payload, label }) {
 
 function TimelineTable({ rows }) {
   return (
-    <div className="overflow-hidden rounded-3xl border border-white/10">
+    <div className="ui-table-shell">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-white/10 text-sm">
-          <thead className="bg-white/5">
-            <tr className="text-left text-xs uppercase tracking-[0.25em] text-mist">
+        <table className="min-w-full divide-y divide-mint/10 text-sm">
+          <thead className="bg-mint/6">
+            <tr className="ui-title text-left text-[11px] text-mist">
               <th className="px-4 py-3">Event</th>
               <th className="px-4 py-3">Date / Time</th>
               <th className="px-4 py-3">Symbol</th>
@@ -60,17 +60,17 @@ function TimelineTable({ rows }) {
               <th className="px-4 py-3">Position</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/10 bg-slate-950/20">
+          <tbody className="divide-y divide-mint/10 bg-black/20">
             {rows.map((row) => (
               <tr key={row.id}>
-                <td className="px-4 py-4 font-medium text-white">{row.label}</td>
-                <td className="px-4 py-4 text-slate-200">{formatDateTimeLocal(row.time).replace("T", " ")}</td>
-                <td className="px-4 py-4 text-slate-200">{row.symbol}</td>
+                <td className="px-4 py-4 font-medium text-phosphor">{row.label}</td>
+                <td className="px-4 py-4 text-mist">{formatDateTimeLocal(row.time).replace("T", " ")}</td>
+                <td className="px-4 py-4 text-mist">{row.symbol}</td>
                 <td className={`px-4 py-4 ${Number(row.quantity) >= 0 ? "text-mint" : "text-coral"}`}>
                   {row.quantity}
                 </td>
-                <td className="px-4 py-4 text-slate-200">{formatCurrency(row.price)}</td>
-                <td className="px-4 py-4 text-slate-200">{row.position}</td>
+                <td className="px-4 py-4 text-mist">{formatCurrency(row.price)}</td>
+                <td className="px-4 py-4 text-mist">{row.position}</td>
               </tr>
             ))}
           </tbody>
@@ -184,38 +184,38 @@ function TradeDetailModal({ trade, onClose }) {
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/80 p-4 backdrop-blur">
-      <div className="w-full max-w-[1500px] rounded-[32px] border border-white/10 bg-[linear-gradient(180deg,rgba(18,25,43,0.98),rgba(13,20,35,0.98))] shadow-2xl">
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-white/10 bg-slate-950/85 px-6 py-5 backdrop-blur">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 p-4 backdrop-blur">
+      <div className="w-full max-w-[1500px] border-2 border-mint/25 bg-[linear-gradient(180deg,rgba(4,8,6,0.98),rgba(1,4,3,0.98))] shadow-crt">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b-2 border-mint/20 bg-black/90 px-6 py-5 backdrop-blur">
           <div>
             <div className="flex flex-wrap items-center gap-3">
-              <h2 className="text-3xl font-semibold text-white">{activeTrade.symbol}</h2>
+              <h2 className="ui-title text-3xl text-phosphor">{activeTrade.symbol}</h2>
               <span
-                className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                className={`inline-flex border px-3 py-1 text-[11px] font-semibold ${
                   activeTrade.side === "LONG" ? "bg-mint/15 text-mint" : "bg-coral/15 text-coral"
                 }`}
               >
                 {activeTrade.side}
               </span>
             </div>
-            <p className="mt-2 text-sm text-mist">
+            <p className="mt-2 text-base text-mist">
               {formatDate(activeTrade.entryDate)} · Entry {formatCurrency(activeTrade.entryPrice)} · Exit{" "}
               {activeTrade.exitPrice != null ? formatCurrency(activeTrade.exitPrice) : "Open"}
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-full border border-white/15 px-4 py-2 text-sm font-medium text-white transition hover:border-coral hover:text-coral"
-          >
-            Close
-          </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="ui-button border-coral/35 bg-coral/10 text-sm text-coral hover:bg-coral/20"
+            >
+              Close
+            </button>
         </div>
 
         <div className="space-y-6 p-6">
           {tradeDetailError && (
-            <div className="rounded-2xl bg-coral/10 px-4 py-3 text-sm text-coral">
+            <div className="ui-notice border-coral/30 bg-coral/10 text-coral">
               {tradeDetailError}
             </div>
           )}
@@ -342,19 +342,19 @@ function TradeDetailModal({ trade, onClose }) {
 
             <Card title="Trade Notes" subtitle="Quick context around the setup and result.">
               <div className="space-y-4">
-                <div className="rounded-2xl border border-white/10 bg-slate-950/30 p-4">
-                  <p className="text-xs uppercase tracking-[0.25em] text-mist">Strategy</p>
-                  <p className="mt-2 text-sm text-white">{activeTrade.strategy || "No strategy tagged"}</p>
+                <div className="ui-panel p-4">
+                  <p className="ui-title text-xs text-mist">Strategy</p>
+                  <p className="mt-2 text-sm text-phosphor">{activeTrade.strategy || "No strategy tagged"}</p>
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-slate-950/30 p-4">
-                  <p className="text-xs uppercase tracking-[0.25em] text-mist">Notes</p>
-                  <p className="mt-2 whitespace-pre-wrap text-sm text-slate-200">
+                <div className="ui-panel p-4">
+                  <p className="ui-title text-xs text-mist">Notes</p>
+                  <p className="mt-2 whitespace-pre-wrap text-sm text-mist">
                     {activeTrade.notes || "No notes captured for this trade yet."}
                   </p>
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-slate-950/30 p-4">
-                  <p className="text-xs uppercase tracking-[0.25em] text-mist">Execution Coverage</p>
-                  <p className="mt-2 text-sm text-slate-200">
+                <div className="ui-panel p-4">
+                  <p className="ui-title text-xs text-mist">Execution Coverage</p>
+                  <p className="mt-2 text-sm text-mist">
                     {Array.isArray(activeTrade.executions) && activeTrade.executions.length > 2
                       ? "This trade includes stored execution rows and the review charts use them directly."
                       : "This trade currently has aggregate execution coverage only. TradeVue CSV exports give the merged trade plus execution count, not the original fill timestamps."}

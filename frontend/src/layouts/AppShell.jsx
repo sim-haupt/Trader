@@ -27,13 +27,13 @@ function AppShell() {
 
   return (
     <div className="min-h-screen bg-grid bg-[length:24px_24px] lg:grid lg:grid-cols-[320px_minmax(0,1fr)]">
-      <aside className="border-b-4 border-black bg-[linear-gradient(180deg,rgba(35,23,51,0.98),rgba(16,11,29,0.98))] px-5 py-6 lg:min-h-screen lg:border-b-0 lg:border-r-4 lg:px-6">
-        <div className="flex items-center justify-between rounded-[10px] border-2 border-black bg-[linear-gradient(180deg,rgba(70,47,122,0.96),rgba(43,29,75,0.96))] px-4 py-5 shadow-[0_0_0_2px_rgba(82,58,140,0.88),0_0_0_6px_rgba(0,0,0,0.65)]">
+      <aside className="border-b-2 border-mint/30 bg-[linear-gradient(180deg,rgba(4,8,6,0.98),rgba(1,3,2,0.98))] px-5 py-6 lg:min-h-screen lg:border-b-0 lg:border-r-2 lg:px-6">
+        <div className="ui-panel flex items-center justify-between px-4 py-5">
           <div>
-            <p className="text-xs uppercase tracking-[0.38em] text-cyan">Arcade Ledger</p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-[0.2em] text-[#fff8e8]">TRADER</h1>
+            <p className="ui-title text-xs text-mist">System</p>
+            <h1 className="ui-title mt-3 text-3xl text-[#effff6]">Trader</h1>
           </div>
-          <div className="rounded-[6px] border-2 border-black bg-amber px-3 py-2 text-xs uppercase tracking-[0.25em] text-black">
+          <div className="ui-chip">
             Mk-II
           </div>
         </div>
@@ -44,14 +44,14 @@ function AppShell() {
               key={item.path}
               to={item.path}
               className={({ isActive }) =>
-                `flex items-center gap-4 rounded-[8px] border-2 px-4 py-3 text-base font-medium uppercase tracking-[0.08em] transition ${
+                `flex items-center gap-4 border-2 px-4 py-3 text-base font-medium uppercase tracking-[0.08em] transition ${
                   isActive
-                    ? "border-black bg-[linear-gradient(180deg,rgba(89,185,255,0.98),rgba(79,150,227,0.98))] text-black shadow-[0_0_0_2px_rgba(0,0,0,0.35)]"
-                    : "border-transparent text-[#c6bde3] hover:border-black hover:bg-[linear-gradient(180deg,rgba(75,52,128,0.94),rgba(55,38,96,0.94))] hover:text-[#fff8e8]"
+                    ? "border-mint bg-mint/12 text-[#effff6]"
+                    : "border-transparent text-mist hover:border-mint/20 hover:bg-mint/6 hover:text-[#effff6]"
                 }`
               }
             >
-              <span className={location.pathname.startsWith(item.path) ? "text-black" : "text-cyan"}>
+              <span className="text-mint">
                 <NavIcon path={item.icon} />
               </span>
               {item.label}
@@ -62,14 +62,14 @@ function AppShell() {
             <NavLink
               to="/admin"
               className={({ isActive }) =>
-                `flex items-center gap-4 rounded-[8px] border-2 px-4 py-3 text-base font-medium uppercase tracking-[0.08em] transition ${
+                `flex items-center gap-4 border-2 px-4 py-3 text-base font-medium uppercase tracking-[0.08em] transition ${
                   isActive
-                    ? "border-black bg-[linear-gradient(180deg,rgba(255,181,63,0.98),rgba(214,136,44,0.98))] text-black shadow-[0_0_0_2px_rgba(0,0,0,0.35)]"
-                    : "border-transparent text-[#c6bde3] hover:border-black hover:bg-[linear-gradient(180deg,rgba(75,52,128,0.94),rgba(55,38,96,0.94))] hover:text-[#fff8e8]"
+                    ? "border-mint bg-mint/12 text-[#effff6]"
+                    : "border-transparent text-mist hover:border-mint/20 hover:bg-mint/6 hover:text-[#effff6]"
                 }`
               }
             >
-              <span className="text-amber">
+              <span className="text-mint">
                 <NavIcon path="M12 3l7 4v10l-7 4-7-4V7l7-4zm0 5v4m0 4h.01" />
               </span>
               Admin
@@ -80,21 +80,21 @@ function AppShell() {
         <button
           type="button"
           onClick={() => navigate("/trades")}
-          className="mt-8 flex w-full items-center justify-center rounded-[8px] border-2 border-black bg-[linear-gradient(180deg,rgba(255,181,63,0.98),rgba(214,136,44,0.98))] px-5 py-4 text-base font-semibold uppercase tracking-[0.12em] text-black shadow-[0_0_0_2px_rgba(0,0,0,0.35)] transition hover:translate-y-[1px]"
+          className="ui-button-solid mt-8 flex w-full items-center justify-center text-base"
         >
           Import Trades
         </button>
 
-        <div className="mt-8 rounded-[10px] border-2 border-black bg-[linear-gradient(180deg,rgba(70,47,122,0.96),rgba(43,29,75,0.96))] p-4 shadow-[0_0_0_2px_rgba(82,58,140,0.88),0_0_0_6px_rgba(0,0,0,0.65)]">
+        <div className="ui-panel mt-8 p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.1em] text-[#fff8e8]">{user?.name}</p>
-              <p className="mt-1 text-sm uppercase tracking-[0.18em] text-[#c6bde3]">Role: {user?.role}</p>
+              <p className="ui-title text-sm text-[#effff6]">{user?.name}</p>
+              <p className="mt-2 text-sm uppercase tracking-[0.18em] text-mist">Role: {user?.role}</p>
             </div>
             <button
               type="button"
               onClick={logout}
-              className="rounded-[8px] border-2 border-black bg-[linear-gradient(180deg,rgba(89,185,255,0.98),rgba(79,150,227,0.98))] px-4 py-2 text-sm font-medium uppercase tracking-[0.08em] text-black transition hover:translate-y-[1px]"
+              className="ui-button px-4 py-2 text-sm"
             >
               Logout
             </button>
@@ -103,29 +103,29 @@ function AppShell() {
       </aside>
 
       <div className="min-w-0">
-        <header className="sticky top-0 z-20 border-b-4 border-black bg-[linear-gradient(180deg,rgba(50,34,82,0.96),rgba(33,22,56,0.96))]">
+        <header className="sticky top-0 z-20 border-b-2 border-mint/30 bg-[rgba(2,5,4,0.94)]">
           <div className="flex flex-col gap-4 px-4 py-5 sm:px-6 xl:flex-row xl:items-center xl:justify-between xl:px-8">
             <div>
-              <p className="text-xs uppercase tracking-[0.38em] text-cyan">Command Deck</p>
-              <h2 className="mt-2 text-3xl font-semibold uppercase tracking-[0.14em] text-[#fff8e8]">{sectionTitle}</h2>
+              <p className="ui-title text-xs text-mist">Command Deck</p>
+              <h2 className="ui-title mt-3 text-3xl text-[#effff6]">{sectionTitle}</h2>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
-                className="rounded-[8px] border-2 border-black bg-[linear-gradient(180deg,rgba(89,185,255,0.98),rgba(79,150,227,0.98))] px-4 py-2.5 text-sm font-medium uppercase tracking-[0.08em] text-black transition hover:translate-y-[1px]"
+                className="ui-button px-4 py-2.5 text-sm"
               >
                 Edit Layout
               </button>
-              <div className="flex items-center rounded-[8px] border-2 border-black bg-[linear-gradient(180deg,rgba(40,27,69,0.98),rgba(29,20,51,0.98))] p-1 shadow-[0_0_0_2px_rgba(0,0,0,0.45)]">
+              <div className="ui-panel flex items-center p-1">
                 {["30 Days", "60 Days", "90 Days"].map((label, index) => (
                   <button
                     key={label}
                     type="button"
-                    className={`rounded-[6px] px-4 py-2 text-sm font-medium uppercase tracking-[0.08em] transition ${
+                    className={`px-4 py-2 text-sm font-medium uppercase tracking-[0.08em] transition ${
                       index === 0
-                        ? "bg-[linear-gradient(180deg,rgba(255,181,63,0.98),rgba(214,136,44,0.98))] text-black"
-                        : "text-[#c6bde3] hover:bg-[linear-gradient(180deg,rgba(75,52,128,0.94),rgba(55,38,96,0.94))] hover:text-[#fff8e8]"
+                        ? "bg-mint text-black"
+                        : "text-mist hover:bg-mint/10 hover:text-[#effff6]"
                     }`}
                   >
                     {label}

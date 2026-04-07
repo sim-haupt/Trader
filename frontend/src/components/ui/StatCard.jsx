@@ -3,14 +3,14 @@ import Card from "./Card";
 function StatCard({ label, value, accent = "mint" }) {
   const accentMap = {
     mint: "text-mint",
-    coral: "text-coral",
-    gold: "text-gold"
+    coral: "text-[#8ebfa9]",
+    gold: "text-phosphor"
   };
 
   return (
     <Card className="h-full">
-      <p className="text-xs uppercase tracking-[0.32em] text-[#b9aed8]">{label}</p>
-      <p className={`mt-3 text-4xl font-semibold tracking-[0.08em] ${accentMap[accent] || "text-phosphor"}`}>
+      <p className="ui-title text-xs text-mist">{label}</p>
+      <p className={`mt-4 text-4xl font-semibold tracking-[0.05em] ${accentMap[accent] || "text-phosphor"}`}>
         {value}
       </p>
     </Card>
