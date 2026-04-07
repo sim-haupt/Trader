@@ -32,6 +32,60 @@ function parseTags(value) {
     .filter(Boolean);
 }
 
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function renderSimpleMarkdown(value) {
+  const escaped = escapeHtml(value);
+  const lines = escaped.split("\n");
+  const html = [];
+  let inList = false;
+
+  for (const rawLine of lines) {
+    const line = rawLine.trimEnd();
+
+    if (/^\s*[-*]\s+/.test(line)) {
+      if (!inList) {
+        html.push("<ul>");
+        inList = true;
+      }
+
+      const item = line.replace(/^\s*[-*]\s+/, "");
+      html.push(`<li>${formatInlineMarkdown(item)}</li>`);
+      continue;
+    }
+
+    if (inList) {
+      html.push("</ul>");
+      inList = false;
+    }
+
+    if (!line.trim()) {
+      html.push("<br />");
+      continue;
+    }
+
+    html.push(`<p>${formatInlineMarkdown(line)}</p>`);
+  }
+
+  if (inList) {
+    html.push("</ul>");
+  }
+
+  return html.join("");
+}
+
+function formatInlineMarkdown(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>")
+    .replace(/`(.+?)`/g, "<code>$1</code>");
+}
+
 function SummaryMetric({ label, value, accent = "text-white" }) {
   return (
     <div className="rounded-[18px] border border-black/30 bg-white/[0.03] p-4">
@@ -122,7 +176,6 @@ function TradeDetailModal({ trade, onClose }) {
   const [editableTrade, setEditableTrade] = useState(trade);
   const [availableTags, setAvailableTags] = useState(() => tagService.peekTags() || []);
   const [isTagEditorOpen, setIsTagEditorOpen] = useState(false);
-  const [tagDraft, setTagDraft] = useState("");
   const [isNotesEditorOpen, setIsNotesEditorOpen] = useState(false);
   const [noteDraft, setNoteDraft] = useState(trade.notes || "");
   const [isSavingMeta, setIsSavingMeta] = useState(false);
@@ -181,7 +234,6 @@ function TradeDetailModal({ trade, onClose }) {
   const activeTags = useMemo(() => parseTags(activeTrade.tags), [activeTrade.tags]);
   const tagSuggestions = useMemo(() => {
     const current = new Set(activeTags.map((tag) => tag.toLowerCase()));
-    const query = tagDraft.trim().toLowerCase();
 
     return availableTags.filter((tag) => {
       const tagName = typeof tag === "string" ? tag : tag.name;
@@ -190,9 +242,9 @@ function TradeDetailModal({ trade, onClose }) {
         return false;
       }
 
-      return query ? tagName.toLowerCase().includes(query) : true;
+      return true;
     });
-  }, [activeTags, availableTags, tagDraft]);
+  }, [activeTags, availableTags]);
 
   async function refreshAvailableTags() {
     const tags = await tagService.getTags({ forceRefresh: true });
@@ -215,8 +267,24 @@ function TradeDetailModal({ trade, onClose }) {
       });
 
       setEditableTrade(updatedTrade);
-      setTagDraft("");
       await refreshAvailableTags();
+    } finally {
+      setIsSavingMeta(false);
+    }
+  }
+
+  async function handleRemoveTag(tagValue) {
+    const remainingTags = activeTags.filter((tag) => tag !== tagValue).join(", ");
+
+    setIsSavingMeta(true);
+
+    try {
+      const updatedTrade = await tradeService.updateTradeMeta(activeTrade.id, {
+        tags: remainingTags,
+        tagsMode: "replace"
+      });
+
+      setEditableTrade(updatedTrade);
     } finally {
       setIsSavingMeta(false);
     }
@@ -295,18 +363,21 @@ function TradeDetailModal({ trade, onClose }) {
                     onClick={() => setIsTagEditorOpen((current) => !current)}
                     className="ui-button px-3 py-2 text-xs"
                   >
-                    Add tags +
+                    Select tags
                   </button>
                 </div>
                 {activeTags.length > 0 ? (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {activeTags.map((tag) => (
-                      <span
+                      <button
                         key={tag}
-                        className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs text-white/78"
+                        type="button"
+                        onClick={() => handleRemoveTag(tag)}
+                        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs text-white/78"
                       >
-                        {tag}
-                      </span>
+                        <span>{tag}</span>
+                        <span className="text-white/45">x</span>
+                      </button>
                     ))}
                   </div>
                 ) : (
@@ -333,22 +404,11 @@ function TradeDetailModal({ trade, onClose }) {
                         })}
                       </div>
                     )}
-                    <div className="flex gap-2">
-                      <input
-                        value={tagDraft}
-                        onChange={(event) => setTagDraft(event.target.value)}
-                        placeholder="Create a new tag"
-                        className="ui-input"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleAddTag(tagDraft)}
-                        disabled={isSavingMeta || !tagDraft.trim()}
-                        className="ui-button-solid whitespace-nowrap px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        Add
-                      </button>
-                    </div>
+                    {tagSuggestions.length === 0 ? (
+                      <div className="text-xs text-white/48">
+                        No more saved tags available. Add new ones from Settings.
+                      </div>
+                    ) : null}
                   </div>
                 )}
               </div>
@@ -395,9 +455,18 @@ function TradeDetailModal({ trade, onClose }) {
                     </div>
                   </div>
                 ) : (
-                  <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-white/60">
-                    {activeTrade.notes || "No notes captured for this trade yet."}
-                  </p>
+                  <div className="mt-2 rounded-[16px] border border-black/20 bg-black/10 px-4 py-4">
+                    {activeTrade.notes ? (
+                      <div
+                        className="prose prose-invert max-w-none text-sm leading-7 text-white/70"
+                        dangerouslySetInnerHTML={{ __html: renderSimpleMarkdown(activeTrade.notes) }}
+                      />
+                    ) : (
+                      <p className="text-sm leading-7 text-white/60">
+                        No notes captured for this trade yet.
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             </div>

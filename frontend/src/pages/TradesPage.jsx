@@ -8,6 +8,7 @@ import TradeDetailModal from "../components/TradeDetailModal";
 import TradeTable from "../components/TradeTable";
 import UploadCSV from "../components/UploadCSV";
 import TradeTextImport from "../components/TradeTextImport";
+import tagService from "../services/tagService";
 import tradeService from "../services/tradeService";
 
 const initialFilters = {
@@ -33,6 +34,7 @@ function TradesPage() {
   const [selectedIds, setSelectedIds] = useState([]);
   const [bulkTags, setBulkTags] = useState("");
   const [bulkTagsMode, setBulkTagsMode] = useState("append");
+  const [availableTags, setAvailableTags] = useState(() => tagService.peekTags() || []);
   const [filters, setFilters] = useState(initialFilters);
   const [pageSize, setPageSize] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
@@ -67,6 +69,30 @@ function TradesPage() {
 
   useEffect(() => {
     loadTrades();
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadTags() {
+      try {
+        const tags = await tagService.getTags();
+
+        if (!cancelled) {
+          setAvailableTags(tags);
+        }
+      } catch {
+        if (!cancelled) {
+          setAvailableTags([]);
+        }
+      }
+    }
+
+    loadTags();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const title = useMemo(
@@ -134,6 +160,42 @@ function TradesPage() {
   function resetBulkForm() {
     setBulkTags("");
     setBulkTagsMode("append");
+  }
+
+  const selectedBulkTags = useMemo(
+    () =>
+      String(bulkTags || "")
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean),
+    [bulkTags]
+  );
+
+  const selectableBulkTags = useMemo(() => {
+    const current = new Set(selectedBulkTags.map((tag) => tag.toLowerCase()));
+
+    return availableTags.filter((tag) => !current.has(tag.name.toLowerCase()));
+  }, [availableTags, selectedBulkTags]);
+
+  function addBulkTag(tagName) {
+    setBulkTags((current) => {
+      const tags = String(current || "")
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean);
+
+      return [...new Set([...tags, tagName])].join(", ");
+    });
+  }
+
+  function removeBulkTag(tagName) {
+    setBulkTags((current) =>
+      String(current || "")
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter((tag) => tag && tag !== tagName)
+        .join(", ")
+    );
   }
 
   function clearSelection() {
@@ -522,13 +584,46 @@ function TradesPage() {
                 </div>
 
                 <div className="mt-4 grid gap-3 lg:grid-cols-[1.6fr_180px_auto_auto]">
-                  <input
-                    type="text"
-                    value={bulkTags}
-                    onChange={(event) => setBulkTags(event.target.value)}
-                    placeholder="Add tags, comma separated"
-                    className="ui-input"
-                  />
+                  <div className="space-y-3">
+                    {selectedBulkTags.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {selectedBulkTags.map((tag) => (
+                          <button
+                            key={tag}
+                            type="button"
+                            onClick={() => removeBulkTag(tag)}
+                            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-xs text-white/82"
+                          >
+                            <span>{tag}</span>
+                            <span className="text-white/45">x</span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-[12px] border border-black/20 bg-white/[0.02] px-4 py-3 text-sm text-white/54">
+                        No tags selected
+                      </div>
+                    )}
+
+                    {selectableBulkTags.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {selectableBulkTags.map((tag) => (
+                          <button
+                            key={tag.id}
+                            type="button"
+                            onClick={() => addBulkTag(tag.name)}
+                            className="ui-button px-3 py-1.5 text-xs"
+                          >
+                            {tag.name}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-white/48">
+                        No saved tags available. Add them from Settings.
+                      </div>
+                    )}
+                  </div>
                   <select
                     value={bulkTagsMode}
                     onChange={(event) => setBulkTagsMode(event.target.value)}

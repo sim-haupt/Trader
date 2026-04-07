@@ -84,14 +84,27 @@ function SettingsPage() {
       {error && <div className="ui-notice border-coral/30 bg-[#2a1111] text-coral">{error}</div>}
 
       <Card title="SETTINGS">
-        <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+        <div className="grid gap-6 xl:grid-cols-[240px_1fr]">
+          <aside className="rounded-[18px] border border-black/20 bg-white/[0.03] p-4">
+            <div className="space-y-2">
+              <div className="ui-title text-[11px] text-white/48">Navigation</div>
+              <button
+                type="button"
+                className="flex w-full items-center justify-between rounded-[14px] bg-white/[0.06] px-4 py-3 text-left text-sm text-white"
+              >
+                <span>Tags</span>
+                <span className="text-white/40">{tags.length}</span>
+              </button>
+            </div>
+          </aside>
+
           <Card title="TAGS">
-            <div className="space-y-4">
-              <div className="flex gap-3">
+            <div className="space-y-5">
+              <div className="flex flex-col gap-3 lg:flex-row">
                 <input
                   value={newTag}
                   onChange={(event) => setNewTag(event.target.value)}
-                  placeholder="Add a saved tag"
+                  placeholder="Add a new tag"
                   className="ui-input"
                 />
                 <button
@@ -105,39 +118,37 @@ function SettingsPage() {
               </div>
 
               <p className="text-sm text-white/58">
-                Saved tags appear in the trade detail view so you can apply them without typing each time.
+                Manage the shared tag list here. Trades can only select from this saved set.
               </p>
-            </div>
-          </Card>
 
-          <Card title="SAVED TAGS">
-            {loading ? (
-              <div className="text-sm text-mist">Loading tags...</div>
-            ) : tags.length === 0 ? (
-              <EmptyState
-                title="No saved tags yet"
-                description="Create a few reusable tags here and they will be available from each trade."
-              />
-            ) : (
-              <div className="flex flex-wrap gap-3">
-                {tags.map((tag) => (
-                  <div
-                    key={tag.id}
-                    className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2"
-                  >
-                    <span className="text-sm text-white/82">{tag.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteTag(tag)}
-                      disabled={deletingId === tag.id}
-                      className="text-xs text-coral transition hover:text-coral/80 disabled:opacity-50"
+              {loading ? (
+                <div className="text-sm text-mist">Loading tags...</div>
+              ) : tags.length === 0 ? (
+                <EmptyState
+                  title="No saved tags yet"
+                  description="Create a few reusable tags here and they will be available from each trade."
+                />
+              ) : (
+                <div className="flex flex-wrap gap-3">
+                  {tags.map((tag) => (
+                    <div
+                      key={tag.id}
+                      className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2"
                     >
-                      {deletingId === tag.id ? "..." : "Delete"}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+                      <span className="text-sm text-white/82">{tag.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteTag(tag)}
+                        disabled={deletingId === tag.id}
+                        className="text-xs text-coral transition hover:text-coral/80 disabled:opacity-50"
+                      >
+                        {deletingId === tag.id ? "..." : "Delete"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </Card>
         </div>
       </Card>
