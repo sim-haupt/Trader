@@ -1,4 +1,5 @@
 const { parse } = require("csv-parse/sync");
+const { randomUUID } = require("crypto");
 const prisma = require("../config/prisma");
 const buildTradePayload = require("../utils/buildTradePayload");
 const ApiError = require("../utils/ApiError");
@@ -77,10 +78,29 @@ async function importTradesFromCsv(userId, file) {
 }
 
 async function persistImportedTrades(userId, sourceName, validTrades, invalidRows, totalRows) {
-  const result = await prisma.$transaction(async (tx) => {
-    // Keep import metadata and inserted trades consistent if any write fails midway.
-    const importRecord = await tx.tradeImport.create({
+  const importId = randomUUID();
+  const tradeRows = validTrades.map((trade) => {
+    const tradeId = randomUUID();
+
+    return {
+      id: tradeId,
+      payload: {
+        id: tradeId,
+        ...buildTradePayload(trade, userId)
+      },
+      executions: (Array.isArray(trade.executions) ? trade.executions : []).map((execution) => ({
+        id: randomUUID(),
+        tradeId,
+        ...buildExecutionCreateInput(execution)
+      }))
+    };
+  });
+
+  const executionRows = tradeRows.flatMap((trade) => trade.executions);
+  const operations = [
+    prisma.tradeImport.create({
       data: {
+        id: importId,
         userId,
         fileName: sourceName,
         status: invalidRows.length > 0 ? (validTrades.length > 0 ? "PARTIAL" : "FAILED") : "SUCCESS",
@@ -88,49 +108,46 @@ async function persistImportedTrades(userId, sourceName, validTrades, invalidRow
         successfulRows: validTrades.length,
         failedRows: invalidRows.length
       }
-    });
+    })
+  ];
 
-    if (invalidRows.length > 0) {
-      await tx.importError.createMany({
+  if (invalidRows.length > 0) {
+    operations.push(
+      prisma.importError.createMany({
         data: invalidRows.map((row) => ({
-          importId: importRecord.id,
+          id: randomUUID(),
+          importId,
           rowNumber: row.rowNumber ?? 0,
           rawData: row.rawData,
           errorMessage: row.errors.join(", ")
         }))
-      });
-    }
+      })
+    );
+  }
 
-    let insertedCount = 0;
+  if (tradeRows.length > 0) {
+    operations.push(
+      prisma.trade.createMany({
+        data: tradeRows.map((trade) => trade.payload)
+      })
+    );
+  }
 
-    if (validTrades.length > 0) {
-      for (const trade of validTrades) {
-        const executions = Array.isArray(trade.executions) ? trade.executions : [];
-        await tx.trade.create({
-          data: {
-            ...buildTradePayload(trade, userId),
-            executions: executions.length
-              ? {
-                  create: executions.map(buildExecutionCreateInput)
-                }
-              : undefined
-          }
-        });
-        insertedCount += 1;
-      }
-    }
+  if (executionRows.length > 0) {
+    operations.push(
+      prisma.tradeExecution.createMany({
+        data: executionRows
+      })
+    );
+  }
 
-    return {
-      importId: importRecord.id,
-      insertedCount
-    };
-  });
+  await prisma.$transaction(operations);
 
   return {
-    importId: result.importId,
+    importId,
     fileName: sourceName,
     totalRows,
-    insertedCount: result.insertedCount,
+    insertedCount: tradeRows.length,
     errorCount: invalidRows.length,
     errors: invalidRows
   };
