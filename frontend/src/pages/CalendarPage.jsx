@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
 import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
@@ -137,104 +137,113 @@ function MonthCard({ month, onOpen }) {
   );
 }
 
-function MonthDetailModal({ month, onClose }) {
-  const monthTradeDays = month.weeks
-    .flat()
-    .filter((day) => day.isCurrentMonth && day.stats)
-    .sort((left, right) => left.dayKey.localeCompare(right.dayKey));
-
+function MonthDetailSection({ month, onClose }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 p-4 backdrop-blur">
-      <div className="w-full max-w-[1600px] border-2 border-white/10 bg-[linear-gradient(180deg,rgba(18,18,18,0.98),rgba(10,10,10,0.98))] shadow-crt">
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b-2 border-white/10 bg-[linear-gradient(90deg,rgba(24,24,24,0.96),rgba(16,16,16,0.92),rgba(10,10,10,0.9))] px-6 py-5">
-          <div>
-            <p className="ui-title text-xs text-mist">Calendar</p>
-            <h2 className="ui-title mt-3 text-2xl text-white">{month.label}</h2>
+    <Card
+      title={month.label.toUpperCase()}
+      action={
+        <div className="flex items-center gap-3">
+          <div className="ui-chip normal-case tracking-[0.08em] text-sm text-white">
+            {month.monthTrades} trade{month.monthTrades === 1 ? "" : "s"}
           </div>
-
-          <div className="flex items-center gap-3">
-            <div className="ui-chip normal-case tracking-[0.08em] text-sm text-white">
-              {month.monthTrades} trade{month.monthTrades === 1 ? "" : "s"}
-            </div>
-            <div
-              className={`border px-4 py-2 text-sm font-semibold ${
-                month.monthPnl >= 0 ? "border-mint/25 bg-mint/10 text-mint" : "border-coral/25 bg-[#2a1111] text-coral"
-              }`}
-            >
-              {formatCurrency(month.monthPnl)}
-            </div>
-            <button type="button" onClick={onClose} className="ui-button text-sm">
-              Close
-            </button>
+          <div
+            className={`border px-4 py-2 text-sm font-semibold ${
+              month.monthPnl > 0
+                ? "border-mint/25 bg-mint/10 text-mint"
+                : month.monthPnl < 0
+                  ? "border-coral/25 bg-[#2a1111] text-coral"
+                  : "border-white/10 bg-white/5 text-mist"
+            }`}
+          >
+            {formatCurrency(month.monthPnl)}
           </div>
+          <button type="button" onClick={onClose} className="ui-button text-sm">
+            Close
+          </button>
+        </div>
+      }
+      className="bg-[linear-gradient(180deg,rgba(18,18,18,0.98),rgba(10,10,10,0.98))] p-6 shadow-none"
+    >
+      <div className="grid grid-cols-8 gap-0 overflow-hidden border-2 border-white/10">
+        {weekdayLabels.map((label) => (
+          <div
+            key={label}
+            className="ui-title border-b-2 border-r-2 border-white/10 px-3 py-3 text-center text-xs text-white"
+          >
+            {label}
+          </div>
+        ))}
+        <div className="ui-title border-b-2 border-white/10 px-3 py-3 text-center text-xs text-white">
+          Total
         </div>
 
-        <div className="grid gap-6 p-6 xl:grid-cols-[1.2fr_0.8fr]">
-          <div className="ui-panel bg-[linear-gradient(180deg,rgba(18,18,18,0.96),rgba(10,10,10,0.98))] p-5">
-            <div className="mb-5 grid grid-cols-7 gap-3 text-center">
-              {weekdayLabels.map((label) => (
-                <div key={label} className="ui-title pb-2 text-xs text-mist">
-                  {label}
-                </div>
-              ))}
+        {month.weeks.map((week, index) => {
+          const weekStats = week.reduce(
+            (sum, day) => {
+              if (!day.isCurrentMonth || !day.stats) {
+                return sum;
+              }
 
-              {month.weeks.flat().map((day) => (
+              return {
+                pnl: Number((sum.pnl + day.stats.pnl).toFixed(2)),
+                trades: sum.trades + day.stats.trades
+              };
+            },
+            { pnl: 0, trades: 0 }
+          );
+
+          return (
+            <Fragment key={`${month.label}-week-${index}`}>
+              {week.map((day) => (
                 <div
                   key={day.dayKey}
-                  className={`min-h-[74px] px-2 py-3 text-left transition ${getDayTone(
+                  className={`min-h-[118px] border-b-2 border-r-2 border-white/10 px-3 py-3 text-left transition ${getDayTone(
                     day.stats,
                     day.isCurrentMonth
                   )}`}
                 >
-                  <div className="text-base font-semibold">{day.dayNumber}</div>
-                  {day.isCurrentMonth && day.stats && (
+                  <div className="text-lg font-semibold">{day.dayNumber}</div>
+                  {day.isCurrentMonth && (
                     <>
-                      <div className="mt-3 text-sm font-semibold">{formatCurrency(day.stats.pnl)}</div>
+                      <div
+                        className={`mt-4 text-base font-semibold ${
+                          !day.stats
+                            ? "text-slate-400"
+                            : day.stats.pnl > 0
+                              ? "text-mint"
+                              : day.stats.pnl < 0
+                                ? "text-coral"
+                                : "text-mist"
+                        }`}
+                      >
+                        {formatCurrency(day.stats?.pnl ?? 0)}
+                      </div>
                       <div className="mt-1 text-xs opacity-80">
-                        {day.stats.trades} trade{day.stats.trades === 1 ? "" : "s"}
+                        {day.stats?.trades ?? 0} trade{day.stats?.trades === 1 ? "" : "s"}
                       </div>
                     </>
                   )}
                 </div>
               ))}
-            </div>
-          </div>
 
-          <div className="ui-panel bg-[linear-gradient(180deg,rgba(18,18,18,0.96),rgba(10,10,10,0.98))] p-5">
-            <h3 className="ui-title text-lg text-white">Daily Breakdown</h3>
-            <div className="mt-5 space-y-3">
-              {monthTradeDays.length === 0 ? (
-                <p className="text-sm text-mist">No trades in this month.</p>
-              ) : (
-                monthTradeDays.map((day) => (
-                  <div key={day.dayKey} className="ui-panel px-4 py-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-base font-semibold text-white">
-                          {new Date(day.dayKey).toLocaleDateString("en-US", {
-                            month: "long",
-                            day: "numeric",
-                            year: "numeric"
-                          })}
-                        </p>
-                        <p className="mt-1 text-sm text-mist">
-                          {day.stats.trades} trade{day.stats.trades === 1 ? "" : "s"} · {day.stats.wins} win
-                          {day.stats.wins === 1 ? "" : "s"} · {day.stats.losses} loss
-                          {day.stats.losses === 1 ? "" : "es"}
-                        </p>
-                      </div>
-                      <div className={`text-lg font-semibold ${day.stats.pnl >= 0 ? "text-mint" : "text-coral"}`}>
-                        {formatCurrency(day.stats.pnl)}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
+              <div className="min-h-[118px] border-b-2 border-white/10 px-3 py-3">
+                <div className="ui-title text-sm text-white">Week {index + 1}</div>
+                <div
+                  className={`mt-4 text-base font-semibold ${
+                    weekStats.pnl > 0 ? "text-mint" : weekStats.pnl < 0 ? "text-coral" : "text-slate-400"
+                  }`}
+                >
+                  {formatCurrency(weekStats.pnl)}
+                </div>
+                <div className="mt-1 text-xs text-mist">
+                  {weekStats.trades} trade{weekStats.trades === 1 ? "" : "s"}
+                </div>
+              </div>
+            </Fragment>
+          );
+        })}
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -307,6 +316,9 @@ function CalendarPage() {
   return (
     <div className="space-y-6">
       {refreshing && <div className="ui-chip text-xs">Refreshing Calendar</div>}
+      {selectedMonth && (
+        <MonthDetailSection month={selectedMonth} onClose={() => setSelectedMonthIndex(null)} />
+      )}
       <Card
         title="CALENDAR OVERVIEW"
         action={
@@ -321,8 +333,6 @@ function CalendarPage() {
           ))}
         </div>
       </Card>
-
-      {selectedMonth && <MonthDetailModal month={selectedMonth} onClose={() => setSelectedMonthIndex(null)} />}
     </div>
   );
 }
