@@ -57,14 +57,15 @@ const bulkUpdateTradesSchema = z
   .object({
     tradeIds: z.array(z.string().min(1)).min(1),
     tags: z.string().trim().max(500).optional(),
+    strategy: z.string().trim().max(100).nullable().optional(),
     notes: z.string().trim().max(2000).optional(),
     tagsMode: z.enum(["append", "replace"]).optional()
   })
   .superRefine((data, context) => {
-    if (!data.tags && !data.notes) {
+    if (!data.tags && !data.notes && data.strategy === undefined) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "At least one of tags or notes is required"
+        message: "At least one of tags, strategy or notes is required"
       });
     }
   });
@@ -72,14 +73,15 @@ const bulkUpdateTradesSchema = z
 const tradeMetaSchema = z
   .object({
     tags: z.string().trim().max(500).nullable().optional(),
+    strategy: z.string().trim().max(100).nullable().optional(),
     notes: z.string().trim().max(2000).nullable().optional(),
     tagsMode: z.enum(["append", "replace"]).optional()
   })
   .superRefine((data, context) => {
-    if (data.tags === undefined && data.notes === undefined) {
+    if (data.tags === undefined && data.notes === undefined && data.strategy === undefined) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "At least one of tags or notes is required"
+        message: "At least one of tags, strategy or notes is required"
       });
     }
   });

@@ -1,7 +1,7 @@
 import CustomSelect from "./ui/CustomSelect";
 import DateRangePicker from "./ui/DateRangePicker";
 
-function Filters({ filters, onChange, onReset }) {
+function Filters({ filters, onChange, onReset, onApply, strategies = [] }) {
   return (
     <div className="ui-panel relative z-20 overflow-visible grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_220px_minmax(0,1fr)_minmax(0,1.15fr)_auto]">
       <input
@@ -22,11 +22,17 @@ function Filters({ filters, onChange, onReset }) {
         placeholder="All Sides"
       />
 
-      <input
-        placeholder="Strategy"
+      <CustomSelect
         value={filters.strategy}
-        onChange={(event) => onChange("strategy", event.target.value)}
-        className="ui-input"
+        onChange={(nextValue) => onChange("strategy", nextValue)}
+        options={[
+          { label: "All Strategies", value: "" },
+          ...strategies.map((strategy) => ({
+            label: strategy.name,
+            value: strategy.name
+          }))
+        ]}
+        placeholder="All Strategies"
       />
 
       <DateRangePicker
@@ -39,13 +45,12 @@ function Filters({ filters, onChange, onReset }) {
         className="xl:min-w-[260px]"
       />
 
-      <div className="flex items-center justify-end">
-        <button
-          type="button"
-          onClick={onReset}
-          className="ui-button text-sm"
-        >
+      <div className="flex items-center justify-end gap-2">
+        <button type="button" onClick={onReset} className="ui-button text-sm">
           Reset
+        </button>
+        <button type="button" onClick={onApply} className="ui-button-solid text-sm">
+          Apply Filters
         </button>
       </div>
     </div>

@@ -79,6 +79,19 @@ async function importTradesFromCsv(userId, file) {
 
 async function persistImportedTrades(userId, sourceName, validTrades, invalidRows, totalRows) {
   const importId = randomUUID();
+  const savedTags = [...new Set(
+    validTrades.flatMap((trade) =>
+      String(trade.tags || "")
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+    )
+  )];
+  const savedStrategies = [...new Set(
+    validTrades
+      .map((trade) => String(trade.strategy || "").trim())
+      .filter(Boolean)
+  )];
   const tradeRows = validTrades.map((trade) => {
     const tradeId = randomUUID();
 
@@ -137,6 +150,24 @@ async function persistImportedTrades(userId, sourceName, validTrades, invalidRow
     operations.push(
       prisma.tradeExecution.createMany({
         data: executionRows
+      })
+    );
+  }
+
+  if (savedTags.length > 0) {
+    operations.push(
+      prisma.savedTag.createMany({
+        data: savedTags.map((name) => ({ id: randomUUID(), userId, name })),
+        skipDuplicates: true
+      })
+    );
+  }
+
+  if (savedStrategies.length > 0) {
+    operations.push(
+      prisma.savedStrategy.createMany({
+        data: savedStrategies.map((name) => ({ id: randomUUID(), userId, name })),
+        skipDuplicates: true
       })
     );
   }

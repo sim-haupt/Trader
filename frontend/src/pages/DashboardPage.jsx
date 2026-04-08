@@ -166,24 +166,18 @@ function DashboardPage() {
               </button>
             ))}
           </div>
-          {RANGE_OPTIONS.map((option) => {
-            const active = option.key === rangeKey;
-
-            return (
+          <div className="ui-segment">
+            {RANGE_OPTIONS.map((option) => (
               <button
                 key={option.key}
                 type="button"
+                data-active={option.key === rangeKey}
                 onClick={() => setRangeKey(option.key)}
-                className={`rounded-[12px] px-3 py-2 text-xs font-semibold tracking-[0.12em] transition ${
-                  active
-                    ? "bg-white text-black shadow-[0_10px_24px_rgba(255,255,255,0.14)]"
-                    : "ui-button text-white/70 hover:text-white"
-                }`}
               >
                 {option.label}
               </button>
-            );
-          })}
+            ))}
+          </div>
         </div>
       </div>
 

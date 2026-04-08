@@ -11,6 +11,7 @@ import TradeTextImport from "../components/TradeTextImport";
 import CustomSelect from "../components/ui/CustomSelect";
 import LoadingState from "../components/ui/LoadingState";
 import tagService from "../services/tagService";
+import strategyService from "../services/strategyService";
 import tradeService from "../services/tradeService";
 
 const initialFilters = {
@@ -37,6 +38,10 @@ function TradesPage() {
   const [bulkTags, setBulkTags] = useState("");
   const [bulkTagsMode, setBulkTagsMode] = useState("append");
   const [availableTags, setAvailableTags] = useState(() => tagService.peekTags() || []);
+  const [availableStrategies, setAvailableStrategies] = useState(
+    () => strategyService.peekStrategies() || []
+  );
+  const [bulkStrategy, setBulkStrategy] = useState("");
   const [filters, setFilters] = useState(initialFilters);
   const [pageSize, setPageSize] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
@@ -71,6 +76,30 @@ function TradesPage() {
 
   useEffect(() => {
     loadTrades();
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadStrategies() {
+      try {
+        const strategies = await strategyService.getStrategies();
+
+        if (!cancelled) {
+          setAvailableStrategies(strategies);
+        }
+      } catch {
+        if (!cancelled) {
+          setAvailableStrategies([]);
+        }
+      }
+    }
+
+    loadStrategies();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -162,6 +191,7 @@ function TradesPage() {
   function resetBulkForm() {
     setBulkTags("");
     setBulkTagsMode("append");
+    setBulkStrategy("");
   }
 
   const selectedBulkTags = useMemo(
@@ -294,8 +324,8 @@ function TradesPage() {
       return;
     }
 
-    if (!trimmedTags) {
-      setError("Add tags before applying bulk changes.");
+    if (!trimmedTags && !bulkStrategy) {
+      setError("Select tags or a strategy before applying bulk changes.");
       return;
     }
 
@@ -307,7 +337,8 @@ function TradesPage() {
       const result = await tradeService.bulkUpdateTrades({
         tradeIds: selectedIds,
         tags: trimmedTags,
-        tagsMode: bulkTagsMode
+        tagsMode: bulkTagsMode,
+        strategy: bulkStrategy || undefined
       });
 
       setMessage(`Updated ${result.updatedCount} trades.`);
@@ -483,6 +514,21 @@ function TradesPage() {
       {isImportMode && (
         <>
           <div className="grid gap-6 xl:grid-cols-[1.05fr_1.35fr]">
+            <div className="space-y-6">
+              <Card title="CSV IMPORT">
+                <UploadCSV onUpload={handleUpload} isUploading={isUploading} />
+                <div className="ui-notice mt-4 border-dashed border-[#e5e7eb42] text-white/72">
+                  Supported CSVs: <span className="text-phosphor">app format and broker exports with Open Datetime / Entry Price / Exit Price columns</span>
+                  <br />
+                  Normalized format: <span className="text-phosphor">symbol, side, quantity, entryPrice, entryDate, exitPrice, exitDate, fees, strategy, notes</span>
+                </div>
+              </Card>
+
+              <Card title="TEXT IMPORT">
+                <TradeTextImport onImport={handleTextImport} isImporting={isUploading} />
+              </Card>
+            </div>
+
             <Card title={title}>
               <TradeForm
                 trade={selectedTrade}
@@ -494,262 +540,291 @@ function TradesPage() {
                 isSubmitting={isSubmitting}
               />
             </Card>
-
-            <Card title="CSV IMPORT">
-              <UploadCSV onUpload={handleUpload} isUploading={isUploading} />
-              <div className="ui-notice mt-4 border-dashed border-[#e5e7eb42] text-white/72">
-                Supported CSVs: <span className="text-phosphor">app format and broker exports with Open Datetime / Entry Price / Exit Price columns</span>
-                <br />
-                Normalized format: <span className="text-phosphor">symbol, side, quantity, entryPrice, entryDate, exitPrice, exitDate, fees, strategy, notes</span>
-              </div>
-            </Card>
           </div>
-
-          <Card title="TEXT IMPORT">
-            <TradeTextImport onImport={handleTextImport} isImporting={isUploading} />
-          </Card>
         </>
       )}
 
       {message && <div className="ui-notice">{message}</div>}
       {error && <div className="ui-notice border-coral/30 bg-[#2a1111] text-coral">{error}</div>}
 
-      <Card
-        title="TRADE HISTORY"
-        subtitle="Browse, filter, and review your trades. Click any row to open the full execution review."
-        className="relative overflow-visible"
-        bodyClassName="overflow-visible"
-        action={
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() =>
-                setSearchParams(isImportMode ? {} : { mode: "import" }, { replace: true })
-              }
-              className="ui-button-solid text-sm"
-            >
-              {isImportMode ? "Close Import" : "Import Trades"}
-            </button>
-            <button
-              type="button"
-              onClick={handleDeleteAll}
-              disabled={loading || trades.length === 0}
-              className="ui-button border-coral/25 bg-coral/10 text-coral"
-            >
-              Delete All Trades
-            </button>
-            <button
-              type="button"
-              onClick={handleExportTrades}
-              disabled={trades.length === 0}
-              className="ui-button text-sm"
-            >
-              Export CSV
-            </button>
-          </div>
-        }
-      >
-        <div className="relative z-20 space-y-4 pb-5">
-          <Filters filters={filters} onChange={handleFilterChange} onReset={handleResetFilters} />
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={handleApplyFilters}
-              className="ui-button-solid text-sm"
-            >
-              Apply Filters
-            </button>
-          </div>
-        </div>
-
-        {loading ? (
-          <LoadingState label="Loading trades..." className="min-h-[240px]" />
-        ) : trades.length === 0 ? (
-          <EmptyState
-            title="No matching trades"
-            description="Try relaxing your filters or open Import Trades to bring history into the journal."
-          />
-        ) : (
-          <div className="relative z-0 space-y-4">
-            {selectedIds.length > 0 && (
-              <div className="ui-panel p-5 shadow-none">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="ui-chip rounded-full px-3 py-1.5 text-xs uppercase tracking-[0.14em] text-white/80">
-                      {selectedIds.length} selected
-                    </div>
-                    <div className="text-sm text-white/56">
-                      {selectedIds.length === 1 ? "1 trade ready for bulk actions" : `${selectedIds.length} trades ready for bulk actions`}
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={clearSelection}
-                    className="ui-button px-3 py-2 text-xs"
-                  >
-                    Clear Selection
-                  </button>
-                </div>
-
-                <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1.8fr)_minmax(240px,0.9fr)]">
-                  <div className="space-y-4">
-                    {selectedBulkTags.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {selectedBulkTags.map((tag) => (
-                          <button
-                            key={tag}
-                            type="button"
-                            onClick={() => removeBulkTag(tag)}
-                            className="inline-flex items-center gap-2 rounded-full border border-mint/20 bg-mint/[0.08] px-3 py-1.5 text-xs font-medium text-white/88 transition hover:bg-mint/[0.14]"
-                          >
-                            <span>{tag}</span>
-                            <span className="text-white/45">×</span>
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="ui-surface-subtle px-4 py-3 text-sm text-white/48">
-                        Choose one or more saved tags to apply to the selected trades.
-                      </div>
-                    )}
-
-                    {selectableBulkTags.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {selectableBulkTags.map((tag) => (
-                          <button
-                            key={tag.id}
-                            type="button"
-                            onClick={() => addBulkTag(tag.name)}
-                            className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5 text-xs font-medium text-white/78 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
-                          >
-                            {tag.name}
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-xs text-white/48">
-                        No saved tags available. Add them from Settings.
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="ui-surface-subtle flex h-full flex-col justify-between gap-4 p-4">
-                    <div className="space-y-4">
-                      <div>
-                        <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/42">
-                          Tag Action
-                        </div>
-                        <div className="ui-segment grid grid-cols-2 gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setBulkTagsMode("append")}
-                            data-active={bulkTagsMode === "append"}
-                          >
-                            Append Tags
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setBulkTagsMode("replace")}
-                            data-active={bulkTagsMode === "replace"}
-                          >
-                            Replace Tags
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="rounded-[12px] border border-coral/15 bg-coral/[0.06] px-4 py-3 text-sm leading-6 text-white/68">
-                        Delete will permanently remove the selected trades.
-                      </div>
-                    </div>
-
-                    <div className="grid gap-3">
-                      <button
-                        type="button"
-                        onClick={handleBulkUpdate}
-                        disabled={isBulkSaving}
-                        className="ui-button-solid w-full justify-center text-sm disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {isBulkSaving ? "Saving..." : "Apply Tags"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleBulkDelete}
-                        disabled={isBulkDeleting}
-                        className="w-full rounded-[12px] border border-coral/25 bg-coral/[0.08] px-4 py-3 text-sm font-semibold text-coral transition hover:bg-coral/[0.14] disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {isBulkDeleting ? "Deleting..." : "Delete Selected"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="ui-surface-subtle flex flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between">
-              <div className="text-sm text-white/62">
-                Showing{" "}
-                <span className="font-semibold text-white">
-                  {paginatedTrades.length === 0 ? 0 : (pageSize === "all" ? 1 : (currentPage - 1) * pageSize + 1)}
-                </span>
-                {" "}to{" "}
-                <span className="font-semibold text-white">
-                  {pageSize === "all" ? trades.length : Math.min(currentPage * pageSize, trades.length)}
-                </span>
-                {" "}of <span className="font-semibold text-white">{trades.length}</span> trades
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3">
-                <label className="flex items-center gap-2 text-sm text-white/62">
-                  <span>Rows</span>
-                  <CustomSelect
-                    value={pageSize}
-                    onChange={(nextValue) =>
-                      setPageSize(nextValue === "all" ? "all" : Number(nextValue))
-                    }
-                    options={pageSizeOptions}
-                    className="min-w-[92px]"
-                    buttonClassName="!w-[92px] !px-3 !py-2 text-sm"
-                    menuClassName="min-w-[92px]"
-                    align="right"
-                  />
-                </label>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                    disabled={pageSize === "all" || currentPage === 1}
-                    className="ui-button text-sm disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Prev
-                  </button>
-                  <div className="ui-chip text-xs">
-                    Page {pageSize === "all" ? 1 : currentPage} / {totalPages}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-                    disabled={pageSize === "all" || currentPage === totalPages}
-                    className="ui-button text-sm disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
+      {!isImportMode ? (
+        <Card
+          title="TRADE HISTORY"
+          subtitle="Browse, filter, and review your trades. Click any row to open the full execution review."
+          className="relative overflow-visible"
+          bodyClassName="overflow-visible"
+          action={
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() =>
+                  setSearchParams(isImportMode ? {} : { mode: "import" }, { replace: true })
+                }
+                className="ui-button-solid text-sm"
+              >
+                {isImportMode ? "Close Import" : "Import Trades"}
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteAll}
+                disabled={loading || trades.length === 0}
+                className="ui-button border-coral/25 bg-coral/10 text-coral"
+              >
+                Delete All Trades
+              </button>
+              <button
+                type="button"
+                onClick={handleExportTrades}
+                disabled={trades.length === 0}
+                className="ui-button text-sm"
+              >
+                Export CSV
+              </button>
             </div>
-
-            <TradeTable
-              trades={paginatedTrades}
-              onEdit={setSelectedTrade}
-              onDelete={handleDelete}
-              onSelectTrade={(trade) => setActiveTradeId(trade.id)}
-              selectedIds={selectedIds}
-              onToggleSelection={handleToggleSelection}
-              onToggleAll={handleToggleAll}
+          }
+        >
+      <div className="relative z-20 space-y-4 pb-5">
+            <Filters
+              filters={filters}
+              onChange={handleFilterChange}
+              onReset={handleResetFilters}
+              onApply={handleApplyFilters}
+              strategies={availableStrategies}
             />
           </div>
-        )}
-      </Card>
+
+          {loading ? (
+            <LoadingState label="Loading trades..." className="min-h-[240px]" />
+          ) : trades.length === 0 ? (
+            <EmptyState
+              title="No matching trades"
+              description="Try relaxing your filters or open Import Trades to bring history into the journal."
+            />
+          ) : (
+            <div className="relative z-0 space-y-4">
+              {selectedIds.length > 0 && (
+                <div className="ui-panel p-5 shadow-none">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="ui-chip rounded-full px-3 py-1.5 text-xs uppercase tracking-[0.14em] text-white/80">
+                        {selectedIds.length} selected
+                      </div>
+                      <div className="text-sm text-white/56">
+                        {selectedIds.length === 1 ? "1 trade ready for bulk actions" : `${selectedIds.length} trades ready for bulk actions`}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={clearSelection}
+                      className="ui-button px-3 py-2 text-xs"
+                    >
+                      Clear Selection
+                    </button>
+                  </div>
+
+                  <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1.8fr)_minmax(240px,0.9fr)]">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/42">
+                          Strategy
+                        </div>
+                        {bulkStrategy ? (
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setBulkStrategy("")}
+                              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-xs text-white/82"
+                            >
+                              <span>{bulkStrategy}</span>
+                              <span className="text-white/48">x</span>
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="ui-surface-subtle px-4 py-3 text-sm text-white/48">
+                            No strategy selected
+                          </div>
+                        )}
+
+                        {availableStrategies.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {availableStrategies
+                              .filter((strategy) => strategy.name !== bulkStrategy)
+                              .map((strategy) => (
+                                <button
+                                  key={strategy.id}
+                                  type="button"
+                                  onClick={() => setBulkStrategy(strategy.name)}
+                                  className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5 text-xs font-medium text-white/78 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                                >
+                                  {strategy.name}
+                                </button>
+                              ))}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-white/48">
+                            No saved strategies available. Add them from Settings.
+                          </div>
+                        )}
+                      </div>
+
+                      {selectedBulkTags.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {selectedBulkTags.map((tag) => (
+                            <button
+                              key={tag}
+                              type="button"
+                              onClick={() => removeBulkTag(tag)}
+                              className="inline-flex items-center gap-2 rounded-full border border-mint/20 bg-mint/[0.08] px-3 py-1.5 text-xs font-medium text-white/88 transition hover:bg-mint/[0.14]"
+                            >
+                              <span>{tag}</span>
+                              <span className="text-white/45">×</span>
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="ui-surface-subtle px-4 py-3 text-sm text-white/48">
+                          Choose one or more saved tags to apply to the selected trades.
+                        </div>
+                      )}
+
+                      {selectableBulkTags.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {selectableBulkTags.map((tag) => (
+                            <button
+                              key={tag.id}
+                              type="button"
+                              onClick={() => addBulkTag(tag.name)}
+                              className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5 text-xs font-medium text-white/78 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                            >
+                              {tag.name}
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-white/48">
+                          No saved tags available. Add them from Settings.
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="ui-surface-subtle flex h-full flex-col justify-between gap-4 p-4">
+                      <div className="space-y-4">
+                        <div>
+                          <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/42">
+                            Tag Action
+                          </div>
+                          <div className="ui-segment grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setBulkTagsMode("append")}
+                              data-active={bulkTagsMode === "append"}
+                            >
+                              Append Tags
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setBulkTagsMode("replace")}
+                              data-active={bulkTagsMode === "replace"}
+                            >
+                              Replace Tags
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="rounded-[12px] border border-coral/15 bg-coral/[0.06] px-4 py-3 text-sm leading-6 text-white/68">
+                          Delete will permanently remove the selected trades.
+                        </div>
+                      </div>
+
+                      <div className="grid gap-3">
+                        <button
+                          type="button"
+                          onClick={handleBulkUpdate}
+                          disabled={isBulkSaving}
+                          className="ui-button-solid w-full justify-center text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {isBulkSaving ? "Saving..." : "Apply Tags"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleBulkDelete}
+                          disabled={isBulkDeleting}
+                          className="w-full rounded-[12px] border border-coral/25 bg-coral/[0.08] px-4 py-3 text-sm font-semibold text-coral transition hover:bg-coral/[0.14] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {isBulkDeleting ? "Deleting..." : "Delete Selected"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="ui-surface-subtle flex flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between">
+                <div className="text-sm text-white/62">
+                  Showing{" "}
+                  <span className="font-semibold text-white">
+                    {paginatedTrades.length === 0 ? 0 : (pageSize === "all" ? 1 : (currentPage - 1) * pageSize + 1)}
+                  </span>
+                  {" "}to{" "}
+                  <span className="font-semibold text-white">
+                    {pageSize === "all" ? trades.length : Math.min(currentPage * pageSize, trades.length)}
+                  </span>
+                  {" "}of <span className="font-semibold text-white">{trades.length}</span> trades
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className="flex items-center gap-2 text-sm text-white/62">
+                    <span>Rows</span>
+                    <CustomSelect
+                      value={pageSize}
+                      onChange={(nextValue) =>
+                        setPageSize(nextValue === "all" ? "all" : Number(nextValue))
+                      }
+                      options={pageSizeOptions}
+                      className="min-w-[92px]"
+                      buttonClassName="!w-[92px] !px-3 !py-2 text-sm"
+                      menuClassName="min-w-[92px]"
+                      align="right"
+                    />
+                  </label>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                      disabled={pageSize === "all" || currentPage === 1}
+                      className="ui-button text-sm disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Prev
+                    </button>
+                    <div className="ui-chip text-xs">
+                      Page {pageSize === "all" ? 1 : currentPage} / {totalPages}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                      disabled={pageSize === "all" || currentPage === totalPages}
+                      className="ui-button text-sm disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <TradeTable
+                trades={paginatedTrades}
+                onEdit={setSelectedTrade}
+                onDelete={handleDelete}
+                onSelectTrade={(trade) => setActiveTradeId(trade.id)}
+                selectedIds={selectedIds}
+                onToggleSelection={handleToggleSelection}
+                onToggleAll={handleToggleAll}
+              />
+            </div>
+          )}
+        </Card>
+      ) : null}
 
       {activeTrade && <TradeDetailModal trade={activeTrade} onClose={() => setActiveTradeId(null)} />}
     </div>

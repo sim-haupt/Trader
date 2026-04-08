@@ -171,12 +171,12 @@ button:disabled {
   .app-shell {
     width: 100%;
     min-height: 100vh;
-    padding: 20px;
+    padding: 0 20px 20px;
   }
 
   .desktop-frame {
     width: min(100%, 1640px);
-    min-height: calc(100vh - 40px);
+    min-height: calc(100vh - 20px);
     margin: 0 auto;
     display: grid;
     grid-template-rows: auto 1fr;
@@ -185,8 +185,8 @@ button:disabled {
 
   .top-status {
     position: sticky;
-    top: 16px;
-    z-index: 30;
+    top: 0;
+    z-index: 60;
     border: 1px solid var(--line);
     border-radius: var(--radius-xl);
     background:
@@ -403,31 +403,31 @@ button:disabled {
 
 @media (max-width: 1180px) {
   .app-shell {
-    padding: 16px;
+    padding: 0 16px 16px;
   }
 
   .desktop-frame {
-    min-height: calc(100vh - 32px);
+    min-height: calc(100vh - 16px);
     gap: 16px;
   }
 
   .top-status {
-    top: 12px;
+    top: 0;
   }
 }
 
 @media (max-width: 700px) {
   .app-shell {
-    padding: 12px;
+    padding: 0 12px 12px;
   }
 
   .desktop-frame {
-    min-height: calc(100vh - 24px);
+    min-height: calc(100vh - 12px);
     gap: 14px;
   }
 
   .top-status {
-    top: 8px;
+    top: 0;
     padding: 12px;
     border-radius: 18px;
   }

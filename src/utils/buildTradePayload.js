@@ -30,7 +30,7 @@ function buildTradePayload(data, userId) {
     entryDate: new Date(data.entryDate),
     exitDate: data.exitDate ? new Date(data.exitDate) : null,
     fees,
-    strategy: data.strategy ?? null,
+    strategy: typeof data.strategy === "string" ? data.strategy.trim() || null : data.strategy ?? null,
     tags: data.tags ?? null,
     notes: data.notes ?? null,
     grossPnl,

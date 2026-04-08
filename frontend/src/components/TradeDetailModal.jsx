@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CartesianGrid,
   Line,
@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import tradeService from "../services/tradeService";
 import tagService from "../services/tagService";
+import strategyService from "../services/strategyService";
 import TradeReviewCharts from "./TradeReviewCharts";
 import Card from "./ui/Card";
 import LoadingState from "./ui/LoadingState";
@@ -144,6 +145,18 @@ function TimelineTable({ rows }) {
   );
 }
 
+function MarkdownButton({ label, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="ui-button px-3 py-2 text-[11px] font-medium"
+    >
+      {label}
+    </button>
+  );
+}
+
 function TradeDetailModal({ trade, onClose }) {
   const initialDayStart = new Date(trade.entryDate);
   initialDayStart.setHours(0, 0, 0, 0);
@@ -176,10 +189,15 @@ function TradeDetailModal({ trade, onClose }) {
   });
   const [editableTrade, setEditableTrade] = useState(trade);
   const [availableTags, setAvailableTags] = useState(() => tagService.peekTags() || []);
+  const [availableStrategies, setAvailableStrategies] = useState(
+    () => strategyService.peekStrategies() || []
+  );
+  const [isStrategyEditorOpen, setIsStrategyEditorOpen] = useState(false);
   const [isTagEditorOpen, setIsTagEditorOpen] = useState(false);
   const [isNotesEditorOpen, setIsNotesEditorOpen] = useState(false);
   const [noteDraft, setNoteDraft] = useState(trade.notes || "");
   const [isSavingMeta, setIsSavingMeta] = useState(false);
+  const notesEditorRef = useRef(null);
 
   useEffect(() => {
     const nextTrade = tradeDetail || trade;
@@ -212,6 +230,30 @@ function TradeDetailModal({ trade, onClose }) {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function loadStrategies() {
+      try {
+        const strategies = await strategyService.getStrategies();
+
+        if (!cancelled) {
+          setAvailableStrategies(strategies);
+        }
+      } catch {
+        if (!cancelled) {
+          setAvailableStrategies([]);
+        }
+      }
+    }
+
+    loadStrategies();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     function handleEscape(event) {
       if (event.key === "Escape") {
         onClose();
@@ -233,6 +275,7 @@ function TradeDetailModal({ trade, onClose }) {
     [activeTrade, dayTrades]
   );
   const activeTags = useMemo(() => parseTags(activeTrade.tags), [activeTrade.tags]);
+  const activeStrategy = useMemo(() => String(activeTrade.strategy || "").trim(), [activeTrade.strategy]);
   const tagSuggestions = useMemo(() => {
     const current = new Set(activeTags.map((tag) => tag.toLowerCase()));
 
@@ -246,10 +289,19 @@ function TradeDetailModal({ trade, onClose }) {
       return true;
     });
   }, [activeTags, availableTags]);
+  const strategySuggestions = useMemo(
+    () => availableStrategies.filter((strategy) => strategy.name !== activeStrategy),
+    [availableStrategies, activeStrategy]
+  );
 
   async function refreshAvailableTags() {
     const tags = await tagService.getTags({ forceRefresh: true });
     setAvailableTags(tags);
+  }
+
+  async function refreshAvailableStrategies() {
+    const strategies = await strategyService.getStrategies({ forceRefresh: true });
+    setAvailableStrategies(strategies);
   }
 
   async function handleAddTag(tagValue) {
@@ -291,6 +343,35 @@ function TradeDetailModal({ trade, onClose }) {
     }
   }
 
+  async function handleSetStrategy(strategyValue) {
+    setIsSavingMeta(true);
+
+    try {
+      const updatedTrade = await tradeService.updateTradeMeta(activeTrade.id, {
+        strategy: strategyValue
+      });
+
+      setEditableTrade(updatedTrade);
+      await refreshAvailableStrategies();
+    } finally {
+      setIsSavingMeta(false);
+    }
+  }
+
+  async function handleRemoveStrategy() {
+    setIsSavingMeta(true);
+
+    try {
+      const updatedTrade = await tradeService.updateTradeMeta(activeTrade.id, {
+        strategy: ""
+      });
+
+      setEditableTrade(updatedTrade);
+    } finally {
+      setIsSavingMeta(false);
+    }
+  }
+
   async function handleSaveNotes() {
     setIsSavingMeta(true);
 
@@ -306,8 +387,85 @@ function TradeDetailModal({ trade, onClose }) {
     }
   }
 
+  function updateNoteDraftWithSelection(transform) {
+    const textarea = notesEditorRef.current;
+
+    if (!textarea) {
+      setNoteDraft((current) => transform(current, current.length, current.length).nextValue);
+      return;
+    }
+
+    const selectionStart = textarea.selectionStart ?? 0;
+    const selectionEnd = textarea.selectionEnd ?? 0;
+    const { nextValue, nextSelectionStart, nextSelectionEnd } = transform(
+      noteDraft,
+      selectionStart,
+      selectionEnd
+    );
+
+    setNoteDraft(nextValue);
+
+    window.requestAnimationFrame(() => {
+      textarea.focus();
+      textarea.setSelectionRange(nextSelectionStart, nextSelectionEnd);
+    });
+  }
+
+  function wrapSelection(prefix, suffix = prefix, placeholder = "") {
+    updateNoteDraftWithSelection((value, selectionStart, selectionEnd) => {
+      const selected = value.slice(selectionStart, selectionEnd);
+      const content = selected || placeholder;
+      const nextValue =
+        value.slice(0, selectionStart) +
+        prefix +
+        content +
+        suffix +
+        value.slice(selectionEnd);
+
+      const contentStart = selectionStart + prefix.length;
+      const contentEnd = contentStart + content.length;
+
+      return {
+        nextValue,
+        nextSelectionStart: contentStart,
+        nextSelectionEnd: contentEnd
+      };
+    });
+  }
+
+  function insertBulletList() {
+    updateNoteDraftWithSelection((value, selectionStart, selectionEnd) => {
+      const selected = value.slice(selectionStart, selectionEnd);
+      const lines = (selected || "List item").split("\n");
+      const bulleted = lines.map((line) => `- ${line || "List item"}`).join("\n");
+      const nextValue = value.slice(0, selectionStart) + bulleted + value.slice(selectionEnd);
+
+      return {
+        nextValue,
+        nextSelectionStart: selectionStart,
+        nextSelectionEnd: selectionStart + bulleted.length
+      };
+    });
+  }
+
+  function insertHeading() {
+    updateNoteDraftWithSelection((value, selectionStart, selectionEnd) => {
+      const selected = value.slice(selectionStart, selectionEnd) || "Section title";
+      const prefix = selectionStart > 0 && !value.slice(0, selectionStart).endsWith("\n") ? "\n" : "";
+      const heading = `${prefix}## ${selected}`;
+      const nextValue = value.slice(0, selectionStart) + heading + value.slice(selectionEnd);
+      const headingStart = selectionStart + prefix.length + 3;
+
+      return {
+        nextValue,
+        nextSelectionStart: headingStart,
+        nextSelectionEnd: headingStart + selected.length
+      };
+    });
+  }
+
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 p-4 backdrop-blur">
+    <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-black/80 px-4 pb-4 pt-0 backdrop-blur">
       <div className="w-full max-w-[1520px] rounded-[30px] border border-[#e5e7eb42] bg-[linear-gradient(180deg,rgba(16,19,26,0.98),rgba(9,11,16,0.98))] shadow-glow">
         <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-[#e5e7eb42] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))] px-6 py-5 backdrop-blur">
           <div>
@@ -356,6 +514,56 @@ function TradeDetailModal({ trade, onClose }) {
 
           <Card title="TRADER NOTES">
             <div className="space-y-5">
+              <div className="rounded-[18px] border border-[#e5e7eb42] bg-white/[0.03] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="ui-title text-xs text-white/48">Strategy</p>
+                  <button
+                    type="button"
+                    onClick={() => setIsStrategyEditorOpen((current) => !current)}
+                    className="ui-button px-3 py-2 text-xs"
+                  >
+                    Select strategy
+                  </button>
+                </div>
+                {activeStrategy ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={handleRemoveStrategy}
+                      className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs text-white/78"
+                    >
+                      <span>{activeStrategy}</span>
+                      <span className="text-white/45">x</span>
+                    </button>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-sm text-phosphor">No strategy selected</p>
+                )}
+
+                {isStrategyEditorOpen && (
+                  <div className="mt-4 space-y-3">
+                    {strategySuggestions.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {strategySuggestions.map((strategy) => (
+                          <button
+                            key={strategy.id}
+                            type="button"
+                            onClick={() => handleSetStrategy(strategy.name)}
+                            className="ui-button px-3 py-1.5 text-xs"
+                          >
+                            {strategy.name}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-white/48">
+                        No more saved strategies available. Add new ones from Settings.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div className="rounded-[18px] border border-[#e5e7eb42] bg-white/[0.03] p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="ui-title text-xs text-white/48">Tags</p>
@@ -427,13 +635,24 @@ function TradeDetailModal({ trade, onClose }) {
                 </div>
                 {isNotesEditorOpen ? (
                   <div className="mt-4 space-y-3">
+                    <div className="flex flex-wrap gap-2">
+                      <MarkdownButton label="Bold" onClick={() => wrapSelection("**", "**", "bold text")} />
+                      <MarkdownButton label="Italic" onClick={() => wrapSelection("*", "*", "italic text")} />
+                      <MarkdownButton label="Code" onClick={() => wrapSelection("`", "`", "code")} />
+                      <MarkdownButton label="Bullet List" onClick={insertBulletList} />
+                      <MarkdownButton label="Heading" onClick={insertHeading} />
+                    </div>
                     <textarea
+                      ref={notesEditorRef}
                       rows="7"
                       value={noteDraft}
                       onChange={(event) => setNoteDraft(event.target.value)}
-                      placeholder="Write your setup, thesis, execution review, and lessons here..."
+                      placeholder="Write your setup, thesis, execution review, and lessons here. Markdown supported."
                       className="ui-input"
                     />
+                    <p className="text-xs leading-6 text-white/45">
+                      Supports markdown for headings, bold, italic, bullet lists, and inline code.
+                    </p>
                     <div className="flex justify-end gap-2">
                       <button
                         type="button"

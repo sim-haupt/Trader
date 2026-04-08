@@ -2,6 +2,7 @@ const prisma = require("../config/prisma");
 const ApiError = require("../utils/ApiError");
 const buildTradePayload = require("../utils/buildTradePayload");
 const tagService = require("./tag.service");
+const strategyService = require("./strategy.service");
 
 const adminTradeInclude = {
   user: {
@@ -90,6 +91,10 @@ async function createTrade(userId, data) {
     await tagService.ensureTags(userId, data.tags);
   }
 
+  if (data.strategy) {
+    await strategyService.ensureStrategies(userId, data.strategy);
+  }
+
   return trade;
 }
 
@@ -138,6 +143,10 @@ async function updateTrade(actor, tradeId, data) {
     await tagService.ensureTags(existingTrade.userId, data.tags);
   }
 
+  if (data.strategy) {
+    await strategyService.ensureStrategies(existingTrade.userId, data.strategy);
+  }
+
   return trade;
 }
 
@@ -156,6 +165,8 @@ async function updateTradeMeta(actor, tradeId, payload) {
 
   const notes =
     payload.notes === undefined ? undefined : payload.notes === "" ? null : payload.notes;
+  const strategy =
+    payload.strategy === undefined ? undefined : payload.strategy === "" ? null : payload.strategy.trim();
 
   const data = {};
 
@@ -167,6 +178,10 @@ async function updateTradeMeta(actor, tradeId, payload) {
     data.notes = notes;
   }
 
+  if (strategy !== undefined) {
+    data.strategy = strategy;
+  }
+
   const trade = await prisma.trade.update({
     where: { id: tradeId },
     data,
@@ -175,6 +190,10 @@ async function updateTradeMeta(actor, tradeId, payload) {
 
   if (nextTags) {
     await tagService.ensureTags(existingTrade.userId, nextTags);
+  }
+
+  if (strategy) {
+    await strategyService.ensureStrategies(existingTrade.userId, strategy);
   }
 
   return trade;
@@ -263,6 +282,8 @@ async function bulkUpdateTrades(actor, payload) {
   const notes =
     payload.notes === undefined ? undefined : payload.notes === "" ? null : payload.notes;
   const tagsMode = payload.tagsMode || "append";
+  const strategy =
+    payload.strategy === undefined ? undefined : payload.strategy === "" ? null : payload.strategy.trim();
 
   await prisma.$transaction(
     trades.map((trade) => {
@@ -285,6 +306,10 @@ async function bulkUpdateTrades(actor, payload) {
         data.notes = notes;
       }
 
+      if (strategy !== undefined) {
+        data.strategy = strategy;
+      }
+
       return prisma.trade.update({
         where: { id: trade.id },
         data
@@ -305,6 +330,21 @@ async function bulkUpdateTrades(actor, payload) {
       : [actor.id];
 
     await Promise.all(userIds.map((userId) => tagService.ensureTags(userId, payload.tags)));
+  }
+
+  if (strategy) {
+    const userIds = actor.role === "ADMIN"
+      ? [...new Set((await prisma.trade.findMany({
+          where: {
+            id: {
+              in: trades.map((trade) => trade.id)
+            }
+          },
+          select: { userId: true }
+        })).map((trade) => trade.userId))]
+      : [actor.id];
+
+    await Promise.all(userIds.map((userId) => strategyService.ensureStrategies(userId, strategy)));
   }
 
   return {
@@ -331,9 +371,33 @@ async function createManyTrades(userId, trades) {
     return { count: 0 };
   }
 
-  return prisma.trade.createMany({
+  const result = await prisma.trade.createMany({
     data: trades.map((trade) => buildTradePayload(trade, userId))
   });
+
+  const tagValues = [...new Set(
+    trades.flatMap((trade) =>
+      String(trade.tags || "")
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+    )
+  )].join(", ");
+  const strategyValues = [...new Set(
+    trades
+      .map((trade) => String(trade.strategy || "").trim())
+      .filter(Boolean)
+  )].join(", ");
+
+  if (tagValues) {
+    await tagService.ensureTags(userId, tagValues);
+  }
+
+  if (strategyValues) {
+    await strategyService.ensureStrategies(userId, strategyValues);
+  }
+
+  return result;
 }
 
 module.exports = {

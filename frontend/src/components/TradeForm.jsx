@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import FormField from "./ui/FormField";
 import { formatDateTimeLocal } from "../utils/formatters";
 import tagService from "../services/tagService";
+import strategyService from "../services/strategyService";
 
 const initialState = {
   symbol: "",
@@ -40,6 +41,9 @@ function mapTradeToForm(trade) {
 function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
   const [form, setForm] = useState(initialState);
   const [availableTags, setAvailableTags] = useState(() => tagService.peekTags() || []);
+  const [availableStrategies, setAvailableStrategies] = useState(
+    () => strategyService.peekStrategies() || []
+  );
 
   useEffect(() => {
     setForm(mapTradeToForm(trade));
@@ -69,6 +73,30 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadStrategies() {
+      try {
+        const strategies = await strategyService.getStrategies();
+
+        if (!cancelled) {
+          setAvailableStrategies(strategies);
+        }
+      } catch {
+        if (!cancelled) {
+          setAvailableStrategies([]);
+        }
+      }
+    }
+
+    loadStrategies();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   function handleChange(event) {
     const { name, value } = event.target;
     setForm((current) => ({ ...current, [name]: value }));
@@ -88,6 +116,8 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
 
     return availableTags.filter((tag) => !active.has(tag.name.toLowerCase()));
   }, [availableTags, selectedTags]);
+
+  const selectedStrategy = useMemo(() => String(form.strategy || "").trim(), [form.strategy]);
 
   function handleAddTag(tagName) {
     setForm((current) => {
@@ -111,6 +141,20 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
         .map((tag) => tag.trim())
         .filter((tag) => tag && tag !== tagName)
         .join(", ")
+    }));
+  }
+
+  function handleSelectStrategy(strategyName) {
+    setForm((current) => ({
+      ...current,
+      strategy: strategyName
+    }));
+  }
+
+  function handleRemoveStrategy() {
+    setForm((current) => ({
+      ...current,
+      strategy: ""
     }));
   }
 
@@ -225,12 +269,45 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
 
       <div className="md:col-span-2">
         <FormField label="Strategy">
-          <input
-            name="strategy"
-            value={form.strategy}
-            onChange={handleChange}
-            className="ui-input"
-          />
+          <div className="space-y-3">
+            {selectedStrategy ? (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={handleRemoveStrategy}
+                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-xs text-white/82"
+                >
+                  <span>{selectedStrategy}</span>
+                  <span className="text-white/48">x</span>
+                </button>
+              </div>
+            ) : (
+              <div className="rounded-[12px] border border-black/20 bg-white/[0.02] px-4 py-3 text-sm text-white/54">
+                No strategy selected
+              </div>
+            )}
+
+            {availableStrategies.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {availableStrategies
+                  .filter((strategy) => strategy.name !== selectedStrategy)
+                  .map((strategy) => (
+                    <button
+                      key={strategy.id}
+                      type="button"
+                      onClick={() => handleSelectStrategy(strategy.name)}
+                      className="ui-button px-3 py-1.5 text-xs"
+                    >
+                      {strategy.name}
+                    </button>
+                  ))}
+              </div>
+            ) : (
+              <div className="text-xs text-white/48">
+                No saved strategies available. Add them from Settings.
+              </div>
+            )}
+          </div>
         </FormField>
       </div>
 

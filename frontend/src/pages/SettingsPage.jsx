@@ -3,19 +3,24 @@ import Card from "../components/ui/Card";
 import LoadingState from "../components/ui/LoadingState";
 import EmptyState from "../components/ui/EmptyState";
 import tagService from "../services/tagService";
+import strategyService from "../services/strategyService";
 import { useAuth } from "../context/AuthContext";
 
 function SettingsPage() {
   const { user, updateSettings, refreshSettings } = useAuth();
   const [activeSection, setActiveSection] = useState("tags");
   const [tags, setTags] = useState(() => tagService.peekTags() || []);
+  const [strategies, setStrategies] = useState(() => strategyService.peekStrategies() || []);
   const [newTag, setNewTag] = useState("");
+  const [newStrategy, setNewStrategy] = useState("");
   const [defaultCommission, setDefaultCommission] = useState(String(user?.defaultCommission ?? 0));
   const [defaultFees, setDefaultFees] = useState(String(user?.defaultFees ?? 0));
-  const [loading, setLoading] = useState(() => !tagService.peekTags());
-  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(() => !tagService.peekTags() || !strategyService.peekStrategies());
+  const [savingTag, setSavingTag] = useState(false);
+  const [savingStrategy, setSavingStrategy] = useState(false);
   const [savingCommission, setSavingCommission] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [deletingStrategyId, setDeletingStrategyId] = useState(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
@@ -36,8 +41,26 @@ function SettingsPage() {
     }
   }
 
+  async function loadStrategies(options = {}) {
+    if (!strategyService.peekStrategies() || options.forceRefresh) {
+      setLoading(true);
+    }
+
+    setError("");
+
+    try {
+      const data = await strategyService.getStrategies(options);
+      setStrategies(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   useEffect(() => {
     loadTags();
+    loadStrategies();
     refreshSettings().catch(() => {});
   }, []);
 
@@ -53,7 +76,7 @@ function SettingsPage() {
       return;
     }
 
-    setSaving(true);
+    setSavingTag(true);
     setError("");
     setMessage("");
 
@@ -65,7 +88,30 @@ function SettingsPage() {
     } catch (err) {
       setError(err.message);
     } finally {
-      setSaving(false);
+      setSavingTag(false);
+    }
+  }
+
+  async function handleCreateStrategy() {
+    const name = newStrategy.trim();
+
+    if (!name) {
+      return;
+    }
+
+    setSavingStrategy(true);
+    setError("");
+    setMessage("");
+
+    try {
+      await strategyService.createStrategy(name);
+      setNewStrategy("");
+      setMessage("Strategy saved.");
+      await loadStrategies({ forceRefresh: true });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSavingStrategy(false);
     }
   }
 
@@ -88,6 +134,28 @@ function SettingsPage() {
       setError(err.message);
     } finally {
       setDeletingId(null);
+    }
+  }
+
+  async function handleDeleteStrategy(strategy) {
+    const confirmed = window.confirm(`Delete saved strategy "${strategy.name}" from your strategy list?`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingStrategyId(strategy.id);
+    setError("");
+    setMessage("");
+
+    try {
+      await strategyService.deleteStrategy(strategy.id);
+      setMessage("Strategy deleted.");
+      await loadStrategies({ forceRefresh: true });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setDeletingStrategyId(null);
     }
   }
 
@@ -161,6 +229,18 @@ function SettingsPage() {
                   {(Number(user?.defaultCommission ?? 0) + Number(user?.defaultFees ?? 0)).toFixed(2)}
                 </span>
               </button>
+              <button
+                type="button"
+                onClick={() => setActiveSection("strategies")}
+                className={`flex w-full items-center justify-between rounded-[14px] px-4 py-3 text-left text-sm transition ${
+                  activeSection === "strategies"
+                    ? "border border-[var(--line-strong)] bg-white/[0.06] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+                    : "border border-transparent text-white/64 hover:bg-white/[0.03] hover:text-white"
+                }`}
+              >
+                <span>Strategies</span>
+                <span className="text-white/40">{strategies.length}</span>
+              </button>
             </div>
           </aside>
 
@@ -177,10 +257,10 @@ function SettingsPage() {
                   <button
                     type="button"
                     onClick={handleCreateTag}
-                    disabled={saving || !newTag.trim()}
+                    disabled={savingTag || !newTag.trim()}
                     className="ui-button-solid whitespace-nowrap px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {saving ? "Saving..." : "Add Tag"}
+                    {savingTag ? "Saving..." : "Add Tag"}
                   </button>
                 </div>
 
@@ -210,6 +290,59 @@ function SettingsPage() {
                           className="text-xs text-coral transition hover:text-coral/80 disabled:opacity-50"
                         >
                           {deletingId === tag.id ? "..." : "Delete"}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </Card>
+          ) : activeSection === "strategies" ? (
+            <Card title="STRATEGIES">
+              <div className="space-y-5">
+                <div className="flex flex-col gap-3 lg:flex-row">
+                  <input
+                    value={newStrategy}
+                    onChange={(event) => setNewStrategy(event.target.value)}
+                    placeholder="Add a new strategy"
+                    className="ui-input"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCreateStrategy}
+                    disabled={savingStrategy || !newStrategy.trim()}
+                    className="ui-button-solid whitespace-nowrap px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {savingStrategy ? "Saving..." : "Add Strategy"}
+                  </button>
+                </div>
+
+                <p className="text-sm text-white/58">
+                  Manage the shared strategy list here. Trades can only select from this saved set.
+                </p>
+
+                {loading ? (
+                  <LoadingState label="Loading strategies..." className="min-h-[180px]" />
+                ) : strategies.length === 0 ? (
+                  <EmptyState
+                    title="No saved strategies yet"
+                    description="Create reusable strategies here and they will be available from each trade."
+                  />
+                ) : (
+                  <div className="flex flex-wrap gap-3">
+                    {strategies.map((strategy) => (
+                      <div
+                        key={strategy.id}
+                        className="flex items-center gap-2 rounded-full border border-[var(--line)] bg-white/[0.035] px-4 py-2"
+                      >
+                        <span className="text-sm text-white/82">{strategy.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteStrategy(strategy)}
+                          disabled={deletingStrategyId === strategy.id}
+                          className="text-xs text-coral transition hover:text-coral/80 disabled:opacity-50"
+                        >
+                          {deletingStrategyId === strategy.id ? "..." : "Delete"}
                         </button>
                       </div>
                     ))}

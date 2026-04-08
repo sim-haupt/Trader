@@ -20,6 +20,7 @@ import EmptyState from "../components/ui/EmptyState";
 import LoadingState from "../components/ui/LoadingState";
 import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 import tagService from "../services/tagService";
+import strategyService from "../services/strategyService";
 import tradeService from "../services/tradeService";
 import { formatCurrency, formatPercent } from "../utils/formatters";
 import { useAuth } from "../context/AuthContext";
@@ -39,15 +40,16 @@ const TAB_ITEMS = [
 ];
 
 const RANGE_OPTIONS = [
-  { key: "30", label: "30 Days", days: 30 },
-  { key: "60", label: "60 Days", days: 60 },
-  { key: "90", label: "90 Days", days: 90 },
+  { key: "30", label: "30D", days: 30 },
+  { key: "60", label: "60D", days: 60 },
+  { key: "90", label: "90D", days: 90 },
   { key: "ALL", label: "All", days: null }
 ];
 
 const REPORT_FILTERS = {
   symbol: "",
   tag: "",
+  strategy: "",
   side: "",
   from: "",
   to: ""
@@ -56,6 +58,7 @@ const REPORT_FILTERS = {
 const COMPARE_GROUP_FILTERS = {
   symbol: "",
   tag: "",
+  strategy: "",
   side: "",
   tradePnl: "",
   from: "",
@@ -918,9 +921,9 @@ function CompareStatsColumn({ title, rows, tradesMatched }) {
   );
 }
 
-function CompareGroupCard({ title, filters, onChange, tags, matchedCount }) {
+function CompareGroupCard({ title, filters, onChange, tags, strategies, matchedCount }) {
   return (
-    <div className="rounded-[18px] border border-[#e5e7eb42] bg-white/[0.02] p-4">
+    <div className="relative z-20 overflow-visible rounded-[18px] border border-[#e5e7eb42] bg-white/[0.02] p-4">
       <div className="mb-4">
         <p className="text-sm font-semibold text-white">{title}</p>
         <p className="mt-1 text-xs text-white/44">Trades matches: {matchedCount}</p>
@@ -946,6 +949,18 @@ function CompareGroupCard({ title, filters, onChange, tags, matchedCount }) {
               ...tags.map((tag) => ({ label: tag.name, value: tag.name }))
             ]}
             placeholder="Select"
+          />
+        </div>
+        <div>
+          <label className="mb-2 block text-xs font-medium text-white/72">Strategy</label>
+          <CustomSelect
+            value={filters.strategy}
+            onChange={(nextValue) => onChange("strategy", nextValue)}
+            options={[
+              { label: "All", value: "" },
+              ...strategies.map((strategy) => ({ label: strategy.name, value: strategy.name }))
+            ]}
+            placeholder="All"
           />
         </div>
         <div>
@@ -994,6 +1009,7 @@ function CompareGroupCard({ title, filters, onChange, tags, matchedCount }) {
 
 function CompareSection({
   tags,
+  strategies,
   groupAFilters,
   groupBFilters,
   onGroupAChange,
@@ -1009,13 +1025,14 @@ function CompareSection({
 
   return (
     <div className="space-y-5">
-      <Card title="QUICK REPORT">
+      <Card title="QUICK REPORT" className="relative z-20 overflow-visible" bodyClassName="overflow-visible">
         <div className="grid gap-5 xl:grid-cols-2">
           <CompareGroupCard
             title="Group A"
             filters={groupAFilters}
             onChange={onGroupAChange}
             tags={tags}
+            strategies={strategies}
             matchedCount={groupATrades.length}
           />
           <CompareGroupCard
@@ -1023,6 +1040,7 @@ function CompareSection({
             filters={groupBFilters}
             onChange={onGroupBChange}
             tags={tags}
+            strategies={strategies}
             matchedCount={groupBTrades.length}
           />
         </div>
@@ -1062,6 +1080,12 @@ function applyReportFilters(trades, filters, rangeDays) {
     );
   }
 
+  if (filters.strategy) {
+    nextTrades = nextTrades.filter(
+      (trade) => String(trade.strategy || "").toLowerCase() === filters.strategy.toLowerCase()
+    );
+  }
+
   if (filters.side) {
     nextTrades = nextTrades.filter((trade) => trade.side === filters.side);
   }
@@ -1095,6 +1119,12 @@ function applyCompareGroupFilters(trades, filters, options = {}) {
   if (filters.tag) {
     nextTrades = nextTrades.filter((trade) =>
       normalizeTagList(trade.tags).some((tag) => tag.toLowerCase() === filters.tag.toLowerCase())
+    );
+  }
+
+  if (filters.strategy) {
+    nextTrades = nextTrades.filter(
+      (trade) => String(trade.strategy || "").toLowerCase() === filters.strategy.toLowerCase()
     );
   }
 
@@ -1152,6 +1182,12 @@ function ReportsPage() {
   const { data: tags = [] } = useCachedAsyncResource({
     peek: () => tagService.peekTags(),
     load: () => tagService.getTags(),
+    initialValue: [],
+    deps: []
+  });
+  const { data: strategies = [] } = useCachedAsyncResource({
+    peek: () => strategyService.peekStrategies(),
+    load: () => strategyService.getStrategies(),
     initialValue: [],
     deps: []
   });
@@ -1277,6 +1313,18 @@ function ReportsPage() {
               />
             </div>
             <div>
+              <label className="mb-2 block text-xs font-medium text-white/72">Strategy</label>
+              <CustomSelect
+                value={filters.strategy}
+                onChange={(nextValue) => updateFilter("strategy", nextValue)}
+                options={[
+                  { label: "All", value: "" },
+                  ...strategies.map((strategy) => ({ label: strategy.name, value: strategy.name }))
+                ]}
+                placeholder="All"
+              />
+            </div>
+            <div>
               <label className="mb-2 block text-xs font-medium text-white/72">Side</label>
               <CustomSelect
                 value={filters.side}
@@ -1341,25 +1389,17 @@ function ReportsPage() {
               />
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              {RANGE_OPTIONS.map((option) => {
-                const active = option.key === rangeKey;
-
-                return (
-                  <button
-                    key={option.key}
-                    type="button"
-                    onClick={() => setRangeKey(option.key)}
-                    className={`rounded-[12px] px-3 py-2 text-xs font-semibold tracking-[0.12em] transition ${
-                      active
-                        ? "bg-white text-black shadow-[0_10px_24px_rgba(255,255,255,0.14)]"
-                        : "border border-white/10 bg-white/[0.035] text-white/70 hover:bg-white/[0.07] hover:text-white"
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                );
-              })}
+            <div className="ui-segment">
+              {RANGE_OPTIONS.map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  data-active={option.key === rangeKey}
+                  onClick={() => setRangeKey(option.key)}
+                >
+                  {option.label}
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -1379,6 +1419,7 @@ function ReportsPage() {
       ) : activeTab === "Compare" ? (
         <CompareSection
           tags={tags}
+          strategies={strategies}
           groupAFilters={groupAFilters}
           groupBFilters={groupBFilters}
           onGroupAChange={(key, value) => updateGroupFilters("A", key, value)}

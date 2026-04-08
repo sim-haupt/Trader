@@ -47,6 +47,7 @@ model User {
   trades       Trade[]
   imports      TradeImport[]
   savedTags    SavedTag[]
+  savedStrategies SavedStrategy[]
 }
 
 model Trade {
@@ -120,6 +121,18 @@ model ImportError {
 }
 
 model SavedTag {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
+  @@index([userId, createdAt])
+}
+
+model SavedStrategy {
   id        String   @id @default(cuid())
   userId    String
   name      String
