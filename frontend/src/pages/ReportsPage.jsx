@@ -148,7 +148,6 @@ const CurrencyTooltip = buildChartTooltip("currency");
 const PercentTooltip = buildChartTooltip("percent");
 const VolumeTooltip = buildChartTooltip("volume");
 const CountTooltip = buildChartTooltip("count");
-const FIXED_TOOLTIP_POSITION = { x: 16, y: 16 };
 
 const WEEKDAY_ORDER = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 const MONTH_ORDER = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -785,6 +784,69 @@ function buildBucketStats(trades, options = {}) {
   };
 }
 
+function buildInstrumentStats(trades, options = {}) {
+  const defaultCommission = options.defaultCommission || 0;
+  const defaultFees = options.defaultFees || 0;
+  const pnlType = options.pnlType || "NET";
+
+  const symbolMap = new Map();
+  const volumeBuckets = new Map(
+    ["20-99", "100-499", "500-999", "1,000-1,999", "2,000-4,999", "5,000+"].map((label) => [
+      label,
+      { label, count: 0, pnl: 0 }
+    ])
+  );
+
+  function addToVolumeBucket(quantity, pnl) {
+    let label = "5,000+";
+
+    if (quantity < 100) label = "20-99";
+    else if (quantity < 500) label = "100-499";
+    else if (quantity < 1000) label = "500-999";
+    else if (quantity < 2000) label = "1,000-1,999";
+    else if (quantity < 5000) label = "2,000-4,999";
+
+    const bucket = volumeBuckets.get(label);
+    bucket.count += 1;
+    bucket.pnl = Number((bucket.pnl + pnl).toFixed(2));
+  }
+
+  for (const trade of trades) {
+    const symbol = String(trade.symbol || "").toUpperCase();
+    const quantity = Math.abs(Number(trade.quantity ?? 0));
+    const pnl = getTradePnlByType(trade, pnlType, defaultCommission, defaultFees);
+
+    const current = symbolMap.get(symbol) || {
+      label: symbol,
+      pnl: 0,
+      tradedVolume: 0,
+      trades: 0
+    };
+
+    current.pnl = Number((current.pnl + pnl).toFixed(2));
+    current.tradedVolume += quantity;
+    current.trades += 1;
+    symbolMap.set(symbol, current);
+
+    addToVolumeBucket(quantity, pnl);
+  }
+
+  const symbols = Array.from(symbolMap.values());
+  const top20 = [...symbols]
+    .sort((a, b) => b.pnl - a.pnl)
+    .slice(0, 20);
+  const bottom20 = [...symbols]
+    .sort((a, b) => a.pnl - b.pnl)
+    .slice(0, 20);
+
+  return {
+    topSymbols: top20,
+    bottomSymbols: bottom20,
+    instrumentVolumeDistribution: Array.from(volumeBuckets.values()),
+    instrumentVolumePerformance: Array.from(volumeBuckets.values())
+  };
+}
+
 function buildWinLossDayRows(summary) {
   return [
     { label: "Total Gain / Loss", value: formatCurrency(summary.totalPnl), tone: summary.totalPnl >= 0 ? "text-mint" : "text-coral" },
@@ -933,7 +995,7 @@ function HorizontalBreakdownChart({
               width={yAxisWidth}
               tick={{ fill: "#c6cedb", fontSize: 11 }}
             />
-            <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={tooltip} position={FIXED_TOOLTIP_POSITION} />
+            <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={tooltip} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
             <Bar dataKey={dataKey} radius={[0, 6, 6, 0]} barSize={18}>
               {data.map((entry) => (
                 <Cell
@@ -958,6 +1020,7 @@ function HorizontalBreakdownChart({
 function DetailedBreakdownSection({
   stats,
   bucketStats,
+  instrumentStats,
   timeframeKey,
   onTimeframeChange,
   activeTab,
@@ -966,7 +1029,7 @@ function DetailedBreakdownSection({
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-center gap-2">
-        {["Days/Times", "Price/Volume"].map((item) => (
+        {["Days/Times", "Price/Volume", "Instrument"].map((item) => (
           <button
             key={item}
             type="button"
@@ -1051,7 +1114,7 @@ function DetailedBreakdownSection({
             />
           </div>
         </>
-      ) : (
+      ) : activeTab === "Price/Volume" ? (
         <div className="grid gap-5 xl:grid-cols-2">
           <HorizontalBreakdownChart
             title="TRADE DISTRIBUTION BY PRICE"
@@ -1094,6 +1157,43 @@ function DetailedBreakdownSection({
             tooltip={<CurrencyTooltip />}
             currencyAxis
             positiveNegative
+          />
+        </div>
+      ) : (
+        <div className="grid gap-5 xl:grid-cols-2">
+          <HorizontalBreakdownChart
+            title="PERFORMANCE BY SYMBOL - TOP 20"
+            data={instrumentStats.topSymbols}
+            dataKey="pnl"
+            tooltip={<CurrencyTooltip />}
+            currencyAxis
+            positiveNegative
+            yAxisWidth={88}
+          />
+          <HorizontalBreakdownChart
+            title="PERFORMANCE BY SYMBOL - BOTTOM 20"
+            data={instrumentStats.bottomSymbols}
+            dataKey="pnl"
+            tooltip={<CurrencyTooltip />}
+            currencyAxis
+            positiveNegative
+            yAxisWidth={88}
+          />
+          <HorizontalBreakdownChart
+            title="DISTRIBUTION BY INSTRUMENT VOLUME"
+            data={instrumentStats.instrumentVolumeDistribution}
+            dataKey="count"
+            tooltip={<CountTooltip />}
+            yAxisWidth={110}
+          />
+          <HorizontalBreakdownChart
+            title="PERFORMANCE BY INSTRUMENT VOLUME"
+            data={instrumentStats.instrumentVolumePerformance}
+            dataKey="pnl"
+            tooltip={<CurrencyTooltip />}
+            currencyAxis
+            positiveNegative
+            yAxisWidth={110}
           />
         </div>
       )}
@@ -1162,7 +1262,7 @@ function WinVsLossDaysSection({ stats }) {
                   <Cell key={entry.name} fill={entry.fill} />
                 ))}
               </Pie>
-              <Tooltip content={<PercentTooltip />} position={FIXED_TOOLTIP_POSITION} />
+              <Tooltip content={<PercentTooltip />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -1192,7 +1292,7 @@ function WinVsLossDaysSection({ stats }) {
                 <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                 <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                <Tooltip content={<CountTooltip />} position={FIXED_TOOLTIP_POSITION} />
+                <Tooltip content={<CountTooltip />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
                 <Bar dataKey="winningDays" fill="#56f0a9" radius={[6, 6, 0, 0]} />
                 <Bar dataKey="losingDays" fill="#ffc14d" radius={[6, 6, 0, 0]} />
               </BarChart>
@@ -1207,7 +1307,7 @@ function WinVsLossDaysSection({ stats }) {
                 <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                 <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
                 <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                <Tooltip content={<CurrencyTooltip />} position={FIXED_TOOLTIP_POSITION} />
+                <Tooltip content={<CurrencyTooltip />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
                 <Bar dataKey="winningPnl" fill="#56f0a9" radius={[6, 6, 0, 0]} />
                 <Bar dataKey="losingPnl" fill="#ff6b6b" radius={[6, 6, 0, 0]} />
               </BarChart>
@@ -1620,6 +1720,15 @@ function ReportsPage() {
       }),
     [filteredTrades, user?.defaultCommission, user?.defaultFees, pnlType]
   );
+  const detailedInstrumentStats = useMemo(
+    () =>
+      buildInstrumentStats(filteredTrades, {
+        defaultCommission: user?.defaultCommission ?? 0,
+        defaultFees: user?.defaultFees ?? 0,
+        pnlType
+      }),
+    [filteredTrades, user?.defaultCommission, user?.defaultFees, pnlType]
+  );
   const winVsLossDayStats = useMemo(
     () => buildWinVsLossDaysStats(filteredTrades, {
       defaultCommission: user?.defaultCommission ?? 0,
@@ -1818,6 +1927,7 @@ function ReportsPage() {
           <DetailedBreakdownSection
             stats={detailedBreakdownStats}
             bucketStats={detailedBucketStats}
+            instrumentStats={detailedInstrumentStats}
             timeframeKey={detailedTimeframeKey}
             onTimeframeChange={setDetailedTimeframeKey}
             activeTab={detailedBreakdownTab}
@@ -1851,7 +1961,7 @@ function ReportsPage() {
                   <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} minTickGap={18} />
                   <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                  <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<CurrencyTooltip />} position={FIXED_TOOLTIP_POSITION} />
+                  <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<CurrencyTooltip />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
                   <Bar dataKey="grossPnl" barSize={20}>
                     {reportSeries.grossDaily.map((entry) => (
                       <Cell key={entry.date} fill={entry.grossPnl >= 0 ? "#56f0a9" : "#ff6b6b"} />
@@ -1869,7 +1979,7 @@ function ReportsPage() {
                   <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} minTickGap={18} />
                   <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                  <Tooltip content={<CurrencyTooltip />} position={FIXED_TOOLTIP_POSITION} />
+                  <Tooltip content={<CurrencyTooltip />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
                   <Line type="monotone" dataKey="cumulativeGrossPnl" stroke="#18c87a" strokeWidth={3} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
@@ -1883,7 +1993,7 @@ function ReportsPage() {
                   <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} minTickGap={18} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                  <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<VolumeTooltip />} position={FIXED_TOOLTIP_POSITION} />
+                  <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<VolumeTooltip />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
                   <Bar dataKey="volume" barSize={20} fill="#56f0a9" />
                 </BarChart>
               </ResponsiveContainer>
@@ -1897,7 +2007,7 @@ function ReportsPage() {
                   <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} minTickGap={18} />
                   <YAxis axisLine={false} tickLine={false} domain={[0, 100]} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                  <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<PercentTooltip />} position={FIXED_TOOLTIP_POSITION} />
+                  <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<PercentTooltip />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
                   <Bar dataKey="winRate" barSize={20} fill="#56f0a9" />
                 </BarChart>
               </ResponsiveContainer>

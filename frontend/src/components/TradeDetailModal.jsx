@@ -27,8 +27,6 @@ import {
 } from "../utils/tradeDetail";
 import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 
-const FIXED_TOOLTIP_POSITION = { x: 16, y: 16 };
-
 function parseTags(value) {
   return String(value || "")
     .split(",")
@@ -741,7 +739,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                         axisLine={false}
                         tickLine={false}
                       />
-                      <Tooltip content={<ChartTooltip />} position={FIXED_TOOLTIP_POSITION} />
+                      <Tooltip content={<ChartTooltip />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
                       <Line
                         type="monotone"
                         dataKey="pnl"
@@ -782,7 +780,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                         axisLine={false}
                         tickLine={false}
                       />
-                      <Tooltip content={<ChartTooltip />} position={FIXED_TOOLTIP_POSITION} />
+                      <Tooltip content={<ChartTooltip />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
                       <Line
                         type="monotone"
                         dataKey="pnl"
