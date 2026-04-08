@@ -708,10 +708,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
             <TimelineTable rows={tradeTimeline} />
           </Card>
 
-          <Card
-            title="Execution Review Charts"
-            subtitle="Custom 1 minute chart with execution markers drawn at the exact execution price."
-          >
+          <Card title="Execution Review Charts">
             <TradeReviewCharts trade={activeTrade} />
           </Card>
 

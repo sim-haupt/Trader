@@ -31,6 +31,11 @@ const tagService = {
     const response = await api.delete(`/tags/${id}`);
     clearTagCache();
     return response.data.data;
+  },
+
+  async deleteTags(ids) {
+    await Promise.all(ids.map((id) => api.delete(`/tags/${id}`)));
+    clearTagCache();
   }
 };
 

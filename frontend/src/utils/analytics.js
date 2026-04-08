@@ -1,15 +1,34 @@
 import { getTradeGrossPnl, getTradePnlByType } from "./tradePnl";
 
+const MARKET_TIME_ZONE = "America/New_York";
+
+function getMarketDateParts(date) {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: MARKET_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    weekday: "short"
+  });
+
+  const parts = formatter.formatToParts(date);
+
+  return Object.fromEntries(
+    parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value])
+  );
+}
+
 function asNumber(value) {
   const numericValue = Number(value || 0);
   return Number.isNaN(numericValue) ? 0 : numericValue;
 }
 
 function getLocalDayKey(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  const parts = getMarketDateParts(date);
+  return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
 function startOfDay(date) {
@@ -42,7 +61,7 @@ function getHoldMinutes(trade, entryDate) {
 }
 
 function getTimeBucket(date) {
-  const hours = date.getHours();
+  const hours = Number(getMarketDateParts(date).hour);
 
   if (hours < 9) {
     return "PREMARKET";
@@ -76,7 +95,7 @@ function buildHourlyPerformance(processedTrades) {
   }
 
   for (const item of processedTrades) {
-    const hour = item.entryDate.getHours();
+    const hour = Number(getMarketDateParts(item.entryDate).hour);
 
     if (!hourlyMap.has(hour)) {
       continue;
@@ -226,7 +245,7 @@ export function buildAnalytics(trades, options = {}) {
     const holdMinutes = getHoldMinutes(trade, entryDate);
     const perSharePnl = quantity > 0 ? pnl / quantity : 0;
     const dayKey = getLocalDayKey(entryDate);
-    const weekday = entryDate.toLocaleDateString("en-US", { weekday: "short" });
+    const weekday = getMarketDateParts(entryDate).weekday;
     const timeBucket = getTimeBucket(entryDate);
 
     if (pnl > 0) {

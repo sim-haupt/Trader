@@ -13,6 +13,8 @@ function SettingsPage() {
   const [strategies, setStrategies] = useState(() => strategyService.peekStrategies() || []);
   const [newTag, setNewTag] = useState("");
   const [newStrategy, setNewStrategy] = useState("");
+  const [selectedTagIds, setSelectedTagIds] = useState([]);
+  const [selectedStrategyIds, setSelectedStrategyIds] = useState([]);
   const [defaultCommission, setDefaultCommission] = useState(String(user?.defaultCommission ?? 0));
   const [defaultFees, setDefaultFees] = useState(String(user?.defaultFees ?? 0));
   const [loading, setLoading] = useState(() => !tagService.peekTags() || !strategyService.peekStrategies());
@@ -21,6 +23,8 @@ function SettingsPage() {
   const [savingCommission, setSavingCommission] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [deletingStrategyId, setDeletingStrategyId] = useState(null);
+  const [bulkDeletingTags, setBulkDeletingTags] = useState(false);
+  const [bulkDeletingStrategies, setBulkDeletingStrategies] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
@@ -34,6 +38,7 @@ function SettingsPage() {
     try {
       const data = await tagService.getTags(options);
       setTags(data);
+      setSelectedTagIds((current) => current.filter((id) => data.some((tag) => tag.id === id)));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -51,6 +56,9 @@ function SettingsPage() {
     try {
       const data = await strategyService.getStrategies(options);
       setStrategies(data);
+      setSelectedStrategyIds((current) =>
+        current.filter((id) => data.some((strategy) => strategy.id === id))
+      );
     } catch (err) {
       setError(err.message);
     } finally {
@@ -137,6 +145,37 @@ function SettingsPage() {
     }
   }
 
+  async function handleBulkDeleteTags() {
+    if (selectedTagIds.length === 0) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Delete ${selectedTagIds.length} saved ${selectedTagIds.length === 1 ? "tag" : "tags"} from your tag list?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setBulkDeletingTags(true);
+    setError("");
+    setMessage("");
+
+    try {
+      await tagService.deleteTags(selectedTagIds);
+      setSelectedTagIds([]);
+      setMessage(
+        `${selectedTagIds.length} ${selectedTagIds.length === 1 ? "tag" : "tags"} deleted.`
+      );
+      await loadTags({ forceRefresh: true });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBulkDeletingTags(false);
+    }
+  }
+
   async function handleDeleteStrategy(strategy) {
     const confirmed = window.confirm(`Delete saved strategy "${strategy.name}" from your strategy list?`);
 
@@ -157,6 +196,55 @@ function SettingsPage() {
     } finally {
       setDeletingStrategyId(null);
     }
+  }
+
+  async function handleBulkDeleteStrategies() {
+    if (selectedStrategyIds.length === 0) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Delete ${selectedStrategyIds.length} saved ${
+        selectedStrategyIds.length === 1 ? "strategy" : "strategies"
+      } from your strategy list?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setBulkDeletingStrategies(true);
+    setError("");
+    setMessage("");
+
+    try {
+      await strategyService.deleteStrategies(selectedStrategyIds);
+      setSelectedStrategyIds([]);
+      setMessage(
+        `${selectedStrategyIds.length} ${
+          selectedStrategyIds.length === 1 ? "strategy" : "strategies"
+        } deleted.`
+      );
+      await loadStrategies({ forceRefresh: true });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBulkDeletingStrategies(false);
+    }
+  }
+
+  function toggleTagSelection(tagId) {
+    setSelectedTagIds((current) =>
+      current.includes(tagId) ? current.filter((id) => id !== tagId) : [...current, tagId]
+    );
+  }
+
+  function toggleStrategySelection(strategyId) {
+    setSelectedStrategyIds((current) =>
+      current.includes(strategyId)
+        ? current.filter((id) => id !== strategyId)
+        : [...current, strategyId]
+    );
   }
 
   async function handleSaveCommission() {
@@ -268,6 +356,37 @@ function SettingsPage() {
                   Manage the shared tag list here. Trades can only select from this saved set.
                 </p>
 
+                {!!tags.length && (
+                  <div className="ui-panel flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex flex-wrap items-center gap-2 text-sm text-white/62">
+                      <span>{selectedTagIds.length} selected</span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTagIds(tags.map((tag) => tag.id))}
+                        className="ui-chip"
+                      >
+                        Select all
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTagIds([])}
+                        className="ui-chip"
+                        disabled={selectedTagIds.length === 0}
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleBulkDeleteTags}
+                      disabled={selectedTagIds.length === 0 || bulkDeletingTags}
+                      className="ui-button-danger px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {bulkDeletingTags ? "Deleting..." : `Delete Selected${selectedTagIds.length ? ` (${selectedTagIds.length})` : ""}`}
+                    </button>
+                  </div>
+                )}
+
                 {loading ? (
                   <LoadingState label="Loading tags..." className="min-h-[180px]" />
                 ) : tags.length === 0 ? (
@@ -276,18 +395,30 @@ function SettingsPage() {
                     description="Create a few reusable tags here and they will be available from each trade."
                   />
                 ) : (
-                  <div className="flex flex-wrap gap-3">
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                     {tags.map((tag) => (
                       <div
                         key={tag.id}
-                        className="flex items-center gap-2 rounded-full border border-[var(--line)] bg-white/[0.035] px-4 py-2"
+                        className={`ui-panel flex items-center justify-between gap-3 rounded-[16px] px-4 py-3 transition ${
+                          selectedTagIds.includes(tag.id)
+                            ? "border-[var(--accent)] bg-[rgba(124,92,255,0.08)]"
+                            : ""
+                        }`}
                       >
-                        <span className="text-sm text-white/82">{tag.name}</span>
+                        <label className="flex min-w-0 flex-1 items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedTagIds.includes(tag.id)}
+                            onChange={() => toggleTagSelection(tag.id)}
+                            className="h-4 w-4 rounded border border-[var(--line-strong)] bg-transparent accent-[var(--accent)]"
+                          />
+                          <span className="truncate text-sm text-white/82">{tag.name}</span>
+                        </label>
                         <button
                           type="button"
                           onClick={() => handleDeleteTag(tag)}
-                          disabled={deletingId === tag.id}
-                          className="text-xs text-coral transition hover:text-coral/80 disabled:opacity-50"
+                          disabled={deletingId === tag.id || bulkDeletingTags}
+                          className="ui-chip text-coral disabled:opacity-50"
                         >
                           {deletingId === tag.id ? "..." : "Delete"}
                         </button>
@@ -321,6 +452,39 @@ function SettingsPage() {
                   Manage the shared strategy list here. Trades can only select from this saved set.
                 </p>
 
+                {!!strategies.length && (
+                  <div className="ui-panel flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex flex-wrap items-center gap-2 text-sm text-white/62">
+                      <span>{selectedStrategyIds.length} selected</span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedStrategyIds(strategies.map((strategy) => strategy.id))}
+                        className="ui-chip"
+                      >
+                        Select all
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedStrategyIds([])}
+                        className="ui-chip"
+                        disabled={selectedStrategyIds.length === 0}
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleBulkDeleteStrategies}
+                      disabled={selectedStrategyIds.length === 0 || bulkDeletingStrategies}
+                      className="ui-button-danger px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {bulkDeletingStrategies
+                        ? "Deleting..."
+                        : `Delete Selected${selectedStrategyIds.length ? ` (${selectedStrategyIds.length})` : ""}`}
+                    </button>
+                  </div>
+                )}
+
                 {loading ? (
                   <LoadingState label="Loading strategies..." className="min-h-[180px]" />
                 ) : strategies.length === 0 ? (
@@ -329,18 +493,30 @@ function SettingsPage() {
                     description="Create reusable strategies here and they will be available from each trade."
                   />
                 ) : (
-                  <div className="flex flex-wrap gap-3">
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                     {strategies.map((strategy) => (
                       <div
                         key={strategy.id}
-                        className="flex items-center gap-2 rounded-full border border-[var(--line)] bg-white/[0.035] px-4 py-2"
+                        className={`ui-panel flex items-center justify-between gap-3 rounded-[16px] px-4 py-3 transition ${
+                          selectedStrategyIds.includes(strategy.id)
+                            ? "border-[var(--accent)] bg-[rgba(124,92,255,0.08)]"
+                            : ""
+                        }`}
                       >
-                        <span className="text-sm text-white/82">{strategy.name}</span>
+                        <label className="flex min-w-0 flex-1 items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedStrategyIds.includes(strategy.id)}
+                            onChange={() => toggleStrategySelection(strategy.id)}
+                            className="h-4 w-4 rounded border border-[var(--line-strong)] bg-transparent accent-[var(--accent)]"
+                          />
+                          <span className="truncate text-sm text-white/82">{strategy.name}</span>
+                        </label>
                         <button
                           type="button"
                           onClick={() => handleDeleteStrategy(strategy)}
-                          disabled={deletingStrategyId === strategy.id}
-                          className="text-xs text-coral transition hover:text-coral/80 disabled:opacity-50"
+                          disabled={deletingStrategyId === strategy.id || bulkDeletingStrategies}
+                          className="ui-chip text-coral disabled:opacity-50"
                         >
                           {deletingStrategyId === strategy.id ? "..." : "Delete"}
                         </button>

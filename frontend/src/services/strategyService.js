@@ -31,6 +31,11 @@ const strategyService = {
     const response = await api.delete(`/strategies/${id}`);
     clearStrategyCache();
     return response.data.data;
+  },
+
+  async deleteStrategies(ids) {
+    await Promise.all(ids.map((id) => api.delete(`/strategies/${id}`)));
+    clearStrategyCache();
   }
 };
 

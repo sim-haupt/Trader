@@ -590,7 +590,6 @@ function TradeReviewCharts({ trade }) {
   return (
     <PremiumChart
       title="Execution Review"
-      subtitle="1-minute Alpaca bars with volume, extended-hours context, and execution markers at stored fill prices."
       candleBars={timeline.candleBars}
       actualBars={timeline.actualBars}
       markers={markers}

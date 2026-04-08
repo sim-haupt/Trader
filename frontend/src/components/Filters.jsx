@@ -77,7 +77,7 @@ function Filters({ filters, onChange, onReset, strategies = [], tags = [] }) {
           />
         </div>
 
-        <div className="flex items-end justify-end gap-2">
+        <div className="flex items-center justify-end gap-2 xl:self-center">
           <button type="button" onClick={onReset} className="ui-button text-sm">
             Reset
           </button>

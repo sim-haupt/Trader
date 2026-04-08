@@ -1693,14 +1693,14 @@ function CompareGroupCard({ title, filters, onChange, tags, strategies, matchedC
         <p className="mt-1 text-xs text-white/44">Trades matches: {matchedCount}</p>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         <div className="min-w-0">
           <label className="mb-2 block text-xs font-medium text-white/72">Symbol</label>
           <input
             value={filters.symbol}
             onChange={(event) => onChange("symbol", event.target.value)}
             placeholder="Symbol"
-            className="ui-input"
+            className="ui-input max-w-full"
           />
         </div>
         <div className="min-w-0">
@@ -1713,7 +1713,7 @@ function CompareGroupCard({ title, filters, onChange, tags, strategies, matchedC
               onChange("to", to);
             }}
             placeholder="From - To"
-            buttonClassName="!py-3"
+            buttonClassName="!py-3 !w-full"
           />
         </div>
         <div className="min-w-0">
@@ -1726,7 +1726,7 @@ function CompareGroupCard({ title, filters, onChange, tags, strategies, matchedC
               ...tags.map((tag) => ({ label: tag.name, value: tag.name }))
             ]}
             placeholder="Select"
-            buttonClassName="!py-3"
+            buttonClassName="!py-3 !w-full"
           />
         </div>
         <div className="min-w-0">
@@ -1739,7 +1739,7 @@ function CompareGroupCard({ title, filters, onChange, tags, strategies, matchedC
               ...strategies.map((strategy) => ({ label: strategy.name, value: strategy.name }))
             ]}
             placeholder="All"
-            buttonClassName="!py-3"
+            buttonClassName="!py-3 !w-full"
           />
         </div>
         <div className="min-w-0">
@@ -1753,7 +1753,7 @@ function CompareGroupCard({ title, filters, onChange, tags, strategies, matchedC
               { label: "Short", value: "SHORT" }
             ]}
             placeholder="All"
-            buttonClassName="!py-3"
+            buttonClassName="!py-3 !w-full"
           />
         </div>
         <div className="min-w-0">
@@ -1768,7 +1768,7 @@ function CompareGroupCard({ title, filters, onChange, tags, strategies, matchedC
               { label: "Scratch", value: "SCRATCH" }
             ]}
             placeholder="All"
-            buttonClassName="!py-3"
+            buttonClassName="!py-3 !w-full"
           />
         </div>
       </div>
