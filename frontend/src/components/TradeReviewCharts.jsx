@@ -17,19 +17,93 @@ import {
 } from "../utils/chartIndicators";
 import LoadingState from "./ui/LoadingState";
 
+function getEasternDayStamp(value) {
+  const timestamp = toChartUnixSeconds(value);
+
+  if (timestamp == null) {
+    return null;
+  }
+
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  });
+
+  return formatter.format(new Date(timestamp * 1000));
+}
+
 function buildDayRange(anchorDate) {
-  const parsedTimestamp = toChartUnixSeconds(anchorDate);
-  const start = parsedTimestamp ? new Date(parsedTimestamp * 1000) : new Date(anchorDate);
-  start.setHours(4, 0, 0, 0);
-  const end = parsedTimestamp ? new Date(parsedTimestamp * 1000) : new Date(anchorDate);
-  end.setHours(20, 0, 0, 0);
-  return { from: start.toISOString(), to: end.toISOString() };
+  const dayStamp = getEasternDayStamp(anchorDate);
+
+  if (!dayStamp) {
+    const fallback = new Date(anchorDate);
+    return {
+      from: fallback.toISOString(),
+      to: fallback.toISOString()
+    };
+  }
+
+  const fromSeconds = toChartUnixSeconds(`${dayStamp}T04:00:00`);
+  const toSeconds = toChartUnixSeconds(`${dayStamp}T20:00:00`);
+
+  return {
+    from: new Date(fromSeconds * 1000).toISOString(),
+    to: new Date(toSeconds * 1000).toISOString()
+  };
 }
 
 function formatSessionBoundary(anchorTime, hour, minute = 0) {
-  const date = new Date(anchorTime * 1000);
-  date.setHours(hour, minute, 0, 0);
-  return Math.floor(date.getTime() / 1000);
+  const dayStamp = getEasternDayStamp(new Date(anchorTime * 1000).toISOString());
+
+  if (!dayStamp) {
+    return anchorTime;
+  }
+
+  return toChartUnixSeconds(`${dayStamp}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`);
+}
+
+function hydrateMinuteBars(rawBars) {
+  if (!Array.isArray(rawBars) || rawBars.length === 0) {
+    return [];
+  }
+
+  const sortedBars = [...rawBars]
+    .filter((bar) => Number.isFinite(bar.time))
+    .sort((left, right) => left.time - right.time);
+
+  if (sortedBars.length === 0) {
+    return [];
+  }
+
+  const hydrated = [];
+  let previousBar = sortedBars[0];
+
+  hydrated.push(previousBar);
+
+  for (let index = 1; index < sortedBars.length; index += 1) {
+    const currentBar = sortedBars[index];
+    let expectedTime = previousBar.time + 60;
+
+    while (expectedTime < currentBar.time) {
+      hydrated.push({
+        time: expectedTime,
+        open: previousBar.close,
+        high: previousBar.close,
+        low: previousBar.close,
+        close: previousBar.close,
+        volume: 0,
+        synthetic: true
+      });
+      expectedTime += 60;
+    }
+
+    hydrated.push(currentBar);
+    previousBar = currentBar;
+  }
+
+  return hydrated;
 }
 
 function TimeframeChart({ title, subtitle, bars, markers }) {
@@ -58,7 +132,7 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
       timeScale: {
         borderColor: "rgba(229,231,235,0.14)",
         timeVisible: true,
-        secondsVisible: true
+        secondsVisible: false
       },
       crosshair: {
         vertLine: { color: "rgba(124,211,255,0.28)" },
@@ -349,7 +423,7 @@ function TradeReviewCharts({ trade }) {
     initialValue: { bars: [] },
     deps: [trade.symbol, trade.entryDate]
   });
-  const minuteBars = minuteResponse?.bars || [];
+  const minuteBars = useMemo(() => hydrateMinuteBars(minuteResponse?.bars || []), [minuteResponse?.bars]);
 
   if (loading) {
     return (
