@@ -189,9 +189,12 @@ function buildExecutionMarkers(trade) {
         position: execution.action === "BUY" ? "belowBar" : "aboveBar",
         color: execution.action === "BUY" ? "#6ef0c3" : "#ff7e6b",
         shape: execution.action === "BUY" ? "arrowUp" : "arrowDown",
-        text: `${execution.action === "BUY" ? "B" : "S"} ${asNumber(execution.quantity)} @ ${asNumber(
-          execution.price
-        ).toFixed(2)}${timeLabel ? ` · ${timeLabel}` : ""}`,
+        text: `${execution.action === "BUY" ? "Buy" : "Sell"} ${asNumber(
+          execution.quantity
+        )} @ ${asNumber(execution.price).toFixed(2)}`,
+        detailText: `${execution.action === "BUY" ? "Buy" : "Sell"} ${asNumber(
+          execution.quantity
+        )} @ ${asNumber(execution.price).toFixed(2)}${timeLabel ? ` · ${timeLabel}` : ""}`,
         id: execution.id || `${trade.id}-${index + 1}`
       };
     })

@@ -3,12 +3,16 @@ import {
   CandlestickSeries,
   ColorType,
   HistogramSeries,
+  LineSeries,
   createChart
 } from "lightweight-charts";
 import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 import marketDataService from "../services/marketDataService";
 import {
   buildExecutionMarkers,
+  calculateEmaSeries,
+  calculateMacdSeries,
+  calculateVwapSeries,
   toChartUnixSeconds
 } from "../utils/chartIndicators";
 import LoadingState from "./ui/LoadingState";
@@ -218,14 +222,22 @@ function renderOverlay({ overlayEl, chart, candleSeries, bars, markers, dayStamp
     const yOffset = stackIndex * 16 * direction;
     const markerTop = y + yOffset;
 
+    const markerWrap = document.createElement("div");
+    markerWrap.className = "absolute z-20";
+    markerWrap.style.left = `${x}px`;
+    markerWrap.style.top = `${markerTop}px`;
+    markerWrap.style.transform = "translate(-50%, -50%)";
+    markerWrap.style.pointerEvents = "auto";
+
     const pin = document.createElement("div");
-    pin.className = "absolute pointer-events-none";
-    pin.style.left = `${x}px`;
-    pin.style.top = `${markerTop}px`;
+    pin.className = "absolute";
+    pin.style.left = "0";
+    pin.style.top = "0";
     pin.style.width = "0";
     pin.style.height = "0";
     pin.style.transform = "translate(-50%, -50%)";
     pin.style.filter = "drop-shadow(0 4px 10px rgba(0,0,0,0.45))";
+    pin.style.cursor = "pointer";
 
     if (marker.shape === "arrowUp") {
       pin.style.borderLeft = "8px solid transparent";
@@ -239,17 +251,32 @@ function renderOverlay({ overlayEl, chart, candleSeries, bars, markers, dayStamp
 
     const label = document.createElement("div");
     label.className =
-      "absolute pointer-events-none whitespace-nowrap rounded-md border px-2.5 py-1 text-[10px] font-semibold tracking-[0.03em] backdrop-blur";
-    label.style.left = `${x + 12}px`;
-    label.style.top = `${marker.shape === "arrowUp" ? markerTop - 24 : markerTop + 6}px`;
+      "absolute whitespace-nowrap rounded-md border px-2.5 py-1 text-[10px] font-semibold tracking-[0.03em] backdrop-blur";
+    label.style.left = "12px";
+    label.style.top = `${marker.shape === "arrowUp" ? -24 : 6}px`;
     label.style.color = marker.color;
     label.style.background = "rgba(11,15,23,0.94)";
     label.style.borderColor = `${marker.color}66`;
     label.style.boxShadow = "0 8px 24px rgba(0,0,0,0.28)";
+    label.style.opacity = "0";
+    label.style.visibility = "hidden";
+    label.style.transition = "opacity 120ms ease";
+    label.style.pointerEvents = "none";
     label.textContent = marker.text;
 
-    fragment.appendChild(pin);
-    fragment.appendChild(label);
+    markerWrap.addEventListener("mouseenter", () => {
+      label.style.opacity = "1";
+      label.style.visibility = "visible";
+    });
+
+    markerWrap.addEventListener("mouseleave", () => {
+      label.style.opacity = "0";
+      label.style.visibility = "hidden";
+    });
+
+    markerWrap.appendChild(pin);
+    markerWrap.appendChild(label);
+    fragment.appendChild(markerWrap);
   }
 
   overlayEl.appendChild(fragment);
@@ -266,12 +293,18 @@ function PremiumChart({
   sessionEnd
 }) {
   const mainRef = useRef(null);
+  const macdRef = useRef(null);
   const overlayRef = useRef(null);
 
   useEffect(() => {
-    if (!mainRef.current || !overlayRef.current || !candleBars.length) {
+    if (!mainRef.current || !macdRef.current || !overlayRef.current || !candleBars.length) {
       return undefined;
     }
+
+    const ema9Data = calculateEmaSeries(actualBars, 9);
+    const ema20Data = calculateEmaSeries(actualBars, 20);
+    const vwapData = calculateVwapSeries(actualBars);
+    const macdData = calculateMacdSeries(actualBars);
 
     const chartOptions = {
       layout: {
@@ -333,12 +366,72 @@ function PremiumChart({
     });
     volumeSeries.setData(buildVolumeData(actualBars));
 
+    const ema9Series = mainChart.addSeries(LineSeries, {
+      color: "#60a5fa",
+      lineWidth: 2,
+      priceLineVisible: false,
+      lastValueVisible: true
+    });
+    ema9Series.setData(ema9Data);
+
+    const ema20Series = mainChart.addSeries(LineSeries, {
+      color: "#3b82f6",
+      lineWidth: 2,
+      lineStyle: 2,
+      priceLineVisible: false,
+      lastValueVisible: true
+    });
+    ema20Series.setData(ema20Data);
+
+    const vwapSeries = mainChart.addSeries(LineSeries, {
+      color: "#38bdf8",
+      lineWidth: 2,
+      priceLineVisible: false,
+      lastValueVisible: true
+    });
+    vwapSeries.setData(vwapData);
+
     mainChart.priceScale("volume").applyOptions({
       scaleMargins: {
         top: 0.77,
         bottom: 0.02
       }
     });
+
+    const macdChart = createChart(macdRef.current, {
+      ...chartOptions,
+      width: macdRef.current.clientWidth,
+      height: 180,
+      rightPriceScale: {
+        borderColor: "rgba(229,231,235,0.14)",
+        scaleMargins: {
+          top: 0.12,
+          bottom: 0.12
+        }
+      }
+    });
+
+    const macdHistogramSeries = macdChart.addSeries(HistogramSeries, {
+      priceLineVisible: false,
+      lastValueVisible: true
+    });
+    macdHistogramSeries.setData(macdData.histogram);
+
+    const macdLineSeries = macdChart.addSeries(LineSeries, {
+      color: "#60a5fa",
+      lineWidth: 2,
+      priceLineVisible: false,
+      lastValueVisible: true
+    });
+    macdLineSeries.setData(macdData.macdLine);
+
+    const signalLineSeries = macdChart.addSeries(LineSeries, {
+      color: "#fb923c",
+      lineWidth: 2,
+      priceLineVisible: false,
+      lastValueVisible: true
+    });
+    signalLineSeries.setData(macdData.signalLine);
     const refreshOverlay = () =>
       renderOverlay({
         overlayEl: overlayRef.current,
@@ -349,14 +442,30 @@ function PremiumChart({
         dayStamp
       });
 
+    const syncMacdRange = (range) => {
+      if (range) {
+        macdChart.timeScale().setVisibleLogicalRange(range);
+      }
+    };
+
+    const syncMainRange = (range) => {
+      if (range) {
+        mainChart.timeScale().setVisibleLogicalRange(range);
+      }
+    };
+
     mainChart.timeScale().subscribeVisibleLogicalRangeChange(refreshOverlay);
+    mainChart.timeScale().subscribeVisibleLogicalRangeChange(syncMacdRange);
+    macdChart.timeScale().subscribeVisibleLogicalRangeChange(syncMainRange);
 
     const first = sessionStart ?? candleBars[0]?.time;
     const last = sessionEnd ?? candleBars[candleBars.length - 1]?.time;
     if (first && last) {
       mainChart.timeScale().setVisibleRange({ from: first, to: last });
+      macdChart.timeScale().setVisibleRange({ from: first, to: last });
     } else {
       mainChart.timeScale().fitContent();
+      macdChart.timeScale().fitContent();
     }
 
     refreshOverlay();
@@ -366,16 +475,23 @@ function PremiumChart({
       if (mainRef.current) {
         mainChart.applyOptions({ width: mainRef.current.clientWidth });
       }
+      if (macdRef.current) {
+        macdChart.applyOptions({ width: macdRef.current.clientWidth });
+      }
       refreshOverlay();
     });
 
     resizeObserver.observe(mainRef.current);
+    resizeObserver.observe(macdRef.current);
 
     return () => {
       cancelAnimationFrame(rafId);
       resizeObserver.disconnect();
       mainChart.timeScale().unsubscribeVisibleLogicalRangeChange(refreshOverlay);
+      mainChart.timeScale().unsubscribeVisibleLogicalRangeChange(syncMacdRange);
+      macdChart.timeScale().unsubscribeVisibleLogicalRangeChange(syncMainRange);
       mainChart.remove();
+      macdChart.remove();
     };
   }, [actualBars, candleBars, markers, dayStamp, sessionEnd, sessionStart]);
 
@@ -387,7 +503,7 @@ function PremiumChart({
           <p className="mt-1 text-sm text-mist">{subtitle}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {["1m", "Volume", "ETH"].map((item) => (
+          {["1m", "EMA 9", "EMA 20", "VWAP", "MACD", "ETH"].map((item) => (
             <span key={item} className="ui-chip">
               {item}
             </span>
@@ -399,6 +515,12 @@ function PremiumChart({
         <div className="relative overflow-hidden rounded-[12px] border border-white/[0.08] bg-[#0b1018]">
           <div ref={mainRef} />
           <div ref={overlayRef} className="pointer-events-none absolute inset-0 z-10" />
+        </div>
+      </div>
+
+      <div className="rounded-[16px] border border-[#e5e7eb42] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01))] p-2 shadow-[0_18px_40px_rgba(0,0,0,0.24)]">
+        <div className="relative overflow-hidden rounded-[12px] border border-white/[0.08] bg-[#0b1018]">
+          <div ref={macdRef} />
         </div>
       </div>
     </div>
