@@ -19,7 +19,6 @@ import DateRangePicker from "../components/ui/DateRangePicker";
 import EmptyState from "../components/ui/EmptyState";
 import LoadingState from "../components/ui/LoadingState";
 import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
-import marketDataService from "../services/marketDataService";
 import tagService from "../services/tagService";
 import strategyService from "../services/strategyService";
 import tradeService from "../services/tradeService";
@@ -157,9 +156,6 @@ const DETAILED_TIMEFRAME_OPTIONS = [
   { key: "30", label: "30M", minutes: 30 },
   { key: "15", label: "15M", minutes: 15 }
 ];
-const MARKET_VOLUME_MAX_REQUESTS = 20;
-const MARKET_VOLUME_CONCURRENCY = 2;
-
 function formatHourBucket(totalMinutes) {
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
@@ -168,28 +164,6 @@ function formatHourBucket(totalMinutes) {
 
 function formatAxisCurrency(value) {
   return `${value < 0 ? "-" : ""}$${Math.abs(value)}`;
-}
-
-function buildMarketVolumeRequestBounds(entryDateValue) {
-  const entryDate = new Date(entryDateValue);
-  const from = new Date(entryDate);
-  from.setHours(0, 0, 0, 0);
-  const to = new Date(entryDate);
-  to.setHours(23, 59, 59, 999);
-
-  return {
-    from: from.toISOString(),
-    to: to.toISOString()
-  };
-}
-
-function getTotalVolumeForDay(bars) {
-  if (!Array.isArray(bars) || bars.length === 0) {
-    return null;
-  }
-
-  const totalVolume = bars.reduce((sum, bar) => sum + Number(bar.volume || 0), 0);
-  return Number.isFinite(totalVolume) ? totalVolume : null;
 }
 
 function buildOverviewSeries(trades, rangeDays, options = {}) {
@@ -813,24 +787,42 @@ function buildInstrumentStats(trades, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
   const defaultFees = options.defaultFees || 0;
   const pnlType = options.pnlType || "NET";
-  const marketVolumeByTradeId = options.marketVolumeByTradeId || {};
 
   const symbolMap = new Map();
   const volumeBuckets = new Map(
-    ["500K-1M", "1M-2.49M", "2.5M-4.9M", "5M-9.9M", "10M-24.9M", "25M+"].map((label) => [
+    ["<500K", "500K-1M", "1M-2.49M", "2.5M-4.9M", "5M-9.9M", "10M-24.9M", "25M+"].map((label) => [
+      label,
+      { label, count: 0, pnl: 0 }
+    ])
+  );
+  const relativeVolumeBuckets = new Map(
+    ["<0.5x", "0.5x-0.99x", "1x-1.99x", "2x-2.99x", "3x-4.99x", "5x+"].map((label) => [
+      label,
+      { label, count: 0, pnl: 0 }
+    ])
+  );
+  const floatBuckets = new Map(
+    ["<5M", "5M-19.9M", "20M-49.9M", "50M-99.9M", "100M-249.9M", "250M+"].map((label) => [
+      label,
+      { label, count: 0, pnl: 0 }
+    ])
+  );
+  const priorCloseBuckets = new Map(
+    ["<-10%", "-10%- -5%", "-5%- -2%", "-2%-2%", "2%-5%", "5%-10%", ">10%"].map((label) => [
       label,
       { label, count: 0, pnl: 0 }
     ])
   );
 
   function addToVolumeBucket(volumeAtTrade, pnl) {
-    if (!Number.isFinite(volumeAtTrade) || volumeAtTrade < 500_000) {
+    if (!Number.isFinite(volumeAtTrade) || volumeAtTrade < 0) {
       return;
     }
 
     let label = "25M+";
 
-    if (volumeAtTrade < 1_000_000) label = "500K-1M";
+    if (volumeAtTrade < 500_000) label = "<500K";
+    else if (volumeAtTrade < 1_000_000) label = "500K-1M";
     else if (volumeAtTrade < 2_500_000) label = "1M-2.49M";
     else if (volumeAtTrade < 5_000_000) label = "2.5M-4.9M";
     else if (volumeAtTrade < 10_000_000) label = "5M-9.9M";
@@ -841,9 +833,68 @@ function buildInstrumentStats(trades, options = {}) {
     bucket.pnl = Number((bucket.pnl + pnl).toFixed(2));
   }
 
+  function addToRelativeVolumeBucket(relativeVolume, pnl) {
+    if (!Number.isFinite(relativeVolume) || relativeVolume < 0) {
+      return;
+    }
+
+    let label = "5x+";
+
+    if (relativeVolume < 0.5) label = "<0.5x";
+    else if (relativeVolume < 1) label = "0.5x-0.99x";
+    else if (relativeVolume < 2) label = "1x-1.99x";
+    else if (relativeVolume < 3) label = "2x-2.99x";
+    else if (relativeVolume < 5) label = "3x-4.99x";
+
+    const bucket = relativeVolumeBuckets.get(label);
+    bucket.count += 1;
+    bucket.pnl = Number((bucket.pnl + pnl).toFixed(2));
+  }
+
+  function addToFloatBucket(floatValue, pnl) {
+    if (!Number.isFinite(floatValue) || floatValue < 0) {
+      return;
+    }
+
+    let label = "250M+";
+
+    if (floatValue < 5_000_000) label = "<5M";
+    else if (floatValue < 20_000_000) label = "5M-19.9M";
+    else if (floatValue < 50_000_000) label = "20M-49.9M";
+    else if (floatValue < 100_000_000) label = "50M-99.9M";
+    else if (floatValue < 250_000_000) label = "100M-249.9M";
+
+    const bucket = floatBuckets.get(label);
+    bucket.count += 1;
+    bucket.pnl = Number((bucket.pnl + pnl).toFixed(2));
+  }
+
+  function addToPriorCloseBucket(priorCloseDiffPercent, pnl) {
+    if (!Number.isFinite(priorCloseDiffPercent)) {
+      return;
+    }
+
+    let label = ">10%";
+
+    if (priorCloseDiffPercent < -10) label = "<-10%";
+    else if (priorCloseDiffPercent < -5) label = "-10%- -5%";
+    else if (priorCloseDiffPercent < -2) label = "-5%- -2%";
+    else if (priorCloseDiffPercent < 2) label = "-2%-2%";
+    else if (priorCloseDiffPercent < 5) label = "2%-5%";
+    else if (priorCloseDiffPercent < 10) label = "5%-10%";
+
+    const bucket = priorCloseBuckets.get(label);
+    bucket.count += 1;
+    bucket.pnl = Number((bucket.pnl + pnl).toFixed(2));
+  }
+
   for (const trade of trades) {
     const symbol = String(trade.symbol || "").toUpperCase();
     const quantity = Math.abs(Number(trade.quantity ?? 0));
+    const instrumentVolumeAtEntry = Number(trade.entryVolume);
+    const relativeVolumeAtEntry = Number(trade.entryRelativeVolume);
+    const instrumentFloat = Number(trade.instrumentFloat);
+    const priorCloseDiffPercent = Number(trade.entryPriorCloseDiffPercent);
     const pnl = getTradePnlByType(trade, pnlType, defaultCommission, defaultFees);
 
     const current = symbolMap.get(symbol) || {
@@ -858,7 +909,10 @@ function buildInstrumentStats(trades, options = {}) {
     current.trades += 1;
     symbolMap.set(symbol, current);
 
-    addToVolumeBucket(Number(marketVolumeByTradeId[trade.id]), pnl);
+    addToVolumeBucket(instrumentVolumeAtEntry, pnl);
+    addToRelativeVolumeBucket(relativeVolumeAtEntry, pnl);
+    addToFloatBucket(instrumentFloat, pnl);
+    addToPriorCloseBucket(priorCloseDiffPercent, pnl);
   }
 
   const symbols = Array.from(symbolMap.values());
@@ -873,7 +927,13 @@ function buildInstrumentStats(trades, options = {}) {
     topSymbols: top20,
     bottomSymbols: bottom20,
     instrumentVolumeDistribution: Array.from(volumeBuckets.values()),
-    instrumentVolumePerformance: Array.from(volumeBuckets.values())
+    instrumentVolumePerformance: Array.from(volumeBuckets.values()),
+    relativeVolumeDistribution: Array.from(relativeVolumeBuckets.values()),
+    relativeVolumePerformance: Array.from(relativeVolumeBuckets.values()),
+    floatDistribution: Array.from(floatBuckets.values()),
+    floatPerformance: Array.from(floatBuckets.values()),
+    priorCloseDistribution: Array.from(priorCloseBuckets.values()),
+    priorClosePerformance: Array.from(priorCloseBuckets.values())
   };
 }
 
@@ -1219,6 +1279,54 @@ function DetailedBreakdownSection({
           <HorizontalBreakdownChart
             title="PERFORMANCE BY INSTRUMENT VOLUME"
             data={instrumentStats.instrumentVolumePerformance}
+            dataKey="pnl"
+            tooltip={<CurrencyTooltip />}
+            currencyAxis
+            positiveNegative
+            yAxisWidth={110}
+          />
+          <HorizontalBreakdownChart
+            title="DISTRIBUTION BY RELATIVE VOLUME"
+            data={instrumentStats.relativeVolumeDistribution}
+            dataKey="count"
+            tooltip={<CountTooltip />}
+            yAxisWidth={110}
+          />
+          <HorizontalBreakdownChart
+            title="PERFORMANCE BY RELATIVE VOLUME"
+            data={instrumentStats.relativeVolumePerformance}
+            dataKey="pnl"
+            tooltip={<CurrencyTooltip />}
+            currencyAxis
+            positiveNegative
+            yAxisWidth={110}
+          />
+          <HorizontalBreakdownChart
+            title="DISTRIBUTION BY FLOAT"
+            data={instrumentStats.floatDistribution}
+            dataKey="count"
+            tooltip={<CountTooltip />}
+            yAxisWidth={120}
+          />
+          <HorizontalBreakdownChart
+            title="PERFORMANCE BY FLOAT"
+            data={instrumentStats.floatPerformance}
+            dataKey="pnl"
+            tooltip={<CurrencyTooltip />}
+            currencyAxis
+            positiveNegative
+            yAxisWidth={120}
+          />
+          <HorizontalBreakdownChart
+            title="DISTRIBUTION BY PRIOR CLOSE %"
+            data={instrumentStats.priorCloseDistribution}
+            dataKey="count"
+            tooltip={<CountTooltip />}
+            yAxisWidth={110}
+          />
+          <HorizontalBreakdownChart
+            title="PERFORMANCE BY PRIOR CLOSE %"
+            data={instrumentStats.priorClosePerformance}
             dataKey="pnl"
             tooltip={<CurrencyTooltip />}
             currencyAxis
@@ -1678,9 +1786,6 @@ function ReportsPage() {
   const [pnlType, setPnlType] = useState("GROSS");
   const [detailedTimeframeKey, setDetailedTimeframeKey] = useState("60");
   const [detailedBreakdownTab, setDetailedBreakdownTab] = useState("Days/Times");
-  const [marketVolumeByTradeId, setMarketVolumeByTradeId] = useState({});
-  const shouldLoadInstrumentMarketVolume =
-    activeTab === "Detailed" && detailedBreakdownTab === "Instrument";
   const {
     data: trades,
     loading,
@@ -1709,119 +1814,6 @@ function ReportsPage() {
     () => applyReportFilters(trades, filters, activeRange.days),
     [trades, filters, activeRange.days]
   );
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadMarketVolumes() {
-      if (!shouldLoadInstrumentMarketVolume) {
-        return;
-      }
-
-      if (filteredTrades.length === 0) {
-        setMarketVolumeByTradeId({});
-        return;
-      }
-
-      const uniqueRequests = new Map();
-
-      for (const trade of filteredTrades) {
-        const symbol = String(trade.symbol || "").toUpperCase();
-        const dayKey = getDayKey(new Date(trade.entryDate));
-        const requestKey = `${symbol}-${dayKey}`;
-
-        if (!uniqueRequests.has(requestKey)) {
-          const bounds = buildMarketVolumeRequestBounds(trade.entryDate);
-          uniqueRequests.set(requestKey, {
-            symbol,
-            ...bounds
-          });
-        }
-      }
-
-      const requestEntries = Array.from(uniqueRequests.entries()).slice(0, MARKET_VOLUME_MAX_REQUESTS);
-      const responses = [];
-
-      for (let index = 0; index < requestEntries.length; index += MARKET_VOLUME_CONCURRENCY) {
-        const chunk = requestEntries.slice(index, index + MARKET_VOLUME_CONCURRENCY);
-        const chunkResponses = await Promise.all(
-          chunk.map(async ([key, request]) => {
-            try {
-              const cached = marketDataService.peekBars({
-                symbol: request.symbol,
-                resolution: "1m",
-                from: request.from,
-                to: request.to,
-                includeExtended: true
-              });
-
-              if (cached) {
-                return [key, cached];
-              }
-
-              const result = await marketDataService.getBars({
-                symbol: request.symbol,
-                resolution: "1m",
-                from: request.from,
-                to: request.to,
-                includeExtended: true
-              });
-
-              return [key, result];
-            } catch (error) {
-              const isRateLimited =
-                /429/.test(String(error?.message || "")) ||
-                /too many/i.test(String(error?.message || "")) ||
-                /rate limit/i.test(String(error?.message || ""));
-
-              if (isRateLimited) {
-                return [key, "__RATE_LIMITED__"];
-              }
-
-              return [key, null];
-            }
-          })
-        );
-
-        responses.push(...chunkResponses);
-
-        if (chunkResponses.some(([, result]) => result === "__RATE_LIMITED__")) {
-          break;
-        }
-      }
-
-      if (cancelled) {
-        return;
-      }
-
-      const barsByRequest = new Map(responses);
-      const nextVolumes = {};
-
-      for (const trade of filteredTrades) {
-        const symbol = String(trade.symbol || "").toUpperCase();
-        const dayKey = getDayKey(new Date(trade.entryDate));
-        const requestKey = `${symbol}-${dayKey}`;
-        const marketData = barsByRequest.get(requestKey);
-        if (marketData === "__RATE_LIMITED__") {
-          continue;
-        }
-        const bars = marketData?.bars || [];
-        const totalDayVolume = getTotalVolumeForDay(bars);
-
-        if (totalDayVolume !== null) {
-          nextVolumes[trade.id] = totalDayVolume;
-        }
-      }
-
-      setMarketVolumeByTradeId(nextVolumes);
-    }
-
-    loadMarketVolumes();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [filteredTrades, shouldLoadInstrumentMarketVolume]);
   const reportSeries = useMemo(
     () => buildOverviewSeries(filteredTrades, activeRange.days, {
       defaultCommission: user?.defaultCommission ?? 0,
@@ -1871,10 +1863,9 @@ function ReportsPage() {
       buildInstrumentStats(filteredTrades, {
         defaultCommission: user?.defaultCommission ?? 0,
         defaultFees: user?.defaultFees ?? 0,
-        pnlType,
-        marketVolumeByTradeId
+        pnlType
       }),
-    [filteredTrades, user?.defaultCommission, user?.defaultFees, pnlType, marketVolumeByTradeId]
+    [filteredTrades, user?.defaultCommission, user?.defaultFees, pnlType]
   );
   const winVsLossDayStats = useMemo(
     () => buildWinVsLossDaysStats(filteredTrades, {
