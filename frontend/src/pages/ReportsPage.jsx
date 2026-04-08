@@ -705,31 +705,31 @@ function buildBucketStats(trades, options = {}) {
 
   const priceBuckets = makeBuckets([
     "< $2.00",
-    "$2 - $4.99",
-    "$5 - $9.99",
-    "$10 - $19.99",
-    "$20 - $49.99",
-    "$50 - $99.99",
-    "$100 - $199.99",
-    "$200 - $499.99"
+    "$2-$4.99",
+    "$5-$9.99",
+    "$10-$19.99",
+    "$20-$49.99",
+    "$50-$99.99",
+    "$100-$199.99",
+    "$200-$499.99"
   ]);
 
   const volumeBuckets = makeBuckets([
-    "20 - 49",
-    "50 - 99",
-    "100 - 499",
-    "500 - 999",
-    "1,000 - 1,999",
-    "2,000 - 2,999"
+    "20-49",
+    "50-99",
+    "100-499",
+    "500-999",
+    "1,000-1,999",
+    "2,000-2,999"
   ]);
 
   const rangeBuckets = makeBuckets([
-    "$0.00 - $0.09",
-    "$0.10 - $0.19",
-    "$0.20 - $0.49",
-    "$0.50 - $0.99",
-    "$1.00 - $1.99",
-    "$2.00 - $4.99",
+    "$0.00-$0.09",
+    "$0.10-$0.19",
+    "$0.20-$0.49",
+    "$0.50-$0.99",
+    "$1.00-$1.99",
+    "$2.00-$4.99",
     "$5.00+"
   ]);
 
@@ -750,27 +750,27 @@ function buildBucketStats(trades, options = {}) {
     const perTradeRange = Math.abs(exitPrice - Number(trade.entryPrice ?? 0));
 
     if (entryPrice < 2) addToBucket(priceBuckets, "< $2.00", pnl);
-    else if (entryPrice < 5) addToBucket(priceBuckets, "$2 - $4.99", pnl);
-    else if (entryPrice < 10) addToBucket(priceBuckets, "$5 - $9.99", pnl);
-    else if (entryPrice < 20) addToBucket(priceBuckets, "$10 - $19.99", pnl);
-    else if (entryPrice < 50) addToBucket(priceBuckets, "$20 - $49.99", pnl);
-    else if (entryPrice < 100) addToBucket(priceBuckets, "$50 - $99.99", pnl);
-    else if (entryPrice < 200) addToBucket(priceBuckets, "$100 - $199.99", pnl);
-    else addToBucket(priceBuckets, "$200 - $499.99", pnl);
+    else if (entryPrice < 5) addToBucket(priceBuckets, "$2-$4.99", pnl);
+    else if (entryPrice < 10) addToBucket(priceBuckets, "$5-$9.99", pnl);
+    else if (entryPrice < 20) addToBucket(priceBuckets, "$10-$19.99", pnl);
+    else if (entryPrice < 50) addToBucket(priceBuckets, "$20-$49.99", pnl);
+    else if (entryPrice < 100) addToBucket(priceBuckets, "$50-$99.99", pnl);
+    else if (entryPrice < 200) addToBucket(priceBuckets, "$100-$199.99", pnl);
+    else addToBucket(priceBuckets, "$200-$499.99", pnl);
 
-    if (quantity >= 20 && quantity < 50) addToBucket(volumeBuckets, "20 - 49", pnl);
-    else if (quantity < 100) addToBucket(volumeBuckets, "50 - 99", pnl);
-    else if (quantity < 500) addToBucket(volumeBuckets, "100 - 499", pnl);
-    else if (quantity < 1000) addToBucket(volumeBuckets, "500 - 999", pnl);
-    else if (quantity < 2000) addToBucket(volumeBuckets, "1,000 - 1,999", pnl);
-    else addToBucket(volumeBuckets, "2,000 - 2,999", pnl);
+    if (quantity >= 20 && quantity < 50) addToBucket(volumeBuckets, "20-49", pnl);
+    else if (quantity < 100) addToBucket(volumeBuckets, "50-99", pnl);
+    else if (quantity < 500) addToBucket(volumeBuckets, "100-499", pnl);
+    else if (quantity < 1000) addToBucket(volumeBuckets, "500-999", pnl);
+    else if (quantity < 2000) addToBucket(volumeBuckets, "1,000-1,999", pnl);
+    else addToBucket(volumeBuckets, "2,000-2,999", pnl);
 
-    if (perTradeRange < 0.1) addToBucket(rangeBuckets, "$0.00 - $0.09", pnl);
-    else if (perTradeRange < 0.2) addToBucket(rangeBuckets, "$0.10 - $0.19", pnl);
-    else if (perTradeRange < 0.5) addToBucket(rangeBuckets, "$0.20 - $0.49", pnl);
-    else if (perTradeRange < 1) addToBucket(rangeBuckets, "$0.50 - $0.99", pnl);
-    else if (perTradeRange < 2) addToBucket(rangeBuckets, "$1.00 - $1.99", pnl);
-    else if (perTradeRange < 5) addToBucket(rangeBuckets, "$2.00 - $4.99", pnl);
+    if (perTradeRange < 0.1) addToBucket(rangeBuckets, "$0.00-$0.09", pnl);
+    else if (perTradeRange < 0.2) addToBucket(rangeBuckets, "$0.10-$0.19", pnl);
+    else if (perTradeRange < 0.5) addToBucket(rangeBuckets, "$0.20-$0.49", pnl);
+    else if (perTradeRange < 1) addToBucket(rangeBuckets, "$0.50-$0.99", pnl);
+    else if (perTradeRange < 2) addToBucket(rangeBuckets, "$1.00-$1.99", pnl);
+    else if (perTradeRange < 5) addToBucket(rangeBuckets, "$2.00-$4.99", pnl);
     else addToBucket(rangeBuckets, "$5.00+", pnl);
   }
 
@@ -908,7 +908,8 @@ function HorizontalBreakdownChart({
   dataKey,
   tooltip,
   currencyAxis = false,
-  positiveNegative = false
+  positiveNegative = false,
+  yAxisWidth = 88
 }) {
   return (
     <Card title={title}>
@@ -928,7 +929,7 @@ function HorizontalBreakdownChart({
               dataKey="label"
               axisLine={false}
               tickLine={false}
-              width={72}
+              width={yAxisWidth}
               tick={{ fill: "#c6cedb", fontSize: 11 }}
             />
             <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={tooltip} />
