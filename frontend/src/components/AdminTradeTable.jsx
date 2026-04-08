@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { formatCurrency, formatDate, formatDateTimeLocal } from "../utils/formatters";
+import { formatCurrency, formatDate, formatDateTimeLocal, toMarketISOString } from "../utils/formatters";
 
 function createFormState(trade) {
   return {
@@ -56,8 +56,8 @@ function AdminTradeTable({
       entryPrice: Number(draft.entryPrice),
       exitPrice: draft.exitPrice ? Number(draft.exitPrice) : null,
       fees: draft.fees ? Number(draft.fees) : 0,
-      entryDate: new Date(draft.entryDate).toISOString(),
-      exitDate: draft.exitDate ? new Date(draft.exitDate).toISOString() : null
+      entryDate: toMarketISOString(draft.entryDate),
+      exitDate: draft.exitDate ? toMarketISOString(draft.exitDate) : null
     });
     cancelEdit();
   }
@@ -184,6 +184,7 @@ function AdminTradeTable({
                           <input
                             name="entryDate"
                             type="datetime-local"
+                            step="1"
                             value={draft.entryDate}
                             onChange={handleChange}
                             className="ui-input w-48 px-3 py-2"
@@ -191,6 +192,7 @@ function AdminTradeTable({
                           <input
                             name="exitDate"
                             type="datetime-local"
+                            step="1"
                             value={draft.exitDate}
                             onChange={handleChange}
                             className="ui-input w-48 px-3 py-2"

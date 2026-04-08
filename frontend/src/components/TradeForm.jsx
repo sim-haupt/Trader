@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import FormField from "./ui/FormField";
-import { formatDateTimeLocal } from "../utils/formatters";
+import { formatDateTimeLocal, toMarketISOString } from "../utils/formatters";
 import tagService from "../services/tagService";
 import strategyService from "../services/strategyService";
 
@@ -167,8 +167,8 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
       entryPrice: Number(form.entryPrice),
       exitPrice: form.exitPrice ? Number(form.exitPrice) : null,
       fees: form.fees ? Number(form.fees) : 0,
-      entryDate: new Date(form.entryDate).toISOString(),
-      exitDate: form.exitDate ? new Date(form.exitDate).toISOString() : null
+      entryDate: toMarketISOString(form.entryDate),
+      exitDate: form.exitDate ? toMarketISOString(form.exitDate) : null
     });
   }
 
@@ -250,6 +250,7 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
         <input
           name="entryDate"
           type="datetime-local"
+          step="1"
           value={form.entryDate}
           onChange={handleChange}
           required
@@ -261,6 +262,7 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
         <input
           name="exitDate"
           type="datetime-local"
+          step="1"
           value={form.exitDate}
           onChange={handleChange}
           className="ui-input"

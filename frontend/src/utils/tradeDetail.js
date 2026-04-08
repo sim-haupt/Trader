@@ -5,10 +5,12 @@ function asNumber(value) {
 
 function formatMinuteLabel(value) {
   return new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
     month: "short",
     day: "2-digit",
     hour: "2-digit",
-    minute: "2-digit"
+    minute: "2-digit",
+    second: "2-digit"
   }).format(new Date(value));
 }
 
