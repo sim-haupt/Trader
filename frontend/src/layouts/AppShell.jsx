@@ -19,94 +19,173 @@ function NavIcon({ path }) {
   );
 }
 
+function getPageMeta(pathname) {
+  if (pathname.startsWith("/calendar")) {
+    return { title: "Calendar", description: "Daily performance and journal entry points." };
+  }
+  if (pathname.startsWith("/reports")) {
+    return { title: "Reports", description: "Compare behavior, performance, and instrument context." };
+  }
+  if (pathname.startsWith("/trades/")) {
+    return { title: "Trade Review", description: "Execution detail, notes, and chart context." };
+  }
+  if (pathname.startsWith("/trades")) {
+    return { title: "Trades", description: "Import, filter, and review your full trade history." };
+  }
+  if (pathname.startsWith("/journal")) {
+    return { title: "Journal", description: "Daily summaries, reflections, and trading notes." };
+  }
+  if (pathname.startsWith("/settings")) {
+    return { title: "Settings", description: "Reusable tags, strategies, and account defaults." };
+  }
+  if (pathname.startsWith("/admin")) {
+    return { title: "Admin", description: "Workspace oversight and user trade management." };
+  }
+  return { title: "Dashboard", description: "Performance overview across your trading workspace." };
+}
+
 function AppShell() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
+  const pageMeta = getPageMeta(location.pathname);
 
   return (
     <div className="app-shell">
       <div className="desktop-frame">
-        <header className="top-status">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div className="flex min-w-0 flex-col gap-4 xl:flex-row xl:items-center xl:gap-8">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-[14px] border border-[var(--line)] bg-white/[0.03]">
-                  <img src={brandMark} alt="tradingStats" className="h-9 w-9" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[15px] font-semibold tracking-[-0.025em] text-white">tradingStats</p>
-                  <p className="text-xs text-white/42">Execution intelligence</p>
-                </div>
+        <aside className="ui-sidebar hidden min-h-screen px-4 py-4 xl:block">
+          <div className="flex items-center gap-3 px-2 pb-6 pt-1">
+            <div className="flex h-9 w-9 items-center justify-center rounded-[12px] border border-[var(--line)] bg-white/[0.03]">
+              <img src={brandMark} alt="tradingStats" className="h-7 w-7" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold tracking-[-0.02em] text-white">tradingStats</p>
+              <p className="text-xs text-white/36">Workspace</p>
+            </div>
+          </div>
+
+          <nav className="ui-sidebar-nav">
+            {navigationItems.map((item) => (
+              <NavLink key={item.path} to={item.path}>
+                {({ isActive }) => (
+                  <span className="ui-sidebar-link" data-active={isActive || location.pathname.startsWith(item.path)}>
+                    <span className={(isActive || location.pathname.startsWith(item.path)) ? "text-[var(--accent-strong)]" : "text-white/42"}>
+                      <NavIcon path={item.icon} />
+                    </span>
+                    <span>{item.label}</span>
+                  </span>
+                )}
+              </NavLink>
+            ))}
+
+            {user?.role === "ADMIN" ? (
+              <NavLink to="/admin">
+                {({ isActive }) => (
+                  <span className="ui-sidebar-link" data-active={isActive || location.pathname.startsWith("/admin")}>
+                    <span className={(isActive || location.pathname.startsWith("/admin")) ? "text-[var(--accent-strong)]" : "text-white/42"}>
+                      <NavIcon path="M12 3l7 4v10l-7 4-7-4V7l7-4zm0 5v4m0 4h.01" />
+                    </span>
+                    <span>Admin</span>
+                  </span>
+                )}
+              </NavLink>
+            ) : null}
+          </nav>
+
+          <div className="mt-8 space-y-3 px-2">
+            <button
+              type="button"
+              onClick={() => navigate("/trades?mode=import")}
+              className="ui-button-solid w-full justify-center px-4 py-2.5 text-sm"
+            >
+              Import Trades
+            </button>
+            <div className="rounded-[14px] border border-[var(--line)] bg-white/[0.02] px-4 py-3">
+              <p className="text-sm font-medium text-white">{user?.name}</p>
+              <p className="mt-1 truncate text-xs text-white/36">{user?.email}</p>
+            </div>
+            <button
+              type="button"
+              onClick={logout}
+              className="ui-button w-full justify-center px-4 py-2.5 text-sm text-white/76"
+            >
+              Logout
+            </button>
+          </div>
+        </aside>
+
+        <div className="ui-content">
+          <header className="top-status">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="min-w-0">
+                <p className="text-[1.125rem] font-semibold tracking-[-0.03em] text-white">{pageMeta.title}</p>
+                <p className="mt-1 text-sm text-white/42">{pageMeta.description}</p>
               </div>
 
-              <nav className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 xl:hidden">
                 {navigationItems.map((item) => (
                   <NavLink
                     key={item.path}
                     to={item.path}
                     className={({ isActive }) =>
-                      `flex items-center gap-2.5 px-4 py-2.5 text-sm ${
+                      `flex items-center gap-2 px-3 py-2 text-sm ${
                         isActive
-                          ? "rounded-[12px] border border-[rgba(124,156,255,0.24)] bg-[rgba(124,156,255,0.12)] text-white shadow-[inset_0_0_0_1px_rgba(124,156,255,0.14)]"
-                          : "ui-button text-white/78"
+                          ? "rounded-[12px] border border-[rgba(124,156,255,0.22)] bg-[rgba(124,156,255,0.1)] text-white"
+                          : "ui-button text-white/74"
                       }`
                     }
                   >
-                    <span className={location.pathname.startsWith(item.path) ? "text-[var(--accent-strong)]" : "text-white/46"}>
+                    <span className={location.pathname.startsWith(item.path) ? "text-[var(--accent-strong)]" : "text-white/42"}>
                       <NavIcon path={item.icon} />
                     </span>
                     {item.label}
                   </NavLink>
                 ))}
-
-                {user?.role === "ADMIN" && (
+                {user?.role === "ADMIN" ? (
                   <NavLink
                     to="/admin"
                     className={({ isActive }) =>
-                      `flex items-center gap-2.5 px-4 py-2.5 text-sm ${
+                      `flex items-center gap-2 px-3 py-2 text-sm ${
                         isActive
-                          ? "rounded-[12px] border border-[rgba(124,156,255,0.24)] bg-[rgba(124,156,255,0.12)] text-white shadow-[inset_0_0_0_1px_rgba(124,156,255,0.14)]"
-                          : "ui-button text-white/78"
+                          ? "rounded-[12px] border border-[rgba(124,156,255,0.22)] bg-[rgba(124,156,255,0.1)] text-white"
+                          : "ui-button text-white/74"
                       }`
                     }
                   >
-                    <span className={location.pathname.startsWith("/admin") ? "text-[var(--accent-strong)]" : "text-white/46"}>
+                    <span className={location.pathname.startsWith("/admin") ? "text-[var(--accent-strong)]" : "text-white/42"}>
                       <NavIcon path="M12 3l7 4v10l-7 4-7-4V7l7-4zm0 5v4m0 4h.01" />
                     </span>
                     Admin
                   </NavLink>
-                )}
+                ) : null}
+              </div>
 
+              <div className="flex flex-wrap items-center gap-2 lg:justify-end">
                 <button
                   type="button"
                   onClick={() => navigate("/trades?mode=import")}
-                  className="ui-button-solid px-4 py-2.5 text-sm"
+                  className="ui-button-solid px-4 py-2.5 text-sm xl:hidden"
                 >
                   Import Trades
                 </button>
-              </nav>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3 xl:justify-end">
-              <div className="rounded-[14px] border border-[var(--line)] bg-white/[0.025] px-4 py-3 text-right shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
-                <p className="text-sm font-semibold text-white">{user?.name}</p>
-                <p className="mt-0.5 text-xs text-white/38">{user?.email}</p>
+              <div className="rounded-[12px] border border-[var(--line)] bg-white/[0.02] px-4 py-2.5 text-right">
+                <p className="text-sm font-medium text-white">{user?.name}</p>
               </div>
               <button
                 type="button"
                 onClick={logout}
-                className="ui-button px-4 py-2.5 text-sm text-white/78"
+                className="ui-button px-4 py-2.5 text-sm text-white/74 xl:hidden"
               >
                 Logout
               </button>
+              </div>
             </div>
-          </div>
-        </header>
+          </header>
 
-        <main className="min-h-0 px-0 py-0">
-          <Outlet />
-        </main>
+          <main className="ui-content-body min-h-0">
+            <Outlet />
+          </main>
+        </div>
       </div>
     </div>
   );

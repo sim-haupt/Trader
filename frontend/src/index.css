@@ -62,8 +62,8 @@ body {
 body {
   font-family: "Inter", sans-serif;
   background:
-    radial-gradient(circle at top center, rgba(124, 156, 255, 0.085), transparent 28%),
-    linear-gradient(180deg, #111318 0%, #0d0f13 18%, var(--bg-canvas) 100%);
+    radial-gradient(circle at top center, rgba(124, 156, 255, 0.06), transparent 20%),
+    linear-gradient(180deg, #0c0d10 0%, #090a0c 22%, var(--bg-canvas) 100%);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -168,30 +168,29 @@ button:disabled {
   .app-shell {
     width: 100%;
     min-height: 100vh;
-    padding: 0 20px 24px;
+    padding: 0;
   }
 
   .desktop-frame {
-    width: min(100%, 1640px);
-    min-height: calc(100vh - 24px);
-    margin: 0 auto;
+    width: 100%;
+    min-height: 100vh;
+    margin: 0;
     display: grid;
-    grid-template-rows: auto 1fr;
-    gap: 18px;
+    grid-template-columns: 248px minmax(0, 1fr);
+    gap: 0;
   }
 
   .top-status {
     position: sticky;
     top: 0;
     z-index: 60;
-    border: 1px solid var(--line);
-    border-radius: 20px;
+    border-bottom: 1px solid var(--line);
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.008)),
-      rgba(10, 11, 14, 0.9);
+      linear-gradient(180deg, rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0.006)),
+      rgba(10, 11, 14, 0.94);
     backdrop-filter: blur(16px);
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03), var(--shadow-sm);
-    padding: 14px 18px;
+    box-shadow: none;
+    padding: 18px 28px;
   }
 
   .ui-panel {
@@ -207,9 +206,9 @@ button:disabled {
   }
 
   .ui-title {
-    font-family: "IBM Plex Mono", monospace;
+    font-family: "Inter", sans-serif;
     font-weight: 600;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     line-height: 1.35;
   }
@@ -409,36 +408,95 @@ button:disabled {
   .ui-link:hover {
     color: #c8d7ff;
   }
+
+  .ui-sidebar {
+    border-right: 1px solid var(--line);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.018), transparent 20%),
+      rgba(5, 6, 8, 0.92);
+  }
+
+  .ui-sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .ui-sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 40px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    padding: 0 12px;
+    color: var(--text-muted);
+    font-size: 0.92rem;
+    font-weight: 500;
+    transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+  }
+
+  .ui-sidebar-link:hover {
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text);
+  }
+
+  .ui-sidebar-link[data-active="true"] {
+    border-color: var(--line);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text);
+  }
+
+  .ui-content {
+    min-width: 0;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.012), transparent 14%),
+      rgba(8, 9, 11, 0.72);
+  }
+
+  .ui-content-body {
+    padding: 24px 28px 32px;
+  }
 }
 
 @media (max-width: 1180px) {
   .app-shell {
-    padding: 0 16px 16px;
+    padding: 0;
   }
 
   .desktop-frame {
-    min-height: calc(100vh - 16px);
-    gap: 16px;
+    min-height: 100vh;
+    grid-template-columns: 1fr;
   }
 
   .top-status {
     top: 0;
+  }
+
+  .ui-sidebar {
+    display: none;
+  }
+
+  .ui-content-body {
+    padding: 20px 20px 28px;
   }
 }
 
 @media (max-width: 700px) {
   .app-shell {
-    padding: 0 12px 12px;
+    padding: 0;
   }
 
   .desktop-frame {
-    min-height: calc(100vh - 12px);
-    gap: 14px;
+    min-height: 100vh;
   }
 
   .top-status {
     top: 0;
-    padding: 12px;
-    border-radius: 18px;
+    padding: 14px 16px;
+  }
+
+  .ui-content-body {
+    padding: 16px 16px 24px;
   }
 }
