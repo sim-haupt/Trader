@@ -23,7 +23,8 @@ async function authenticate(req, res, next) {
         email: true,
         name: true,
         role: true,
-        defaultCommission: true
+        defaultCommission: true,
+        defaultFees: true
       }
     });
 

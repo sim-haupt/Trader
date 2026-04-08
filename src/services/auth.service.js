@@ -24,7 +24,8 @@ function serializeUser(user) {
     name: user.name,
     email: user.email,
     role: user.role,
-    defaultCommission: Number(user.defaultCommission || 0)
+    defaultCommission: Number(user.defaultCommission || 0),
+    defaultFees: Number(user.defaultFees || 0)
   };
 }
 
@@ -86,7 +87,8 @@ async function getSettings(actor) {
       name: true,
       email: true,
       role: true,
-      defaultCommission: true
+      defaultCommission: true,
+      defaultFees: true
     }
   });
 
@@ -101,14 +103,16 @@ async function updateSettings(actor, data) {
   const user = await prisma.user.update({
     where: { id: actor.id },
     data: {
-      defaultCommission: data.defaultCommission
+      defaultCommission: data.defaultCommission,
+      defaultFees: data.defaultFees
     },
     select: {
       id: true,
       name: true,
       email: true,
       role: true,
-      defaultCommission: true
+      defaultCommission: true,
+      defaultFees: true
     }
   });
 

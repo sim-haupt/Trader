@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Card from "../components/ui/Card";
+import LoadingState from "../components/ui/LoadingState";
 import EmptyState from "../components/ui/EmptyState";
 import tagService from "../services/tagService";
 import { useAuth } from "../context/AuthContext";
@@ -10,6 +11,7 @@ function SettingsPage() {
   const [tags, setTags] = useState(() => tagService.peekTags() || []);
   const [newTag, setNewTag] = useState("");
   const [defaultCommission, setDefaultCommission] = useState(String(user?.defaultCommission ?? 0));
+  const [defaultFees, setDefaultFees] = useState(String(user?.defaultFees ?? 0));
   const [loading, setLoading] = useState(() => !tagService.peekTags());
   const [saving, setSaving] = useState(false);
   const [savingCommission, setSavingCommission] = useState(false);
@@ -41,7 +43,8 @@ function SettingsPage() {
 
   useEffect(() => {
     setDefaultCommission(String(user?.defaultCommission ?? 0));
-  }, [user?.defaultCommission]);
+    setDefaultFees(String(user?.defaultFees ?? 0));
+  }, [user?.defaultCommission, user?.defaultFees]);
 
   async function handleCreateTag() {
     const name = newTag.trim();
@@ -89,10 +92,16 @@ function SettingsPage() {
   }
 
   async function handleSaveCommission() {
-    const value = Number(defaultCommission);
+    const commissionValue = Number(defaultCommission);
+    const feeValue = Number(defaultFees);
 
-    if (Number.isNaN(value) || value < 0) {
+    if (Number.isNaN(commissionValue) || commissionValue < 0) {
       setError("Default commission must be 0 or greater.");
+      return;
+    }
+
+    if (Number.isNaN(feeValue) || feeValue < 0) {
+      setError("Default fees must be 0 or greater.");
       return;
     }
 
@@ -102,9 +111,10 @@ function SettingsPage() {
 
     try {
       await updateSettings({
-        defaultCommission: value
+        defaultCommission: commissionValue,
+        defaultFees: feeValue
       });
-      setMessage("Default commission updated.");
+      setMessage("Default trade costs updated.");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -147,7 +157,9 @@ function SettingsPage() {
                 }`}
               >
                 <span>Commissions</span>
-                <span className="text-white/40">{Number(user?.defaultCommission ?? 0).toFixed(2)}</span>
+                <span className="text-white/40">
+                  {(Number(user?.defaultCommission ?? 0) + Number(user?.defaultFees ?? 0)).toFixed(2)}
+                </span>
               </button>
             </div>
           </aside>
@@ -177,7 +189,7 @@ function SettingsPage() {
                 </p>
 
                 {loading ? (
-                  <div className="text-sm text-mist">Loading tags...</div>
+                  <LoadingState label="Loading tags..." className="min-h-[180px]" />
                 ) : tags.length === 0 ? (
                   <EmptyState
                     title="No saved tags yet"
@@ -209,19 +221,33 @@ function SettingsPage() {
             <Card title="COMMISSIONS">
               <div className="space-y-5">
                 <p className="text-sm text-white/58">
-                  Set the default commission applied per trade when imported or saved trades do not already have explicit fees.
+                  Set default fallback trade costs. These are used whenever a trade does not already contain explicit fees from imports or manual entry.
                 </p>
 
-                <div className="max-w-[320px]">
-                  <label className="mb-2 block text-xs font-medium text-white/72">Default commission per trade</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={defaultCommission}
-                    onChange={(event) => setDefaultCommission(event.target.value)}
-                    className="ui-input"
-                  />
+                <div className="grid max-w-[720px] gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-xs font-medium text-white/72">Default commission per trade</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={defaultCommission}
+                      onChange={(event) => setDefaultCommission(event.target.value)}
+                      className="ui-input"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-xs font-medium text-white/72">Default fees per trade</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={defaultFees}
+                      onChange={(event) => setDefaultFees(event.target.value)}
+                      className="ui-input"
+                    />
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -231,10 +257,13 @@ function SettingsPage() {
                     disabled={savingCommission}
                     className="ui-button-solid px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {savingCommission ? "Saving..." : "Save Commission"}
+                    {savingCommission ? "Saving..." : "Save Costs"}
                   </button>
                   <span className="rounded-[12px] border border-[var(--line)] bg-white/[0.03] px-3 py-2 text-sm text-white/50">
-                    Current: ${Number(user?.defaultCommission ?? 0).toFixed(2)}
+                    Current total: $
+                    {(
+                      Number(user?.defaultCommission ?? 0) + Number(user?.defaultFees ?? 0)
+                    ).toFixed(2)}
                   </span>
                 </div>
               </div>

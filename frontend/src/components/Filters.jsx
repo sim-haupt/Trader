@@ -3,7 +3,7 @@ import DateRangePicker from "./ui/DateRangePicker";
 
 function Filters({ filters, onChange, onReset }) {
   return (
-    <div className="ui-panel grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_220px_minmax(0,1fr)_minmax(0,1.15fr)_auto]">
+    <div className="ui-panel relative z-20 overflow-visible grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_220px_minmax(0,1fr)_minmax(0,1.15fr)_auto]">
       <input
         placeholder="Filter by symbol"
         value={filters.symbol}

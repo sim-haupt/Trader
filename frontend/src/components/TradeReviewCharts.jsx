@@ -15,6 +15,7 @@ import {
   calculateVwapSeries,
   toChartUnixSeconds
 } from "../utils/chartIndicators";
+import LoadingState from "./ui/LoadingState";
 
 function buildDayRange(anchorDate) {
   const parsedTimestamp = toChartUnixSeconds(anchorDate);
@@ -259,9 +260,10 @@ function TradeReviewCharts({ trade }) {
 
   if (loading) {
     return (
-      <div className="flex h-[360px] items-center justify-center rounded-[12px] border border-[#e5e7eb42] bg-black/30 text-sm text-mist">
-        Loading market data...
-      </div>
+      <LoadingState
+        label="Loading market data..."
+        className="min-h-[360px] rounded-[12px] border border-[#e5e7eb42] bg-black/30"
+      />
     );
   }
 

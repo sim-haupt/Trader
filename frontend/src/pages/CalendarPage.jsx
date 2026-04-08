@@ -1,6 +1,7 @@
 import { Fragment, useMemo, useState } from "react";
 import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
+import LoadingState from "../components/ui/LoadingState";
 import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 import tradeService from "../services/tradeService";
 import { formatCurrency } from "../utils/formatters";
@@ -318,7 +319,7 @@ function CalendarPage() {
     selectedMonthIndex === null ? null : calendarData.months[selectedMonthIndex] ?? null;
 
   if (loading) {
-    return <div className="text-sm text-mist">Loading calendar...</div>;
+    return <LoadingState label="Loading calendar..." panel />;
   }
 
   if (error) {

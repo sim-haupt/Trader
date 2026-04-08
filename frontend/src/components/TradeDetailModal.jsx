@@ -13,6 +13,7 @@ import tradeService from "../services/tradeService";
 import tagService from "../services/tagService";
 import TradeReviewCharts from "./TradeReviewCharts";
 import Card from "./ui/Card";
+import LoadingState from "./ui/LoadingState";
 import { formatCurrency, formatDate, formatDateTimeLocal } from "../utils/formatters";
 import {
   buildDayRunningPnl,
@@ -492,9 +493,7 @@ function TradeDetailModal({ trade, onClose }) {
               subtitle="Realized progression across the executions we have stored for this trade."
             >
               {loadingTradeDetail ? (
-                <div className="flex h-[290px] items-center justify-center text-sm text-mist">
-                  Loading trade detail...
-                </div>
+                <LoadingState label="Loading trade detail..." className="min-h-[290px]" />
               ) : (
                 <div className="h-[290px]">
                   <ResponsiveContainer width="100%" height="100%">
@@ -531,9 +530,7 @@ function TradeDetailModal({ trade, onClose }) {
               subtitle="All trades from the same day, accumulated in close order."
             >
               {loadingDayTrades ? (
-                <div className="flex h-[290px] items-center justify-center text-sm text-mist">
-                  Loading same-day trades...
-                </div>
+                <LoadingState label="Loading same-day trades..." className="min-h-[290px]" />
               ) : dayTradesError ? (
                 <div className="flex h-[290px] items-center justify-center text-sm text-coral">
                   {dayTradesError}

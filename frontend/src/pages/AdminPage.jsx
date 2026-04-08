@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
+import LoadingState from "../components/ui/LoadingState";
 import StatCard from "../components/ui/StatCard";
 import UploadCSV from "../components/UploadCSV";
 import TradeTextImport from "../components/TradeTextImport";
@@ -225,7 +226,7 @@ function AdminPage() {
         {error && <div className="ui-notice border-coral/30 bg-[#2a1111] text-coral">{error}</div>}
 
         {loading ? (
-          <div className="text-sm text-mist">Loading admin data...</div>
+          <LoadingState label="Loading admin data..." className="min-h-[220px]" />
         ) : trades.length === 0 ? (
           <EmptyState
             title="No trades available"

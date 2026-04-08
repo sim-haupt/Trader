@@ -17,6 +17,7 @@ import Card from "../components/ui/Card";
 import CustomSelect from "../components/ui/CustomSelect";
 import DateRangePicker from "../components/ui/DateRangePicker";
 import EmptyState from "../components/ui/EmptyState";
+import LoadingState from "../components/ui/LoadingState";
 import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 import tagService from "../services/tagService";
 import tradeService from "../services/tradeService";
@@ -144,6 +145,7 @@ const VolumeTooltip = buildChartTooltip("volume");
 
 function buildOverviewSeries(trades, rangeDays, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
+  const defaultFees = options.defaultFees || 0;
   const pnlType = options.pnlType || "GROSS";
   if (trades.length === 0) {
     return {
@@ -178,7 +180,7 @@ function buildOverviewSeries(trades, rangeDays, options = {}) {
     }
 
     const dayKey = getDayKey(entryDate);
-    const pnl = getTradePnlByType(trade, pnlType, defaultCommission);
+    const pnl = getTradePnlByType(trade, pnlType, defaultCommission, defaultFees);
     const grossPnl = getTradeGrossPnl(trade);
     const quantity = Math.abs(Number(trade.quantity ?? 0));
     const dayStats = dailyMap.get(dayKey) || {
@@ -220,7 +222,8 @@ function buildOverviewSeries(trades, rangeDays, options = {}) {
       wins: 0
     };
 
-    runningEquity = Number((runningEquity + stats.grossPnl).toFixed(2));
+    const dayPnl = pnlType === "GROSS" ? stats.grossPnl : stats.netPnl;
+    runningEquity = Number((runningEquity + dayPnl).toFixed(2));
 
     days.push({
       ...stats,
@@ -331,7 +334,7 @@ function calculateSqn(summary) {
   return (Math.sqrt(n) * summary.averageTradeGainLoss) / summary.tradePnlStdDev;
 }
 
-function calculateDrawdownStats(sortedTrades, defaultCommission, pnlType) {
+function calculateDrawdownStats(sortedTrades, defaultCommission, defaultFees, pnlType) {
   if (sortedTrades.length === 0) {
     return {
       averageDrawdown: 0,
@@ -354,7 +357,7 @@ function calculateDrawdownStats(sortedTrades, defaultCommission, pnlType) {
     };
 
     current.pnl = Number(
-      (current.pnl + getTradePnlByType(trade, pnlType, defaultCommission)).toFixed(2)
+      (current.pnl + getTradePnlByType(trade, pnlType, defaultCommission, defaultFees)).toFixed(2)
     );
     current.trades += 1;
     dailyMap.set(dayKey, current);
@@ -423,6 +426,7 @@ function calculateDrawdownStats(sortedTrades, defaultCommission, pnlType) {
 
 function summarizeTrades(trades, dayCountOverride, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
+  const defaultFees = options.defaultFees || 0;
   const pnlType = options.pnlType || "NET";
   const sortedTrades = [...trades].sort(
     (a, b) => new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime()
@@ -453,7 +457,7 @@ function summarizeTrades(trades, dayCountOverride, options = {}) {
   let effectiveCommissions = 0;
 
   for (const trade of sortedTrades) {
-    const pnl = getTradePnlByType(trade, pnlType, defaultCommission);
+    const pnl = getTradePnlByType(trade, pnlType, defaultCommission, defaultFees);
     const quantity = Math.abs(asNumber(trade.quantity));
     const perShare = quantity > 0 ? pnl / quantity : 0;
     const holdMinutes = getHoldMinutes(trade);
@@ -472,7 +476,7 @@ function summarizeTrades(trades, dayCountOverride, options = {}) {
     largestLoss = Math.min(largestLoss, pnl);
     pnlSeries.push(pnl);
     explicitFees += asNumber(trade.fees);
-    effectiveCommissions += getEffectiveTradeCommission(trade, defaultCommission);
+    effectiveCommissions += getEffectiveTradeCommission(trade, defaultCommission, defaultFees);
 
     if (pnl > 0) {
       totalWins += pnl;
@@ -508,7 +512,7 @@ function summarizeTrades(trades, dayCountOverride, options = {}) {
     averageWinningTrade: winningTrades ? totalWinningPnl / winningTrades : 0,
     averageLosingTrade: losingTrades ? totalLosingPnl / losingTrades : 0
   });
-  const drawdownStats = calculateDrawdownStats(sortedTrades, defaultCommission, pnlType);
+  const drawdownStats = calculateDrawdownStats(sortedTrades, defaultCommission, defaultFees, pnlType);
 
   return {
     totalPnl,
@@ -632,6 +636,7 @@ function buildWinLossDayRows(summary) {
 
 function buildWinVsLossDaysStats(trades, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
+  const defaultFees = options.defaultFees || 0;
   const pnlType = options.pnlType || "NET";
   const dayMap = new Map();
 
@@ -645,7 +650,7 @@ function buildWinVsLossDaysStats(trades, options = {}) {
       trades: []
     };
 
-    current.pnl = Number((current.pnl + getTradePnlByType(trade, pnlType, defaultCommission)).toFixed(2));
+    current.pnl = Number((current.pnl + getTradePnlByType(trade, pnlType, defaultCommission, defaultFees)).toFixed(2));
     current.trades.push(trade);
     dayMap.set(dayKey, current);
   }
@@ -996,16 +1001,16 @@ function CompareSection({
   groupATrades,
   groupBTrades,
   pnlType,
-  defaultCommission
+  defaultCommission,
+  defaultFees
 }) {
-  const groupADetailed = buildDetailedStats(groupATrades, { pnlType, defaultCommission });
-  const groupBDetailed = buildDetailedStats(groupBTrades, { pnlType, defaultCommission });
+  const groupADetailed = buildDetailedStats(groupATrades, { pnlType, defaultCommission, defaultFees });
+  const groupBDetailed = buildDetailedStats(groupBTrades, { pnlType, defaultCommission, defaultFees });
 
   return (
     <div className="space-y-5">
       <Card title="QUICK REPORT">
-        <p className="text-sm text-white/48">Or build a custom report below</p>
-        <div className="mt-5 grid gap-5 xl:grid-cols-2">
+        <div className="grid gap-5 xl:grid-cols-2">
           <CompareGroupCard
             title="Group A"
             filters={groupAFilters}
@@ -1078,6 +1083,7 @@ function applyReportFilters(trades, filters, rangeDays) {
 
 function applyCompareGroupFilters(trades, filters, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
+  const defaultFees = options.defaultFees || 0;
   const pnlType = options.pnlType || "NET";
   let nextTrades = [...trades];
 
@@ -1097,11 +1103,17 @@ function applyCompareGroupFilters(trades, filters, options = {}) {
   }
 
   if (filters.tradePnl === "WINNERS") {
-    nextTrades = nextTrades.filter((trade) => getTradePnlByType(trade, pnlType, defaultCommission) > 0);
+    nextTrades = nextTrades.filter(
+      (trade) => getTradePnlByType(trade, pnlType, defaultCommission, defaultFees) > 0
+    );
   } else if (filters.tradePnl === "LOSERS") {
-    nextTrades = nextTrades.filter((trade) => getTradePnlByType(trade, pnlType, defaultCommission) < 0);
+    nextTrades = nextTrades.filter(
+      (trade) => getTradePnlByType(trade, pnlType, defaultCommission, defaultFees) < 0
+    );
   } else if (filters.tradePnl === "SCRATCH") {
-    nextTrades = nextTrades.filter((trade) => getTradePnlByType(trade, pnlType, defaultCommission) === 0);
+    nextTrades = nextTrades.filter(
+      (trade) => getTradePnlByType(trade, pnlType, defaultCommission, defaultFees) === 0
+    );
   }
 
   if (filters.from) {
@@ -1127,8 +1139,6 @@ function ReportsPage() {
   const [groupAFilters, setGroupAFilters] = useState(COMPARE_GROUP_FILTERS);
   const [groupBFilters, setGroupBFilters] = useState(COMPARE_GROUP_FILTERS);
   const [pnlType, setPnlType] = useState("GROSS");
-  const [viewMode, setViewMode] = useState("$ Value");
-  const [reportType, setReportType] = useState("Aggregate P&L");
   const {
     data: trades,
     loading,
@@ -1154,45 +1164,51 @@ function ReportsPage() {
   const reportSeries = useMemo(
     () => buildOverviewSeries(filteredTrades, activeRange.days, {
       defaultCommission: user?.defaultCommission ?? 0,
+      defaultFees: user?.defaultFees ?? 0,
       pnlType
     }),
-    [filteredTrades, activeRange.days, user?.defaultCommission, pnlType]
+    [filteredTrades, activeRange.days, user?.defaultCommission, user?.defaultFees, pnlType]
   );
   const reportSummary = useMemo(
     () =>
       summarizeTrades(filteredTrades, undefined, {
         defaultCommission: user?.defaultCommission ?? 0,
+        defaultFees: user?.defaultFees ?? 0,
         pnlType
       }),
-    [filteredTrades, user?.defaultCommission, pnlType]
+    [filteredTrades, user?.defaultCommission, user?.defaultFees, pnlType]
   );
   const detailedStats = useMemo(
     () => buildDetailedStats(filteredTrades, {
       defaultCommission: user?.defaultCommission ?? 0,
+      defaultFees: user?.defaultFees ?? 0,
       pnlType
     }),
-    [filteredTrades, user?.defaultCommission, pnlType]
+    [filteredTrades, user?.defaultCommission, user?.defaultFees, pnlType]
   );
   const winVsLossDayStats = useMemo(
     () => buildWinVsLossDaysStats(filteredTrades, {
       defaultCommission: user?.defaultCommission ?? 0,
+      defaultFees: user?.defaultFees ?? 0,
       pnlType
     }),
-    [filteredTrades, user?.defaultCommission, pnlType]
+    [filteredTrades, user?.defaultCommission, user?.defaultFees, pnlType]
   );
   const groupATrades = useMemo(
     () => applyCompareGroupFilters(filteredTrades, groupAFilters, {
       defaultCommission: user?.defaultCommission ?? 0,
+      defaultFees: user?.defaultFees ?? 0,
       pnlType
     }),
-    [filteredTrades, groupAFilters, user?.defaultCommission, pnlType]
+    [filteredTrades, groupAFilters, user?.defaultCommission, user?.defaultFees, pnlType]
   );
   const groupBTrades = useMemo(
     () => applyCompareGroupFilters(filteredTrades, groupBFilters, {
       defaultCommission: user?.defaultCommission ?? 0,
+      defaultFees: user?.defaultFees ?? 0,
       pnlType
     }),
-    [filteredTrades, groupBFilters, user?.defaultCommission, pnlType]
+    [filteredTrades, groupBFilters, user?.defaultCommission, user?.defaultFees, pnlType]
   );
 
   function updateFilter(key, value) {
@@ -1215,7 +1231,7 @@ function ReportsPage() {
   }
 
   if (loading) {
-    return <div className="text-sm text-mist">Loading reports...</div>;
+    return <LoadingState label="Loading reports..." panel />;
   }
 
   if (error) {
@@ -1289,9 +1305,6 @@ function ReportsPage() {
               <button type="button" onClick={resetFilters} className="ui-button px-4 py-3 text-sm">
                 Reset
               </button>
-              <button type="button" className="ui-button-solid px-4 py-3 text-sm">
-                Apply Filters
-              </button>
             </div>
           </div>
 
@@ -1325,23 +1338,6 @@ function ReportsPage() {
                 ]}
                 className="max-w-[150px]"
                 buttonClassName="max-w-[150px]"
-              />
-              <CustomSelect
-                value={viewMode}
-                onChange={setViewMode}
-                options={[
-                  { label: "$ Value", value: "$ Value" },
-                  { label: "% Return", value: "% Return" }
-                ]}
-                className="max-w-[160px]"
-                buttonClassName="max-w-[160px]"
-              />
-              <CustomSelect
-                value={reportType}
-                onChange={setReportType}
-                options={[{ label: "Aggregate P&L", value: "Aggregate P&L" }]}
-                className="max-w-[180px]"
-                buttonClassName="max-w-[180px]"
               />
             </div>
 
@@ -1391,6 +1387,7 @@ function ReportsPage() {
           groupBTrades={groupBTrades}
           pnlType={pnlType}
           defaultCommission={user?.defaultCommission ?? 0}
+          defaultFees={user?.defaultFees ?? 0}
         />
       ) : (
         <div className="grid gap-5 xl:grid-cols-2">

@@ -1,4 +1,4 @@
-import { getTradeGrossPnl, getTradeNetPnl } from "./tradePnl";
+import { getTradeGrossPnl, getTradePnlByType } from "./tradePnl";
 
 function asNumber(value) {
   const numericValue = Number(value || 0);
@@ -89,13 +89,12 @@ function buildHourlyPerformance(processedTrades) {
   return Array.from(hourlyMap.values());
 }
 
-function buildLastThirtyDayGross(processedTrades, latestDayStart) {
-  const grossDailyMap = new Map();
+function buildLastThirtyDayPnl(processedTrades, latestDayStart) {
+  const dailyMap = new Map();
 
   for (const item of processedTrades) {
     const dayKey = getLocalDayKey(item.entryDate);
-    const grossPnl = getTradeGrossPnl(item.trade);
-    grossDailyMap.set(dayKey, Number(((grossDailyMap.get(dayKey) || 0) + grossPnl).toFixed(2)));
+    dailyMap.set(dayKey, Number(((dailyMap.get(dayKey) || 0) + item.pnl).toFixed(2)));
   }
 
   return Array.from({ length: 30 }, (_, index) => {
@@ -106,7 +105,7 @@ function buildLastThirtyDayGross(processedTrades, latestDayStart) {
     return {
       date: dayKey,
       label: day.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-      grossPnl: Number((grossDailyMap.get(dayKey) || 0).toFixed(2))
+      grossPnl: Number((dailyMap.get(dayKey) || 0).toFixed(2))
     };
   });
 }
@@ -178,6 +177,8 @@ function buildWeekdaySummary(weekdayMap) {
 
 export function buildAnalytics(trades, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
+  const defaultFees = options.defaultFees || 0;
+  const pnlType = options.pnlType || "NET";
   const sortedTrades = [...trades].sort(
     (a, b) => new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime()
   );
@@ -220,7 +221,7 @@ export function buildAnalytics(trades, options = {}) {
 
   const processedTrades = sortedTrades.map((trade) => {
     const entryDate = new Date(trade.entryDate);
-    const pnl = getTradeNetPnl(trade, defaultCommission);
+    const pnl = getTradePnlByType(trade, pnlType, defaultCommission, defaultFees);
     const quantity = Math.abs(asNumber(trade.quantity));
     const holdMinutes = getHoldMinutes(trade, entryDate);
     const perSharePnl = quantity > 0 ? pnl / quantity : 0;
@@ -417,9 +418,10 @@ export function buildAnalytics(trades, options = {}) {
     performanceByTimeOfDaySummary: buildTimeOfDaySummary(Array.from(timeBucketMap.values())),
     hourlyPerformance: buildHourlyPerformance(processedTrades),
     performanceByPrice: buildPriceBuckets(processedTrades),
-    grossDailyThirtyDays: buildLastThirtyDayGross(processedTrades, latestDayStart),
+    grossDailyThirtyDays: buildLastThirtyDayPnl(processedTrades, latestDayStart),
     winRateThirtyDays,
     dailyVolumeThirtyDays,
+    pnlType,
     latestDateLabel: latestTradeDate.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",

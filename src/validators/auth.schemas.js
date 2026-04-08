@@ -12,7 +12,8 @@ const loginSchema = z.object({
 });
 
 const updateSettingsSchema = z.object({
-  defaultCommission: z.coerce.number().min(0).max(100000)
+  defaultCommission: z.coerce.number().min(0).max(100000).optional(),
+  defaultFees: z.coerce.number().min(0).max(100000).optional()
 });
 
 module.exports = {

@@ -9,6 +9,7 @@ import TradeTable from "../components/TradeTable";
 import UploadCSV from "../components/UploadCSV";
 import TradeTextImport from "../components/TradeTextImport";
 import CustomSelect from "../components/ui/CustomSelect";
+import LoadingState from "../components/ui/LoadingState";
 import tagService from "../services/tagService";
 import tradeService from "../services/tradeService";
 
@@ -516,6 +517,8 @@ function TradesPage() {
       <Card
         title="TRADE HISTORY"
         subtitle="Browse, filter, and review your trades. Click any row to open the full execution review."
+        className="relative overflow-visible"
+        bodyClassName="overflow-visible"
         action={
           <div className="flex flex-wrap items-center gap-3">
             <button
@@ -546,7 +549,7 @@ function TradesPage() {
           </div>
         }
       >
-        <div className="space-y-4 pb-5">
+        <div className="relative z-20 space-y-4 pb-5">
           <Filters filters={filters} onChange={handleFilterChange} onReset={handleResetFilters} />
           <div className="flex justify-end">
             <button
@@ -560,14 +563,14 @@ function TradesPage() {
         </div>
 
         {loading ? (
-          <div className="text-sm text-mist">Loading trades...</div>
+          <LoadingState label="Loading trades..." className="min-h-[240px]" />
         ) : trades.length === 0 ? (
           <EmptyState
             title="No matching trades"
             description="Try relaxing your filters or open Import Trades to bring history into the journal."
           />
         ) : (
-          <div className="space-y-4">
+          <div className="relative z-0 space-y-4">
             {selectedIds.length > 0 && (
               <div className="ui-panel p-5 shadow-none">
                 <div className="flex flex-wrap items-center justify-between gap-3">

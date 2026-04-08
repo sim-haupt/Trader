@@ -4,6 +4,7 @@ import AnalyticsCharts, {
   normalizeDashboardLayout
 } from "../components/AnalyticsCharts";
 import EmptyState from "../components/ui/EmptyState";
+import LoadingState from "../components/ui/LoadingState";
 import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 import tradeService from "../services/tradeService";
 import { buildAnalytics } from "../utils/analytics";
@@ -14,6 +15,10 @@ const RANGE_OPTIONS = [
   { key: "60", label: "60D", days: 60 },
   { key: "90", label: "90D", days: 90 },
   { key: "ALL", label: "ALL", days: null }
+];
+const PNL_OPTIONS = [
+  { key: "GROSS", label: "Gross" },
+  { key: "NET", label: "Net" }
 ];
 const DASHBOARD_LAYOUT_STORAGE_KEY = "trader-dashboard-layout-v1";
 
@@ -37,6 +42,7 @@ function filterTradesByRange(trades, days) {
 function DashboardPage() {
   const { user } = useAuth();
   const [rangeKey, setRangeKey] = useState("30");
+  const [pnlType, setPnlType] = useState("NET");
   const [editingLayout, setEditingLayout] = useState(false);
   const [layout, setLayout] = useState(DEFAULT_DASHBOARD_LAYOUT);
   const {
@@ -105,7 +111,7 @@ function DashboardPage() {
   }
 
   if (loading) {
-    return <div className="text-sm text-mist">Loading dashboard...</div>;
+    return <LoadingState label="Loading dashboard..." panel />;
   }
 
   if (error) {
@@ -148,6 +154,18 @@ function DashboardPage() {
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="ui-segment">
+            {PNL_OPTIONS.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                data-active={option.key === pnlType}
+                onClick={() => setPnlType(option.key)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
           {RANGE_OPTIONS.map((option) => {
             const active = option.key === rangeKey;
 
@@ -177,7 +195,9 @@ function DashboardPage() {
       ) : (
         <AnalyticsCharts
           analytics={buildAnalytics(filteredTrades, {
-            defaultCommission: user?.defaultCommission ?? 0
+            defaultCommission: user?.defaultCommission ?? 0,
+            defaultFees: user?.defaultFees ?? 0,
+            pnlType
           })}
           layout={layout}
           editing={editingLayout}

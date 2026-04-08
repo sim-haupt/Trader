@@ -201,8 +201,10 @@ function AnalyticsCharts({
     hourlyPerformance,
     grossDailyThirtyDays,
     winRateThirtyDays,
-    dailyVolumeThirtyDays
+    dailyVolumeThirtyDays,
+    pnlType
   } = analytics;
+  const pnlLabel = pnlType === "GROSS" ? "GROSS" : "NET";
 
   const [draggedId, setDraggedId] = useState(null);
   const [dropTargetId, setDropTargetId] = useState(null);
@@ -210,7 +212,7 @@ function AnalyticsCharts({
     () => [
       {
         id: "cumulative",
-        title: "CUMULATIVE P&L",
+        title: `${pnlLabel} CUMULATIVE P&L`,
         defaultSpan: 2,
         body: (
           <>
@@ -288,7 +290,7 @@ function AnalyticsCharts({
       },
       {
         id: "drawdown",
-        title: "DRAWDOWN TRACKER",
+        title: `${pnlLabel} DRAWDOWN TRACKER`,
         defaultSpan: 2,
         body: (
           <>
@@ -318,28 +320,28 @@ function AnalyticsCharts({
       },
       {
         id: "performanceWeekday",
-        title: "PERFORMANCE BY DAY OF WEEK",
+        title: `${pnlLabel} BY DAY OF WEEK`,
         defaultSpan: 1,
         className: "min-h-[300px]",
         body: <BreakdownRows entries={performanceByWeekday} />
       },
       {
         id: "performancePrice",
-        title: "PERFORMANCE BY PRICE",
+        title: `${pnlLabel} BY PRICE`,
         defaultSpan: 1,
         className: "min-h-[300px]",
         body: <BreakdownRows entries={performanceByPrice} />
       },
       {
         id: "performanceHourSummary",
-        title: "PERFORMANCE BY HOUR OF DAY",
+        title: `${pnlLabel} BY HOUR OF DAY`,
         defaultSpan: 1,
         className: "min-h-[300px]",
         body: <BreakdownRows entries={performanceByTimeOfDaySummary} />
       },
       {
         id: "performanceTimeChart",
-        title: "PERFORMANCE BY TIME OF DAY",
+        title: `${pnlLabel} BY TIME OF DAY`,
         defaultSpan: 2,
         body: (
           <div className="h-[320px]">
@@ -361,7 +363,7 @@ function AnalyticsCharts({
       },
       {
         id: "grossDaily",
-        title: "GROSS DAILY P&L (30 DAYS)",
+        title: `${pnlLabel} DAILY P&L (30 DAYS)`,
         defaultSpan: 2,
         body: (
           <div className="h-[320px]">
@@ -438,7 +440,19 @@ function AnalyticsCharts({
         )
       }
     ],
-    [summary, equityCurve, drawdownCurve, performanceByWeekday, performanceByPrice, performanceByTimeOfDaySummary, hourlyPerformance, grossDailyThirtyDays, winRateThirtyDays, dailyVolumeThirtyDays]
+    [
+      summary,
+      equityCurve,
+      drawdownCurve,
+      performanceByWeekday,
+      performanceByPrice,
+      performanceByTimeOfDaySummary,
+      hourlyPerformance,
+      grossDailyThirtyDays,
+      winRateThirtyDays,
+      dailyVolumeThirtyDays,
+      pnlLabel
+    ]
   );
 
   const widgetMap = new Map(widgets.map((widget) => [widget.id, widget]));
