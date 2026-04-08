@@ -11,9 +11,6 @@ import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 import marketDataService from "../services/marketDataService";
 import {
   buildExecutionMarkers,
-  calculateEmaSeries,
-  calculateMacdSeries,
-  calculateVwapSeries,
   toChartUnixSeconds
 } from "../utils/chartIndicators";
 import LoadingState from "./ui/LoadingState";
@@ -239,11 +236,10 @@ function renderOverlay({ overlayEl, chart, candleSeries, bars, markers, dayStamp
 
 function PremiumChart({ title, subtitle, bars, markers, dayStamp }) {
   const mainRef = useRef(null);
-  const macdRef = useRef(null);
   const overlayRef = useRef(null);
 
   useEffect(() => {
-    if (!mainRef.current || !macdRef.current || !overlayRef.current || !bars.length) {
+    if (!mainRef.current || !overlayRef.current || !bars.length) {
       return undefined;
     }
 
@@ -292,11 +288,6 @@ function PremiumChart({ title, subtitle, bars, markers, dayStamp }) {
       width: mainRef.current.clientWidth,
       height: 620
     });
-    const macdChart = createChart(macdRef.current, {
-      ...chartOptions,
-      width: macdRef.current.clientWidth,
-      height: 180
-    });
 
     const candleSeries = mainChart.addSeries(CandlestickSeries, {
       upColor: "#22c55e",
@@ -323,55 +314,6 @@ function PremiumChart({ title, subtitle, bars, markers, dayStamp }) {
         bottom: 0.02
       }
     });
-
-    const ema9 = mainChart.addSeries(LineSeries, {
-      color: "#60a5fa",
-      lineWidth: 2,
-      priceLineVisible: false,
-      lastValueVisible: true
-    });
-    ema9.setData(calculateEmaSeries(bars, 9));
-
-    const ema20 = mainChart.addSeries(LineSeries, {
-      color: "#3b82f6",
-      lineWidth: 2,
-      lineStyle: LineStyle.Dashed,
-      priceLineVisible: false,
-      lastValueVisible: true
-    });
-    ema20.setData(calculateEmaSeries(bars, 20));
-
-    const vwap = mainChart.addSeries(LineSeries, {
-      color: "#38bdf8",
-      lineWidth: 2,
-      priceLineVisible: false,
-      lastValueVisible: true
-    });
-    vwap.setData(calculateVwapSeries(bars));
-
-    const macd = calculateMacdSeries(bars);
-    const macdHistogram = macdChart.addSeries(HistogramSeries, {
-      priceLineVisible: false,
-      priceFormat: { type: "price", precision: 4, minMove: 0.0001 }
-    });
-    macdHistogram.setData(macd.histogram);
-
-    const macdLine = macdChart.addSeries(LineSeries, {
-      color: "#60a5fa",
-      lineWidth: 2,
-      priceLineVisible: false
-    });
-    macdLine.setData(macd.macdLine);
-
-    const signalLine = macdChart.addSeries(LineSeries, {
-      color: "#f97316",
-      lineWidth: 2,
-      priceLineVisible: false
-    });
-    signalLine.setData(macd.signalLine);
-
-    const syncMain = (range) => macdChart.timeScale().setVisibleLogicalRange(range);
-    const syncMacd = (range) => mainChart.timeScale().setVisibleLogicalRange(range);
     const refreshOverlay = () =>
       renderOverlay({
         overlayEl: overlayRef.current,
@@ -382,18 +324,14 @@ function PremiumChart({ title, subtitle, bars, markers, dayStamp }) {
         dayStamp
       });
 
-    mainChart.timeScale().subscribeVisibleLogicalRangeChange(syncMain);
-    macdChart.timeScale().subscribeVisibleLogicalRangeChange(syncMacd);
     mainChart.timeScale().subscribeVisibleLogicalRangeChange(refreshOverlay);
 
     const first = bars[0]?.time;
     const last = bars[bars.length - 1]?.time;
     if (first && last) {
       mainChart.timeScale().setVisibleRange({ from: first, to: last });
-      macdChart.timeScale().setVisibleRange({ from: first, to: last });
     } else {
       mainChart.timeScale().fitContent();
-      macdChart.timeScale().fitContent();
     }
 
     refreshOverlay();
@@ -402,22 +340,15 @@ function PremiumChart({ title, subtitle, bars, markers, dayStamp }) {
       if (mainRef.current) {
         mainChart.applyOptions({ width: mainRef.current.clientWidth });
       }
-      if (macdRef.current) {
-        macdChart.applyOptions({ width: macdRef.current.clientWidth });
-      }
       refreshOverlay();
     });
 
     resizeObserver.observe(mainRef.current);
-    resizeObserver.observe(macdRef.current);
 
     return () => {
       resizeObserver.disconnect();
-      mainChart.timeScale().unsubscribeVisibleLogicalRangeChange(syncMain);
-      macdChart.timeScale().unsubscribeVisibleLogicalRangeChange(syncMacd);
       mainChart.timeScale().unsubscribeVisibleLogicalRangeChange(refreshOverlay);
       mainChart.remove();
-      macdChart.remove();
     };
   }, [bars, markers, dayStamp]);
 
@@ -429,7 +360,7 @@ function PremiumChart({ title, subtitle, bars, markers, dayStamp }) {
           <p className="mt-1 text-sm text-mist">{subtitle}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {["1m", "EMA 9", "EMA 20", "VWAP", "MACD", "ETH"].map((item) => (
+          {["1m", "Volume", "ETH"].map((item) => (
             <span key={item} className="ui-chip">
               {item}
             </span>
@@ -441,9 +372,6 @@ function PremiumChart({ title, subtitle, bars, markers, dayStamp }) {
         <div className="relative overflow-hidden rounded-[12px] border border-white/[0.08] bg-[#0b1018]">
           <div ref={mainRef} />
           <div ref={overlayRef} className="pointer-events-none absolute inset-0 z-10" />
-        </div>
-        <div className="mt-3 overflow-hidden rounded-[12px] border border-white/[0.08] bg-[#0b1018]">
-          <div ref={macdRef} />
         </div>
       </div>
     </div>
