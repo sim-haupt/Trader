@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Area,
@@ -14,6 +14,7 @@ import CustomSelect from "../components/ui/CustomSelect";
 import DateRangePicker from "../components/ui/DateRangePicker";
 import EmptyState from "../components/ui/EmptyState";
 import LoadingState from "../components/ui/LoadingState";
+import RichTextEditor from "../components/ui/RichTextEditor";
 import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 import tradeService from "../services/tradeService";
 import journalService from "../services/journalService";
@@ -44,60 +45,6 @@ function formatDayLabel(dayKey) {
 function formatTimeLabel(value) {
   const formatted = formatDateTimeLocal(value);
   return formatted ? formatted.slice(11, 19) : "--:--:--";
-}
-
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
-}
-
-function formatInlineMarkdown(text) {
-  return text
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.+?)\*/g, "<em>$1</em>")
-    .replace(/`(.+?)`/g, "<code>$1</code>");
-}
-
-function renderSimpleMarkdown(value) {
-  const escaped = escapeHtml(value);
-  const lines = escaped.split("\n");
-  const html = [];
-  let inList = false;
-
-  for (const rawLine of lines) {
-    const line = rawLine.trimEnd();
-
-    if (/^\s*[-*]\s+/.test(line)) {
-      if (!inList) {
-        html.push("<ul>");
-        inList = true;
-      }
-
-      const item = line.replace(/^\s*[-*]\s+/, "");
-      html.push(`<li>${formatInlineMarkdown(item)}</li>`);
-      continue;
-    }
-
-    if (inList) {
-      html.push("</ul>");
-      inList = false;
-    }
-
-    if (!line.trim()) {
-      html.push("<br />");
-      continue;
-    }
-
-    html.push(`<p>${formatInlineMarkdown(line)}</p>`);
-  }
-
-  if (inList) {
-    html.push("</ul>");
-  }
-
-  return html.join("");
 }
 
 function getTradeTags(trade) {
@@ -233,18 +180,6 @@ function JournalChartTooltip({ active, payload, label }) {
   );
 }
 
-function MarkdownButton({ label, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="ui-button px-3 py-2 text-[11px] font-medium"
-    >
-      {label}
-    </button>
-  );
-}
-
 function JournalDayCard({
   day,
   noteDraft,
@@ -257,80 +192,6 @@ function JournalDayCard({
   const negative = day.totalPnl < 0;
   const winRateClass =
     day.winRate < 50 ? "text-coral" : day.winRate <= 65 ? "text-gold" : "text-mint";
-  const notesEditorRef = useRef(null);
-
-  function updateNoteDraftWithSelection(transform) {
-    const textarea = notesEditorRef.current;
-
-    if (!textarea) {
-      onNoteChange(day.dayKey, transform(noteDraft, noteDraft.length, noteDraft.length).nextValue);
-      return;
-    }
-
-    const selectionStart = textarea.selectionStart ?? 0;
-    const selectionEnd = textarea.selectionEnd ?? 0;
-    const { nextValue, nextSelectionStart, nextSelectionEnd } = transform(
-      noteDraft,
-      selectionStart,
-      selectionEnd
-    );
-
-    onNoteChange(day.dayKey, nextValue);
-
-    window.requestAnimationFrame(() => {
-      textarea.focus();
-      textarea.setSelectionRange(nextSelectionStart, nextSelectionEnd);
-    });
-  }
-
-  function wrapSelection(prefix, suffix = prefix, placeholder = "") {
-    updateNoteDraftWithSelection((value, selectionStart, selectionEnd) => {
-      const selected = value.slice(selectionStart, selectionEnd);
-      const content = selected || placeholder;
-      const nextValue =
-        value.slice(0, selectionStart) +
-        prefix +
-        content +
-        suffix +
-        value.slice(selectionEnd);
-      const contentStart = selectionStart + prefix.length;
-      const contentEnd = contentStart + content.length;
-
-      return {
-        nextValue,
-        nextSelectionStart: contentStart,
-        nextSelectionEnd: contentEnd
-      };
-    });
-  }
-
-  function insertBulletList() {
-    updateNoteDraftWithSelection((value, selectionStart, selectionEnd) => {
-      const selected = value.slice(selectionStart, selectionEnd).trim();
-      const block = selected ? `- ${selected.replace(/\n+/g, "\n- ")}` : "- list item";
-      const nextValue = value.slice(0, selectionStart) + block + value.slice(selectionEnd);
-
-      return {
-        nextValue,
-        nextSelectionStart: selectionStart,
-        nextSelectionEnd: selectionStart + block.length
-      };
-    });
-  }
-
-  function insertHeading() {
-    updateNoteDraftWithSelection((value, selectionStart, selectionEnd) => {
-      const selected = value.slice(selectionStart, selectionEnd).trim() || "Heading";
-      const block = `## ${selected}`;
-      const nextValue = value.slice(0, selectionStart) + block + value.slice(selectionEnd);
-
-      return {
-        nextValue,
-        nextSelectionStart: selectionStart + 3,
-        nextSelectionEnd: selectionStart + block.length
-      };
-    });
-  }
 
   return (
     <Card
@@ -407,32 +268,12 @@ function JournalDayCard({
               {isSaving ? "Saving..." : "Save Notes"}
             </button>
           </div>
-          <div className="mb-3 flex flex-wrap gap-2">
-            <MarkdownButton label="Bold" onClick={() => wrapSelection("**", "**", "bold text")} />
-            <MarkdownButton label="Italic" onClick={() => wrapSelection("*", "*", "italic text")} />
-            <MarkdownButton label="Code" onClick={() => wrapSelection("`", "`", "code")} />
-            <MarkdownButton label="Bullet List" onClick={insertBulletList} />
-            <MarkdownButton label="Heading" onClick={insertHeading} />
-          </div>
-          <textarea
-            ref={notesEditorRef}
+          <RichTextEditor
             value={noteDraft}
-            onChange={(event) => onNoteChange(day.dayKey, event.target.value)}
+            onChange={(value) => onNoteChange(day.dayKey, value)}
             placeholder="Write your review, mistakes, strengths, and lessons from this trading day..."
-            className="ui-input min-h-[120px] resize-y"
+            minHeight={180}
           />
-          <div className="mt-4 rounded-[16px] border border-[#e5e7eb33] bg-black/10 px-4 py-4">
-            {noteDraft ? (
-              <div
-                className="prose prose-invert max-w-none text-sm leading-7 text-white/70"
-                dangerouslySetInnerHTML={{ __html: renderSimpleMarkdown(noteDraft) }}
-              />
-            ) : (
-              <p className="text-sm leading-7 text-white/48">
-                Markdown preview will appear here.
-              </p>
-            )}
-          </div>
         </div>
 
         <div className="ui-table-shell overflow-hidden">

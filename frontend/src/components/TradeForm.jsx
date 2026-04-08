@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import FormField from "./ui/FormField";
+import RichTextEditor from "./ui/RichTextEditor";
 import { formatDateTimeLocal, toMarketISOString } from "../utils/formatters";
 import tagService from "../services/tagService";
 import strategyService from "../services/strategyService";
@@ -360,12 +361,11 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
 
       <div className="md:col-span-2">
         <FormField label="Notes">
-          <textarea
-            name="notes"
-            rows="4"
+          <RichTextEditor
             value={form.notes}
-            onChange={handleChange}
-            className="ui-input"
+            onChange={(value) => setForm((current) => ({ ...current, notes: value }))}
+            placeholder="Capture setup, context, and review notes for this trade."
+            minHeight={180}
           />
         </FormField>
       </div>

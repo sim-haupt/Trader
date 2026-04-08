@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CartesianGrid,
   Line,
@@ -15,7 +15,9 @@ import strategyService from "../services/strategyService";
 import TradeReviewCharts from "./TradeReviewCharts";
 import Card from "./ui/Card";
 import LoadingState from "./ui/LoadingState";
+import RichTextEditor from "./ui/RichTextEditor";
 import { formatCurrency, formatDate, formatDateTimeLocal } from "../utils/formatters";
+import { normalizeRichTextHtml } from "../utils/richText";
 import {
   buildDayRunningPnl,
   buildTradeRunningPnl,
@@ -32,60 +34,6 @@ function parseTags(value) {
     .split(",")
     .map((tag) => tag.trim())
     .filter(Boolean);
-}
-
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
-}
-
-function renderSimpleMarkdown(value) {
-  const escaped = escapeHtml(value);
-  const lines = escaped.split("\n");
-  const html = [];
-  let inList = false;
-
-  for (const rawLine of lines) {
-    const line = rawLine.trimEnd();
-
-    if (/^\s*[-*]\s+/.test(line)) {
-      if (!inList) {
-        html.push("<ul>");
-        inList = true;
-      }
-
-      const item = line.replace(/^\s*[-*]\s+/, "");
-      html.push(`<li>${formatInlineMarkdown(item)}</li>`);
-      continue;
-    }
-
-    if (inList) {
-      html.push("</ul>");
-      inList = false;
-    }
-
-    if (!line.trim()) {
-      html.push("<br />");
-      continue;
-    }
-
-    html.push(`<p>${formatInlineMarkdown(line)}</p>`);
-  }
-
-  if (inList) {
-    html.push("</ul>");
-  }
-
-  return html.join("");
-}
-
-function formatInlineMarkdown(text) {
-  return text
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.+?)\*/g, "<em>$1</em>")
-    .replace(/`(.+?)`/g, "<code>$1</code>");
 }
 
 function SummaryMetric({ label, value, accent = "text-white" }) {
@@ -145,18 +93,6 @@ function TimelineTable({ rows }) {
   );
 }
 
-function MarkdownButton({ label, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="ui-button px-3 py-2 text-[11px] font-medium"
-    >
-      {label}
-    </button>
-  );
-}
-
 function TradeDetailModal({ trade, onClose, pageMode = false }) {
   const initialDayStart = new Date(trade.entryDate);
   initialDayStart.setHours(0, 0, 0, 0);
@@ -197,7 +133,6 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
   const [isNotesEditorOpen, setIsNotesEditorOpen] = useState(false);
   const [noteDraft, setNoteDraft] = useState(trade.notes || "");
   const [isSavingMeta, setIsSavingMeta] = useState(false);
-  const notesEditorRef = useRef(null);
 
   useEffect(() => {
     const nextTrade = tradeDetail || trade;
@@ -387,83 +322,6 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
     }
   }
 
-  function updateNoteDraftWithSelection(transform) {
-    const textarea = notesEditorRef.current;
-
-    if (!textarea) {
-      setNoteDraft((current) => transform(current, current.length, current.length).nextValue);
-      return;
-    }
-
-    const selectionStart = textarea.selectionStart ?? 0;
-    const selectionEnd = textarea.selectionEnd ?? 0;
-    const { nextValue, nextSelectionStart, nextSelectionEnd } = transform(
-      noteDraft,
-      selectionStart,
-      selectionEnd
-    );
-
-    setNoteDraft(nextValue);
-
-    window.requestAnimationFrame(() => {
-      textarea.focus();
-      textarea.setSelectionRange(nextSelectionStart, nextSelectionEnd);
-    });
-  }
-
-  function wrapSelection(prefix, suffix = prefix, placeholder = "") {
-    updateNoteDraftWithSelection((value, selectionStart, selectionEnd) => {
-      const selected = value.slice(selectionStart, selectionEnd);
-      const content = selected || placeholder;
-      const nextValue =
-        value.slice(0, selectionStart) +
-        prefix +
-        content +
-        suffix +
-        value.slice(selectionEnd);
-
-      const contentStart = selectionStart + prefix.length;
-      const contentEnd = contentStart + content.length;
-
-      return {
-        nextValue,
-        nextSelectionStart: contentStart,
-        nextSelectionEnd: contentEnd
-      };
-    });
-  }
-
-  function insertBulletList() {
-    updateNoteDraftWithSelection((value, selectionStart, selectionEnd) => {
-      const selected = value.slice(selectionStart, selectionEnd);
-      const lines = (selected || "List item").split("\n");
-      const bulleted = lines.map((line) => `- ${line || "List item"}`).join("\n");
-      const nextValue = value.slice(0, selectionStart) + bulleted + value.slice(selectionEnd);
-
-      return {
-        nextValue,
-        nextSelectionStart: selectionStart,
-        nextSelectionEnd: selectionStart + bulleted.length
-      };
-    });
-  }
-
-  function insertHeading() {
-    updateNoteDraftWithSelection((value, selectionStart, selectionEnd) => {
-      const selected = value.slice(selectionStart, selectionEnd) || "Section title";
-      const prefix = selectionStart > 0 && !value.slice(0, selectionStart).endsWith("\n") ? "\n" : "";
-      const heading = `${prefix}## ${selected}`;
-      const nextValue = value.slice(0, selectionStart) + heading + value.slice(selectionEnd);
-      const headingStart = selectionStart + prefix.length + 3;
-
-      return {
-        nextValue,
-        nextSelectionStart: headingStart,
-        nextSelectionEnd: headingStart + selected.length
-      };
-    });
-  }
-
   return (
     <div
       className={
@@ -647,24 +505,12 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                 </div>
                 {isNotesEditorOpen ? (
                   <div className="mt-4 space-y-3">
-                    <div className="flex flex-wrap gap-2">
-                      <MarkdownButton label="Bold" onClick={() => wrapSelection("**", "**", "bold text")} />
-                      <MarkdownButton label="Italic" onClick={() => wrapSelection("*", "*", "italic text")} />
-                      <MarkdownButton label="Code" onClick={() => wrapSelection("`", "`", "code")} />
-                      <MarkdownButton label="Bullet List" onClick={insertBulletList} />
-                      <MarkdownButton label="Heading" onClick={insertHeading} />
-                    </div>
-                    <textarea
-                      ref={notesEditorRef}
-                      rows="7"
+                    <RichTextEditor
                       value={noteDraft}
-                      onChange={(event) => setNoteDraft(event.target.value)}
-                      placeholder="Write your setup, thesis, execution review, and lessons here. Markdown supported."
-                      className="ui-input"
+                      onChange={setNoteDraft}
+                      placeholder="Write your setup, thesis, execution review, and lessons here."
+                      minHeight={220}
                     />
-                    <p className="text-xs leading-6 text-white/45">
-                      Supports markdown for headings, bold, italic, bullet lists, and inline code.
-                    </p>
                     <div className="flex justify-end gap-2">
                       <button
                         type="button"
@@ -691,7 +537,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                     {activeTrade.notes ? (
                       <div
                         className="prose prose-invert max-w-none text-sm leading-7 text-white/70"
-                        dangerouslySetInnerHTML={{ __html: renderSimpleMarkdown(activeTrade.notes) }}
+                        dangerouslySetInnerHTML={{ __html: normalizeRichTextHtml(activeTrade.notes) }}
                       />
                     ) : (
                       <p className="text-sm leading-7 text-white/60">
