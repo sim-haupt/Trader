@@ -15,6 +15,7 @@ import tradeService from "../services/tradeService";
 
 const initialFilters = {
   symbol: "",
+  tag: "",
   side: "",
   strategy: "",
   from: "",
@@ -72,10 +73,6 @@ function TradesPage() {
       setLoading(false);
     }
   }
-
-  useEffect(() => {
-    loadTrades();
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -147,7 +144,11 @@ function TradesPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [filters.symbol, filters.side, filters.strategy, filters.from, filters.to, pageSize]);
+  }, [filters.symbol, filters.tag, filters.side, filters.strategy, filters.from, filters.to, pageSize]);
+
+  useEffect(() => {
+    loadTrades(filters);
+  }, [filters]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -244,13 +245,8 @@ function TradesPage() {
     });
   }
 
-  async function handleApplyFilters() {
-    await loadTrades(filters);
-  }
-
   async function handleResetFilters() {
     setFilters(initialFilters);
-    await loadTrades(initialFilters);
   }
 
   async function handleSubmit(payload) {
@@ -572,8 +568,8 @@ function TradesPage() {
               filters={filters}
               onChange={handleFilterChange}
               onReset={handleResetFilters}
-              onApply={handleApplyFilters}
               strategies={availableStrategies}
+              tags={availableTags}
             />
           </div>
 
@@ -743,11 +739,21 @@ function TradesPage() {
                 </div>
               )}
 
+              <TradeTable
+                trades={paginatedTrades}
+                onEdit={setSelectedTrade}
+                onDelete={handleDelete}
+                onSelectTrade={(trade) => navigate(`/trades/${trade.id}`, { state: { trade } })}
+                selectedIds={selectedIds}
+                onToggleSelection={handleToggleSelection}
+                onToggleAll={handleToggleAll}
+              />
+
               <div className="ui-surface-subtle flex flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between">
                 <div className="text-sm text-white/62">
                   Showing{" "}
                   <span className="font-semibold text-white">
-                    {paginatedTrades.length === 0 ? 0 : (pageSize === "all" ? 1 : (currentPage - 1) * pageSize + 1)}
+                    {paginatedTrades.length === 0 ? 0 : pageSize === "all" ? 1 : (currentPage - 1) * pageSize + 1}
                   </span>
                   {" "}to{" "}
                   <span className="font-semibold text-white">
@@ -795,16 +801,6 @@ function TradesPage() {
                   </div>
                 </div>
               </div>
-
-              <TradeTable
-                trades={paginatedTrades}
-                onEdit={setSelectedTrade}
-                onDelete={handleDelete}
-                onSelectTrade={(trade) => navigate(`/trades/${trade.id}`, { state: { trade } })}
-                selectedIds={selectedIds}
-                onToggleSelection={handleToggleSelection}
-                onToggleAll={handleToggleAll}
-              />
             </div>
           )}
         </Card>

@@ -1,10 +1,10 @@
 import CustomSelect from "./ui/CustomSelect";
 import DateRangePicker from "./ui/DateRangePicker";
 
-function Filters({ filters, onChange, onReset, onApply, strategies = [] }) {
+function Filters({ filters, onChange, onReset, strategies = [], tags = [] }) {
   return (
     <div className="ui-panel relative z-20 overflow-visible p-4">
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[180px_160px_160px_180px_auto] xl:items-end xl:justify-start">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[170px_160px_160px_160px_180px_auto] xl:items-end xl:justify-start">
         <div className="min-w-0 xl:w-[180px]">
           <label className="mb-2 block text-xs font-medium text-white/72">Symbol</label>
           <input
@@ -12,6 +12,23 @@ function Filters({ filters, onChange, onReset, onApply, strategies = [] }) {
             value={filters.symbol}
             onChange={(event) => onChange("symbol", event.target.value)}
             className="ui-input"
+          />
+        </div>
+
+        <div className="min-w-0 xl:w-[160px]">
+          <label className="mb-2 block text-xs font-medium text-white/72">Tags</label>
+          <CustomSelect
+            value={filters.tag}
+            onChange={(nextValue) => onChange("tag", nextValue)}
+            options={[
+              { label: "All", value: "" },
+              ...tags.map((tag) => ({
+                label: tag.name,
+                value: tag.name
+              }))
+            ]}
+            placeholder="All"
+            buttonClassName="!py-3"
           />
         </div>
 
@@ -63,9 +80,6 @@ function Filters({ filters, onChange, onReset, onApply, strategies = [] }) {
         <div className="flex items-end justify-end gap-2">
           <button type="button" onClick={onReset} className="ui-button text-sm">
             Reset
-          </button>
-          <button type="button" onClick={onApply} className="ui-button-solid text-sm">
-            Apply
           </button>
         </div>
       </div>

@@ -116,6 +116,7 @@ const importTradeSchema = tradeSchema.and(
 const tradeQuerySchema = z.object({
   symbol: z.string().trim().max(20).optional(),
   side: z.enum(["LONG", "SHORT"]).optional(),
+  tag: z.string().trim().max(100).optional(),
   strategy: z.string().trim().max(100).optional(),
   from: z.string().refine(isValidDateString, "from must be a valid date").optional(),
   to: z.string().refine(isValidDateString, "to must be a valid date").optional(),

@@ -48,6 +48,13 @@ function buildTradeWhere(actor, filters = {}) {
     where.side = filters.side;
   }
 
+  if (filters.tag) {
+    where.tags = {
+      contains: filters.tag,
+      mode: "insensitive"
+    };
+  }
+
   if (filters.strategy) {
     where.strategy = filters.strategy;
   }

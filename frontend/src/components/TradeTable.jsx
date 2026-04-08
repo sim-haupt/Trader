@@ -1,5 +1,33 @@
 import { formatCurrency, formatDate } from "../utils/formatters";
 
+function EditIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
+      <path
+        d="M13.958 3.542a1.5 1.5 0 0 1 2.122 0l.378.378a1.5 1.5 0 0 1 0 2.122l-8.75 8.75-3.166.792.791-3.166 8.625-8.876Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <path d="m12.5 5 2.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
+      <path
+        d="M4.167 5.833h11.666M7.5 2.917h5m-6.25 2.916.417 9.167A1.667 1.667 0 0 0 8.75 16.667h2.5a1.667 1.667 0 0 0 1.666-1.667l.417-9.167"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function TradeTable({
   trades,
   onEdit,
@@ -31,8 +59,8 @@ function TradeTable({
               )}
               <th className="px-4 py-4">DATE</th>
               <th className="px-4 py-4">SYMBOL</th>
-              <th className="px-4 py-4">ENTRY</th>
-              <th className="px-4 py-4">EXIT</th>
+              <th className="px-4 py-4">STRATEGY</th>
+              <th className="px-4 py-4">TAGS</th>
               <th className="px-4 py-4">QUANTITY</th>
               <th className="px-4 py-4">EXECUTIONS</th>
               <th className="px-4 py-4">P&amp;L</th>
@@ -52,8 +80,8 @@ function TradeTable({
                 <>
                   {startsNewDay ? (
                     <tr key={`${trade.id}-day-divider`} aria-hidden="true">
-                      <td colSpan={columnCount} className="px-4 pt-5 pb-3">
-                        <div className="flex items-center gap-3">
+                      <td colSpan={columnCount} className="px-4 py-4 align-middle">
+                        <div className="flex min-h-[44px] items-center gap-3">
                           <span className="ui-title rounded-full border border-[var(--line-strong)] bg-white/[0.04] px-3 py-1.5 text-[10px] text-white/66">
                             {currentDate}
                           </span>
@@ -91,13 +119,34 @@ function TradeTable({
                     <td className="px-4 py-4 text-white/88">{formatDate(trade.entryDate)}</td>
                     <td className="px-4 py-4">
                       <div className="text-[15px] font-semibold tracking-[-0.02em] text-white">{trade.symbol}</div>
-                      {trade.tags ? <div className="mt-1 text-xs text-white/52">{trade.tags}</div> : null}
-                      {!trade.tags && trade.notes ? (
-                        <div className="mt-1 max-w-[220px] truncate text-xs leading-5 text-white/42">{trade.notes}</div>
-                      ) : null}
                     </td>
-                    <td className="px-4 py-4 text-white/84">{trade.entryPrice}</td>
-                    <td className="px-4 py-4 text-white/84">{trade.exitPrice ?? "-"}</td>
+                    <td className="px-4 py-4 text-white/84">
+                      {trade.strategy ? (
+                        <span className="text-sm font-medium text-white/80">{trade.strategy}</span>
+                      ) : (
+                        <span className="text-sm text-white/36">-</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-4 text-white/84">
+                      {trade.tags ? (
+                        <div className="flex max-w-[18rem] flex-wrap gap-2">
+                          {trade.tags
+                            .split(",")
+                            .map((tag) => tag.trim())
+                            .filter(Boolean)
+                            .map((tag) => (
+                              <span
+                                key={`${trade.id}-${tag}`}
+                                className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-white/70"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-white/36">-</span>
+                      )}
+                    </td>
                     <td className="px-4 py-4 text-white/84">{trade.quantity}</td>
                     <td className="px-4 py-4 text-white/84">{executionCount || "-"}</td>
                     <td
@@ -109,16 +158,18 @@ function TradeTable({
                     </td>
                     {showActions && (
                       <td className="px-4 py-4">
-                        <div className="flex flex-nowrap gap-2">
+                        <div className="flex items-center gap-2">
                           <button
                             type="button"
                             onClick={(event) => {
                               event.stopPropagation();
                               onEdit(trade);
                             }}
-                            className="ui-button px-3 py-1.5 text-[11px]"
+                            className="ui-button inline-flex h-9 w-9 items-center justify-center rounded-xl p-0 text-white/70 hover:text-white"
+                            aria-label={`Edit ${trade.symbol} trade`}
+                            title="Edit trade"
                           >
-                            Edit
+                            <EditIcon />
                           </button>
                           <button
                             type="button"
@@ -126,9 +177,11 @@ function TradeTable({
                               event.stopPropagation();
                               onDelete(trade);
                             }}
-                            className="ui-button-danger px-3 py-1.5 text-[11px]"
+                            className="ui-button-danger inline-flex h-9 w-9 items-center justify-center rounded-xl p-0"
+                            aria-label={`Delete ${trade.symbol} trade`}
+                            title="Delete trade"
                           >
-                            Delete
+                            <TrashIcon />
                           </button>
                         </div>
                       </td>
