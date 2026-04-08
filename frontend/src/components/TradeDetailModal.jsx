@@ -331,11 +331,11 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
       }
     >
       <div
-        className={`w-full max-w-[1520px] border border-[#e5e7eb42] bg-[linear-gradient(180deg,rgba(16,19,26,0.98),rgba(9,11,16,0.98))] ${
+        className={`w-full max-w-[1520px] border border-[#e5e7eb42] bg-black ${
           pageMode ? "rounded-[6px]" : "rounded-[6px]"
         }`}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-[#e5e7eb42] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))] px-6 py-5">
+        <div className="flex items-start justify-between gap-4 border-b border-[#e5e7eb42] bg-black px-6 py-5">
           <div>
             <div className="flex flex-wrap items-center gap-3">
               <h2 className="text-4xl font-bold tracking-[-0.05em] text-white">{activeTrade.symbol}</h2>

@@ -136,12 +136,12 @@ function getSessionShades(dayStamp) {
     {
       start: getEasternTimestamp(dayStamp, 4, 0),
       end: getEasternTimestamp(dayStamp, 9, 30),
-      background: "linear-gradient(180deg, rgba(245,158,11,0.11), rgba(245,158,11,0.04))"
+      background: "rgba(245,158,11,0.08)"
     },
     {
       start: getEasternTimestamp(dayStamp, 16, 0),
       end: getEasternTimestamp(dayStamp, 20, 0),
-      background: "linear-gradient(180deg, rgba(59,130,246,0.10), rgba(59,130,246,0.04))"
+      background: "rgba(59,130,246,0.07)"
     }
   ];
 }
