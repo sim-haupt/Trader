@@ -216,26 +216,21 @@ function MonthDetailSection({ month, onClose, onSelectDay }) {
           return (
             <Fragment key={`${month.label}-week-${index}`}>
               {week.map((day) => (
-                <div
+                <button
+                  type="button"
                   key={day.dayKey}
-                  className={`min-h-[118px] border-b border-r border-[var(--line)] px-3 py-3 text-left transition ${getDayTone(
-                    day.stats,
-                    day.isCurrentMonth
-                  )}`}
+                  onClick={() => {
+                    if (day.isCurrentMonth && day.stats) {
+                      onSelectDay(day.dayKey);
+                    }
+                  }}
+                  disabled={!day.isCurrentMonth || !day.stats}
+                  className={`min-h-[118px] border-b border-r border-[var(--line)] px-3 py-3 text-left transition ${
+                    day.isCurrentMonth && day.stats ? "cursor-pointer hover:brightness-110" : "cursor-default"
+                  } ${getDayTone(day.stats, day.isCurrentMonth)}`}
                   style={getDayBorderStyle(day.stats, day.isCurrentMonth)}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="text-lg font-semibold">{day.dayNumber}</div>
-                    {day.isCurrentMonth && day.stats ? (
-                      <button
-                        type="button"
-                        onClick={() => onSelectDay(day.dayKey)}
-                        className="ui-chip px-2 py-1 text-[10px]"
-                      >
-                        Journal
-                      </button>
-                    ) : null}
-                  </div>
+                  <div className="text-lg font-semibold">{day.dayNumber}</div>
                   {day.isCurrentMonth && (
                     <>
                       <div
@@ -256,7 +251,7 @@ function MonthDetailSection({ month, onClose, onSelectDay }) {
                       </div>
                     </>
                   )}
-                </div>
+                </button>
               ))}
 
               <div className="min-h-[118px] border-b border-[var(--line)] px-3 py-3 bg-white/[0.02]">

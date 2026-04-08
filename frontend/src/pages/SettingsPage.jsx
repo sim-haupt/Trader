@@ -5,9 +5,11 @@ import EmptyState from "../components/ui/EmptyState";
 import tagService from "../services/tagService";
 import strategyService from "../services/strategyService";
 import { useAuth } from "../context/AuthContext";
+import { useNotifications } from "../context/NotificationContext";
 
 function SettingsPage() {
   const { user, updateSettings, refreshSettings } = useAuth();
+  const { notify, confirm } = useNotifications();
   const [activeSection, setActiveSection] = useState("tags");
   const [tags, setTags] = useState(() => tagService.peekTags() || []);
   const [strategies, setStrategies] = useState(() => strategyService.peekStrategies() || []);
@@ -26,7 +28,6 @@ function SettingsPage() {
   const [bulkDeletingTags, setBulkDeletingTags] = useState(false);
   const [bulkDeletingStrategies, setBulkDeletingStrategies] = useState(false);
   const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
 
   async function loadTags(options = {}) {
     if (!tagService.peekTags() || options.forceRefresh) {
@@ -86,15 +87,15 @@ function SettingsPage() {
 
     setSavingTag(true);
     setError("");
-    setMessage("");
 
     try {
       await tagService.createTag(name);
       setNewTag("");
-      setMessage("Tag saved.");
+      notify({ title: "Tag saved", description: `"${name}" is now available across the app.`, tone: "success" });
       await loadTags({ forceRefresh: true });
     } catch (err) {
       setError(err.message);
+      notify({ title: "Could not save tag", description: err.message, tone: "error" });
     } finally {
       setSavingTag(false);
     }
@@ -109,22 +110,31 @@ function SettingsPage() {
 
     setSavingStrategy(true);
     setError("");
-    setMessage("");
 
     try {
       await strategyService.createStrategy(name);
       setNewStrategy("");
-      setMessage("Strategy saved.");
+      notify({
+        title: "Strategy saved",
+        description: `"${name}" is now available across the app.`,
+        tone: "success"
+      });
       await loadStrategies({ forceRefresh: true });
     } catch (err) {
       setError(err.message);
+      notify({ title: "Could not save strategy", description: err.message, tone: "error" });
     } finally {
       setSavingStrategy(false);
     }
   }
 
   async function handleDeleteTag(tag) {
-    const confirmed = window.confirm(`Delete saved tag "${tag.name}" from your tag list?`);
+    const confirmed = await confirm({
+      title: "Delete saved tag?",
+      description: `"${tag.name}" will be removed from your saved tag list.`,
+      confirmLabel: "Delete Tag",
+      tone: "error"
+    });
 
     if (!confirmed) {
       return;
@@ -132,14 +142,14 @@ function SettingsPage() {
 
     setDeletingId(tag.id);
     setError("");
-    setMessage("");
 
     try {
       await tagService.deleteTag(tag.id);
-      setMessage("Tag deleted.");
+      notify({ title: "Tag deleted", description: `"${tag.name}" was removed.`, tone: "success" });
       await loadTags({ forceRefresh: true });
     } catch (err) {
       setError(err.message);
+      notify({ title: "Could not delete tag", description: err.message, tone: "error" });
     } finally {
       setDeletingId(null);
     }
@@ -150,9 +160,14 @@ function SettingsPage() {
       return;
     }
 
-    const confirmed = window.confirm(
-      `Delete ${selectedTagIds.length} saved ${selectedTagIds.length === 1 ? "tag" : "tags"} from your tag list?`
-    );
+    const confirmed = await confirm({
+      title: "Delete selected tags?",
+      description: `This will remove ${selectedTagIds.length} saved ${
+        selectedTagIds.length === 1 ? "tag" : "tags"
+      } from your tag list.`,
+      confirmLabel: "Delete Selected",
+      tone: "error"
+    });
 
     if (!confirmed) {
       return;
@@ -160,24 +175,33 @@ function SettingsPage() {
 
     setBulkDeletingTags(true);
     setError("");
-    setMessage("");
 
     try {
       await tagService.deleteTags(selectedTagIds);
       setSelectedTagIds([]);
-      setMessage(
-        `${selectedTagIds.length} ${selectedTagIds.length === 1 ? "tag" : "tags"} deleted.`
-      );
+      notify({
+        title: "Tags deleted",
+        description: `${selectedTagIds.length} ${
+          selectedTagIds.length === 1 ? "tag was" : "tags were"
+        } removed.`,
+        tone: "success"
+      });
       await loadTags({ forceRefresh: true });
     } catch (err) {
       setError(err.message);
+      notify({ title: "Could not delete tags", description: err.message, tone: "error" });
     } finally {
       setBulkDeletingTags(false);
     }
   }
 
   async function handleDeleteStrategy(strategy) {
-    const confirmed = window.confirm(`Delete saved strategy "${strategy.name}" from your strategy list?`);
+    const confirmed = await confirm({
+      title: "Delete saved strategy?",
+      description: `"${strategy.name}" will be removed from your saved strategy list.`,
+      confirmLabel: "Delete Strategy",
+      tone: "error"
+    });
 
     if (!confirmed) {
       return;
@@ -185,14 +209,18 @@ function SettingsPage() {
 
     setDeletingStrategyId(strategy.id);
     setError("");
-    setMessage("");
 
     try {
       await strategyService.deleteStrategy(strategy.id);
-      setMessage("Strategy deleted.");
+      notify({
+        title: "Strategy deleted",
+        description: `"${strategy.name}" was removed.`,
+        tone: "success"
+      });
       await loadStrategies({ forceRefresh: true });
     } catch (err) {
       setError(err.message);
+      notify({ title: "Could not delete strategy", description: err.message, tone: "error" });
     } finally {
       setDeletingStrategyId(null);
     }
@@ -203,11 +231,14 @@ function SettingsPage() {
       return;
     }
 
-    const confirmed = window.confirm(
-      `Delete ${selectedStrategyIds.length} saved ${
+    const confirmed = await confirm({
+      title: "Delete selected strategies?",
+      description: `This will remove ${selectedStrategyIds.length} saved ${
         selectedStrategyIds.length === 1 ? "strategy" : "strategies"
-      } from your strategy list?`
-    );
+      } from your strategy list.`,
+      confirmLabel: "Delete Selected",
+      tone: "error"
+    });
 
     if (!confirmed) {
       return;
@@ -215,19 +246,21 @@ function SettingsPage() {
 
     setBulkDeletingStrategies(true);
     setError("");
-    setMessage("");
 
     try {
       await strategyService.deleteStrategies(selectedStrategyIds);
       setSelectedStrategyIds([]);
-      setMessage(
-        `${selectedStrategyIds.length} ${
-          selectedStrategyIds.length === 1 ? "strategy" : "strategies"
-        } deleted.`
-      );
+      notify({
+        title: "Strategies deleted",
+        description: `${selectedStrategyIds.length} ${
+          selectedStrategyIds.length === 1 ? "strategy was" : "strategies were"
+        } removed.`,
+        tone: "success"
+      });
       await loadStrategies({ forceRefresh: true });
     } catch (err) {
       setError(err.message);
+      notify({ title: "Could not delete strategies", description: err.message, tone: "error" });
     } finally {
       setBulkDeletingStrategies(false);
     }
@@ -263,16 +296,20 @@ function SettingsPage() {
 
     setSavingCommission(true);
     setError("");
-    setMessage("");
 
     try {
       await updateSettings({
         defaultCommission: commissionValue,
         defaultFees: feeValue
       });
-      setMessage("Default trade costs updated.");
+      notify({
+        title: "Trade costs updated",
+        description: "Default commission and fees were saved.",
+        tone: "success"
+      });
     } catch (err) {
       setError(err.message);
+      notify({ title: "Could not save trade costs", description: err.message, tone: "error" });
     } finally {
       setSavingCommission(false);
     }
@@ -280,7 +317,6 @@ function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      {message && <div className="ui-notice">{message}</div>}
       {error && <div className="ui-notice border-coral/30 bg-[#2a1111] text-coral">{error}</div>}
 
       <Card

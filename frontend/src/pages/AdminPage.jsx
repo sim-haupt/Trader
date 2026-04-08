@@ -9,11 +9,12 @@ import AdminTradeTable from "../components/AdminTradeTable";
 import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 import tradeService from "../services/tradeService";
 import { useAuth } from "../context/AuthContext";
+import { useNotifications } from "../context/NotificationContext";
 
 function AdminPage() {
   const { user } = useAuth();
+  const { notify, confirm } = useNotifications();
   const [selectedIds, setSelectedIds] = useState([]);
-  const [message, setMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -48,15 +49,15 @@ function AdminPage() {
   async function handleSave(tradeId, payload) {
     setIsSaving(true);
     setError("");
-    setMessage("");
 
     try {
       await tradeService.updateTrade(tradeId, payload);
-      setMessage("Trade updated successfully.");
+      notify({ title: "Trade updated", description: "The trade was updated successfully.", tone: "success" });
       const data = await reloadTrades();
       setSelectedIds((current) => current.filter((id) => data.some((trade) => trade.id === id)));
     } catch (err) {
       setError(err.message);
+      notify({ title: "Could not update trade", description: err.message, tone: "error" });
       throw err;
     } finally {
       setIsSaving(false);
@@ -64,7 +65,12 @@ function AdminPage() {
   }
 
   async function handleDelete(tradeId) {
-    const confirmed = window.confirm("Delete this trade?");
+    const confirmed = await confirm({
+      title: "Delete trade?",
+      description: "This trade will be removed from the system.",
+      confirmLabel: "Delete Trade",
+      tone: "error"
+    });
 
     if (!confirmed) {
       return;
@@ -72,16 +78,16 @@ function AdminPage() {
 
     setIsDeleting(true);
     setError("");
-    setMessage("");
 
     try {
       await tradeService.deleteTrade(tradeId);
       setSelectedIds((current) => current.filter((id) => id !== tradeId));
-      setMessage("Trade deleted successfully.");
+      notify({ title: "Trade deleted", description: "The trade was removed.", tone: "success" });
       const data = await reloadTrades();
       setSelectedIds((current) => current.filter((id) => data.some((trade) => trade.id === id)));
     } catch (err) {
       setError(err.message);
+      notify({ title: "Could not delete trade", description: err.message, tone: "error" });
     } finally {
       setIsDeleting(false);
     }
@@ -92,7 +98,14 @@ function AdminPage() {
       return;
     }
 
-    const confirmed = window.confirm(`Delete ${selectedIds.length} selected trades?`);
+    const confirmed = await confirm({
+      title: "Delete selected trades?",
+      description: `This will permanently remove ${selectedIds.length} selected ${
+        selectedIds.length === 1 ? "trade" : "trades"
+      }.`,
+      confirmLabel: "Delete Selected",
+      tone: "error"
+    });
 
     if (!confirmed) {
       return;
@@ -100,23 +113,32 @@ function AdminPage() {
 
     setIsDeleting(true);
     setError("");
-    setMessage("");
 
     try {
       const result = await tradeService.bulkDeleteTrades(selectedIds);
       setSelectedIds([]);
-      setMessage(`Deleted ${result.deletedCount} trades.`);
+      notify({
+        title: "Trades deleted",
+        description: `Deleted ${result.deletedCount} ${result.deletedCount === 1 ? "trade" : "trades"}.`,
+        tone: "success"
+      });
       const data = await reloadTrades();
       setSelectedIds((current) => current.filter((id) => data.some((trade) => trade.id === id)));
     } catch (err) {
       setError(err.message);
+      notify({ title: "Could not delete selected trades", description: err.message, tone: "error" });
     } finally {
       setIsDeleting(false);
     }
   }
 
   async function handleDeleteAll() {
-    const confirmed = window.confirm("Delete all trades in the system? This cannot be undone.");
+    const confirmed = await confirm({
+      title: "Delete all trades?",
+      description: "This will permanently remove all trades in the system. This cannot be undone.",
+      confirmLabel: "Delete All",
+      tone: "error"
+    });
 
     if (!confirmed) {
       return;
@@ -124,15 +146,19 @@ function AdminPage() {
 
     setIsDeleting(true);
     setError("");
-    setMessage("");
 
     try {
       const result = await tradeService.deleteAllTrades("all");
       setSelectedIds([]);
-      setMessage(`Deleted ${result.deletedCount} trades.`);
+      notify({
+        title: "All trades deleted",
+        description: `Deleted ${result.deletedCount} ${result.deletedCount === 1 ? "trade" : "trades"}.`,
+        tone: "success"
+      });
       await reloadTrades();
     } catch (err) {
       setError(err.message);
+      notify({ title: "Could not delete all trades", description: err.message, tone: "error" });
     } finally {
       setIsDeleting(false);
     }
@@ -141,17 +167,21 @@ function AdminPage() {
   async function handleUpload(file) {
     setIsUploading(true);
     setError("");
-    setMessage("");
 
     try {
       const result = await tradeService.importTrades(file);
-      setMessage(
-        `Imported ${result.insertedCount} trades${result.errorCount ? ` with ${result.errorCount} row errors` : ""}.`
-      );
+      notify({
+        title: "CSV import complete",
+        description: `Imported ${result.insertedCount} trades${
+          result.errorCount ? ` with ${result.errorCount} row errors` : ""
+        }.`,
+        tone: result.errorCount ? "warning" : "success"
+      });
       const data = await reloadTrades();
       setSelectedIds((current) => current.filter((id) => data.some((trade) => trade.id === id)));
     } catch (err) {
       setError(err.message);
+      notify({ title: "CSV import failed", description: err.message, tone: "error" });
     } finally {
       setIsUploading(false);
     }
@@ -160,17 +190,21 @@ function AdminPage() {
   async function handleTextImport(text) {
     setIsUploading(true);
     setError("");
-    setMessage("");
 
     try {
       const result = await tradeService.importTradesFromText(text);
-      setMessage(
-        `Imported ${result.insertedCount} trades${result.errorCount ? ` with ${result.errorCount} row errors` : ""}.`
-      );
+      notify({
+        title: "Text import complete",
+        description: `Imported ${result.insertedCount} trades${
+          result.errorCount ? ` with ${result.errorCount} row errors` : ""
+        }.`,
+        tone: result.errorCount ? "warning" : "success"
+      });
       const data = await reloadTrades();
       setSelectedIds((current) => current.filter((id) => data.some((trade) => trade.id === id)));
     } catch (err) {
       setError(err.message);
+      notify({ title: "Text import failed", description: err.message, tone: "error" });
     } finally {
       setIsUploading(false);
     }
@@ -222,7 +256,6 @@ function AdminPage() {
           </div>
         }
       >
-        {message && <div className="ui-notice mb-4">{message}</div>}
         {error && <div className="ui-notice border-coral/30 bg-[#2a1111] text-coral">{error}</div>}
 
         {loading ? (

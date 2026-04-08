@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Area,
   AreaChart,
@@ -21,6 +21,7 @@ import tagService from "../services/tagService";
 import strategyService from "../services/strategyService";
 import { formatCurrency, formatDateTimeLocal } from "../utils/formatters";
 import { useAuth } from "../context/AuthContext";
+import { useNotifications } from "../context/NotificationContext";
 import { getTradeFeeDisplayValue, getTradeNetPnl } from "../utils/tradePnl";
 
 const PAGE_SIZE = 5;
@@ -43,6 +44,60 @@ function formatDayLabel(dayKey) {
 function formatTimeLabel(value) {
   const formatted = formatDateTimeLocal(value);
   return formatted ? formatted.slice(11, 19) : "--:--:--";
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function formatInlineMarkdown(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>")
+    .replace(/`(.+?)`/g, "<code>$1</code>");
+}
+
+function renderSimpleMarkdown(value) {
+  const escaped = escapeHtml(value);
+  const lines = escaped.split("\n");
+  const html = [];
+  let inList = false;
+
+  for (const rawLine of lines) {
+    const line = rawLine.trimEnd();
+
+    if (/^\s*[-*]\s+/.test(line)) {
+      if (!inList) {
+        html.push("<ul>");
+        inList = true;
+      }
+
+      const item = line.replace(/^\s*[-*]\s+/, "");
+      html.push(`<li>${formatInlineMarkdown(item)}</li>`);
+      continue;
+    }
+
+    if (inList) {
+      html.push("</ul>");
+      inList = false;
+    }
+
+    if (!line.trim()) {
+      html.push("<br />");
+      continue;
+    }
+
+    html.push(`<p>${formatInlineMarkdown(line)}</p>`);
+  }
+
+  if (inList) {
+    html.push("</ul>");
+  }
+
+  return html.join("");
 }
 
 function getTradeTags(trade) {
@@ -178,15 +233,104 @@ function JournalChartTooltip({ active, payload, label }) {
   );
 }
 
+function MarkdownButton({ label, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="ui-button px-3 py-2 text-[11px] font-medium"
+    >
+      {label}
+    </button>
+  );
+}
+
 function JournalDayCard({
   day,
   noteDraft,
   onNoteChange,
   onSaveNote,
-  isSaving
+  isSaving,
+  onOpenTrade
 }) {
   const positive = day.totalPnl > 0;
   const negative = day.totalPnl < 0;
+  const winRateClass =
+    day.winRate < 50 ? "text-coral" : day.winRate <= 65 ? "text-gold" : "text-mint";
+  const notesEditorRef = useRef(null);
+
+  function updateNoteDraftWithSelection(transform) {
+    const textarea = notesEditorRef.current;
+
+    if (!textarea) {
+      onNoteChange(day.dayKey, transform(noteDraft, noteDraft.length, noteDraft.length).nextValue);
+      return;
+    }
+
+    const selectionStart = textarea.selectionStart ?? 0;
+    const selectionEnd = textarea.selectionEnd ?? 0;
+    const { nextValue, nextSelectionStart, nextSelectionEnd } = transform(
+      noteDraft,
+      selectionStart,
+      selectionEnd
+    );
+
+    onNoteChange(day.dayKey, nextValue);
+
+    window.requestAnimationFrame(() => {
+      textarea.focus();
+      textarea.setSelectionRange(nextSelectionStart, nextSelectionEnd);
+    });
+  }
+
+  function wrapSelection(prefix, suffix = prefix, placeholder = "") {
+    updateNoteDraftWithSelection((value, selectionStart, selectionEnd) => {
+      const selected = value.slice(selectionStart, selectionEnd);
+      const content = selected || placeholder;
+      const nextValue =
+        value.slice(0, selectionStart) +
+        prefix +
+        content +
+        suffix +
+        value.slice(selectionEnd);
+      const contentStart = selectionStart + prefix.length;
+      const contentEnd = contentStart + content.length;
+
+      return {
+        nextValue,
+        nextSelectionStart: contentStart,
+        nextSelectionEnd: contentEnd
+      };
+    });
+  }
+
+  function insertBulletList() {
+    updateNoteDraftWithSelection((value, selectionStart, selectionEnd) => {
+      const selected = value.slice(selectionStart, selectionEnd).trim();
+      const block = selected ? `- ${selected.replace(/\n+/g, "\n- ")}` : "- list item";
+      const nextValue = value.slice(0, selectionStart) + block + value.slice(selectionEnd);
+
+      return {
+        nextValue,
+        nextSelectionStart: selectionStart,
+        nextSelectionEnd: selectionStart + block.length
+      };
+    });
+  }
+
+  function insertHeading() {
+    updateNoteDraftWithSelection((value, selectionStart, selectionEnd) => {
+      const selected = value.slice(selectionStart, selectionEnd).trim() || "Heading";
+      const block = `## ${selected}`;
+      const nextValue = value.slice(0, selectionStart) + block + value.slice(selectionEnd);
+
+      return {
+        nextValue,
+        nextSelectionStart: selectionStart + 3,
+        nextSelectionEnd: selectionStart + block.length
+      };
+    });
+  }
 
   return (
     <Card
@@ -238,7 +382,7 @@ function JournalDayCard({
             </div>
             <div className="ui-metric-tile">
               <div className="ui-title text-[10px] text-white/52">Win %</div>
-              <div className="mt-2 text-2xl font-semibold text-white">{day.winRate.toFixed(1)}%</div>
+              <div className={`mt-2 text-2xl font-semibold ${winRateClass}`}>{day.winRate.toFixed(1)}%</div>
             </div>
             <div className="ui-metric-tile">
               <div className="ui-title text-[10px] text-white/52">Total Volume</div>
@@ -263,12 +407,32 @@ function JournalDayCard({
               {isSaving ? "Saving..." : "Save Notes"}
             </button>
           </div>
+          <div className="mb-3 flex flex-wrap gap-2">
+            <MarkdownButton label="Bold" onClick={() => wrapSelection("**", "**", "bold text")} />
+            <MarkdownButton label="Italic" onClick={() => wrapSelection("*", "*", "italic text")} />
+            <MarkdownButton label="Code" onClick={() => wrapSelection("`", "`", "code")} />
+            <MarkdownButton label="Bullet List" onClick={insertBulletList} />
+            <MarkdownButton label="Heading" onClick={insertHeading} />
+          </div>
           <textarea
+            ref={notesEditorRef}
             value={noteDraft}
             onChange={(event) => onNoteChange(day.dayKey, event.target.value)}
             placeholder="Write your review, mistakes, strengths, and lessons from this trading day..."
             className="ui-input min-h-[120px] resize-y"
           />
+          <div className="mt-4 rounded-[16px] border border-[#e5e7eb33] bg-black/10 px-4 py-4">
+            {noteDraft ? (
+              <div
+                className="prose prose-invert max-w-none text-sm leading-7 text-white/70"
+                dangerouslySetInnerHTML={{ __html: renderSimpleMarkdown(noteDraft) }}
+              />
+            ) : (
+              <p className="text-sm leading-7 text-white/48">
+                Markdown preview will appear here.
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="ui-table-shell overflow-hidden">
@@ -281,13 +445,17 @@ function JournalDayCard({
                   <th className="px-4 py-3 font-medium">Volume</th>
                   <th className="px-4 py-3 font-medium">Execs</th>
                   <th className="px-4 py-3 font-medium">P&amp;L</th>
-                  <th className="px-4 py-3 font-medium">Notes</th>
+                  <th className="px-4 py-3 font-medium">Strategy</th>
                   <th className="px-4 py-3 font-medium">Tags</th>
                 </tr>
               </thead>
               <tbody>
                 {day.trades.map((trade) => (
-                  <tr key={trade.id} className="border-t border-[var(--line)] text-white/82">
+                  <tr
+                    key={trade.id}
+                    className="cursor-pointer border-t border-[var(--line)] text-white/82 transition hover:bg-white/[0.03]"
+                    onClick={() => onOpenTrade(trade.id)}
+                  >
                     <td className="px-4 py-3 whitespace-nowrap">{trade.entryTimeLabel}</td>
                     <td className="px-4 py-3">
                       <div className="font-medium text-white">{trade.symbol}</div>
@@ -299,11 +467,7 @@ function JournalDayCard({
                       {formatCurrency(trade.dayPnl)}
                     </td>
                     <td className="px-4 py-3 text-white/54">
-                      {trade.notes ? (
-                        <div className="max-w-[340px] truncate">{trade.notes}</div>
-                      ) : (
-                        <span className="text-white/26">—</span>
-                      )}
+                      {trade.strategy ? trade.strategy : <span className="text-white/26">—</span>}
                     </td>
                     <td className="px-4 py-3">
                       {trade.parsedTags.length > 0 ? (
@@ -331,6 +495,8 @@ function JournalDayCard({
 
 function JournalPage() {
   const { user } = useAuth();
+  const { notify } = useNotifications();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedDay = searchParams.get("day") || "";
   const [filters, setFilters] = useState({
@@ -344,7 +510,6 @@ function JournalPage() {
   const [page, setPage] = useState(1);
   const [draftNotes, setDraftNotes] = useState({});
   const [savingDayKey, setSavingDayKey] = useState("");
-  const [message, setMessage] = useState("");
 
   const tradesResource = useCachedAsyncResource({
     peek: () => tradeService.peekAllTrades(),
@@ -459,14 +624,19 @@ function JournalPage() {
 
   async function handleSaveDay(dayKey) {
     setSavingDayKey(dayKey);
-    setMessage("");
 
     try {
       await journalService.updateJournalDay(dayKey, {
         notes: draftNotes[dayKey] ?? ""
       });
       await journalDaysResource.reload();
-      setMessage(`Saved notes for ${formatDayLabel(dayKey)}.`);
+      notify({
+        title: "Journal notes saved",
+        description: `Saved notes for ${formatDayLabel(dayKey)}.`,
+        tone: "success"
+      });
+    } catch (err) {
+      notify({ title: "Could not save day notes", description: err.message, tone: "error" });
     } finally {
       setSavingDayKey("");
     }
@@ -490,8 +660,6 @@ function JournalPage() {
 
   return (
     <div className="space-y-6">
-      {message ? <div className="ui-notice">{message}</div> : null}
-
       <Card title="TRADING JOURNAL" subtitle="Review each trading day, capture lessons, and keep notes tied to the session itself.">
         <div className="flex flex-wrap items-end gap-4">
           <div className="w-[170px]">
@@ -564,6 +732,7 @@ function JournalPage() {
                 onNoteChange={handleNotesChange}
                 onSaveNote={handleSaveDay}
                 isSaving={savingDayKey === day.dayKey}
+                onOpenTrade={(tradeId) => navigate(`/trades/${tradeId}`)}
               />
             ))}
           </div>

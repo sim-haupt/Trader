@@ -12,6 +12,7 @@ import LoadingState from "../components/ui/LoadingState";
 import tagService from "../services/tagService";
 import strategyService from "../services/strategyService";
 import tradeService from "../services/tradeService";
+import { useNotifications } from "../context/NotificationContext";
 
 const initialFilters = {
   symbol: "",
@@ -31,6 +32,7 @@ const pageSizeOptions = [
 
 function TradesPage() {
   const navigate = useNavigate();
+  const { notify, confirm } = useNotifications();
   const [searchParams, setSearchParams] = useSearchParams();
   const [trades, setTrades] = useState(() => tradeService.peekTrades(initialFilters) || []);
   const [selectedTrade, setSelectedTrade] = useState(null);
@@ -49,7 +51,6 @@ function TradesPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [isBulkSaving, setIsBulkSaving] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
-  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(() => !tradeService.peekTrades(initialFilters));
   const isImportMode = searchParams.get("mode") === "import";
@@ -252,15 +253,14 @@ function TradesPage() {
   async function handleSubmit(payload) {
     setIsSubmitting(true);
     setError("");
-    setMessage("");
 
     try {
       if (selectedTrade) {
         await tradeService.updateTrade(selectedTrade.id, payload);
-        setMessage("Trade updated successfully.");
+        notify({ title: "Trade updated", description: `${payload.symbol || selectedTrade.symbol} was updated.`, tone: "success" });
       } else {
         await tradeService.createTrade(payload);
-        setMessage("Trade created successfully.");
+        notify({ title: "Trade created", description: `${payload.symbol} was added to your journal.`, tone: "success" });
       }
 
       setSelectedTrade(null);
@@ -270,34 +270,37 @@ function TradesPage() {
       await loadTrades(filters);
     } catch (err) {
       setError(err.message);
+      notify({ title: "Could not save trade", description: err.message, tone: "error" });
     } finally {
       setIsSubmitting(false);
     }
   }
 
   async function handleDelete(trade) {
-    const confirmed = window.confirm(`Delete trade for ${trade.symbol}?`);
+    const confirmed = await confirm({
+      title: "Delete trade?",
+      description: `${trade.symbol} will be removed from your trade history.`,
+      confirmLabel: "Delete Trade",
+      tone: "error"
+    });
 
     if (!confirmed) {
       return;
     }
 
     setError("");
-    setMessage("");
 
     try {
       await tradeService.deleteTrade(trade.id);
-      setMessage("Trade deleted successfully.");
+      notify({ title: "Trade deleted", description: `${trade.symbol} was removed.`, tone: "success" });
       if (selectedTrade?.id === trade.id) {
         setSelectedTrade(null);
-      }
-      if (activeTradeId === trade.id) {
-        setActiveTradeId(null);
       }
       setSelectedIds((current) => current.filter((id) => id !== trade.id));
       await loadTrades(filters);
     } catch (err) {
       setError(err.message);
+      notify({ title: "Could not delete trade", description: err.message, tone: "error" });
     }
   }
 
@@ -306,17 +309,22 @@ function TradesPage() {
 
     if (selectedIds.length === 0) {
       setError("Select at least one trade first.");
+      notify({ title: "No trades selected", description: "Select at least one trade first.", tone: "warning" });
       return;
     }
 
     if (!trimmedTags && !bulkStrategy) {
       setError("Select tags or a strategy before applying bulk changes.");
+      notify({
+        title: "Nothing to apply",
+        description: "Choose tags or a strategy before applying bulk changes.",
+        tone: "warning"
+      });
       return;
     }
 
     setIsBulkSaving(true);
     setError("");
-    setMessage("");
 
     try {
       const result = await tradeService.bulkUpdateTrades({
@@ -326,11 +334,16 @@ function TradesPage() {
         strategy: bulkStrategy || undefined
       });
 
-      setMessage(`Updated ${result.updatedCount} trades.`);
+      notify({
+        title: "Trades updated",
+        description: `Updated ${result.updatedCount} selected ${result.updatedCount === 1 ? "trade" : "trades"}.`,
+        tone: "success"
+      });
       clearSelection();
       await loadTrades(filters);
     } catch (err) {
       setError(err.message);
+      notify({ title: "Could not update trades", description: err.message, tone: "error" });
     } finally {
       setIsBulkSaving(false);
     }
@@ -339,12 +352,18 @@ function TradesPage() {
   async function handleBulkDelete() {
     if (selectedIds.length === 0) {
       setError("Select at least one trade first.");
+      notify({ title: "No trades selected", description: "Select at least one trade first.", tone: "warning" });
       return;
     }
 
-    const confirmed = window.confirm(
-      `Delete ${selectedIds.length} selected ${selectedIds.length === 1 ? "trade" : "trades"}?`
-    );
+    const confirmed = await confirm({
+      title: "Delete selected trades?",
+      description: `This will permanently remove ${selectedIds.length} selected ${
+        selectedIds.length === 1 ? "trade" : "trades"
+      }.`,
+      confirmLabel: "Delete Selected",
+      tone: "error"
+    });
 
     if (!confirmed) {
       return;
@@ -352,7 +371,6 @@ function TradesPage() {
 
     setIsBulkDeleting(true);
     setError("");
-    setMessage("");
 
     try {
       const result = await tradeService.bulkDeleteTrades(selectedIds);
@@ -361,11 +379,18 @@ function TradesPage() {
         setSelectedTrade(null);
       }
 
-      setMessage(`Deleted ${result.deletedCount} selected trades.`);
+      notify({
+        title: "Trades deleted",
+        description: `Deleted ${result.deletedCount} selected ${
+          result.deletedCount === 1 ? "trade" : "trades"
+        }.`,
+        tone: "success"
+      });
       clearSelection();
       await loadTrades(filters);
     } catch (err) {
       setError(err.message);
+      notify({ title: "Could not delete selected trades", description: err.message, tone: "error" });
     } finally {
       setIsBulkDeleting(false);
     }
@@ -374,16 +399,20 @@ function TradesPage() {
   async function handleUpload(file) {
     setIsUploading(true);
     setError("");
-    setMessage("");
 
     try {
       const result = await tradeService.importTrades(file);
-      setMessage(
-        `Imported ${result.insertedCount} trades${result.errorCount ? ` with ${result.errorCount} row errors` : ""}.`
-      );
+      notify({
+        title: "CSV import complete",
+        description: `Imported ${result.insertedCount} trades${
+          result.errorCount ? ` with ${result.errorCount} row errors` : ""
+        }.`,
+        tone: result.errorCount ? "warning" : "success"
+      });
       await loadTrades(filters);
     } catch (err) {
       setError(err.message);
+      notify({ title: "CSV import failed", description: err.message, tone: "error" });
     } finally {
       setIsUploading(false);
     }
@@ -392,23 +421,32 @@ function TradesPage() {
   async function handleTextImport(text) {
     setIsUploading(true);
     setError("");
-    setMessage("");
 
     try {
       const result = await tradeService.importTradesFromText(text);
-      setMessage(
-        `Imported ${result.insertedCount} trades${result.errorCount ? ` with ${result.errorCount} row errors` : ""}.`
-      );
+      notify({
+        title: "Text import complete",
+        description: `Imported ${result.insertedCount} trades${
+          result.errorCount ? ` with ${result.errorCount} row errors` : ""
+        }.`,
+        tone: result.errorCount ? "warning" : "success"
+      });
       await loadTrades(filters);
     } catch (err) {
       setError(err.message);
+      notify({ title: "Text import failed", description: err.message, tone: "error" });
     } finally {
       setIsUploading(false);
     }
   }
 
   async function handleDeleteAll() {
-    const confirmed = window.confirm("Delete all of your trades? This cannot be undone.");
+    const confirmed = await confirm({
+      title: "Delete all trades?",
+      description: "This will permanently remove all of your trades. This action cannot be undone.",
+      confirmLabel: "Delete All",
+      tone: "error"
+    });
 
     if (!confirmed) {
       return;
@@ -416,16 +454,20 @@ function TradesPage() {
 
     setLoading(true);
     setError("");
-    setMessage("");
 
     try {
       const result = await tradeService.deleteAllTrades();
       setSelectedTrade(null);
       clearSelection();
-      setMessage(`Deleted ${result.deletedCount} trades.`);
+      notify({
+        title: "All trades deleted",
+        description: `Deleted ${result.deletedCount} ${result.deletedCount === 1 ? "trade" : "trades"}.`,
+        tone: "success"
+      });
       await loadTrades(initialFilters);
     } catch (err) {
       setError(err.message);
+      notify({ title: "Could not delete all trades", description: err.message, tone: "error" });
       setLoading(false);
     }
   }
@@ -524,7 +566,6 @@ function TradesPage() {
         </>
       )}
 
-      {message && <div className="ui-notice">{message}</div>}
       {error && <div className="ui-notice border-coral/30 bg-[#2a1111] text-coral">{error}</div>}
 
       {!isImportMode ? (
