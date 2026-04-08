@@ -4,6 +4,7 @@ const ApiError = require("../utils/ApiError");
 const ALPACA_BASE_URL = String(env.alpacaDataUrl || "https://data.alpaca.markets").replace(/\/$/, "");
 const minuteBarsCache = new Map();
 const dailyBarsCache = new Map();
+const SIP_DELAY_MS = 15 * 60 * 1000;
 
 function normalizeSymbol(symbol) {
   return String(symbol || "").trim().toUpperCase().replace(/^NASDAQ:|^NYSE:|^AMEX:/, "");
@@ -72,6 +73,20 @@ async function alpacaFetch(path, params = {}) {
   return response.json();
 }
 
+function shouldUseSip(endTime) {
+  const timestamp = new Date(endTime).getTime();
+
+  if (Number.isNaN(timestamp)) {
+    return false;
+  }
+
+  return timestamp <= Date.now() - SIP_DELAY_MS;
+}
+
+function getPreferredFeed(endTime) {
+  return shouldUseSip(endTime) ? "sip" : env.alpacaFeed;
+}
+
 function normalizeBarPayload(bar) {
   const timestamp = new Date(bar.t).getTime();
 
@@ -86,31 +101,53 @@ function normalizeBarPayload(bar) {
 }
 
 async function fetchBars(symbol, timeframe, from, to, cache) {
-  const cacheKey = `${symbol}:${timeframe}:${new Date(from).toISOString()}:${new Date(to).toISOString()}`;
+  const preferredFeed = getPreferredFeed(to);
+  const cacheKey = `${symbol}:${timeframe}:${new Date(from).toISOString()}:${new Date(to).toISOString()}:${preferredFeed}`;
 
   if (cache.has(cacheKey)) {
     return cache.get(cacheKey);
   }
 
-  let pageToken;
-  const bars = [];
+  async function fetchBarsWithFeed(feed) {
+    let pageToken;
+    const bars = [];
 
-  do {
-    const data = await alpacaFetch(`/v2/stocks/${encodeURIComponent(symbol)}/bars`, {
-      timeframe,
-      start: new Date(from).toISOString(),
-      end: new Date(to).toISOString(),
-      adjustment: "raw",
-      sort: "asc",
-      limit: "10000",
-      feed: env.alpacaFeed,
-      page_token: pageToken
-    });
+    do {
+      const data = await alpacaFetch(`/v2/stocks/${encodeURIComponent(symbol)}/bars`, {
+        timeframe,
+        start: new Date(from).toISOString(),
+        end: new Date(to).toISOString(),
+        adjustment: "raw",
+        sort: "asc",
+        limit: "10000",
+        feed,
+        page_token: pageToken
+      });
 
-    const pageBars = Array.isArray(data?.bars) ? data.bars.map(normalizeBarPayload) : [];
-    bars.push(...pageBars);
-    pageToken = data?.next_page_token || null;
-  } while (pageToken);
+      const pageBars = Array.isArray(data?.bars) ? data.bars.map(normalizeBarPayload) : [];
+      bars.push(...pageBars);
+      pageToken = data?.next_page_token || null;
+    } while (pageToken);
+
+    return bars;
+  }
+
+  let bars;
+
+  try {
+    bars = await fetchBarsWithFeed(preferredFeed);
+  } catch (error) {
+    const canFallbackToIex =
+      preferredFeed === "sip" &&
+      env.alpacaFeed !== "sip" &&
+      [401, 402, 403, 422, 429].includes(error?.statusCode);
+
+    if (!canFallbackToIex) {
+      throw error;
+    }
+
+    bars = await fetchBarsWithFeed(env.alpacaFeed);
+  }
 
   cache.set(cacheKey, bars);
   return bars;
