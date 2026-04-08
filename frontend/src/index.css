@@ -209,7 +209,7 @@ button:disabled {
     min-height: 44px;
     border: 1px solid var(--line);
     border-radius: var(--radius-sm);
-    background: #000000;
+    background: rgba(255, 255, 255, 0.05);
     color: var(--text);
     padding: 11px 14px;
     font-size: 0.92rem;
@@ -226,12 +226,12 @@ button:disabled {
 
   .ui-input:hover {
     border-color: var(--line);
-    background: #050505;
+    background: rgba(255, 255, 255, 0.07);
   }
 
   .ui-input:focus {
     border-color: var(--line);
-    background: #050505;
+    background: rgba(255, 255, 255, 0.07);
     box-shadow: 0 0 0 1px #ededed;
   }
 

@@ -341,7 +341,9 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
               <h2 className="text-4xl font-bold tracking-[-0.05em] text-white">{activeTrade.symbol}</h2>
               <span
                 className={`inline-flex rounded-[6px] border px-3 py-1 text-[11px] font-semibold ${
-                  activeTrade.side === "LONG" ? "bg-mint/15 text-mint" : "bg-coral/15 text-coral"
+                  activeTrade.side === "LONG"
+                    ? "border-mint bg-mint/15 text-mint"
+                    : "border-coral bg-coral/15 text-coral"
                 }`}
               >
                 {activeTrade.side}
