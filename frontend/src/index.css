@@ -186,6 +186,10 @@ button:disabled {
     backdrop-filter: none;
   }
 
+  .calendar-panel.ui-panel {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
   .ui-title {
     font-family: "Geist", sans-serif;
     font-weight: 600;

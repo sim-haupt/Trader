@@ -124,6 +124,7 @@ function MonthCard({ month, onOpen }) {
     <Card
       title={month.label}
       headerInnerClassName="md:items-center"
+      className="calendar-panel p-6 shadow-none"
       action={
         <button
           type="button"
@@ -133,7 +134,6 @@ function MonthCard({ month, onOpen }) {
           Open
         </button>
       }
-      className="p-6 shadow-none"
     >
       <div className="grid grid-cols-7 gap-3 text-center">
         {weekdayLabels.map((label) => (
@@ -163,6 +163,7 @@ function MonthDetailSection({ month, onClose, onSelectDay }) {
   return (
     <Card
       title={month.label.toUpperCase()}
+      className="calendar-panel p-6 shadow-none"
       action={
         <div className="flex items-center gap-3">
           <div className="ui-chip normal-case tracking-[0.08em] text-sm text-white">
@@ -184,7 +185,6 @@ function MonthDetailSection({ month, onClose, onSelectDay }) {
           </button>
         </div>
       }
-      className="p-6 shadow-none"
     >
       <div className="grid grid-cols-8 gap-0 overflow-hidden rounded-[6px] border border-[var(--line)] bg-black">
         {weekdayLabels.map((label) => (
@@ -353,6 +353,7 @@ function CalendarPage() {
       )}
       <Card
         title="CALENDAR OVERVIEW"
+        className="calendar-panel"
         action={
           <div className="ui-chip text-base">
             {calendarData.year}
