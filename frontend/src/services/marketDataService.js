@@ -31,15 +31,15 @@ function readCache(key) {
 function normalizeMarketDataError(error) {
   const message = error?.message || "Market data request failed.";
 
-  if (/not_authorized/i.test(message) || /not entitled/i.test(message)) {
+  if (/not_authorized/i.test(message) || /not entitled/i.test(message) || /forbidden/i.test(message)) {
     return new Error(
-      "1-minute chart data is unavailable on the current Polygon plan. The trade review chart is hidden, but the execution table remains available."
+      "1-minute chart data is unavailable on the current Alpaca market data plan. The chart is hidden, but the execution table remains available."
     );
   }
 
-  if (/doesn't include this data timeframe/i.test(message) || /include this data timeframe/i.test(message)) {
+  if (/too many requests/i.test(message) || /rate limit/i.test(message) || /429/.test(message)) {
     return new Error(
-      "This Polygon plan does not include the requested intraday timeframe. The chart is unavailable for now."
+      "The Alpaca market data rate limit was reached. Please try again in a moment."
     );
   }
 

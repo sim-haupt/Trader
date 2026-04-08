@@ -1,38 +1,65 @@
 const env = require("../config/env");
 const ApiError = require("../utils/ApiError");
 
-const POLYGON_BASE_URL = "https://api.polygon.io";
+const ALPACA_BASE_URL = String(env.alpacaDataUrl || "https://data.alpaca.markets").replace(/\/$/, "");
+const minuteBarsCache = new Map();
+const dailyBarsCache = new Map();
 
 function normalizeSymbol(symbol) {
   return String(symbol || "").trim().toUpperCase().replace(/^NASDAQ:|^NYSE:|^AMEX:/, "");
 }
 
-function toIsoDateTime(value) {
-  return new Date(value).toISOString();
+function toRoundedNumber(value, decimals = 4) {
+  if (!Number.isFinite(value)) {
+    return null;
+  }
+
+  return Number(value.toFixed(decimals));
 }
 
-function toDatePath(value) {
-  return new Date(value).toISOString().slice(0, 10);
+function startOfDay(value) {
+  const date = new Date(value);
+  date.setHours(0, 0, 0, 0);
+  return date;
 }
 
-function toTimestampMs(value) {
-  return String(new Date(value).getTime());
+function endOfDay(value) {
+  const date = new Date(value);
+  date.setHours(23, 59, 59, 999);
+  return date;
 }
 
-async function polygonFetch(path, params) {
-  if (!env.polygonApiKey) {
+function addDays(value, days) {
+  const date = new Date(value);
+  date.setDate(date.getDate() + days);
+  return date;
+}
+
+function floorToMinuteTimestampSeconds(value) {
+  const timestampMs = new Date(value).getTime();
+  return Math.floor(timestampMs / 60000) * 60;
+}
+
+async function alpacaFetch(path, params = {}) {
+  if (!env.alpacaApiKeyId || !env.alpacaSecretKey) {
     throw new ApiError(
       503,
-      "Market data provider is not configured. Add POLYGON_API_KEY to enable review charts."
+      "Market data provider is not configured. Add APCA_API_KEY_ID and APCA_API_SECRET_KEY to enable charts."
     );
   }
 
-  const searchParams = new URLSearchParams({
-    ...params,
-    apiKey: env.polygonApiKey
-  });
+  const searchParams = new URLSearchParams(
+    Object.entries(params)
+      .filter(([, value]) => value !== undefined && value !== null && value !== "")
+      .map(([key, value]) => [key, String(value)])
+  );
 
-  const response = await fetch(`${POLYGON_BASE_URL}${path}?${searchParams.toString()}`);
+  const response = await fetch(`${ALPACA_BASE_URL}${path}?${searchParams.toString()}`, {
+    headers: {
+      "APCA-API-KEY-ID": env.alpacaApiKeyId,
+      "APCA-API-SECRET-KEY": env.alpacaSecretKey
+    }
+  });
 
   if (!response.ok) {
     const text = await response.text();
@@ -45,80 +72,166 @@ async function polygonFetch(path, params) {
   return response.json();
 }
 
-function aggregateTradesToBars(results, bucketSizeSeconds) {
-  const buckets = new Map();
+function normalizeBarPayload(bar) {
+  const timestamp = new Date(bar.t).getTime();
 
-  for (const trade of results || []) {
-    const timestampMs = Math.floor(Number(trade.sip_timestamp || trade.participant_timestamp || trade.timestamp || 0) / 1_000_000);
-
-    if (!timestampMs) {
-      continue;
-    }
-
-    const bucketStartMs = Math.floor(timestampMs / (bucketSizeSeconds * 1000)) * bucketSizeSeconds * 1000;
-    const key = bucketStartMs;
-    const price = Number(trade.price);
-    const size = Number(trade.size || 0);
-
-    if (!Number.isFinite(price)) {
-      continue;
-    }
-
-    const existing = buckets.get(key);
-
-    if (!existing) {
-      buckets.set(key, {
-        time: Math.floor(bucketStartMs / 1000),
-        open: price,
-        high: price,
-        low: price,
-        close: price,
-        volume: size
-      });
-      continue;
-    }
-
-    existing.high = Math.max(existing.high, price);
-    existing.low = Math.min(existing.low, price);
-    existing.close = price;
-    existing.volume += size;
-  }
-
-  return [...buckets.values()].sort((left, right) => left.time - right.time);
-}
-
-async function fetchMinuteBars(symbol, from, to) {
-  const data = await polygonFetch(
-    `/v2/aggs/ticker/${encodeURIComponent(symbol)}/range/1/minute/${encodeURIComponent(
-      toDatePath(from)
-    )}/${encodeURIComponent(toDatePath(to))}`,
-    {
-      adjusted: "false",
-      sort: "asc",
-      limit: "50000"
-    }
-  );
-
-  return (data.results || []).map((bar) => ({
-    time: Math.floor(bar.t / 1000),
+  return {
+    time: Math.floor(timestamp / 1000),
     open: Number(bar.o),
     high: Number(bar.h),
     low: Number(bar.l),
     close: Number(bar.c),
     volume: Number(bar.v || 0)
-  }));
+  };
 }
 
-async function fetchTenSecondBars(symbol, from, to) {
-  const data = await polygonFetch(`/v3/trades/${encodeURIComponent(symbol)}`, {
-    "timestamp.gte": toTimestampMs(from),
-    "timestamp.lte": toTimestampMs(to),
-    order: "asc",
-    sort: "timestamp",
-    limit: "50000"
-  });
+async function fetchBars(symbol, timeframe, from, to, cache) {
+  const cacheKey = `${symbol}:${timeframe}:${new Date(from).toISOString()}:${new Date(to).toISOString()}`;
 
-  return aggregateTradesToBars(data.results || [], 10);
+  if (cache.has(cacheKey)) {
+    return cache.get(cacheKey);
+  }
+
+  let pageToken;
+  const bars = [];
+
+  do {
+    const data = await alpacaFetch(`/v2/stocks/${encodeURIComponent(symbol)}/bars`, {
+      timeframe,
+      start: new Date(from).toISOString(),
+      end: new Date(to).toISOString(),
+      adjustment: "raw",
+      sort: "asc",
+      limit: "10000",
+      feed: env.alpacaFeed,
+      page_token: pageToken
+    });
+
+    const pageBars = Array.isArray(data?.bars) ? data.bars.map(normalizeBarPayload) : [];
+    bars.push(...pageBars);
+    pageToken = data?.next_page_token || null;
+  } while (pageToken);
+
+  cache.set(cacheKey, bars);
+  return bars;
+}
+
+async function fetchMinuteBars(symbol, from, to) {
+  return fetchBars(symbol, "1Min", from, to, minuteBarsCache);
+}
+
+async function fetchDailyBars(symbol, from, to) {
+  return fetchBars(symbol, "1Day", from, to, dailyBarsCache);
+}
+
+function calculateEntryVolume(minuteBars, entryDate) {
+  if (!Array.isArray(minuteBars) || minuteBars.length === 0) {
+    return null;
+  }
+
+  const entryMinute = floorToMinuteTimestampSeconds(entryDate);
+  let cumulativeVolume = 0;
+  let foundMatchingWindow = false;
+
+  for (const bar of minuteBars) {
+    if (!Number.isFinite(bar.time) || !Number.isFinite(bar.volume)) {
+      continue;
+    }
+
+    if (bar.time > entryMinute) {
+      break;
+    }
+
+    cumulativeVolume += bar.volume;
+    foundMatchingWindow = true;
+  }
+
+  return foundMatchingWindow ? cumulativeVolume : null;
+}
+
+function getPriorSessionBars(dailyBars, entryDate) {
+  const entryDayStart = startOfDay(entryDate).getTime();
+
+  return (dailyBars || [])
+    .filter((bar) => bar.time * 1000 < entryDayStart)
+    .sort((left, right) => left.time - right.time);
+}
+
+function calculateRelativeVolume(entryVolume, priorDailyBars) {
+  if (!Number.isFinite(entryVolume) || !Array.isArray(priorDailyBars) || priorDailyBars.length === 0) {
+    return null;
+  }
+
+  const volumes = priorDailyBars
+    .map((bar) => Number(bar.volume || 0))
+    .filter((volume) => Number.isFinite(volume) && volume > 0);
+
+  if (volumes.length === 0) {
+    return null;
+  }
+
+  const averageVolume = volumes.reduce((sum, volume) => sum + volume, 0) / volumes.length;
+
+  if (!Number.isFinite(averageVolume) || averageVolume <= 0) {
+    return null;
+  }
+
+  return entryVolume / averageVolume;
+}
+
+function calculatePriorCloseDiffPercent(entryPrice, priorDailyBars) {
+  if (!Number.isFinite(entryPrice) || !Array.isArray(priorDailyBars) || priorDailyBars.length === 0) {
+    return null;
+  }
+
+  const priorClose = Number(priorDailyBars[priorDailyBars.length - 1]?.close || 0);
+
+  if (!Number.isFinite(priorClose) || priorClose <= 0) {
+    return null;
+  }
+
+  return ((entryPrice - priorClose) / priorClose) * 100;
+}
+
+async function getTradeImportContext({ symbol, entryDate, entryPrice }) {
+  const normalizedSymbol = normalizeSymbol(symbol);
+  const parsedEntryDate = new Date(entryDate);
+  const parsedEntryPrice = Number(entryPrice);
+
+  if (!normalizedSymbol || Number.isNaN(parsedEntryDate.getTime())) {
+    return null;
+  }
+
+  const dayStart = startOfDay(parsedEntryDate);
+  const dayEnd = endOfDay(parsedEntryDate);
+  const dailyHistoryStart = addDays(dayStart, -45);
+  const priorSessionLimit = 20;
+
+  try {
+    const [minuteBars, dailyBars] = await Promise.all([
+      fetchMinuteBars(normalizedSymbol, dayStart, dayEnd),
+      fetchDailyBars(normalizedSymbol, dailyHistoryStart, dayEnd)
+    ]);
+
+    const priorDailyBars = getPriorSessionBars(dailyBars, parsedEntryDate).slice(-priorSessionLimit);
+    const entryVolume = calculateEntryVolume(minuteBars, parsedEntryDate);
+    const entryRelativeVolume = calculateRelativeVolume(entryVolume, priorDailyBars);
+    const entryPriorCloseDiffPercent = calculatePriorCloseDiffPercent(parsedEntryPrice, priorDailyBars);
+
+    return {
+      entryVolume: toRoundedNumber(entryVolume),
+      entryRelativeVolume: toRoundedNumber(entryRelativeVolume),
+      instrumentFloat: null,
+      entryPriorCloseDiffPercent: toRoundedNumber(entryPriorCloseDiffPercent)
+    };
+  } catch (error) {
+    return {
+      entryVolume: null,
+      entryRelativeVolume: null,
+      instrumentFloat: null,
+      entryPriorCloseDiffPercent: null
+    };
+  }
 }
 
 async function getBars({ symbol, resolution, from, to, includeExtended }) {
@@ -126,13 +239,11 @@ async function getBars({ symbol, resolution, from, to, includeExtended }) {
   const fromDate = new Date(from);
   const toDate = new Date(to);
 
-  let bars;
-
-  if (resolution === "10s") {
-    bars = await fetchTenSecondBars(normalizedSymbol, fromDate, toDate);
-  } else {
-    bars = await fetchMinuteBars(normalizedSymbol, fromDate, toDate);
+  if (resolution !== "1m") {
+    throw new ApiError(400, "The Alpaca market data integration currently supports 1-minute bars only.");
   }
+
+  const bars = await fetchMinuteBars(normalizedSymbol, fromDate, toDate);
 
   return {
     symbol: normalizedSymbol,
@@ -145,5 +256,6 @@ async function getBars({ symbol, resolution, from, to, includeExtended }) {
 }
 
 module.exports = {
-  getBars
+  getBars,
+  getTradeImportContext
 };

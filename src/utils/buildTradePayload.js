@@ -19,6 +19,10 @@ function buildTradePayload(data, userId) {
     providedNetPnl ??
     (grossPnl !== null ? Number((grossPnl - fees).toFixed(4)) : metrics.netPnl);
   const reportedExecutionCount = toNumber(data.reportedExecutionCount);
+  const entryVolume = toNumber(data.entryVolume);
+  const entryRelativeVolume = toNumber(data.entryRelativeVolume);
+  const instrumentFloat = toNumber(data.instrumentFloat);
+  const entryPriorCloseDiffPercent = toNumber(data.entryPriorCloseDiffPercent);
 
   return {
     userId,
@@ -35,6 +39,10 @@ function buildTradePayload(data, userId) {
     notes: data.notes ?? null,
     grossPnl,
     netPnl,
+    entryVolume,
+    entryRelativeVolume,
+    instrumentFloat,
+    entryPriorCloseDiffPercent,
     reportedExecutionCount:
       reportedExecutionCount === null ? null : Math.max(0, Math.round(reportedExecutionCount))
   };

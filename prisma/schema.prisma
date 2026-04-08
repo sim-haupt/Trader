@@ -66,6 +66,10 @@ model Trade {
   notes                String?
   grossPnl             Decimal?         @db.Decimal(18, 4)
   netPnl               Decimal?         @db.Decimal(18, 4)
+  entryVolume          Decimal?         @db.Decimal(20, 4)
+  entryRelativeVolume  Decimal?         @db.Decimal(18, 4)
+  instrumentFloat      Decimal?         @db.Decimal(20, 4)
+  entryPriorCloseDiffPercent Decimal?   @db.Decimal(18, 4)
   reportedExecutionCount Int?
   createdAt            DateTime         @default(now())
   updatedAt            DateTime         @updatedAt

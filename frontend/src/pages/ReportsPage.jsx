@@ -157,6 +157,8 @@ const DETAILED_TIMEFRAME_OPTIONS = [
   { key: "30", label: "30M", minutes: 30 },
   { key: "15", label: "15M", minutes: 15 }
 ];
+const MARKET_VOLUME_MAX_REQUESTS = 20;
+const MARKET_VOLUME_CONCURRENCY = 2;
 
 function formatHourBucket(totalMinutes) {
   const hours = Math.floor(totalMinutes / 60);
@@ -1737,35 +1739,56 @@ function ReportsPage() {
         }
       }
 
-      const responses = await Promise.all(
-        Array.from(uniqueRequests.entries()).map(async ([key, request]) => {
-          try {
-            const cached = marketDataService.peekBars({
-              symbol: request.symbol,
-              resolution: "1m",
-              from: request.from,
-              to: request.to,
-              includeExtended: true
-            });
+      const requestEntries = Array.from(uniqueRequests.entries()).slice(0, MARKET_VOLUME_MAX_REQUESTS);
+      const responses = [];
 
-            if (cached) {
-              return [key, cached];
+      for (let index = 0; index < requestEntries.length; index += MARKET_VOLUME_CONCURRENCY) {
+        const chunk = requestEntries.slice(index, index + MARKET_VOLUME_CONCURRENCY);
+        const chunkResponses = await Promise.all(
+          chunk.map(async ([key, request]) => {
+            try {
+              const cached = marketDataService.peekBars({
+                symbol: request.symbol,
+                resolution: "1m",
+                from: request.from,
+                to: request.to,
+                includeExtended: true
+              });
+
+              if (cached) {
+                return [key, cached];
+              }
+
+              const result = await marketDataService.getBars({
+                symbol: request.symbol,
+                resolution: "1m",
+                from: request.from,
+                to: request.to,
+                includeExtended: true
+              });
+
+              return [key, result];
+            } catch (error) {
+              const isRateLimited =
+                /429/.test(String(error?.message || "")) ||
+                /too many/i.test(String(error?.message || "")) ||
+                /rate limit/i.test(String(error?.message || ""));
+
+              if (isRateLimited) {
+                return [key, "__RATE_LIMITED__"];
+              }
+
+              return [key, null];
             }
+          })
+        );
 
-            const result = await marketDataService.getBars({
-              symbol: request.symbol,
-              resolution: "1m",
-              from: request.from,
-              to: request.to,
-              includeExtended: true
-            });
+        responses.push(...chunkResponses);
 
-            return [key, result];
-          } catch {
-            return [key, null];
-          }
-        })
-      );
+        if (chunkResponses.some(([, result]) => result === "__RATE_LIMITED__")) {
+          break;
+        }
+      }
 
       if (cancelled) {
         return;
@@ -1779,6 +1802,9 @@ function ReportsPage() {
         const dayKey = getDayKey(new Date(trade.entryDate));
         const requestKey = `${symbol}-${dayKey}`;
         const marketData = barsByRequest.get(requestKey);
+        if (marketData === "__RATE_LIMITED__") {
+          continue;
+        }
         const bars = marketData?.bars || [];
         const totalDayVolume = getTotalVolumeForDay(bars);
 
@@ -1894,6 +1920,13 @@ function ReportsPage() {
     }));
   }
 
+  function handleTabChange(nextTab) {
+    setActiveTab(nextTab);
+    if (nextTab === "Detailed") {
+      setDetailedBreakdownTab("Days/Times");
+    }
+  }
+
   if (loading) {
     return <LoadingState label="Loading reports..." panel />;
   }
@@ -1994,7 +2027,7 @@ function ReportsPage() {
                 <button
                   key={tab}
                   type="button"
-                  onClick={() => setActiveTab(tab)}
+                  onClick={() => handleTabChange(tab)}
                   className={`text-sm font-medium transition ${
                     tab === activeTab
                       ? "border-b border-mint pb-3 text-mint"

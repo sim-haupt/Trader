@@ -4,6 +4,7 @@ const prisma = require("../config/prisma");
 const buildTradePayload = require("../utils/buildTradePayload");
 const ApiError = require("../utils/ApiError");
 const { validateImportTradeRow } = require("../validators/trade.schemas");
+const { getTradeImportContext } = require("./market-data.service");
 const {
   normalizeImportedCsvRow,
   parseTradesFromText
@@ -39,6 +40,47 @@ function buildExecutionCreateInput(execution) {
     positionAfter: execution.positionAfter ?? null,
     source: execution.source || "IMPORTED"
   };
+}
+
+function getTradeEnrichmentKey(trade) {
+  const symbol = String(trade.symbol || "").trim().toUpperCase();
+  const entryDate = trade.entryDate ? new Date(trade.entryDate) : null;
+  const entryPrice = Number(trade.entryPrice);
+
+  if (!symbol || !entryDate || Number.isNaN(entryDate.getTime())) {
+    return null;
+  }
+
+  return `${symbol}:${entryDate.toISOString()}:${Number.isFinite(entryPrice) ? entryPrice.toFixed(4) : "na"}`;
+}
+
+async function enrichImportedTrades(validTrades) {
+  const enrichmentCache = new Map();
+  const enrichedTrades = [];
+
+  for (const trade of validTrades) {
+    const cacheKey = getTradeEnrichmentKey(trade);
+
+    if (cacheKey && !enrichmentCache.has(cacheKey)) {
+      enrichmentCache.set(
+        cacheKey,
+        await getTradeImportContext({
+          symbol: trade.symbol,
+          entryDate: trade.entryDate,
+          entryPrice: trade.entryPrice
+        })
+      );
+    }
+
+    const enrichment = cacheKey ? enrichmentCache.get(cacheKey) : null;
+
+    enrichedTrades.push({
+      ...trade,
+      ...(enrichment || {})
+    });
+  }
+
+  return enrichedTrades;
 }
 
 async function importTradesFromCsv(userId, file) {
@@ -78,9 +120,10 @@ async function importTradesFromCsv(userId, file) {
 }
 
 async function persistImportedTrades(userId, sourceName, validTrades, invalidRows, totalRows) {
+  const enrichedTrades = await enrichImportedTrades(validTrades);
   const importId = randomUUID();
   const savedTags = [...new Set(
-    validTrades.flatMap((trade) =>
+    enrichedTrades.flatMap((trade) =>
       String(trade.tags || "")
         .split(",")
         .map((tag) => tag.trim())
@@ -88,11 +131,11 @@ async function persistImportedTrades(userId, sourceName, validTrades, invalidRow
     )
   )];
   const savedStrategies = [...new Set(
-    validTrades
+    enrichedTrades
       .map((trade) => String(trade.strategy || "").trim())
       .filter(Boolean)
   )];
-  const tradeRows = validTrades.map((trade) => {
+  const tradeRows = enrichedTrades.map((trade) => {
     const tradeId = randomUUID();
 
     return {

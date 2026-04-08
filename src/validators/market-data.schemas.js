@@ -6,7 +6,7 @@ function isValidDateString(value) {
 
 const marketBarsQuerySchema = z.object({
   symbol: z.string().trim().min(1).max(32),
-  resolution: z.enum(["1m", "10s"]),
+  resolution: z.enum(["1m"]),
   from: z.string().refine(isValidDateString, "from must be a valid date"),
   to: z.string().refine(isValidDateString, "to must be a valid date"),
   includeExtended: z
