@@ -109,11 +109,11 @@ function getDayBorderStyle(stats, isCurrentMonth) {
   }
 
   if (stats.pnl > 0) {
-    return { boxShadow: "inset 0 0 0 1px oklch(71.7% 0.1648 250.794 / 0.34)" };
+    return { boxShadow: "inset 0 0 0 1px rgba(74, 222, 128, 0.28)" };
   }
 
   if (stats.pnl < 0) {
-    return { boxShadow: "inset 0 0 0 1px oklch(71.7% 0.1648 250.794 / 0.34)" };
+    return { boxShadow: "inset 0 0 0 1px rgba(251, 113, 133, 0.28)" };
   }
 
   return { boxShadow: "inset 0 0 0 1px rgba(229, 231, 235, 0.16)" };
