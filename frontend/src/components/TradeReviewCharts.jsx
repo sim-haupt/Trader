@@ -68,44 +68,37 @@ function buildDayRange(anchorDate) {
   };
 }
 
-function hydrateMinuteBars(rawBars) {
-  if (!Array.isArray(rawBars) || rawBars.length === 0) {
-    return [];
+function buildMinuteTimeline(rawBars, dayStamp) {
+  if (!dayStamp) {
+    return { candleBars: [], actualBars: [], sessionStart: null, sessionEnd: null };
   }
 
-  const sorted = [...rawBars]
-    .filter((bar) => Number.isFinite(bar.time))
+  const actualBars = [...(Array.isArray(rawBars) ? rawBars : [])]
+    .filter(
+      (bar) =>
+        Number.isFinite(bar.time) &&
+        Number.isFinite(bar.open) &&
+        Number.isFinite(bar.high) &&
+        Number.isFinite(bar.low) &&
+        Number.isFinite(bar.close)
+    )
     .sort((left, right) => left.time - right.time);
 
-  if (!sorted.length) {
-    return [];
+  const sessionStart = getEasternTimestamp(dayStamp, 4, 0, 0);
+  const sessionEnd = getEasternTimestamp(dayStamp, 20, 0, 0);
+  const actualBarMap = new Map(actualBars.map((bar) => [bar.time, bar]));
+  const candleBars = [];
+
+  for (let time = sessionStart; time <= sessionEnd; time += 60) {
+    candleBars.push(actualBarMap.get(time) ?? { time });
   }
 
-  const filled = [sorted[0]];
-  let previous = sorted[0];
-
-  for (let index = 1; index < sorted.length; index += 1) {
-    const current = sorted[index];
-    let pointer = previous.time + 60;
-
-    while (pointer < current.time) {
-      filled.push({
-        time: pointer,
-        open: previous.close,
-        high: previous.close,
-        low: previous.close,
-        close: previous.close,
-        volume: 0,
-        synthetic: true
-      });
-      pointer += 60;
-    }
-
-    filled.push(current);
-    previous = current;
-  }
-
-  return filled;
+  return {
+    candleBars,
+    actualBars,
+    sessionStart,
+    sessionEnd
+  };
 }
 
 function getSessionShades(dayStamp) {
@@ -179,17 +172,23 @@ function renderOverlay({ overlayEl, chart, candleSeries, bars, markers, dayStamp
 
   for (const marker of markers) {
     const exactTime = marker.rawTime || marker.time;
-    const barTime = nearestBarTime(bars, exactTime) ?? firstBarTime;
+    const snappedTime = marker.time ?? Math.floor(exactTime / 60) * 60;
+    const barTime = nearestBarTime(bars, snappedTime) ?? firstBarTime;
     const x =
-      chart.timeScale().timeToCoordinate(exactTime) ??
+      chart.timeScale().timeToCoordinate(snappedTime) ??
       (barTime != null ? chart.timeScale().timeToCoordinate(barTime) : null);
     const y = candleSeries.priceToCoordinate(marker.price);
 
-    if (x == null || y == null || (firstBarTime && exactTime < firstBarTime) || (lastBarTime && exactTime > lastBarTime + 60)) {
+    if (
+      x == null ||
+      y == null ||
+      (firstBarTime && snappedTime < firstBarTime) ||
+      (lastBarTime && snappedTime > lastBarTime)
+    ) {
       continue;
     }
 
-    const stackKey = `${marker.shape}:${barTime ?? exactTime}`;
+    const stackKey = `${marker.shape}:${snappedTime}`;
     const stackIndex = markerStacks.get(stackKey) ?? 0;
     markerStacks.set(stackKey, stackIndex + 1);
 
@@ -234,12 +233,21 @@ function renderOverlay({ overlayEl, chart, candleSeries, bars, markers, dayStamp
   overlayEl.appendChild(fragment);
 }
 
-function PremiumChart({ title, subtitle, bars, markers, dayStamp }) {
+function PremiumChart({
+  title,
+  subtitle,
+  candleBars,
+  actualBars,
+  markers,
+  dayStamp,
+  sessionStart,
+  sessionEnd
+}) {
   const mainRef = useRef(null);
   const overlayRef = useRef(null);
 
   useEffect(() => {
-    if (!mainRef.current || !overlayRef.current || !bars.length) {
+    if (!mainRef.current || !overlayRef.current || !candleBars.length) {
       return undefined;
     }
 
@@ -298,7 +306,7 @@ function PremiumChart({ title, subtitle, bars, markers, dayStamp }) {
       priceLineVisible: false,
       lastValueVisible: true
     });
-    candleSeries.setData(bars);
+    candleSeries.setData(candleBars);
 
     const volumeSeries = mainChart.addSeries(HistogramSeries, {
       priceScaleId: "volume",
@@ -306,7 +314,7 @@ function PremiumChart({ title, subtitle, bars, markers, dayStamp }) {
       lastValueVisible: false,
       priceFormat: { type: "volume" }
     });
-    volumeSeries.setData(buildVolumeData(bars));
+    volumeSeries.setData(buildVolumeData(actualBars));
 
     mainChart.priceScale("volume").applyOptions({
       scaleMargins: {
@@ -319,15 +327,15 @@ function PremiumChart({ title, subtitle, bars, markers, dayStamp }) {
         overlayEl: overlayRef.current,
         chart: mainChart,
         candleSeries,
-        bars,
+        bars: candleBars,
         markers,
         dayStamp
       });
 
     mainChart.timeScale().subscribeVisibleLogicalRangeChange(refreshOverlay);
 
-    const first = bars[0]?.time;
-    const last = bars[bars.length - 1]?.time;
+    const first = sessionStart ?? candleBars[0]?.time;
+    const last = sessionEnd ?? candleBars[candleBars.length - 1]?.time;
     if (first && last) {
       mainChart.timeScale().setVisibleRange({ from: first, to: last });
     } else {
@@ -350,7 +358,7 @@ function PremiumChart({ title, subtitle, bars, markers, dayStamp }) {
       mainChart.timeScale().unsubscribeVisibleLogicalRangeChange(refreshOverlay);
       mainChart.remove();
     };
-  }, [bars, markers, dayStamp]);
+  }, [actualBars, candleBars, markers, dayStamp, sessionEnd, sessionStart]);
 
   return (
     <div className="space-y-3">
@@ -406,7 +414,10 @@ function TradeReviewCharts({ trade }) {
     deps: [trade.symbol, trade.entryDate]
   });
 
-  const bars = useMemo(() => hydrateMinuteBars(response?.bars || []), [response?.bars]);
+  const timeline = useMemo(
+    () => buildMinuteTimeline(response?.bars || [], range.dayStamp),
+    [response?.bars, range.dayStamp]
+  );
 
   if (loading) {
     return (
@@ -425,7 +436,7 @@ function TradeReviewCharts({ trade }) {
     );
   }
 
-  if (!bars.length) {
+  if (!timeline.actualBars.length) {
     return (
       <div className="rounded-[16px] border border-[#e5e7eb42] bg-black/30 p-5 text-sm text-mist">
         No market bars were returned for this trade window.
@@ -437,9 +448,12 @@ function TradeReviewCharts({ trade }) {
     <PremiumChart
       title="Execution Review"
       subtitle="1-minute Alpaca bars with volume, extended-hours context, and execution markers at stored fill prices."
-      bars={bars}
+      candleBars={timeline.candleBars}
+      actualBars={timeline.actualBars}
       markers={markers}
       dayStamp={range.dayStamp}
+      sessionStart={timeline.sessionStart}
+      sessionEnd={timeline.sessionEnd}
     />
   );
 }
