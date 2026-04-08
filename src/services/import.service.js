@@ -5,6 +5,7 @@ const buildTradePayload = require("../utils/buildTradePayload");
 const ApiError = require("../utils/ApiError");
 const { validateImportTradeRow } = require("../validators/trade.schemas");
 const { getTradeImportContext } = require("./market-data.service");
+const parseNewYorkLocalDateTime = require("../utils/parseMarketDateTime");
 const {
   normalizeImportedCsvRow,
   parseTradesFromText
@@ -32,7 +33,7 @@ function parseCsv(buffer) {
 
 function buildExecutionCreateInput(execution) {
   return {
-    occurredAt: new Date(execution.occurredAt),
+    occurredAt: parseNewYorkLocalDateTime(execution.occurredAt),
     quantity: execution.quantity,
     price: execution.price,
     action: execution.action,

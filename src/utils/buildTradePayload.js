@@ -1,4 +1,5 @@
 const calculateTradeMetrics = require("./calculateTradeMetrics");
+const parseNewYorkLocalDateTime = require("./parseMarketDateTime");
 
 function toNumber(value) {
   if (value === null || value === undefined || value === "") {
@@ -31,8 +32,8 @@ function buildTradePayload(data, userId) {
     quantity: data.quantity,
     entryPrice: data.entryPrice,
     exitPrice: data.exitPrice ?? null,
-    entryDate: new Date(data.entryDate),
-    exitDate: data.exitDate ? new Date(data.exitDate) : null,
+    entryDate: parseNewYorkLocalDateTime(data.entryDate),
+    exitDate: data.exitDate ? parseNewYorkLocalDateTime(data.exitDate) : null,
     fees,
     strategy: typeof data.strategy === "string" ? data.strategy.trim() || null : data.strategy ?? null,
     tags: data.tags ?? null,

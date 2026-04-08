@@ -3,8 +3,6 @@ import {
   CandlestickSeries,
   ColorType,
   HistogramSeries,
-  LineSeries,
-  LineStyle,
   createChart
 } from "lightweight-charts";
 import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
@@ -33,6 +31,29 @@ const DAY_TICK_FORMATTER = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric"
 });
+const CROSSHAIR_TIME_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  timeZone: CHART_TZ,
+  month: "short",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23"
+});
+
+function formatChartTick(time) {
+  const date = new Date(Number(time) * 1000);
+  const hhmm = TIME_TICK_FORMATTER.format(date);
+
+  if (hhmm === "04:00" || hhmm === "09:30" || hhmm === "16:00" || hhmm === "20:00") {
+    return `${DAY_TICK_FORMATTER.format(date)} ${hhmm}`;
+  }
+
+  return hhmm;
+}
+
+function formatCrosshairTime(time) {
+  return CROSSHAIR_TIME_FORMATTER.format(new Date(Number(time) * 1000));
+}
 
 function getEasternDayStamp(value) {
   const timestamp = toChartUnixSeconds(value);
@@ -175,6 +196,7 @@ function renderOverlay({ overlayEl, chart, candleSeries, bars, markers, dayStamp
     const snappedTime = marker.time ?? Math.floor(exactTime / 60) * 60;
     const barTime = nearestBarTime(bars, snappedTime) ?? firstBarTime;
     const x =
+      chart.timeScale().timeToCoordinate(exactTime) ??
       chart.timeScale().timeToCoordinate(snappedTime) ??
       (barTime != null ? chart.timeScale().timeToCoordinate(barTime) : null);
     const y = candleSeries.priceToCoordinate(marker.price);
@@ -268,16 +290,11 @@ function PremiumChart({
         borderColor: "rgba(229,231,235,0.14)",
         timeVisible: true,
         secondsVisible: false,
-        tickMarkFormatter: (time) => {
-          const date = new Date(Number(time) * 1000);
-          const hhmm = TIME_TICK_FORMATTER.format(date);
-
-          if (hhmm === "04:00" || hhmm === "09:30" || hhmm === "16:00" || hhmm === "20:00") {
-            return `${DAY_TICK_FORMATTER.format(date)} ${hhmm}`;
-          }
-
-          return hhmm;
-        }
+        tickMarkFormatter: formatChartTick
+      },
+      localization: {
+        locale: "en-US",
+        timeFormatter: formatCrosshairTime
       },
       crosshair: {
         vertLine: {
@@ -343,6 +360,7 @@ function PremiumChart({
     }
 
     refreshOverlay();
+    const rafId = requestAnimationFrame(refreshOverlay);
 
     const resizeObserver = new ResizeObserver(() => {
       if (mainRef.current) {
@@ -354,6 +372,7 @@ function PremiumChart({
     resizeObserver.observe(mainRef.current);
 
     return () => {
+      cancelAnimationFrame(rafId);
       resizeObserver.disconnect();
       mainChart.timeScale().unsubscribeVisibleLogicalRangeChange(refreshOverlay);
       mainChart.remove();

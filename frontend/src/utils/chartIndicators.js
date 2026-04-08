@@ -171,6 +171,17 @@ function buildExecutionMarkers(trade) {
         return null;
       }
 
+      const executionTime = parseEasternLocalTimestamp(execution.occurredAt);
+      const timeLabel = executionTime
+        ? new Intl.DateTimeFormat("en-US", {
+            timeZone: "America/New_York",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hourCycle: "h23"
+          }).format(executionTime)
+        : null;
+
       return {
         time: Math.floor(timestamp / 60) * 60,
         rawTime: timestamp,
@@ -180,7 +191,7 @@ function buildExecutionMarkers(trade) {
         shape: execution.action === "BUY" ? "arrowUp" : "arrowDown",
         text: `${execution.action === "BUY" ? "B" : "S"} ${asNumber(execution.quantity)} @ ${asNumber(
           execution.price
-        ).toFixed(2)}`,
+        ).toFixed(2)}${timeLabel ? ` · ${timeLabel}` : ""}`,
         id: execution.id || `${trade.id}-${index + 1}`
       };
     })
