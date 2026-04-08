@@ -26,6 +26,12 @@ function buildDayRange(anchorDate) {
   return { from: start.toISOString(), to: end.toISOString() };
 }
 
+function formatSessionBoundary(anchorTime, hour, minute = 0) {
+  const date = new Date(anchorTime * 1000);
+  date.setHours(hour, minute, 0, 0);
+  return Math.floor(date.getTime() / 1000);
+}
+
 function TimeframeChart({ title, subtitle, bars, markers }) {
   const mainRef = useRef(null);
   const macdRef = useRef(null);
@@ -38,32 +44,32 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
 
     const chartOptions = {
       layout: {
-        background: { type: ColorType.Solid, color: "#050907" },
-        textColor: "#b8ffd9",
+        background: { type: ColorType.Solid, color: "#0b0f17" },
+        textColor: "#c7cfdd",
         attributionLogo: true
       },
       grid: {
-        vertLines: { color: "rgba(114,243,198,0.08)" },
-        horzLines: { color: "rgba(114,243,198,0.08)" }
+        vertLines: { color: "rgba(255,255,255,0.05)" },
+        horzLines: { color: "rgba(255,255,255,0.06)" }
       },
       rightPriceScale: {
-        borderColor: "rgba(114,243,198,0.14)"
+        borderColor: "rgba(229,231,235,0.14)"
       },
       timeScale: {
-        borderColor: "rgba(114,243,198,0.14)",
+        borderColor: "rgba(229,231,235,0.14)",
         timeVisible: true,
         secondsVisible: true
       },
       crosshair: {
-        vertLine: { color: "rgba(114,243,198,0.22)" },
-        horzLine: { color: "rgba(114,243,198,0.22)" }
+        vertLine: { color: "rgba(124,211,255,0.28)" },
+        horzLine: { color: "rgba(124,211,255,0.28)" }
       }
     };
 
     const mainChart = createChart(mainRef.current, {
       ...chartOptions,
       width: mainRef.current.clientWidth,
-      height: 380
+      height: 500
     });
 
     const macdChart = createChart(macdRef.current, {
@@ -73,16 +79,39 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
     });
 
     const candleSeries = mainChart.addSeries(CandlestickSeries, {
-      upColor: "#14cba8",
-      downColor: "#ff5a4a",
+      upColor: "#22c55e",
+      downColor: "#ef4444",
       borderVisible: false,
-      wickUpColor: "#14cba8",
-      wickDownColor: "#ff5a4a"
+      wickUpColor: "#22c55e",
+      wickDownColor: "#ef4444",
+      priceLineVisible: false
     });
     candleSeries.setData(bars);
 
+    const volumeSeries = mainChart.addSeries(HistogramSeries, {
+      priceScaleId: "volume",
+      priceLineVisible: false,
+      lastValueVisible: false,
+      priceFormat: {
+        type: "volume"
+      }
+    });
+    volumeSeries.setData(
+      bars.map((bar) => ({
+        time: bar.time,
+        value: bar.volume,
+        color: bar.close >= bar.open ? "rgba(34,197,94,0.45)" : "rgba(239,68,68,0.42)"
+      }))
+    );
+    mainChart.priceScale("volume").applyOptions({
+      scaleMargins: {
+        top: 0.74,
+        bottom: 0
+      }
+    });
+
     const ema9Series = mainChart.addSeries(LineSeries, {
-      color: "#72f3c6",
+      color: "#60a5fa",
       lineWidth: 2,
       priceLineVisible: false,
       lastValueVisible: true
@@ -90,7 +119,7 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
     ema9Series.setData(calculateEmaSeries(bars, 9));
 
     const ema20Series = mainChart.addSeries(LineSeries, {
-      color: "#a8ffd8",
+      color: "#3b82f6",
       lineWidth: 2,
       lineStyle: 2,
       priceLineVisible: false,
@@ -99,12 +128,31 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
     ema20Series.setData(calculateEmaSeries(bars, 20));
 
     const vwapSeries = mainChart.addSeries(LineSeries, {
-      color: "#5ea389",
+      color: "#38bdf8",
       lineWidth: 2,
       priceLineVisible: false,
       lastValueVisible: true
     });
     vwapSeries.setData(calculateVwapSeries(bars));
+
+    const executionAnchorSeries = mainChart.addSeries(LineSeries, {
+      color: "rgba(0,0,0,0)",
+      lineWidth: 1,
+      priceLineVisible: false,
+      lastValueVisible: false,
+      crosshairMarkerVisible: false
+    });
+    executionAnchorSeries.setData(
+      markers
+        .map((marker) => ({
+          time: marker.rawTime || marker.time,
+          value: marker.price
+        }))
+        .sort((left, right) => left.time - right.time)
+    );
+
+    const firstBarTime = bars[0]?.time ?? null;
+    const lastBarTime = bars[bars.length - 1]?.time ?? null;
 
     function renderExecutionOverlay() {
       if (!overlayRef.current) {
@@ -112,19 +160,46 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
       }
 
       overlayRef.current.innerHTML = "";
-      const barTimes = new Set(bars.map((bar) => bar.time));
+
+      const sessionBlocks = [
+        {
+          start: formatSessionBoundary(firstBarTime || Date.now() / 1000, 4, 0),
+          end: formatSessionBoundary(firstBarTime || Date.now() / 1000, 9, 30),
+          color: "rgba(245, 158, 11, 0.10)"
+        },
+        {
+          start: formatSessionBoundary(firstBarTime || Date.now() / 1000, 16, 0),
+          end: formatSessionBoundary(firstBarTime || Date.now() / 1000, 20, 0),
+          color: "rgba(59, 130, 246, 0.08)"
+        }
+      ];
+
+      for (const block of sessionBlocks) {
+        const x1 = mainChart.timeScale().timeToCoordinate(block.start);
+        const x2 = mainChart.timeScale().timeToCoordinate(block.end);
+
+        if (x1 == null || x2 == null) {
+          continue;
+        }
+
+        const shadeNode = document.createElement("div");
+        shadeNode.className = "absolute inset-y-0";
+        shadeNode.style.left = `${Math.min(x1, x2)}px`;
+        shadeNode.style.width = `${Math.abs(x2 - x1)}px`;
+        shadeNode.style.background = block.color;
+        overlayRef.current.appendChild(shadeNode);
+      }
 
       for (const marker of markers) {
-        const snappedTime = barTimes.has(marker.time)
-          ? marker.time
-          : Math.max(
-              ...bars
-                .map((bar) => bar.time)
-                .filter((time) => time <= (marker.rawTime || marker.time))
-            );
-        const x = Number.isFinite(snappedTime)
-          ? mainChart.timeScale().timeToCoordinate(snappedTime)
-          : null;
+        const exactTime = marker.rawTime || marker.time;
+        const fallbackTime =
+          bars
+            .map((bar) => bar.time)
+            .filter((time) => time <= exactTime)
+            .slice(-1)[0] ?? firstBarTime;
+        const x =
+          mainChart.timeScale().timeToCoordinate(exactTime) ??
+          mainChart.timeScale().timeToCoordinate(fallbackTime);
         const y = candleSeries.priceToCoordinate(marker.price);
 
         if (x == null || y == null) {
@@ -132,21 +207,27 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
         }
 
         const markerNode = document.createElement("div");
-        markerNode.className =
-          "absolute -translate-x-1/2 -translate-y-1/2 border-2 shadow-[0_0_0_4px_rgba(5,9,7,0.92)]";
+        markerNode.className = "absolute -translate-x-1/2 -translate-y-1/2";
         markerNode.style.left = `${x}px`;
         markerNode.style.top = `${y}px`;
-        markerNode.style.width = "14px";
-        markerNode.style.height = "14px";
-        markerNode.style.borderColor = marker.color;
-        markerNode.style.backgroundColor = "#050907";
+        markerNode.style.width = "0";
+        markerNode.style.height = "0";
+        markerNode.style.borderLeft = "8px solid transparent";
+        markerNode.style.borderRight = "8px solid transparent";
+        if (marker.shape === "arrowUp") {
+          markerNode.style.borderBottom = `14px solid ${marker.color}`;
+        } else {
+          markerNode.style.borderTop = `14px solid ${marker.color}`;
+        }
+        markerNode.style.filter = "drop-shadow(0 2px 6px rgba(0,0,0,0.45))";
 
         const labelNode = document.createElement("div");
-        labelNode.className = "absolute whitespace-nowrap border px-2 py-1 text-[10px] font-semibold";
+        labelNode.className =
+          "absolute whitespace-nowrap rounded-md border px-2 py-1 text-[10px] font-semibold backdrop-blur";
         labelNode.style.left = `${x + 12}px`;
-        labelNode.style.top = `${y - 16}px`;
+        labelNode.style.top = `${marker.shape === "arrowUp" ? y - 22 : y + 6}px`;
         labelNode.style.color = marker.color;
-        labelNode.style.backgroundColor = "rgba(5,9,7,0.94)";
+        labelNode.style.backgroundColor = "rgba(11,15,23,0.92)";
         labelNode.style.border = `1px solid ${marker.color}55`;
         labelNode.textContent = marker.text;
 
@@ -163,14 +244,14 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
     histogramSeries.setData(histogram);
 
     const macdLineSeries = macdChart.addSeries(LineSeries, {
-      color: "#a8ffd8",
+      color: "#60a5fa",
       lineWidth: 2,
       priceLineVisible: false
     });
     macdLineSeries.setData(macdLine);
 
     const signalLineSeries = macdChart.addSeries(LineSeries, {
-      color: "#72f3c6",
+      color: "#f97316",
       lineWidth: 2,
       priceLineVisible: false
     });
@@ -184,7 +265,14 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
     macdChart.timeScale().subscribeVisibleLogicalRangeChange(handleMacdRange);
     mainChart.timeScale().subscribeVisibleLogicalRangeChange(handleOverlayRefresh);
 
-    mainChart.timeScale().fitContent();
+    if (firstBarTime && lastBarTime) {
+      mainChart.timeScale().setVisibleRange({
+        from: firstBarTime,
+        to: lastBarTime
+      });
+    } else {
+      mainChart.timeScale().fitContent();
+    }
     renderExecutionOverlay();
 
     const resizeObserver = new ResizeObserver(() => {
@@ -215,8 +303,13 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
           <h3 className="ui-title text-lg text-phosphor">{title}</h3>
           <p className="mt-1 text-sm text-mist">{subtitle}</p>
         </div>
-        <div className="ui-chip">
-          EMA 9 · EMA 20 · VWAP · MACD · ETH
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="ui-chip">1m</span>
+          <span className="ui-chip">EMA 9</span>
+          <span className="ui-chip">EMA 20</span>
+          <span className="ui-chip">VWAP</span>
+          <span className="ui-chip">MACD</span>
+          <span className="ui-chip">ETH</span>
         </div>
       </div>
 
@@ -287,8 +380,8 @@ function TradeReviewCharts({ trade }) {
     <div className="space-y-6">
       {minuteBars.length > 0 && (
         <TimeframeChart
-          title="1 Minute Review"
-          subtitle="Full-session context with extended hours included by default."
+          title="Execution Review"
+          subtitle="1-minute Alpaca bars with exact fill markers, volume, session shading, EMA, VWAP, and MACD."
           bars={minuteBars}
           markers={markers}
         />
