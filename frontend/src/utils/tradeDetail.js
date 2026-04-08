@@ -1,15 +1,12 @@
+import { formatDateTime, getTimeZoneDayKey } from "./formatters";
+
 function asNumber(value) {
   const numericValue = Number(value ?? 0);
   return Number.isFinite(numericValue) ? numericValue : 0;
 }
 
 function formatMinuteLabel(value) {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit"
-  }).format(new Date(value));
+  return formatDateTime(value);
 }
 
 function getTradePnl(trade) {
@@ -118,9 +115,9 @@ function buildDayRunningPnl(selectedTrade, trades) {
     return [];
   }
 
-  const selectedDay = new Date(selectedTrade.entryDate).toISOString().slice(0, 10);
+  const selectedDay = getTimeZoneDayKey(selectedTrade.entryDate);
   const dayTrades = trades
-    .filter((trade) => trade.entryDate?.slice(0, 10) === selectedDay)
+    .filter((trade) => getTimeZoneDayKey(trade.entryDate) === selectedDay)
     .sort((a, b) => {
       const aTime = new Date(a.exitDate || a.entryDate).getTime();
       const bTime = new Date(b.exitDate || b.entryDate).getTime();

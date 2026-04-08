@@ -1,39 +1,17 @@
 import { getTradeGrossPnl, getTradePnlByType } from "./tradePnl";
+import {
+  addDaysToDayKey,
+  formatDate,
+  formatMonthDay,
+  formatWeekday,
+  getTimeZoneDayKey,
+  getTimeZoneHour,
+  parseDayKey
+} from "./formatters";
 
 function asNumber(value) {
   const numericValue = Number(value || 0);
   return Number.isNaN(numericValue) ? 0 : numericValue;
-}
-
-function getLocalDayKey(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function startOfDay(date) {
-  const next = new Date(date);
-  next.setHours(0, 0, 0, 0);
-  return next;
-}
-
-function endOfDay(date) {
-  const next = new Date(date);
-  next.setHours(23, 59, 59, 999);
-  return next;
-}
-
-function startOfWeek(date) {
-  const next = startOfDay(date);
-  const day = next.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  next.setDate(next.getDate() + diff);
-  return next;
-}
-
-function startOfMonth(date) {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
 }
 
 function getHoldMinutes(trade, entryDate) {
@@ -42,7 +20,7 @@ function getHoldMinutes(trade, entryDate) {
 }
 
 function getTimeBucket(date) {
-  const hours = date.getHours();
+  const hours = getTimeZoneHour(date);
 
   if (hours < 9) {
     return "PREMARKET";
@@ -76,7 +54,7 @@ function buildHourlyPerformance(processedTrades) {
   }
 
   for (const item of processedTrades) {
-    const hour = item.entryDate.getHours();
+    const hour = getTimeZoneHour(item.entryDate);
 
     if (!hourlyMap.has(hour)) {
       continue;
@@ -93,18 +71,16 @@ function buildLastThirtyDayPnl(processedTrades, latestDayStart) {
   const dailyMap = new Map();
 
   for (const item of processedTrades) {
-    const dayKey = getLocalDayKey(item.entryDate);
+    const dayKey = getTimeZoneDayKey(item.entryDate);
     dailyMap.set(dayKey, Number(((dailyMap.get(dayKey) || 0) + item.pnl).toFixed(2)));
   }
 
   return Array.from({ length: 30 }, (_, index) => {
-    const day = new Date(latestDayStart);
-    day.setDate(latestDayStart.getDate() - (29 - index));
-    const dayKey = getLocalDayKey(day);
+    const dayKey = addDaysToDayKey(latestDayStart, -(29 - index));
 
     return {
       date: dayKey,
-      label: day.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      label: formatMonthDay(parseDayKey(dayKey)),
       grossPnl: Number((dailyMap.get(dayKey) || 0).toFixed(2))
     };
   });
@@ -225,8 +201,8 @@ export function buildAnalytics(trades, options = {}) {
     const quantity = Math.abs(asNumber(trade.quantity));
     const holdMinutes = getHoldMinutes(trade, entryDate);
     const perSharePnl = quantity > 0 ? pnl / quantity : 0;
-    const dayKey = getLocalDayKey(entryDate);
-    const weekday = entryDate.toLocaleDateString("en-US", { weekday: "short" });
+    const dayKey = getTimeZoneDayKey(entryDate);
+    const weekday = formatWeekday(entryDate);
     const timeBucket = getTimeBucket(entryDate);
 
     if (pnl > 0) {
@@ -260,8 +236,8 @@ export function buildAnalytics(trades, options = {}) {
 
     dailyMap.set(dayKey, {
       date: dayKey,
-      label: entryDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-      weekday: entryDate.toLocaleDateString("en-US", { weekday: "short" }),
+      label: formatMonthDay(entryDate),
+      weekday,
       pnl: Number(((dailyMap.get(dayKey)?.pnl || 0) + pnl).toFixed(2)),
       trades: (dailyMap.get(dayKey)?.trades || 0) + 1,
       wins: (dailyMap.get(dayKey)?.wins || 0) + (pnl > 0 ? 1 : 0),
@@ -303,79 +279,77 @@ export function buildAnalytics(trades, options = {}) {
   const averageGainPerShare = wins ? totalPositivePerShare / wins : 0;
   const averageLossPerShare = losses ? totalNegativePerShare / losses : 0;
 
-  const latestTradeDate = processedTrades.length
-    ? new Date(processedTrades[processedTrades.length - 1].entryDate)
-    : new Date();
-  const latestDayStart = startOfDay(latestTradeDate);
-  const latestDayEnd = endOfDay(latestTradeDate);
-  const latestWeekStart = startOfWeek(latestTradeDate);
-  const latestMonthStart = startOfMonth(latestTradeDate);
+  const latestDayStart = processedTrades.length
+    ? getTimeZoneDayKey(processedTrades[processedTrades.length - 1].entryDate)
+    : getTimeZoneDayKey(new Date());
+  const latestTradeDate = parseDayKey(latestDayStart);
+  const latestWeekday = formatWeekday(latestTradeDate);
+  const weekdayIndex = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(latestWeekday);
+  const latestWeekStart = addDaysToDayKey(latestDayStart, weekdayIndex === 0 ? -6 : 1 - weekdayIndex);
+  const latestMonthStart = `${latestDayStart.slice(0, 7)}-01`;
 
   const totalMonthPnl = processedTrades.reduce(
-    (sum, item) =>
-      item.entryDate >= latestMonthStart && item.entryDate <= latestDayEnd ? sum + item.pnl : sum,
+    (sum, item) => {
+      const dayKey = getTimeZoneDayKey(item.entryDate);
+      return dayKey >= latestMonthStart && dayKey <= latestDayStart ? sum + item.pnl : sum;
+    },
     0
   );
   const totalWeekPnl = processedTrades.reduce(
-    (sum, item) =>
-      item.entryDate >= latestWeekStart && item.entryDate <= latestDayEnd ? sum + item.pnl : sum,
+    (sum, item) => {
+      const dayKey = getTimeZoneDayKey(item.entryDate);
+      return dayKey >= latestWeekStart && dayKey <= latestDayStart ? sum + item.pnl : sum;
+    },
     0
   );
   const totalTodayPnl = processedTrades.reduce(
-    (sum, item) =>
-      item.entryDate >= latestDayStart && item.entryDate <= latestDayEnd ? sum + item.pnl : sum,
+    (sum, item) => (getTimeZoneDayKey(item.entryDate) === latestDayStart ? sum + item.pnl : sum),
     0
   );
 
   const lastSevenDays = Array.from({ length: 7 }, (_, index) => {
-    const day = new Date(latestDayStart);
-    day.setDate(latestDayStart.getDate() - (6 - index));
-    const dayKey = getLocalDayKey(day);
+    const dayKey = addDaysToDayKey(latestDayStart, -(6 - index));
     const stats = dailyMap.get(dayKey);
 
     return {
       date: dayKey,
-      label: day.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-      weekday: day.toLocaleDateString("en-US", { weekday: "short" }),
+      label: formatMonthDay(parseDayKey(dayKey)),
+      weekday: formatWeekday(parseDayKey(dayKey)),
       pnl: Number((stats?.pnl || 0).toFixed(2)),
       trades: stats?.trades || 0
     };
   });
 
   const equityCurve = processedTrades.map((item) => ({
-    date: item.entryDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+    date: formatMonthDay(item.entryDate),
     equity: item.equity
   }));
 
   const drawdownCurve = processedTrades.map((item) => ({
-    date: item.entryDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+    date: formatMonthDay(item.entryDate),
     drawdown: item.drawdown
   }));
 
   const winRateThirtyDays = Array.from({ length: 30 }, (_, index) => {
-    const day = new Date(latestDayStart);
-    day.setDate(latestDayStart.getDate() - (29 - index));
-    const dayKey = getLocalDayKey(day);
+    const dayKey = addDaysToDayKey(latestDayStart, -(29 - index));
     const stats = dailyMap.get(dayKey);
     const trades = stats?.trades || 0;
     const winsForDay = stats?.wins || 0;
 
     return {
       date: dayKey,
-      label: day.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      label: formatMonthDay(parseDayKey(dayKey)),
       winRate: trades ? Number(((winsForDay / trades) * 100).toFixed(2)) : 0
     };
   });
 
   const dailyVolumeThirtyDays = Array.from({ length: 30 }, (_, index) => {
-    const day = new Date(latestDayStart);
-    day.setDate(latestDayStart.getDate() - (29 - index));
-    const dayKey = getLocalDayKey(day);
+    const dayKey = addDaysToDayKey(latestDayStart, -(29 - index));
     const stats = dailyMap.get(dayKey);
 
     return {
       date: dayKey,
-      label: day.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      label: formatMonthDay(parseDayKey(dayKey)),
       volume: stats?.volume || 0
     };
   });
@@ -422,10 +396,6 @@ export function buildAnalytics(trades, options = {}) {
     winRateThirtyDays,
     dailyVolumeThirtyDays,
     pnlType,
-    latestDateLabel: latestTradeDate.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric"
-    })
+    latestDateLabel: formatDate(latestTradeDate)
   };
 }

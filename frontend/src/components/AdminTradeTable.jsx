@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { formatCurrency, formatDate, formatDateTimeLocal } from "../utils/formatters";
+import { formatCurrency, formatDate } from "../utils/formatters";
 
 function createFormState(trade) {
   return {
@@ -8,8 +8,8 @@ function createFormState(trade) {
     quantity: trade.quantity ?? "",
     entryPrice: trade.entryPrice ?? "",
     exitPrice: trade.exitPrice ?? "",
-    entryDate: formatDateTimeLocal(trade.entryDate),
-    exitDate: formatDateTimeLocal(trade.exitDate),
+    entryDate: trade.entryDate ? trade.entryDate.slice(0, 16) : "",
+    exitDate: trade.exitDate ? trade.exitDate.slice(0, 16) : "",
     fees: trade.fees ?? "",
     strategy: trade.strategy ?? "",
     notes: trade.notes ?? ""

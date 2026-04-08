@@ -15,7 +15,7 @@ import strategyService from "../services/strategyService";
 import TradeReviewCharts from "./TradeReviewCharts";
 import Card from "./ui/Card";
 import LoadingState from "./ui/LoadingState";
-import { formatCurrency, formatDate, formatDateTimeLocal } from "../utils/formatters";
+import { formatCurrency, formatDate, formatDateTime } from "../utils/formatters";
 import {
   buildDayRunningPnl,
   buildTradeRunningPnl,
@@ -129,7 +129,7 @@ function TimelineTable({ rows }) {
             {rows.map((row) => (
               <tr key={row.id}>
                 <td className="px-4 py-4 font-medium text-phosphor">{row.label}</td>
-                <td className="px-4 py-4 text-mist">{formatDateTimeLocal(row.time).replace("T", " ")}</td>
+                <td className="px-4 py-4 text-mist">{formatDateTime(row.time)}</td>
                 <td className="px-4 py-4 text-mist">{row.symbol}</td>
                 <td className={`px-4 py-4 ${Number(row.quantity) >= 0 ? "text-mint" : "text-coral"}`}>
                   {row.quantity}

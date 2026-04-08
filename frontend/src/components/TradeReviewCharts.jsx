@@ -17,6 +17,19 @@ import {
 } from "../utils/chartIndicators";
 import LoadingState from "./ui/LoadingState";
 
+const NEW_YORK_TICK_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/New_York",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23"
+});
+
+const NEW_YORK_DAY_TICK_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/New_York",
+  month: "short",
+  day: "numeric"
+});
+
 function getEasternDayStamp(value) {
   const timestamp = toChartUnixSeconds(value);
 
@@ -132,7 +145,27 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
       timeScale: {
         borderColor: "rgba(229,231,235,0.14)",
         timeVisible: true,
-        secondsVisible: false
+        secondsVisible: false,
+        tickMarkFormatter: (time) => {
+          const date = new Date(Number(time) * 1000);
+
+          if (Number.isNaN(date.getTime())) {
+            return "";
+          }
+
+          const hoursMinutes = NEW_YORK_TICK_FORMATTER.format(date);
+          const isSessionOpen =
+            hoursMinutes === "04:00" ||
+            hoursMinutes === "09:30" ||
+            hoursMinutes === "16:00" ||
+            hoursMinutes === "20:00";
+
+          if (isSessionOpen) {
+            return `${NEW_YORK_DAY_TICK_FORMATTER.format(date)} ${hoursMinutes}`;
+          }
+
+          return hoursMinutes;
+        }
       },
       crosshair: {
         vertLine: { color: "rgba(124,211,255,0.28)" },
@@ -264,6 +297,8 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
         overlayRef.current.appendChild(shadeNode);
       }
 
+      const stackCounts = new Map();
+
       for (const marker of markers) {
         const exactTime = marker.rawTime || marker.time;
         const fallbackTime =
@@ -280,10 +315,15 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
           continue;
         }
 
+        const stackKey = `${marker.shape}:${fallbackTime ?? exactTime}`;
+        const stackIndex = stackCounts.get(stackKey) ?? 0;
+        const stackOffset = stackIndex * 18;
+        stackCounts.set(stackKey, stackIndex + 1);
+
         const markerNode = document.createElement("div");
         markerNode.className = "absolute -translate-x-1/2 -translate-y-1/2";
         markerNode.style.left = `${x}px`;
-        markerNode.style.top = `${y}px`;
+        markerNode.style.top = `${marker.shape === "arrowUp" ? y + stackOffset : y - stackOffset}px`;
         markerNode.style.width = "0";
         markerNode.style.height = "0";
         markerNode.style.borderLeft = "8px solid transparent";
@@ -299,7 +339,9 @@ function TimeframeChart({ title, subtitle, bars, markers }) {
         labelNode.className =
           "absolute whitespace-nowrap rounded-md border px-2 py-1 text-[10px] font-semibold backdrop-blur";
         labelNode.style.left = `${x + 12}px`;
-        labelNode.style.top = `${marker.shape === "arrowUp" ? y - 22 : y + 6}px`;
+        labelNode.style.top = `${
+          marker.shape === "arrowUp" ? y - 22 + stackOffset : y + 6 - stackOffset
+        }px`;
         labelNode.style.color = marker.color;
         labelNode.style.backgroundColor = "rgba(11,15,23,0.92)";
         labelNode.style.border = `1px solid ${marker.color}55`;
