@@ -89,11 +89,11 @@ function getDayTone(stats, isCurrentMonth) {
   }
 
   if (stats.pnl > 0) {
-    return "bg-black text-mint";
+    return "bg-[linear-gradient(180deg,rgba(24,200,122,0.12),rgba(24,200,122,0.04))] text-mint";
   }
 
   if (stats.pnl < 0) {
-    return "bg-black text-coral";
+    return "bg-[linear-gradient(180deg,rgba(255,93,87,0.12),rgba(255,93,87,0.04))] text-coral";
   }
 
   return "bg-white/[0.03] text-phosphor";

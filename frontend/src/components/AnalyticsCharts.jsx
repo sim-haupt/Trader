@@ -14,6 +14,10 @@ import {
 import Card from "./ui/Card";
 import { formatCurrency, formatPercent } from "../utils/formatters";
 
+const CHART_GREEN = "#22c55e";
+const CHART_RED = "#ef4444";
+const CHART_YELLOW = "#f59e0b";
+
 export const DEFAULT_DASHBOARD_LAYOUT = [
   { id: "cumulative", span: 2 },
   { id: "summaryMetrics", span: 1 },
@@ -391,7 +395,7 @@ function AnalyticsCharts({
                 <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<ChartTooltipContent />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
                 <Bar dataKey="pnl" barSize={18}>
                   {hourlyPerformance.map((entry) => (
-                    <Cell key={entry.label} fill={entry.pnl >= 0 ? "oklch(71.7% 0.1648 250.794)" : "oklch(25.45% 0.0811 255.8)"} />
+                    <Cell key={entry.label} fill={entry.pnl >= 0 ? CHART_GREEN : CHART_RED} />
                   ))}
                 </Bar>
               </BarChart>
@@ -413,7 +417,7 @@ function AnalyticsCharts({
                 <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<ChartTooltipContent />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
                 <Bar dataKey="grossPnl" barSize={20}>
                   {grossDailyThirtyDays.map((entry) => (
-                    <Cell key={entry.date} fill={entry.grossPnl >= 0 ? "oklch(71.7% 0.1648 250.794)" : "oklch(25.45% 0.0811 255.8)"} />
+                    <Cell key={entry.date} fill={entry.grossPnl >= 0 ? CHART_GREEN : CHART_RED} />
                   ))}
                 </Bar>
               </BarChart>
@@ -435,7 +439,7 @@ function AnalyticsCharts({
                 <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<ChartTooltipContent />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
                 <Bar dataKey="winRate" barSize={20}>
                   {winRateThirtyDays.map((entry) => (
-                    <Cell key={entry.date} fill="oklch(71.7% 0.1648 250.794)" />
+                    <Cell key={entry.date} fill={CHART_GREEN} />
                   ))}
                 </Bar>
               </BarChart>
@@ -457,7 +461,7 @@ function AnalyticsCharts({
                 <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<ChartTooltipContent />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
                 <Bar dataKey="volume" barSize={20}>
                   {dailyVolumeThirtyDays.map((entry) => (
-                    <Cell key={entry.date} fill="oklch(71.7% 0.1648 250.794)" />
+                    <Cell key={entry.date} fill={CHART_GREEN} />
                   ))}
                 </Bar>
               </BarChart>
