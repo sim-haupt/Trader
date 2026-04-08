@@ -45,7 +45,7 @@ function TradeTable({
     <div className="ui-table-shell">
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-[var(--line)] text-sm">
-          <thead className="bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.006))]">
+          <thead className="bg-[#050505]">
             <tr className="ui-title text-left text-[11px] text-white/58">
               {onToggleSelection && (
                 <th className="px-4 py-4">
@@ -82,7 +82,7 @@ function TradeTable({
                     <tr key={`${trade.id}-day-divider`} aria-hidden="true">
                       <td colSpan={columnCount} className="px-4 py-4 align-middle">
                         <div className="flex min-h-[44px] items-center gap-3">
-                          <span className="ui-title rounded-full border border-[var(--line-strong)] bg-white/[0.04] px-3 py-1.5 text-[10px] text-white/66">
+                          <span className="ui-title rounded-[6px] border border-[var(--line-strong)] bg-black px-3 py-1.5 text-[10px] text-[var(--text-muted)]">
                             {currentDate}
                           </span>
                         </div>
@@ -137,7 +137,7 @@ function TradeTable({
                             .map((tag) => (
                               <span
                                 key={`${trade.id}-${tag}`}
-                                className="inline-flex items-center rounded-full border border-white/8 bg-white/[0.03] px-2.5 py-1 text-[11px] font-medium text-white/68"
+                                className="inline-flex items-center rounded-[6px] border border-[var(--line)] bg-black px-2.5 py-1 text-[11px] font-medium text-[var(--text-muted)]"
                               >
                                 {tag}
                               </span>
@@ -165,7 +165,7 @@ function TradeTable({
                               event.stopPropagation();
                               onEdit(trade);
                             }}
-                            className="ui-button inline-flex h-9 w-9 items-center justify-center rounded-xl p-0 text-white/70 hover:text-white"
+                            className="ui-button inline-flex h-9 w-9 items-center justify-center rounded-[6px] p-0 text-white/70 hover:text-white"
                             aria-label={`Edit ${trade.symbol} trade`}
                             title="Edit trade"
                           >
@@ -177,7 +177,7 @@ function TradeTable({
                               event.stopPropagation();
                               onDelete(trade);
                             }}
-                            className="ui-button-danger inline-flex h-9 w-9 items-center justify-center rounded-xl p-0"
+                            className="ui-button-danger inline-flex h-9 w-9 items-center justify-center rounded-[6px] p-0"
                             aria-label={`Delete ${trade.symbol} trade`}
                             title="Delete trade"
                           >

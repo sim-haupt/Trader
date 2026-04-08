@@ -5,13 +5,13 @@ const NotificationContext = createContext(null);
 function toneStyles(tone) {
   switch (tone) {
     case "success":
-      return "border-mint/18 bg-[#111814]/96 text-mint";
+      return "border-[var(--line)] bg-black text-mint";
     case "error":
-      return "border-coral/18 bg-[#1b1012]/96 text-coral";
+      return "border-[var(--line)] bg-black text-coral";
     case "warning":
-      return "border-gold/18 bg-[#18140d]/96 text-gold";
+      return "border-[var(--line)] bg-black text-gold";
     default:
-      return "border-[var(--line-strong)] bg-[#121418]/96 text-white";
+      return "border-[var(--line)] bg-black text-white";
   }
 }
 
@@ -77,7 +77,7 @@ export function NotificationProvider({ children }) {
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`pointer-events-auto rounded-[16px] border px-4 py-3 shadow-[0_20px_48px_rgba(0,0,0,0.28)] backdrop-blur ${toneStyles(
+            className={`pointer-events-auto rounded-[6px] border px-4 py-3 ${toneStyles(
               toast.tone
             )}`}
           >
@@ -91,7 +91,7 @@ export function NotificationProvider({ children }) {
               <button
                 type="button"
                 onClick={() => dismissToast(toast.id)}
-                className="rounded-[10px] px-2 py-1 text-xs text-current/60 transition hover:bg-white/[0.05] hover:text-current"
+                className="rounded-[6px] px-2 py-1 text-xs text-current/60 transition hover:bg-[#1f1f1f] hover:text-current"
               >
                 Close
               </button>
@@ -101,11 +101,11 @@ export function NotificationProvider({ children }) {
       </div>
 
       {confirmState ? (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-[#050811]/68 px-4 backdrop-blur-sm">
-          <div className={`w-full max-w-[460px] rounded-[20px] border p-6 shadow-[0_28px_80px_rgba(0,0,0,0.36)] ${toneStyles(confirmState.tone)}`}>
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 px-4">
+          <div className={`w-full max-w-[460px] rounded-[6px] border p-6 ${toneStyles(confirmState.tone)}`}>
             <div className="text-lg font-semibold text-white">{confirmState.title}</div>
             {confirmState.description ? (
-              <p className="mt-3 text-sm leading-7 text-white/72">{confirmState.description}</p>
+              <p className="mt-3 text-sm leading-7 text-[var(--text-muted)]">{confirmState.description}</p>
             ) : null}
             <div className="mt-6 flex justify-end gap-3">
               <button

@@ -55,12 +55,12 @@ function AppShell() {
       <div className="desktop-frame">
         <aside className="ui-sidebar hidden min-h-screen px-4 py-4 xl:block">
           <div className="flex items-center gap-3 px-2 pb-5 pt-1">
-            <div className="flex h-8 w-8 items-center justify-center rounded-[10px] border border-[var(--line)] bg-white/[0.02]">
+            <div className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[var(--line)] bg-black">
               <img src={brandMark} alt="tradingStats" className="h-6 w-6" />
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold tracking-[-0.02em] text-white">tradingStats</p>
-              <p className="text-xs text-white/30">trader</p>
+              <p className="text-xs text-[var(--text-muted)]">trader</p>
             </div>
           </div>
 
@@ -96,13 +96,13 @@ function AppShell() {
             <button
               type="button"
               onClick={() => navigate("/trades?mode=import")}
-              className="ui-button w-full justify-center px-4 py-2.5 text-sm text-white"
+              className="ui-button-solid w-full justify-center px-4 py-2.5 text-sm"
             >
               Import Trades
             </button>
-            <div className="rounded-[12px] border border-[var(--line)] bg-white/[0.015] px-4 py-3">
+            <div className="rounded-[6px] border border-[var(--line)] bg-black px-4 py-3">
               <p className="text-sm font-medium text-white">{user?.name}</p>
-              <p className="mt-1 truncate text-xs text-white/30">{user?.email}</p>
+              <p className="mt-1 truncate text-xs text-[var(--text-muted)]">{user?.email}</p>
             </div>
             <button
               type="button"
@@ -130,7 +130,7 @@ function AppShell() {
                   className={({ isActive }) =>
                       `flex items-center gap-2 px-3 py-2 text-sm ${
                         isActive
-                          ? "rounded-[10px] border border-[var(--line)] bg-white/[0.05] text-white"
+                          ? "rounded-[6px] border border-[var(--line)] bg-[#1f1f1f] text-white"
                           : "ui-button text-white/74"
                       }`
                     }
@@ -147,7 +147,7 @@ function AppShell() {
                     className={({ isActive }) =>
                       `flex items-center gap-2 px-3 py-2 text-sm ${
                         isActive
-                          ? "rounded-[10px] border border-[var(--line)] bg-white/[0.05] text-white"
+                          ? "rounded-[6px] border border-[var(--line)] bg-[#1f1f1f] text-white"
                           : "ui-button text-white/74"
                       }`
                     }
@@ -164,11 +164,11 @@ function AppShell() {
                 <button
                   type="button"
                   onClick={() => navigate("/trades?mode=import")}
-                  className="ui-button px-4 py-2.5 text-sm text-white xl:hidden"
+                  className="ui-button-solid px-4 py-2.5 text-sm xl:hidden"
                 >
                   Import Trades
                 </button>
-              <div className="rounded-[10px] border border-[var(--line)] bg-white/[0.015] px-4 py-2.5 text-right">
+              <div className="rounded-[6px] border border-[var(--line)] bg-black px-4 py-2.5 text-right">
                 <p className="text-sm font-medium text-white">{user?.name}</p>
               </div>
               <button

@@ -59,13 +59,13 @@ function CustomSelect({
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >
-        <span className={selectedOption ? "text-white/90" : "text-white/38"}>
+        <span className={selectedOption ? "text-[var(--text)]" : "text-[var(--text-muted)]"}>
           {selectedOption?.label ?? placeholder}
         </span>
         <svg
           viewBox="0 0 20 20"
           fill="none"
-          className={`h-4 w-4 shrink-0 text-white/34 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`h-4 w-4 shrink-0 text-[var(--text-muted)] transition-transform ${isOpen ? "rotate-180" : ""}`}
           aria-hidden="true"
         >
           <path d="M5 7.5 10 12.5 15 7.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -94,12 +94,12 @@ function CustomSelect({
                     onChange(option.value);
                     setIsOpen(false);
                   }}
-                  className={`flex w-full items-center justify-between rounded-[12px] px-3 py-2.5 text-sm transition ${
+                  className={`flex w-full items-center justify-between rounded-[6px] px-3 py-2.5 text-sm transition ${
                     option.disabled
                       ? "cursor-not-allowed text-white/24"
                       : active
-                        ? "bg-[rgba(124,156,255,0.14)] text-white shadow-[inset_0_0_0_1px_rgba(124,156,255,0.28)]"
-                        : "text-white/72 hover:bg-white/[0.04] hover:text-white"
+                        ? "bg-[#1f1f1f] text-[var(--text)] shadow-[inset_0_0_0_1px_rgb(31,31,31)]"
+                        : "text-[var(--text-muted)] hover:bg-[#1f1f1f] hover:text-[var(--text)]"
                   }`}
                 >
                   <span>{option.label}</span>

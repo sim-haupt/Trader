@@ -30,15 +30,15 @@ function RegisterPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-10">
-      <div className="w-full max-w-xl rounded-[28px] border border-[var(--line)] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.006)),var(--surface-2)] p-8 shadow-[0_24px_72px_rgba(0,0,0,0.3)] sm:p-10">
+      <div className="w-full max-w-xl rounded-[6px] border border-[var(--line)] bg-[var(--surface-2)] p-8 sm:p-10">
         <div className="mb-8 flex items-center justify-between gap-4">
           <div>
-            <p className="ui-title text-xs text-white/38">Start Journaling</p>
+            <p className="ui-title text-xs text-[var(--text-muted)]">Start Journaling</p>
             <h1 className="mt-4 text-4xl font-bold tracking-[-0.05em] text-white">Create your account</h1>
           </div>
           <div className="ui-chip">Beta</div>
         </div>
-        <p className="mt-3 max-w-lg text-base leading-7 text-white/62">
+        <p className="mt-3 max-w-lg text-base leading-7 text-[var(--text-muted)]">
           Set up your workspace and start building a repeatable review process around every trade.
         </p>
 
@@ -81,7 +81,7 @@ function RegisterPage() {
           </button>
         </form>
 
-        <p className="mt-6 text-base text-white/62">
+        <p className="mt-6 text-base text-[var(--text-muted)]">
           Already have an account?{" "}
           <Link to="/login" className="ui-link font-semibold underline decoration-white/10 underline-offset-4">
             Sign in

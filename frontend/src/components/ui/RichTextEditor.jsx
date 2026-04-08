@@ -7,10 +7,10 @@ function ToolbarButton({ label, title, onMouseDown, active = false }) {
       type="button"
       title={title}
       onMouseDown={onMouseDown}
-      className={`flex h-9 min-w-9 items-center justify-center rounded-[10px] border px-2 text-sm font-medium transition ${
+      className={`flex h-9 min-w-9 items-center justify-center rounded-[6px] border px-2 text-sm font-medium transition ${
         active
-          ? "border-[var(--accent)] bg-[var(--accent-soft)] text-white shadow-[0_0_0_1px_rgba(125,163,255,0.15)]"
-          : "border-[var(--line)] bg-white/[0.02] text-white/72 hover:border-white/14 hover:bg-white/[0.05] hover:text-white"
+          ? "border-[var(--line)] bg-[#1f1f1f] text-white"
+          : "border-[var(--line)] bg-black text-[var(--text-muted)] hover:bg-[#1f1f1f] hover:text-white"
       }`}
     >
       {label}
@@ -19,7 +19,7 @@ function ToolbarButton({ label, title, onMouseDown, active = false }) {
 }
 
 function ToolbarDivider() {
-  return <div className="mx-1 h-7 w-px bg-white/[0.08]" />;
+  return <div className="mx-1 h-7 w-px bg-[var(--line)]" />;
 }
 
 function getBlockLabel(editor) {
@@ -90,11 +90,11 @@ function RichTextEditor({
   const isEmpty = isRichTextEmpty(value);
 
   return (
-    <div className={`rounded-[18px] border border-[var(--line)] bg-white/[0.03] ${className}`}>
-      <div className="flex flex-wrap items-center gap-2 border-b border-[var(--line)] bg-black/10 px-3 py-3">
+    <div className={`rounded-[6px] border border-[var(--line)] bg-black ${className}`}>
+      <div className="flex flex-wrap items-center gap-2 border-b border-[var(--line)] bg-[#050505] px-3 py-3">
         <select
           aria-label="Text style"
-          className="h-9 min-w-[130px] rounded-[10px] border border-[var(--line)] bg-white/[0.02] px-3 text-sm text-white/78 outline-none transition focus:border-[var(--accent)]"
+          className="h-9 min-w-[130px] rounded-[6px] border border-[var(--line)] bg-black px-3 text-sm text-[var(--text-muted)] outline-none transition focus:border-[var(--line)]"
           value={blockLabel}
           onChange={(event) => {
             const nextValue = event.target.value;
@@ -140,7 +140,7 @@ function RichTextEditor({
 
       <div className="relative">
         {isEmpty && !focused ? (
-          <div className="pointer-events-none absolute left-4 top-4 text-sm text-white/34">
+          <div className="pointer-events-none absolute left-4 top-4 text-sm text-[var(--text-muted)]">
             {placeholder}
           </div>
         ) : null}
@@ -156,7 +156,7 @@ function RichTextEditor({
           }}
           onKeyUp={() => setBlockLabel(getBlockLabel(editorRef.current))}
           onMouseUp={() => setBlockLabel(getBlockLabel(editorRef.current))}
-          className="min-h-[120px] px-4 py-4 text-sm leading-7 text-white/84 outline-none [&_blockquote]:border-l-2 [&_blockquote]:border-white/15 [&_blockquote]:pl-4 [&_blockquote]:text-white/74 [&_h2]:mb-2 [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:mb-2 [&_h3]:text-lg [&_h3]:font-semibold [&_ol]:ml-5 [&_ol]:list-decimal [&_p]:min-h-[1.5em] [&_pre]:overflow-x-auto [&_pre]:rounded-[12px] [&_pre]:border [&_pre]:border-[var(--line)] [&_pre]:bg-black/20 [&_pre]:p-3 [&_pre]:font-mono [&_pre]:text-[13px] [&_ul]:ml-5 [&_ul]:list-disc"
+          className="min-h-[120px] px-4 py-4 text-sm leading-7 text-[var(--text)] outline-none [&_blockquote]:border-l-2 [&_blockquote]:border-[var(--line)] [&_blockquote]:pl-4 [&_blockquote]:text-[var(--text-muted)] [&_h2]:mb-2 [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:mb-2 [&_h3]:text-lg [&_h3]:font-semibold [&_ol]:ml-5 [&_ol]:list-decimal [&_p]:min-h-[1.5em] [&_pre]:overflow-x-auto [&_pre]:rounded-[6px] [&_pre]:border [&_pre]:border-[var(--line)] [&_pre]:bg-[#050505] [&_pre]:p-3 [&_pre]:font-mono [&_pre]:text-[13px] [&_ul]:ml-5 [&_ul]:list-disc"
           style={{ minHeight }}
         />
       </div>

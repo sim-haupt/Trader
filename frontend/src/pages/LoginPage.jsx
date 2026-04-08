@@ -31,33 +31,33 @@ function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-10">
-      <div className="grid w-full max-w-6xl overflow-hidden rounded-[28px] border border-[var(--line)] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.006)),var(--surface-2)] shadow-[0_24px_72px_rgba(0,0,0,0.3)] lg:grid-cols-[1.15fr_0.85fr]">
-        <section className="hidden border-r border-[var(--line)] bg-[radial-gradient(circle_at_top_left,rgba(124,156,255,0.12),transparent_24%),linear-gradient(180deg,rgba(255,255,255,0.018),transparent)] p-12 lg:block">
-          <p className="ui-title text-xs text-white/38">Trading analytics workspace</p>
+      <div className="grid w-full max-w-6xl overflow-hidden rounded-[6px] border border-[var(--line)] bg-[var(--surface-2)] lg:grid-cols-[1.15fr_0.85fr]">
+        <section className="hidden border-r border-[var(--line)] bg-[#050505] p-12 lg:block">
+          <p className="ui-title text-xs text-[var(--text-muted)]">Trading analytics workspace</p>
           <h1 className="mt-8 max-w-lg text-5xl font-bold leading-[0.98] tracking-[-0.055em] text-white">
             A quieter, sharper way to review every trading decision.
           </h1>
-          <p className="mt-6 max-w-xl text-lg leading-8 text-white/64">
+          <p className="mt-6 max-w-xl text-lg leading-8 text-[var(--text-muted)]">
             Built for structured review, dense data, and calm execution analysis without the noise of a typical retail trading UI.
           </p>
           <div className="mt-10 grid gap-4 md:grid-cols-2">
             <div className="ui-metric-tile">
-              <p className="ui-title text-[10px] text-white/36">Trade Review</p>
+              <p className="ui-title text-[10px] text-[var(--text-muted)]">Trade Review</p>
               <p className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-white">Execution Replay</p>
-              <p className="mt-2 text-sm leading-6 text-white/54">Click into trades and inspect fills, notes, tags, and context in one place.</p>
+              <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">Click into trades and inspect fills, notes, tags, and context in one place.</p>
             </div>
             <div className="ui-metric-tile">
-              <p className="ui-title text-[10px] text-white/36">Performance</p>
+              <p className="ui-title text-[10px] text-[var(--text-muted)]">Performance</p>
               <p className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-white">Structured Reports</p>
-              <p className="mt-2 text-sm leading-6 text-white/54">Analyze behavior through ranges, comparisons, instrument buckets, drawdown, and journal notes.</p>
+              <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">Analyze behavior through ranges, comparisons, instrument buckets, drawdown, and journal notes.</p>
             </div>
           </div>
         </section>
 
         <section className="flex flex-col justify-center p-8 sm:p-12">
-          <p className="ui-title text-xs text-white/38">Access</p>
+          <p className="ui-title text-xs text-[var(--text-muted)]">Access</p>
           <h2 className="mt-4 text-[2.75rem] font-bold tracking-[-0.05em] text-white">Welcome back</h2>
-          <p className="mt-3 max-w-md text-base leading-7 text-white/62">
+          <p className="mt-3 max-w-md text-base leading-7 text-[var(--text-muted)]">
             Sign in to continue reviewing your journal, imports, and performance reports.
           </p>
 
@@ -92,7 +92,7 @@ function LoginPage() {
             </button>
           </form>
 
-          <p className="mt-6 text-base text-white/62">
+          <p className="mt-6 text-base text-[var(--text-muted)]">
             New here?{" "}
             <Link to="/register" className="ui-link font-semibold underline decoration-white/10 underline-offset-4">
               Create an account
