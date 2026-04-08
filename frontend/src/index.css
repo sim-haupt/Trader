@@ -311,7 +311,7 @@ button:disabled {
   .ui-notice {
     border: 1px solid var(--line-strong);
     border-radius: var(--radius-md);
-    background: var(--surface-inset);
+    background: #050505;
     color: var(--text);
     padding: 14px 16px;
     font-size: 0.93rem;
@@ -338,6 +338,12 @@ button:disabled {
     border-radius: var(--radius-md);
     background: var(--surface-inset);
     padding: 16px;
+  }
+
+  .ui-inset-box {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--surface-inset);
   }
 
   .ui-popover {

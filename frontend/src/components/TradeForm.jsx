@@ -285,7 +285,7 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
                 </button>
               </div>
             ) : (
-              <div className="rounded-[6px] border border-[var(--line)] bg-black px-4 py-3 text-sm text-white/54">
+              <div className="ui-inset-box px-4 py-3 text-sm text-white/54">
                 No strategy selected
               </div>
             )}
@@ -332,7 +332,7 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
                 ))}
               </div>
             ) : (
-              <div className="rounded-[6px] border border-[var(--line)] bg-black px-4 py-3 text-sm text-white/54">
+              <div className="ui-inset-box px-4 py-3 text-sm text-white/54">
                 No tags selected
               </div>
             )}

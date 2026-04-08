@@ -38,7 +38,7 @@ function parseTags(value) {
 
 function SummaryMetric({ label, value, accent = "text-white" }) {
   return (
-    <div className="rounded-[6px] border border-[var(--line)] bg-[var(--surface-inset)] p-4">
+    <div className="ui-inset-box p-4">
       <p className="ui-title text-[10px] text-white/48">{label}</p>
       <p className={`mt-3 text-2xl font-bold tracking-[-0.04em] ${accent}`}>{value}</p>
     </div>
@@ -383,7 +383,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
           <Card title="TRADER NOTES">
             <div className="space-y-5">
               <div className="grid gap-5 xl:grid-cols-2">
-                <div className="rounded-[6px] border border-[var(--line)] bg-[var(--surface-inset)] p-4">
+                <div className="ui-inset-box p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="ui-title text-xs text-white/48">Strategy</p>
                   <button
@@ -433,7 +433,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                 )}
                 </div>
 
-                <div className="rounded-[6px] border border-[var(--line)] bg-[var(--surface-inset)] p-4">
+                <div className="ui-inset-box p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="ui-title text-xs text-white/48">Tags</p>
                   <button
@@ -492,7 +492,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
               </div>
               </div>
 
-              <div className="rounded-[6px] border border-[var(--line)] bg-[var(--surface-inset)] p-4">
+              <div className="ui-inset-box p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="ui-title text-xs text-white/48">Notes</p>
                   <button
@@ -533,7 +533,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                     </div>
                   </div>
                 ) : (
-                  <div className="mt-2 rounded-[6px] border border-[var(--line)] bg-[var(--surface-inset)] px-4 py-4">
+                  <div className="ui-inset-box mt-2 px-4 py-4">
                     {activeTrade.notes ? (
                       <div
                         className="prose prose-invert max-w-none text-sm leading-7 text-white/70"
