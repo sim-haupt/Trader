@@ -14,9 +14,9 @@ import {
 import Card from "./ui/Card";
 import { formatCurrency, formatPercent } from "../utils/formatters";
 
-const CHART_GREEN = "#22c55e";
-const CHART_RED = "#ef4444";
-const CHART_YELLOW = "#f59e0b";
+const CHART_GREEN = "#3dff9a";
+const CHART_RED = "#ff5f7a";
+const CHART_YELLOW = "#ffd84d";
 
 export const DEFAULT_DASHBOARD_LAYOUT = [
   { id: "cumulative", span: 2 },
@@ -199,7 +199,7 @@ function getLastSevenDayTone(day) {
   if (day.pnl > 0) {
     return {
       className:
-        "ui-metric-tile rounded-[6px] bg-[linear-gradient(180deg,rgba(24,200,122,0.12),rgba(24,200,122,0.04))] px-4 py-4",
+        "ui-metric-tile rounded-[6px] bg-[linear-gradient(180deg,rgba(61,255,154,0.16),rgba(61,255,154,0.05))] px-4 py-4",
       valueTone: "text-mint",
       style: {
         boxShadow: "inset 0 0 0 1px rgba(45, 212, 143, 0.34)"
@@ -210,7 +210,7 @@ function getLastSevenDayTone(day) {
   if (day.pnl < 0) {
     return {
       className:
-        "ui-metric-tile rounded-[6px] bg-[linear-gradient(180deg,rgba(255,93,87,0.12),rgba(255,93,87,0.04))] px-4 py-4",
+        "ui-metric-tile rounded-[6px] bg-[linear-gradient(180deg,rgba(255,95,122,0.16),rgba(255,95,122,0.05))] px-4 py-4",
       valueTone: "text-coral",
       style: {
         boxShadow: "inset 0 0 0 1px rgba(255, 107, 107, 0.34)"

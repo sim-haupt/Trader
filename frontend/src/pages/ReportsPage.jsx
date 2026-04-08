@@ -148,9 +148,9 @@ const CurrencyTooltip = buildChartTooltip("currency");
 const PercentTooltip = buildChartTooltip("percent");
 const VolumeTooltip = buildChartTooltip("volume");
 const CountTooltip = buildChartTooltip("count");
-const REPORT_GREEN = "#22c55e";
-const REPORT_RED = "#ef4444";
-const REPORT_YELLOW = "#f59e0b";
+const REPORT_GREEN = "#3dff9a";
+const REPORT_RED = "#ff5f7a";
+const REPORT_YELLOW = "#ffd84d";
 
 const WEEKDAY_ORDER = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 const MONTH_ORDER = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

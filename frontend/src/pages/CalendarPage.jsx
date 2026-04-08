@@ -89,11 +89,11 @@ function getDayTone(stats, isCurrentMonth) {
   }
 
   if (stats.pnl > 0) {
-    return "bg-[linear-gradient(180deg,rgba(24,200,122,0.12),rgba(24,200,122,0.04))] text-mint";
+    return "bg-[linear-gradient(180deg,rgba(61,255,154,0.16),rgba(61,255,154,0.05))] text-mint";
   }
 
   if (stats.pnl < 0) {
-    return "bg-[linear-gradient(180deg,rgba(255,93,87,0.12),rgba(255,93,87,0.04))] text-coral";
+    return "bg-[linear-gradient(180deg,rgba(255,95,122,0.16),rgba(255,95,122,0.05))] text-coral";
   }
 
   return "bg-white/[0.03] text-phosphor";
@@ -123,11 +123,12 @@ function MonthCard({ month, onOpen }) {
   return (
     <Card
       title={month.label}
+      headerInnerClassName="md:items-center"
       action={
         <button
           type="button"
           onClick={() => onOpen(month)}
-          className="ui-button px-4 py-2 text-[11px]"
+          className="ui-button self-center px-4 py-2 text-[11px]"
         >
           Open
         </button>
