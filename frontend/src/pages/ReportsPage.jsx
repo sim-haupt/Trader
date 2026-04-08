@@ -2293,25 +2293,6 @@ function ReportsPage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-6 border-t border-white/10 pt-4">
-            <div className="flex flex-wrap items-center gap-5">
-              {TAB_ITEMS.map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => handleTabChange(tab)}
-                  className={`text-sm font-medium transition ${
-                    tab === activeTab
-                      ? "border-b border-mint pb-3 text-mint"
-                      : "pb-3 text-white/62 hover:text-white"
-                  }`}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
-          </div>
-
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
             <div className="flex flex-wrap items-center gap-3">
               <CustomSelect
@@ -2335,6 +2316,25 @@ function ReportsPage() {
                   onClick={() => setRangeKey(option.key)}
                 >
                   {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-6 border-t border-white/10 pt-4">
+            <div className="flex flex-wrap items-center gap-5">
+              {TAB_ITEMS.map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => handleTabChange(tab)}
+                  className={`text-sm font-medium transition ${
+                    tab === activeTab
+                      ? "border-b border-mint pb-3 text-mint"
+                      : "pb-3 text-white/62 hover:text-white"
+                  }`}
+                >
+                  {tab}
                 </button>
               ))}
             </div>

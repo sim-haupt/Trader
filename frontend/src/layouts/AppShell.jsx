@@ -168,9 +168,6 @@ function AppShell() {
                 >
                   Import Trades
                 </button>
-              <div className="rounded-[6px] border border-[var(--line)] bg-black px-4 py-2.5 text-right">
-                <p className="text-sm font-medium text-white">{user?.name}</p>
-              </div>
               <button
                 type="button"
                 onClick={logout}

@@ -24,6 +24,7 @@ import { formatCurrency, formatDateTimeLocal } from "../utils/formatters";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
 import { getTradeFeeDisplayValue, getTradeNetPnl } from "../utils/tradePnl";
+import { normalizeRichTextHtml } from "../utils/richText";
 
 const PAGE_SIZE = 5;
 
@@ -185,6 +186,9 @@ function JournalDayCard({
   noteDraft,
   onNoteChange,
   onSaveNote,
+  onStartEditingNote,
+  onCancelEditingNote,
+  isEditingNote,
   isSaving,
   onOpenTrade
 }) {
@@ -259,21 +263,52 @@ function JournalDayCard({
         <div className="rounded-[6px] border border-[var(--line)] bg-black p-4">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div className="ui-title text-[10px] text-white/56">Day Notes</div>
-            <button
-              type="button"
-              onClick={() => onSaveNote(day.dayKey)}
-              disabled={isSaving}
-              className="ui-button-solid px-4 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isSaving ? "Saving..." : "Save Notes"}
-            </button>
+            {!isEditingNote ? (
+              <button
+                type="button"
+                onClick={() => onStartEditingNote(day.dayKey)}
+                className="ui-button px-4 py-2 text-xs"
+              >
+                {day.note ? "Edit notes" : "Add notes"}
+              </button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => onCancelEditingNote(day.dayKey, day.note || "")}
+                  className="ui-button px-4 py-2 text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onSaveNote(day.dayKey)}
+                  disabled={isSaving}
+                  className="ui-button-solid px-4 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isSaving ? "Saving..." : "Save notes"}
+                </button>
+              </div>
+            )}
           </div>
-          <RichTextEditor
-            value={noteDraft}
-            onChange={(value) => onNoteChange(day.dayKey, value)}
-            placeholder="Write your review, mistakes, strengths, and lessons from this trading day..."
-            minHeight={180}
-          />
+
+          {isEditingNote ? (
+            <RichTextEditor
+              value={noteDraft}
+              onChange={(value) => onNoteChange(day.dayKey, value)}
+              placeholder="Write your review, mistakes, strengths, and lessons from this trading day..."
+              minHeight={180}
+            />
+          ) : day.note ? (
+            <div
+              className="prose prose-invert max-w-none text-sm text-white/72"
+              dangerouslySetInnerHTML={{ __html: normalizeRichTextHtml(day.note) }}
+            />
+          ) : (
+            <div className="rounded-[6px] border border-dashed border-[var(--line)] px-4 py-5 text-sm text-white/40">
+              No notes captured for this trading day yet.
+            </div>
+          )}
         </div>
 
         <div className="ui-table-shell overflow-hidden">
@@ -350,6 +385,7 @@ function JournalPage() {
   });
   const [page, setPage] = useState(1);
   const [draftNotes, setDraftNotes] = useState({});
+  const [editingNotesByDay, setEditingNotesByDay] = useState({});
   const [savingDayKey, setSavingDayKey] = useState("");
 
   const tradesResource = useCachedAsyncResource({
@@ -463,6 +499,24 @@ function JournalPage() {
     }));
   }
 
+  function handleStartEditingDay(dayKey) {
+    setEditingNotesByDay((current) => ({
+      ...current,
+      [dayKey]: true
+    }));
+  }
+
+  function handleCancelEditingDay(dayKey, value) {
+    setDraftNotes((current) => ({
+      ...current,
+      [dayKey]: value
+    }));
+    setEditingNotesByDay((current) => ({
+      ...current,
+      [dayKey]: false
+    }));
+  }
+
   async function handleSaveDay(dayKey) {
     setSavingDayKey(dayKey);
 
@@ -476,6 +530,10 @@ function JournalPage() {
         description: `Saved notes for ${formatDayLabel(dayKey)}.`,
         tone: "success"
       });
+      setEditingNotesByDay((current) => ({
+        ...current,
+        [dayKey]: false
+      }));
     } catch (err) {
       notify({ title: "Could not save day notes", description: err.message, tone: "error" });
     } finally {
@@ -501,7 +559,7 @@ function JournalPage() {
 
   return (
     <div className="space-y-6">
-      <Card title="TRADING JOURNAL" subtitle="Review each trading day, capture lessons, and keep notes tied to the session itself.">
+      <Card title="TRADING JOURNAL">
         <div className="flex flex-wrap items-end gap-4">
           <div className="w-[170px]">
             <label className="mb-2 block text-sm font-medium text-white/72">Symbol</label>
@@ -566,15 +624,18 @@ function JournalPage() {
         <>
           <div className="space-y-6">
             {pagedDays.map((day) => (
-              <JournalDayCard
-                key={day.dayKey}
-                day={day}
-                noteDraft={draftNotes[day.dayKey] ?? day.note ?? ""}
-                onNoteChange={handleNotesChange}
-                onSaveNote={handleSaveDay}
-                isSaving={savingDayKey === day.dayKey}
-                onOpenTrade={(tradeId) => navigate(`/trades/${tradeId}`)}
-              />
+            <JournalDayCard
+              key={day.dayKey}
+              day={day}
+              noteDraft={draftNotes[day.dayKey] ?? day.note ?? ""}
+              onNoteChange={handleNotesChange}
+              onSaveNote={handleSaveDay}
+              onStartEditingNote={handleStartEditingDay}
+              onCancelEditingNote={handleCancelEditingDay}
+              isEditingNote={Boolean(editingNotesByDay[day.dayKey])}
+              isSaving={savingDayKey === day.dayKey}
+              onOpenTrade={(tradeId) => navigate(`/trades/${tradeId}`)}
+            />
             ))}
           </div>
 

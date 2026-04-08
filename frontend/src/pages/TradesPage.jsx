@@ -571,28 +571,10 @@ function TradesPage() {
       {!isImportMode ? (
         <Card
           title="TRADE HISTORY"
-          subtitle="Browse, filter, and review your trades. Click any row to open the full execution review."
           className="relative overflow-visible"
           bodyClassName="overflow-visible"
           action={
             <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={() =>
-                  setSearchParams(isImportMode ? {} : { mode: "import" }, { replace: true })
-                }
-                className="ui-button-solid text-sm"
-              >
-                {isImportMode ? "Close Import" : "Import Trades"}
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteAll}
-                disabled={loading || trades.length === 0}
-                className="ui-button-danger text-sm"
-              >
-                Delete All Trades
-              </button>
               <button
                 type="button"
                 onClick={handleExportTrades}
@@ -619,7 +601,7 @@ function TradesPage() {
           ) : trades.length === 0 ? (
             <EmptyState
               title="No matching trades"
-              description="Try relaxing your filters or open Import Trades to bring history into the journal."
+              description="Try relaxing your filters or add more trade history."
             />
           ) : (
             <div className="relative z-0 space-y-4">

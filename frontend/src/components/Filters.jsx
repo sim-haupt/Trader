@@ -4,9 +4,9 @@ import DateRangePicker from "./ui/DateRangePicker";
 function Filters({ filters, onChange, onReset, strategies = [], tags = [] }) {
   return (
     <div className="ui-panel relative z-20 overflow-visible p-4">
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[170px_160px_160px_160px_180px_auto] xl:items-end xl:justify-start">
-        <div className="min-w-0 xl:w-[180px]">
-          <label className="mb-2 block text-xs font-medium text-white/72">Symbol</label>
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(180px,220px)_minmax(160px,180px)_minmax(160px,180px)_minmax(160px,180px)_minmax(220px,250px)_auto] xl:items-start xl:justify-start">
+        <div className="min-w-0">
+          <label className="mb-2.5 block text-xs font-medium text-white/72">Symbol</label>
           <input
             placeholder="Symbol"
             value={filters.symbol}
@@ -15,8 +15,8 @@ function Filters({ filters, onChange, onReset, strategies = [], tags = [] }) {
           />
         </div>
 
-        <div className="min-w-0 xl:w-[160px]">
-          <label className="mb-2 block text-xs font-medium text-white/72">Tags</label>
+        <div className="min-w-0">
+          <label className="mb-2.5 block text-xs font-medium text-white/72">Tags</label>
           <CustomSelect
             value={filters.tag}
             onChange={(nextValue) => onChange("tag", nextValue)}
@@ -32,8 +32,8 @@ function Filters({ filters, onChange, onReset, strategies = [], tags = [] }) {
           />
         </div>
 
-        <div className="min-w-0 xl:w-[160px]">
-          <label className="mb-2 block text-xs font-medium text-white/72">Side</label>
+        <div className="min-w-0">
+          <label className="mb-2.5 block text-xs font-medium text-white/72">Side</label>
           <CustomSelect
             value={filters.side}
             onChange={(nextValue) => onChange("side", nextValue)}
@@ -47,8 +47,8 @@ function Filters({ filters, onChange, onReset, strategies = [], tags = [] }) {
           />
         </div>
 
-        <div className="min-w-0 xl:w-[160px]">
-          <label className="mb-2 block text-xs font-medium text-white/72">Strategy</label>
+        <div className="min-w-0">
+          <label className="mb-2.5 block text-xs font-medium text-white/72">Strategy</label>
           <CustomSelect
             value={filters.strategy}
             onChange={(nextValue) => onChange("strategy", nextValue)}
@@ -64,8 +64,8 @@ function Filters({ filters, onChange, onReset, strategies = [], tags = [] }) {
           />
         </div>
 
-        <div className="min-w-0 xl:w-[180px]">
-          <label className="mb-2 block text-xs font-medium text-white/72">Date range</label>
+        <div className="min-w-0">
+          <label className="mb-2.5 block text-xs font-medium text-white/72">Date range</label>
           <DateRangePicker
             from={filters.from}
             to={filters.to}
@@ -77,8 +77,8 @@ function Filters({ filters, onChange, onReset, strategies = [], tags = [] }) {
           />
         </div>
 
-        <div className="flex items-center justify-end gap-2 xl:self-center">
-          <button type="button" onClick={onReset} className="ui-button text-sm">
+        <div className="flex items-end justify-end gap-2 xl:pt-[29px]">
+          <button type="button" onClick={onReset} className="ui-button min-h-[44px] px-5 text-sm">
             Reset
           </button>
         </div>

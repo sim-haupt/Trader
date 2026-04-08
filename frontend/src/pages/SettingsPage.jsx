@@ -4,6 +4,7 @@ import LoadingState from "../components/ui/LoadingState";
 import EmptyState from "../components/ui/EmptyState";
 import tagService from "../services/tagService";
 import strategyService from "../services/strategyService";
+import tradeService from "../services/tradeService";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
 
@@ -23,6 +24,7 @@ function SettingsPage() {
   const [savingTag, setSavingTag] = useState(false);
   const [savingStrategy, setSavingStrategy] = useState(false);
   const [savingCommission, setSavingCommission] = useState(false);
+  const [deletingAllTrades, setDeletingAllTrades] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [deletingStrategyId, setDeletingStrategyId] = useState(null);
   const [bulkDeletingTags, setBulkDeletingTags] = useState(false);
@@ -315,6 +317,36 @@ function SettingsPage() {
     }
   }
 
+  async function handleDeleteAllTrades() {
+    const confirmed = await confirm({
+      title: "Delete all trades?",
+      description: "This will permanently remove all of your trades. This action cannot be undone.",
+      confirmLabel: "Delete All Trades",
+      tone: "error"
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingAllTrades(true);
+    setError("");
+
+    try {
+      const result = await tradeService.deleteAllTrades();
+      notify({
+        title: "All trades deleted",
+        description: `Deleted ${result.deletedCount} ${result.deletedCount === 1 ? "trade" : "trades"}.`,
+        tone: "success"
+      });
+    } catch (err) {
+      setError(err.message);
+      notify({ title: "Could not delete all trades", description: err.message, tone: "error" });
+    } finally {
+      setDeletingAllTrades(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       {error && <div className="ui-notice border-coral/20 bg-[#1b1012] text-coral">{error}</div>}
@@ -563,56 +595,75 @@ function SettingsPage() {
               </div>
             </Card>
           ) : (
-            <Card title="COMMISSIONS">
-              <div className="space-y-5">
-                <p className="text-sm text-white/58">
-                  Set default fallback trade costs. These are used whenever a trade does not already contain explicit fees from imports or manual entry.
-                </p>
+            <div className="space-y-6">
+              <Card title="COMMISSIONS">
+                <div className="space-y-5">
+                  <p className="text-sm text-white/58">
+                    Set default fallback trade costs. These are used whenever a trade does not already contain explicit fees from imports or manual entry.
+                  </p>
 
-                <div className="grid max-w-[720px] gap-4 md:grid-cols-2">
-                  <div>
-                    <label className="mb-2 block text-xs font-medium text-white/72">Default commission per trade</label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={defaultCommission}
-                      onChange={(event) => setDefaultCommission(event.target.value)}
-                      className="ui-input"
-                    />
+                  <div className="grid max-w-[720px] gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block text-xs font-medium text-white/72">Default commission per trade</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={defaultCommission}
+                        onChange={(event) => setDefaultCommission(event.target.value)}
+                        className="ui-input"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-xs font-medium text-white/72">Default fees per trade</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={defaultFees}
+                        onChange={(event) => setDefaultFees(event.target.value)}
+                        className="ui-input"
+                      />
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="mb-2 block text-xs font-medium text-white/72">Default fees per trade</label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={defaultFees}
-                      onChange={(event) => setDefaultFees(event.target.value)}
-                      className="ui-input"
-                    />
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleSaveCommission}
+                      disabled={savingCommission}
+                      className="ui-button-solid px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {savingCommission ? "Saving..." : "Save Costs"}
+                    </button>
+                    <span className="rounded-[6px] border border-[var(--line)] bg-black px-3 py-2 text-sm text-white/50">
+                      Current total: $
+                      {(
+                        Number(user?.defaultCommission ?? 0) + Number(user?.defaultFees ?? 0)
+                      ).toFixed(2)}
+                    </span>
                   </div>
                 </div>
+              </Card>
 
-                <div className="flex items-center gap-3">
+              <Card title="TRADE DATA">
+                <div className="space-y-5">
+                  <p className="text-sm text-white/58">
+                    Permanently remove all trades from your workspace. This action cannot be undone.
+                  </p>
+
                   <button
                     type="button"
-                    onClick={handleSaveCommission}
-                    disabled={savingCommission}
-                    className="ui-button-solid px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                    onClick={handleDeleteAllTrades}
+                    disabled={deletingAllTrades}
+                    className="ui-button-danger px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {savingCommission ? "Saving..." : "Save Costs"}
+                    {deletingAllTrades ? "Deleting..." : "Delete All Trades"}
                   </button>
-                  <span className="rounded-[6px] border border-[var(--line)] bg-black px-3 py-2 text-sm text-white/50">
-                    Current total: $
-                    {(
-                      Number(user?.defaultCommission ?? 0) + Number(user?.defaultFees ?? 0)
-                    ).toFixed(2)}
-                  </span>
                 </div>
-              </div>
-            </Card>
+              </Card>
+            </div>
           )}
         </div>
       </Card>

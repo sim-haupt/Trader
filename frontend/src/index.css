@@ -169,9 +169,8 @@ button:disabled {
   }
 
 .top-status {
-    position: sticky;
-    top: 0;
-    z-index: 60;
+    position: relative;
+    z-index: 1;
     border-bottom: 1px solid var(--line);
     background: rgba(0, 0, 0, 0.96);
     backdrop-filter: blur(10px);
@@ -395,6 +394,11 @@ button:disabled {
   }
 
   .ui-sidebar {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    overflow-y: auto;
     border-right: 1px solid var(--line);
     background: #000000;
   }
