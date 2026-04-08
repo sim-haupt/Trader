@@ -19,10 +19,10 @@ function LoadingState({
     <div className={`${wrapperClassName} ${className}`.trim()}>
       <div className="flex flex-col items-center justify-center gap-3 text-center">
         <span
-          className={`${spinnerSize} animate-spin rounded-full border-white/14 border-t-white/80 border-r-white/30`}
+          className={`${spinnerSize} animate-spin rounded-full border-white/10 border-t-[var(--accent-strong)] border-r-white/20`}
           aria-hidden="true"
         />
-        <p className="text-sm font-medium text-white/58">{label}</p>
+        <p className="text-sm font-medium text-white/48">{label}</p>
       </div>
     </div>
   );

@@ -27,7 +27,7 @@ function TradeDetailPage() {
   }
 
   if (error) {
-    return <div className="ui-notice border-coral/30 bg-[#2a1111] text-coral">{error}</div>;
+    return <div className="ui-notice border-coral/20 bg-[#1b1012] text-coral">{error}</div>;
   }
 
   if (!trade) {

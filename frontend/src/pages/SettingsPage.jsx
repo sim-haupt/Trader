@@ -317,7 +317,7 @@ function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      {error && <div className="ui-notice border-coral/30 bg-[#2a1111] text-coral">{error}</div>}
+      {error && <div className="ui-notice border-coral/20 bg-[#1b1012] text-coral">{error}</div>}
 
       <Card
         title="SETTINGS"
@@ -332,7 +332,7 @@ function SettingsPage() {
                 onClick={() => setActiveSection("tags")}
                 className={`flex w-full items-center justify-between rounded-[14px] px-4 py-3 text-left text-sm transition ${
                   activeSection === "tags"
-                    ? "border border-[var(--line-strong)] bg-white/[0.06] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+                    ? "border border-[rgba(124,156,255,0.22)] bg-[rgba(124,156,255,0.1)] text-white shadow-[inset_0_0_0_1px_rgba(124,156,255,0.14)]"
                     : "border border-transparent text-white/64 hover:bg-white/[0.03] hover:text-white"
                 }`}
               >
@@ -344,7 +344,7 @@ function SettingsPage() {
                 onClick={() => setActiveSection("commissions")}
                 className={`flex w-full items-center justify-between rounded-[14px] px-4 py-3 text-left text-sm transition ${
                   activeSection === "commissions"
-                    ? "border border-[var(--line-strong)] bg-white/[0.06] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+                    ? "border border-[rgba(124,156,255,0.22)] bg-[rgba(124,156,255,0.1)] text-white shadow-[inset_0_0_0_1px_rgba(124,156,255,0.14)]"
                     : "border border-transparent text-white/64 hover:bg-white/[0.03] hover:text-white"
                 }`}
               >
@@ -358,7 +358,7 @@ function SettingsPage() {
                 onClick={() => setActiveSection("strategies")}
                 className={`flex w-full items-center justify-between rounded-[14px] px-4 py-3 text-left text-sm transition ${
                   activeSection === "strategies"
-                    ? "border border-[var(--line-strong)] bg-white/[0.06] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+                    ? "border border-[rgba(124,156,255,0.22)] bg-[rgba(124,156,255,0.1)] text-white shadow-[inset_0_0_0_1px_rgba(124,156,255,0.14)]"
                     : "border border-transparent text-white/64 hover:bg-white/[0.03] hover:text-white"
                 }`}
               >
@@ -437,7 +437,7 @@ function SettingsPage() {
                         key={tag.id}
                         className={`ui-panel flex items-center justify-between gap-3 rounded-[16px] px-4 py-3 transition ${
                           selectedTagIds.includes(tag.id)
-                            ? "border-[var(--accent)] bg-[rgba(124,92,255,0.08)]"
+                            ? "border-[rgba(124,156,255,0.28)] bg-[rgba(124,156,255,0.08)]"
                             : ""
                         }`}
                       >
@@ -535,7 +535,7 @@ function SettingsPage() {
                         key={strategy.id}
                         className={`ui-panel flex items-center justify-between gap-3 rounded-[16px] px-4 py-3 transition ${
                           selectedStrategyIds.includes(strategy.id)
-                            ? "border-[var(--accent)] bg-[rgba(124,92,255,0.08)]"
+                            ? "border-[rgba(124,156,255,0.28)] bg-[rgba(124,156,255,0.08)]"
                             : ""
                         }`}
                       >

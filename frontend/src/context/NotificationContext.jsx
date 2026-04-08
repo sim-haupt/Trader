@@ -5,13 +5,13 @@ const NotificationContext = createContext(null);
 function toneStyles(tone) {
   switch (tone) {
     case "success":
-      return "border-mint/30 bg-[#102218]/96 text-mint";
+      return "border-mint/18 bg-[#111814]/96 text-mint";
     case "error":
-      return "border-coral/30 bg-[#2a1111]/96 text-coral";
+      return "border-coral/18 bg-[#1b1012]/96 text-coral";
     case "warning":
-      return "border-gold/30 bg-[#2a2111]/96 text-gold";
+      return "border-gold/18 bg-[#18140d]/96 text-gold";
     default:
-      return "border-[#e5e7eb42] bg-[#171d2b]/96 text-white";
+      return "border-[var(--line-strong)] bg-[#121418]/96 text-white";
   }
 }
 
@@ -77,7 +77,7 @@ export function NotificationProvider({ children }) {
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`pointer-events-auto rounded-[18px] border px-4 py-3 shadow-[0_22px_70px_rgba(3,8,20,0.45)] backdrop-blur ${toneStyles(
+            className={`pointer-events-auto rounded-[16px] border px-4 py-3 shadow-[0_20px_48px_rgba(0,0,0,0.28)] backdrop-blur ${toneStyles(
               toast.tone
             )}`}
           >
@@ -91,7 +91,7 @@ export function NotificationProvider({ children }) {
               <button
                 type="button"
                 onClick={() => dismissToast(toast.id)}
-                className="rounded-[10px] px-2 py-1 text-xs text-current/70 transition hover:bg-white/[0.06] hover:text-current"
+                className="rounded-[10px] px-2 py-1 text-xs text-current/60 transition hover:bg-white/[0.05] hover:text-current"
               >
                 Close
               </button>
@@ -102,7 +102,7 @@ export function NotificationProvider({ children }) {
 
       {confirmState ? (
         <div className="fixed inset-0 z-[150] flex items-center justify-center bg-[#050811]/68 px-4 backdrop-blur-sm">
-          <div className={`w-full max-w-[460px] rounded-[22px] border p-6 shadow-[0_40px_120px_rgba(0,0,0,0.45)] ${toneStyles(confirmState.tone)}`}>
+          <div className={`w-full max-w-[460px] rounded-[20px] border p-6 shadow-[0_28px_80px_rgba(0,0,0,0.36)] ${toneStyles(confirmState.tone)}`}>
             <div className="text-lg font-semibold text-white">{confirmState.title}</div>
             {confirmState.description ? (
               <p className="mt-3 text-sm leading-7 text-white/72">{confirmState.description}</p>

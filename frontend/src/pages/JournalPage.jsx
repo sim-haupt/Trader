@@ -202,7 +202,7 @@ function JournalDayCard({
             positive
               ? "border-mint/25 bg-mint/10 text-mint"
               : negative
-                ? "border-coral/25 bg-[#2a1111] text-coral"
+                ? "border-coral/18 bg-[#1b1012] text-coral"
                 : "border-[#e5e7eb42] bg-white/[0.05] text-mist"
           }`}
         >
@@ -496,7 +496,7 @@ function JournalPage() {
   }
 
   if (error) {
-    return <div className="ui-notice border-coral/30 bg-[#2a1111] text-coral">{error}</div>;
+    return <div className="ui-notice border-coral/20 bg-[#1b1012] text-coral">{error}</div>;
   }
 
   return (

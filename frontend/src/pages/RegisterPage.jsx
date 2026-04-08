@@ -30,13 +30,13 @@ function RegisterPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-10">
-      <div className="w-full max-w-xl rounded-[32px] border border-[var(--line)] bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(255,255,255,0.012)),var(--surface-2)] p-8 shadow-[0_32px_90px_rgba(0,0,0,0.35)] sm:p-10">
+      <div className="w-full max-w-xl rounded-[28px] border border-[var(--line)] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.006)),var(--surface-2)] p-8 shadow-[0_24px_72px_rgba(0,0,0,0.3)] sm:p-10">
         <div className="mb-8 flex items-center justify-between gap-4">
           <div>
-            <p className="ui-title text-xs text-white/42">Start Journaling</p>
+            <p className="ui-title text-xs text-white/38">Start Journaling</p>
             <h1 className="mt-4 text-4xl font-bold tracking-[-0.05em] text-white">Create your account</h1>
           </div>
-          <div className="ui-chip">New</div>
+          <div className="ui-chip">Beta</div>
         </div>
         <p className="mt-3 max-w-lg text-base leading-7 text-white/62">
           Set up your workspace and start building a repeatable review process around every trade.
@@ -70,7 +70,7 @@ function RegisterPage() {
             className="ui-input"
           />
 
-          {error && <p className="ui-notice border-coral/30 bg-[#2a1111] text-coral">{error}</p>}
+          {error && <p className="ui-notice border-coral/20 bg-[#1b1012] text-coral">{error}</p>}
 
           <button
             type="submit"
@@ -83,7 +83,7 @@ function RegisterPage() {
 
         <p className="mt-6 text-base text-white/62">
           Already have an account?{" "}
-          <Link to="/login" className="font-semibold text-white underline decoration-white/20 underline-offset-4">
+          <Link to="/login" className="ui-link font-semibold underline decoration-white/10 underline-offset-4">
             Sign in
           </Link>
         </p>

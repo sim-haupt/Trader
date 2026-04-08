@@ -45,7 +45,7 @@ function TradeTable({
     <div className="ui-table-shell">
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-[var(--line)] text-sm">
-          <thead className="bg-[linear-gradient(180deg,rgba(255,255,255,0.028),rgba(255,255,255,0.012))]">
+          <thead className="bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.006))]">
             <tr className="ui-title text-left text-[11px] text-white/58">
               {onToggleSelection && (
                 <th className="px-4 py-4">
@@ -100,7 +100,7 @@ function TradeTable({
                         onSelectTrade?.(trade);
                       }
                     }}
-                    className="cursor-pointer transition hover:bg-white/[0.025] focus:bg-white/[0.025] focus:outline-none"
+                    className="cursor-pointer transition hover:bg-white/[0.02] focus:bg-white/[0.02] focus:outline-none"
                   >
                     {onToggleSelection && (
                       <td className="px-4 py-4">
@@ -137,7 +137,7 @@ function TradeTable({
                             .map((tag) => (
                               <span
                                 key={`${trade.id}-${tag}`}
-                                className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-white/70"
+                                className="inline-flex items-center rounded-full border border-white/8 bg-white/[0.03] px-2.5 py-1 text-[11px] font-medium text-white/68"
                               >
                                 {tag}
                               </span>

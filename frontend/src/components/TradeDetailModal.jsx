@@ -364,7 +364,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
 
         <div className="space-y-6 p-6">
           {tradeDetailError && (
-            <div className="ui-notice border-coral/30 bg-[#2a1111] text-coral">
+            <div className="ui-notice border-coral/20 bg-[#1b1012] text-coral">
               {tradeDetailError}
             </div>
           )}

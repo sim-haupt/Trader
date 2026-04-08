@@ -333,11 +333,11 @@ function DateRangePicker({
                 onClick={() => handleDayClick(cellDate)}
                 className={`h-10 rounded-[10px] text-sm font-medium transition ${
                   selectedStart || selectedEnd
-                    ? "bg-mint text-black"
+                    ? "bg-[rgba(124,156,255,0.18)] text-white shadow-[inset_0_0_0_1px_rgba(124,156,255,0.3)]"
                     : inRange
-                      ? "bg-mint/12 text-mint"
+                      ? "bg-[rgba(124,156,255,0.1)] text-[var(--accent-strong)]"
                       : currentMonth
-                        ? "text-white/84 hover:bg-white/[0.05]"
+                        ? "text-white/82 hover:bg-white/[0.04]"
                         : "text-white/22"
                 }`}
               >
@@ -358,10 +358,10 @@ function DateRangePicker({
         className={`ui-input flex w-full items-center justify-between gap-3 text-left shadow-none ${buttonClassName}`}
       >
         <span className="flex items-center gap-3">
-          <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4 shrink-0 text-white/42">
+          <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4 shrink-0 text-white/34">
             <path d="M6 2.5v2M14 2.5v2M3.5 7h13M5 4.5h10A1.5 1.5 0 0 1 16.5 6v9A1.5 1.5 0 0 1 15 16.5H5A1.5 1.5 0 0 1 3.5 15V6A1.5 1.5 0 0 1 5 4.5Z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          <span className={from || to ? "text-white" : "text-white/42"}>
+          <span className={from || to ? "text-white/90" : "text-white/38"}>
             {from || to ? getLabel(initialFrom, initialTo) : placeholder}
           </span>
         </span>
@@ -396,14 +396,14 @@ function DateRangePicker({
                       key={option.key}
                       type="button"
                       onClick={() => applyPreset(option.key)}
-                      className={`flex w-full items-center justify-between rounded-[12px] px-4 py-3 text-left text-sm font-medium transition ${
+                        className={`flex w-full items-center justify-between rounded-[12px] px-4 py-3 text-left text-sm font-medium transition ${
                         active
-                          ? "bg-[linear-gradient(180deg,rgba(103,168,255,0.18),rgba(103,168,255,0.1))] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
-                          : "text-white/72 hover:bg-white/[0.04] hover:text-white"
+                          ? "bg-[rgba(124,156,255,0.12)] text-white shadow-[inset_0_0_0_1px_rgba(124,156,255,0.22)]"
+                          : "text-white/68 hover:bg-white/[0.035] hover:text-white"
                       }`}
                     >
                       <span>{option.label}</span>
-                      {active ? <span className="text-mint">✓</span> : null}
+                      {active ? <span className="text-[var(--accent-strong)]">✓</span> : null}
                     </button>
                   );
                 })}

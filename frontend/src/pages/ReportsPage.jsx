@@ -2201,7 +2201,7 @@ function ReportsPage() {
   }
 
   if (error) {
-    return <div className="ui-notice border-coral/30 bg-[#2a1111] text-coral">{error}</div>;
+    return <div className="ui-notice border-coral/20 bg-[#1b1012] text-coral">{error}</div>;
   }
 
   if (trades.length === 0) {
@@ -2299,7 +2299,7 @@ function ReportsPage() {
                   onClick={() => handleTabChange(tab)}
                   className={`text-sm font-medium transition ${
                     tab === activeTab
-                      ? "border-b border-mint pb-3 text-mint"
+                      ? "border-b border-[var(--accent)] pb-3 text-[var(--accent-strong)]"
                       : "pb-3 text-white/62 hover:text-white"
                   }`}
                 >

@@ -566,7 +566,7 @@ function TradesPage() {
         </>
       )}
 
-      {error && <div className="ui-notice border-coral/30 bg-[#2a1111] text-coral">{error}</div>}
+      {error && <div className="ui-notice border-coral/20 bg-[#1b1012] text-coral">{error}</div>}
 
       {!isImportMode ? (
         <Card
@@ -589,7 +589,7 @@ function TradesPage() {
                 type="button"
                 onClick={handleDeleteAll}
                 disabled={loading || trades.length === 0}
-                className="ui-button border-coral/25 bg-coral/10 text-coral"
+                className="ui-button-danger text-sm"
               >
                 Delete All Trades
               </button>

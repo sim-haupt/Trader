@@ -29,11 +29,14 @@ function AppShell() {
       <div className="desktop-frame">
         <header className="top-status">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div className="flex min-w-0 flex-col gap-4 xl:flex-row xl:items-center xl:gap-6">
+            <div className="flex min-w-0 flex-col gap-4 xl:flex-row xl:items-center xl:gap-8">
               <div className="flex items-center gap-3">
-                <img src={brandMark} alt="tradingStats" className="h-11 w-11 rounded-[16px]" />
+                <div className="flex h-11 w-11 items-center justify-center rounded-[14px] border border-[var(--line)] bg-white/[0.03]">
+                  <img src={brandMark} alt="tradingStats" className="h-9 w-9" />
+                </div>
                 <div className="min-w-0">
-                  <p className="text-base font-semibold tracking-[-0.02em] text-white">tradingStats</p>
+                  <p className="text-[15px] font-semibold tracking-[-0.025em] text-white">tradingStats</p>
+                  <p className="text-xs text-white/42">Execution intelligence</p>
                 </div>
               </div>
 
@@ -43,14 +46,14 @@ function AppShell() {
                     key={item.path}
                     to={item.path}
                     className={({ isActive }) =>
-                      `flex items-center gap-2 px-4 py-2.5 text-sm ${
+                      `flex items-center gap-2.5 px-4 py-2.5 text-sm ${
                         isActive
-                          ? "ui-button-solid"
-                          : "ui-button text-white/88"
+                          ? "rounded-[12px] border border-[rgba(124,156,255,0.24)] bg-[rgba(124,156,255,0.12)] text-white shadow-[inset_0_0_0_1px_rgba(124,156,255,0.14)]"
+                          : "ui-button text-white/78"
                       }`
                     }
                   >
-                    <span className={location.pathname.startsWith(item.path) ? "text-[#08111d]" : "text-white/72"}>
+                    <span className={location.pathname.startsWith(item.path) ? "text-[var(--accent-strong)]" : "text-white/46"}>
                       <NavIcon path={item.icon} />
                     </span>
                     {item.label}
@@ -61,14 +64,14 @@ function AppShell() {
                   <NavLink
                     to="/admin"
                     className={({ isActive }) =>
-                      `flex items-center gap-2 px-4 py-2.5 text-sm ${
+                      `flex items-center gap-2.5 px-4 py-2.5 text-sm ${
                         isActive
-                          ? "ui-button-solid"
-                          : "ui-button text-white/88"
+                          ? "rounded-[12px] border border-[rgba(124,156,255,0.24)] bg-[rgba(124,156,255,0.12)] text-white shadow-[inset_0_0_0_1px_rgba(124,156,255,0.14)]"
+                          : "ui-button text-white/78"
                       }`
                     }
                   >
-                    <span className={location.pathname.startsWith("/admin") ? "text-[#08111d]" : "text-white/72"}>
+                    <span className={location.pathname.startsWith("/admin") ? "text-[var(--accent-strong)]" : "text-white/46"}>
                       <NavIcon path="M12 3l7 4v10l-7 4-7-4V7l7-4zm0 5v4m0 4h.01" />
                     </span>
                     Admin
@@ -78,7 +81,7 @@ function AppShell() {
                 <button
                   type="button"
                   onClick={() => navigate("/trades?mode=import")}
-                  className="ui-button-solid px-4 py-2.5 text-sm !bg-[linear-gradient(180deg,#f6d78e,#f4c85c)] !text-[#1a1200] !shadow-[0_14px_30px_rgba(244,200,92,0.2)]"
+                  className="ui-button-solid px-4 py-2.5 text-sm"
                 >
                   Import Trades
                 </button>
@@ -86,13 +89,14 @@ function AppShell() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3 xl:justify-end">
-              <div className="rounded-[14px] border border-[var(--line)] bg-white/[0.035] px-4 py-3 text-right shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+              <div className="rounded-[14px] border border-[var(--line)] bg-white/[0.025] px-4 py-3 text-right shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
                 <p className="text-sm font-semibold text-white">{user?.name}</p>
+                <p className="mt-0.5 text-xs text-white/38">{user?.email}</p>
               </div>
               <button
                 type="button"
                 onClick={logout}
-                className="ui-button px-4 py-2.5 text-sm text-white/92"
+                className="ui-button px-4 py-2.5 text-sm text-white/78"
               >
                 Logout
               </button>

@@ -59,13 +59,13 @@ function CustomSelect({
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >
-        <span className={selectedOption ? "text-white" : "text-white/44"}>
+        <span className={selectedOption ? "text-white/90" : "text-white/38"}>
           {selectedOption?.label ?? placeholder}
         </span>
         <svg
           viewBox="0 0 20 20"
           fill="none"
-          className={`h-4 w-4 shrink-0 text-white/40 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`h-4 w-4 shrink-0 text-white/34 transition-transform ${isOpen ? "rotate-180" : ""}`}
           aria-hidden="true"
         >
           <path d="M5 7.5 10 12.5 15 7.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -98,8 +98,8 @@ function CustomSelect({
                     option.disabled
                       ? "cursor-not-allowed text-white/24"
                       : active
-                        ? "bg-[linear-gradient(180deg,#7fc0ff,#5f9cff)] text-[#08111d] shadow-[0_10px_22px_rgba(103,168,255,0.18)]"
-                        : "text-white/78 hover:bg-white/[0.055] hover:text-white"
+                        ? "bg-[rgba(124,156,255,0.14)] text-white shadow-[inset_0_0_0_1px_rgba(124,156,255,0.28)]"
+                        : "text-white/72 hover:bg-white/[0.04] hover:text-white"
                   }`}
                 >
                   <span>{option.label}</span>
