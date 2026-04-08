@@ -695,6 +695,95 @@ function buildDetailedBreakdownStats(trades, timeframeMinutes, options = {}) {
   };
 }
 
+function buildBucketStats(trades, options = {}) {
+  const defaultCommission = options.defaultCommission || 0;
+  const defaultFees = options.defaultFees || 0;
+  const pnlType = options.pnlType || "NET";
+
+  const makeBuckets = (labels) =>
+    new Map(labels.map((label) => [label, { label, count: 0, pnl: 0 }]));
+
+  const priceBuckets = makeBuckets([
+    "< $2.00",
+    "$2 - $4.99",
+    "$5 - $9.99",
+    "$10 - $19.99",
+    "$20 - $49.99",
+    "$50 - $99.99",
+    "$100 - $199.99",
+    "$200 - $499.99"
+  ]);
+
+  const volumeBuckets = makeBuckets([
+    "20 - 49",
+    "50 - 99",
+    "100 - 499",
+    "500 - 999",
+    "1,000 - 1,999",
+    "2,000 - 2,999"
+  ]);
+
+  const rangeBuckets = makeBuckets([
+    "$0.00 - $0.09",
+    "$0.10 - $0.19",
+    "$0.20 - $0.49",
+    "$0.50 - $0.99",
+    "$1.00 - $1.99",
+    "$2.00 - $4.99",
+    "$5.00+"
+  ]);
+
+  function addToBucket(map, label, pnl) {
+    if (!map.has(label)) {
+      return;
+    }
+    const bucket = map.get(label);
+    bucket.count += 1;
+    bucket.pnl = Number((bucket.pnl + pnl).toFixed(2));
+  }
+
+  for (const trade of trades) {
+    const pnl = getTradePnlByType(trade, pnlType, defaultCommission, defaultFees);
+    const entryPrice = Math.abs(Number(trade.entryPrice ?? 0));
+    const quantity = Math.abs(Number(trade.quantity ?? 0));
+    const exitPrice = Number(trade.exitPrice ?? trade.entryPrice ?? 0);
+    const perTradeRange = Math.abs(exitPrice - Number(trade.entryPrice ?? 0));
+
+    if (entryPrice < 2) addToBucket(priceBuckets, "< $2.00", pnl);
+    else if (entryPrice < 5) addToBucket(priceBuckets, "$2 - $4.99", pnl);
+    else if (entryPrice < 10) addToBucket(priceBuckets, "$5 - $9.99", pnl);
+    else if (entryPrice < 20) addToBucket(priceBuckets, "$10 - $19.99", pnl);
+    else if (entryPrice < 50) addToBucket(priceBuckets, "$20 - $49.99", pnl);
+    else if (entryPrice < 100) addToBucket(priceBuckets, "$50 - $99.99", pnl);
+    else if (entryPrice < 200) addToBucket(priceBuckets, "$100 - $199.99", pnl);
+    else addToBucket(priceBuckets, "$200 - $499.99", pnl);
+
+    if (quantity >= 20 && quantity < 50) addToBucket(volumeBuckets, "20 - 49", pnl);
+    else if (quantity < 100) addToBucket(volumeBuckets, "50 - 99", pnl);
+    else if (quantity < 500) addToBucket(volumeBuckets, "100 - 499", pnl);
+    else if (quantity < 1000) addToBucket(volumeBuckets, "500 - 999", pnl);
+    else if (quantity < 2000) addToBucket(volumeBuckets, "1,000 - 1,999", pnl);
+    else addToBucket(volumeBuckets, "2,000 - 2,999", pnl);
+
+    if (perTradeRange < 0.1) addToBucket(rangeBuckets, "$0.00 - $0.09", pnl);
+    else if (perTradeRange < 0.2) addToBucket(rangeBuckets, "$0.10 - $0.19", pnl);
+    else if (perTradeRange < 0.5) addToBucket(rangeBuckets, "$0.20 - $0.49", pnl);
+    else if (perTradeRange < 1) addToBucket(rangeBuckets, "$0.50 - $0.99", pnl);
+    else if (perTradeRange < 2) addToBucket(rangeBuckets, "$1.00 - $1.99", pnl);
+    else if (perTradeRange < 5) addToBucket(rangeBuckets, "$2.00 - $4.99", pnl);
+    else addToBucket(rangeBuckets, "$5.00+", pnl);
+  }
+
+  return {
+    priceDistribution: Array.from(priceBuckets.values()),
+    pricePerformance: Array.from(priceBuckets.values()),
+    volumeDistribution: Array.from(volumeBuckets.values()),
+    volumePerformance: Array.from(volumeBuckets.values()),
+    rangeDistribution: Array.from(rangeBuckets.values()),
+    rangePerformance: Array.from(rangeBuckets.values())
+  };
+}
+
 function buildWinLossDayRows(summary) {
   return [
     { label: "Total Gain / Loss", value: formatCurrency(summary.totalPnl), tone: summary.totalPnl >= 0 ? "text-mint" : "text-coral" },
@@ -864,75 +953,148 @@ function HorizontalBreakdownChart({
   );
 }
 
-function DetailedBreakdownSection({ stats, timeframeKey, onTimeframeChange }) {
+function DetailedBreakdownSection({
+  stats,
+  bucketStats,
+  timeframeKey,
+  onTimeframeChange,
+  activeTab,
+  onTabChange
+}) {
   return (
     <div className="space-y-5">
-      <div className="grid gap-5 xl:grid-cols-2">
-        <HorizontalBreakdownChart
-          title="TRADE DISTRIBUTION BY DAY OF WEEK"
-          data={stats.weekdayDistribution}
-          dataKey="count"
-          tooltip={<CountTooltip />}
-        />
-        <HorizontalBreakdownChart
-          title="PERFORMANCE BY DAY OF WEEK"
-          data={stats.weekdayPerformance}
-          dataKey="pnl"
-          tooltip={<CurrencyTooltip />}
-          currencyAxis
-          positiveNegative
-        />
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        {["Days/Times", "Price/Volume"].map((item) => (
+          <button
+            key={item}
+            type="button"
+            onClick={() => onTabChange(item)}
+            className={`rounded-[10px] px-3 py-2 text-xs font-medium ${
+              activeTab === item
+                ? "bg-white/[0.08] text-white"
+                : "border border-white/10 bg-white/[0.03] text-white/58"
+            }`}
+          >
+            {item}
+          </button>
+        ))}
       </div>
 
-      <div className="flex items-center gap-3">
-        <span className="ui-title text-[11px] text-white/58">TIMEFRAME</span>
-        <div className="ui-segment">
-          {DETAILED_TIMEFRAME_OPTIONS.map((option) => (
-            <button
-              key={option.key}
-              type="button"
-              data-active={option.key === timeframeKey}
-              onClick={() => onTimeframeChange(option.key)}
-            >
-              {option.label}
-            </button>
-          ))}
+      {activeTab === "Days/Times" ? (
+        <>
+          <div className="grid gap-5 xl:grid-cols-2">
+            <HorizontalBreakdownChart
+              title="TRADE DISTRIBUTION BY DAY OF WEEK"
+              data={stats.weekdayDistribution}
+              dataKey="count"
+              tooltip={<CountTooltip />}
+            />
+            <HorizontalBreakdownChart
+              title="PERFORMANCE BY DAY OF WEEK"
+              data={stats.weekdayPerformance}
+              dataKey="pnl"
+              tooltip={<CurrencyTooltip />}
+              currencyAxis
+              positiveNegative
+            />
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="ui-title text-[11px] text-white/58">TIMEFRAME</span>
+            <div className="ui-segment">
+              {DETAILED_TIMEFRAME_OPTIONS.map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  data-active={option.key === timeframeKey}
+                  onClick={() => onTimeframeChange(option.key)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-5 xl:grid-cols-2">
+            <HorizontalBreakdownChart
+              title="TRADE DISTRIBUTION BY HOUR OF DAY"
+              data={stats.hourDistribution}
+              dataKey="count"
+              tooltip={<CountTooltip />}
+            />
+            <HorizontalBreakdownChart
+              title="PERFORMANCE BY HOUR OF DAY"
+              data={stats.hourPerformance}
+              dataKey="pnl"
+              tooltip={<CurrencyTooltip />}
+              currencyAxis
+              positiveNegative
+            />
+          </div>
+
+          <div className="grid gap-5 xl:grid-cols-2">
+            <HorizontalBreakdownChart
+              title="TRADE DISTRIBUTION BY MONTH OF YEAR"
+              data={stats.monthDistribution}
+              dataKey="count"
+              tooltip={<CountTooltip />}
+            />
+            <HorizontalBreakdownChart
+              title="PERFORMANCE BY MONTH OF YEAR"
+              data={stats.monthPerformance}
+              dataKey="pnl"
+              tooltip={<CurrencyTooltip />}
+              currencyAxis
+              positiveNegative
+            />
+          </div>
+        </>
+      ) : (
+        <div className="grid gap-5 xl:grid-cols-2">
+          <HorizontalBreakdownChart
+            title="TRADE DISTRIBUTION BY PRICE"
+            data={bucketStats.priceDistribution}
+            dataKey="count"
+            tooltip={<CountTooltip />}
+          />
+          <HorizontalBreakdownChart
+            title="PERFORMANCE BY PRICE"
+            data={bucketStats.pricePerformance}
+            dataKey="pnl"
+            tooltip={<CurrencyTooltip />}
+            currencyAxis
+            positiveNegative
+          />
+          <HorizontalBreakdownChart
+            title="DISTRIBUTION BY VOLUME TRADED"
+            data={bucketStats.volumeDistribution}
+            dataKey="count"
+            tooltip={<CountTooltip />}
+          />
+          <HorizontalBreakdownChart
+            title="PERFORMANCE BY VOLUME TRADED"
+            data={bucketStats.volumePerformance}
+            dataKey="pnl"
+            tooltip={<CurrencyTooltip />}
+            currencyAxis
+            positiveNegative
+          />
+          <HorizontalBreakdownChart
+            title="TRADE DISTRIBUTION BY IN-TRADE PRICE RANGE"
+            data={bucketStats.rangeDistribution}
+            dataKey="count"
+            tooltip={<CountTooltip />}
+          />
+          <HorizontalBreakdownChart
+            title="PERFORMANCE BY IN-TRADE PRICE RANGE"
+            data={bucketStats.rangePerformance}
+            dataKey="pnl"
+            tooltip={<CurrencyTooltip />}
+            currencyAxis
+            positiveNegative
+          />
         </div>
-      </div>
-
-      <div className="grid gap-5 xl:grid-cols-2">
-        <HorizontalBreakdownChart
-          title="TRADE DISTRIBUTION BY HOUR OF DAY"
-          data={stats.hourDistribution}
-          dataKey="count"
-          tooltip={<CountTooltip />}
-        />
-        <HorizontalBreakdownChart
-          title="PERFORMANCE BY HOUR OF DAY"
-          data={stats.hourPerformance}
-          dataKey="pnl"
-          tooltip={<CurrencyTooltip />}
-          currencyAxis
-          positiveNegative
-        />
-      </div>
-
-      <div className="grid gap-5 xl:grid-cols-2">
-        <HorizontalBreakdownChart
-          title="TRADE DISTRIBUTION BY MONTH OF YEAR"
-          data={stats.monthDistribution}
-          dataKey="count"
-          tooltip={<CountTooltip />}
-        />
-        <HorizontalBreakdownChart
-          title="PERFORMANCE BY MONTH OF YEAR"
-          data={stats.monthPerformance}
-          dataKey="pnl"
-          tooltip={<CurrencyTooltip />}
-          currencyAxis
-          positiveNegative
-        />
-      </div>
+      )}
     </div>
   );
 }
@@ -1383,6 +1545,7 @@ function ReportsPage() {
   const [groupBFilters, setGroupBFilters] = useState(COMPARE_GROUP_FILTERS);
   const [pnlType, setPnlType] = useState("GROSS");
   const [detailedTimeframeKey, setDetailedTimeframeKey] = useState("60");
+  const [detailedBreakdownTab, setDetailedBreakdownTab] = useState("Days/Times");
   const {
     data: trades,
     loading,
@@ -1446,6 +1609,15 @@ function ReportsPage() {
       pnlType
     });
   }, [filteredTrades, detailedTimeframeKey, user?.defaultCommission, user?.defaultFees, pnlType]);
+  const detailedBucketStats = useMemo(
+    () =>
+      buildBucketStats(filteredTrades, {
+        defaultCommission: user?.defaultCommission ?? 0,
+        defaultFees: user?.defaultFees ?? 0,
+        pnlType
+      }),
+    [filteredTrades, user?.defaultCommission, user?.defaultFees, pnlType]
+  );
   const winVsLossDayStats = useMemo(
     () => buildWinVsLossDaysStats(filteredTrades, {
       defaultCommission: user?.defaultCommission ?? 0,
@@ -1643,8 +1815,11 @@ function ReportsPage() {
           <DetailedStatsTable rows={detailedStats} />
           <DetailedBreakdownSection
             stats={detailedBreakdownStats}
+            bucketStats={detailedBucketStats}
             timeframeKey={detailedTimeframeKey}
             onTimeframeChange={setDetailedTimeframeKey}
+            activeTab={detailedBreakdownTab}
+            onTabChange={setDetailedBreakdownTab}
           />
         </div>
       ) : activeTab === "Win vs Loss Days" ? (
