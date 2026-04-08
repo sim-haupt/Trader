@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -19,6 +19,7 @@ import DateRangePicker from "../components/ui/DateRangePicker";
 import EmptyState from "../components/ui/EmptyState";
 import LoadingState from "../components/ui/LoadingState";
 import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
+import marketDataService from "../services/marketDataService";
 import tagService from "../services/tagService";
 import strategyService from "../services/strategyService";
 import tradeService from "../services/tradeService";
@@ -165,6 +166,42 @@ function formatHourBucket(totalMinutes) {
 
 function formatAxisCurrency(value) {
   return `${value < 0 ? "-" : ""}$${Math.abs(value)}`;
+}
+
+function buildMarketVolumeRequestBounds(entryDateValue) {
+  const entryDate = new Date(entryDateValue);
+  const from = new Date(entryDate);
+  from.setHours(0, 0, 0, 0);
+  const to = new Date(entryDate);
+  to.setHours(23, 59, 59, 999);
+
+  return {
+    from: from.toISOString(),
+    to: to.toISOString()
+  };
+}
+
+function getCumulativeVolumeAtTrade(bars, tradeDateValue) {
+  if (!Array.isArray(bars) || bars.length === 0) {
+    return null;
+  }
+
+  const tradeTimestampSeconds = Math.floor(new Date(tradeDateValue).getTime() / 1000);
+  let cumulativeVolume = 0;
+  let found = false;
+
+  for (const bar of bars) {
+    cumulativeVolume += Number(bar.volume || 0);
+
+    if (Number(bar.time || 0) <= tradeTimestampSeconds) {
+      found = true;
+      continue;
+    }
+
+    break;
+  }
+
+  return found ? cumulativeVolume : null;
 }
 
 function buildOverviewSeries(trades, rangeDays, options = {}) {
@@ -788,23 +825,28 @@ function buildInstrumentStats(trades, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
   const defaultFees = options.defaultFees || 0;
   const pnlType = options.pnlType || "NET";
+  const marketVolumeByTradeId = options.marketVolumeByTradeId || {};
 
   const symbolMap = new Map();
   const volumeBuckets = new Map(
-    ["20-99", "100-499", "500-999", "1,000-1,999", "2,000-4,999", "5,000+"].map((label) => [
+    ["500K-1M", "1M-2.49M", "2.5M-4.9M", "5M-9.9M", "10M-24.9M", "25M+"].map((label) => [
       label,
       { label, count: 0, pnl: 0 }
     ])
   );
 
-  function addToVolumeBucket(quantity, pnl) {
-    let label = "5,000+";
+  function addToVolumeBucket(volumeAtTrade, pnl) {
+    if (!Number.isFinite(volumeAtTrade) || volumeAtTrade < 500_000) {
+      return;
+    }
 
-    if (quantity < 100) label = "20-99";
-    else if (quantity < 500) label = "100-499";
-    else if (quantity < 1000) label = "500-999";
-    else if (quantity < 2000) label = "1,000-1,999";
-    else if (quantity < 5000) label = "2,000-4,999";
+    let label = "25M+";
+
+    if (volumeAtTrade < 1_000_000) label = "500K-1M";
+    else if (volumeAtTrade < 2_500_000) label = "1M-2.49M";
+    else if (volumeAtTrade < 5_000_000) label = "2.5M-4.9M";
+    else if (volumeAtTrade < 10_000_000) label = "5M-9.9M";
+    else if (volumeAtTrade < 25_000_000) label = "10M-24.9M";
 
     const bucket = volumeBuckets.get(label);
     bucket.count += 1;
@@ -828,7 +870,7 @@ function buildInstrumentStats(trades, options = {}) {
     current.trades += 1;
     symbolMap.set(symbol, current);
 
-    addToVolumeBucket(quantity, pnl);
+    addToVolumeBucket(Number(marketVolumeByTradeId[trade.id]), pnl);
   }
 
   const symbols = Array.from(symbolMap.values());
@@ -1648,6 +1690,7 @@ function ReportsPage() {
   const [pnlType, setPnlType] = useState("GROSS");
   const [detailedTimeframeKey, setDetailedTimeframeKey] = useState("60");
   const [detailedBreakdownTab, setDetailedBreakdownTab] = useState("Days/Times");
+  const [marketVolumeByTradeId, setMarketVolumeByTradeId] = useState({});
   const {
     data: trades,
     loading,
@@ -1676,6 +1719,91 @@ function ReportsPage() {
     () => applyReportFilters(trades, filters, activeRange.days),
     [trades, filters, activeRange.days]
   );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadMarketVolumes() {
+      if (filteredTrades.length === 0) {
+        setMarketVolumeByTradeId({});
+        return;
+      }
+
+      const uniqueRequests = new Map();
+
+      for (const trade of filteredTrades) {
+        const symbol = String(trade.symbol || "").toUpperCase();
+        const dayKey = getDayKey(new Date(trade.entryDate));
+        const requestKey = `${symbol}-${dayKey}`;
+
+        if (!uniqueRequests.has(requestKey)) {
+          const bounds = buildMarketVolumeRequestBounds(trade.entryDate);
+          uniqueRequests.set(requestKey, {
+            symbol,
+            ...bounds
+          });
+        }
+      }
+
+      const responses = await Promise.all(
+        Array.from(uniqueRequests.entries()).map(async ([key, request]) => {
+          try {
+            const cached = marketDataService.peekBars({
+              symbol: request.symbol,
+              resolution: "1m",
+              from: request.from,
+              to: request.to,
+              includeExtended: true
+            });
+
+            if (cached) {
+              return [key, cached];
+            }
+
+            const result = await marketDataService.getBars({
+              symbol: request.symbol,
+              resolution: "1m",
+              from: request.from,
+              to: request.to,
+              includeExtended: true
+            });
+
+            return [key, result];
+          } catch {
+            return [key, null];
+          }
+        })
+      );
+
+      if (cancelled) {
+        return;
+      }
+
+      const barsByRequest = new Map(responses);
+      const nextVolumes = {};
+
+      for (const trade of filteredTrades) {
+        const symbol = String(trade.symbol || "").toUpperCase();
+        const dayKey = getDayKey(new Date(trade.entryDate));
+        const requestKey = `${symbol}-${dayKey}`;
+        const marketData = barsByRequest.get(requestKey);
+        const bars = marketData?.bars || [];
+        const cumulativeVolume = getCumulativeVolumeAtTrade(bars, trade.entryDate);
+
+        if (cumulativeVolume !== null) {
+          nextVolumes[trade.id] = cumulativeVolume;
+        }
+      }
+
+      setMarketVolumeByTradeId(nextVolumes);
+    }
+
+    loadMarketVolumes();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [filteredTrades]);
   const reportSeries = useMemo(
     () => buildOverviewSeries(filteredTrades, activeRange.days, {
       defaultCommission: user?.defaultCommission ?? 0,
@@ -1725,9 +1853,10 @@ function ReportsPage() {
       buildInstrumentStats(filteredTrades, {
         defaultCommission: user?.defaultCommission ?? 0,
         defaultFees: user?.defaultFees ?? 0,
-        pnlType
+        pnlType,
+        marketVolumeByTradeId
       }),
-    [filteredTrades, user?.defaultCommission, user?.defaultFees, pnlType]
+    [filteredTrades, user?.defaultCommission, user?.defaultFees, pnlType, marketVolumeByTradeId]
   );
   const winVsLossDayStats = useMemo(
     () => buildWinVsLossDaysStats(filteredTrades, {
