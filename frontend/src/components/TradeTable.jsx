@@ -52,12 +52,11 @@ function TradeTable({
                 <>
                   {startsNewDay ? (
                     <tr key={`${trade.id}-day-divider`} aria-hidden="true">
-                      <td colSpan={columnCount} className="px-4 pt-4">
+                      <td colSpan={columnCount} className="px-4 pt-5 pb-3">
                         <div className="flex items-center gap-3">
                           <span className="ui-title rounded-full border border-[var(--line-strong)] bg-white/[0.04] px-3 py-1.5 text-[10px] text-white/66">
                             {currentDate}
                           </span>
-                          <div className="h-px flex-1 bg-[linear-gradient(90deg,rgba(229,231,235,0.2),rgba(229,231,235,0.03))]" />
                         </div>
                       </td>
                     </tr>

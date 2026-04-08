@@ -4,8 +4,8 @@ import DateRangePicker from "./ui/DateRangePicker";
 function Filters({ filters, onChange, onReset, onApply, strategies = [] }) {
   return (
     <div className="ui-panel relative z-20 overflow-visible p-4">
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(180px,1fr)_170px_170px_190px_auto] xl:items-end">
-        <div className="min-w-0">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[180px_160px_160px_180px_auto] xl:items-end xl:justify-start">
+        <div className="min-w-0 xl:w-[180px]">
           <label className="mb-2 block text-xs font-medium text-white/72">Symbol</label>
           <input
             placeholder="Symbol"
@@ -15,7 +15,7 @@ function Filters({ filters, onChange, onReset, onApply, strategies = [] }) {
           />
         </div>
 
-        <div className="min-w-0">
+        <div className="min-w-0 xl:w-[160px]">
           <label className="mb-2 block text-xs font-medium text-white/72">Side</label>
           <CustomSelect
             value={filters.side}
@@ -30,7 +30,7 @@ function Filters({ filters, onChange, onReset, onApply, strategies = [] }) {
           />
         </div>
 
-        <div className="min-w-0">
+        <div className="min-w-0 xl:w-[160px]">
           <label className="mb-2 block text-xs font-medium text-white/72">Strategy</label>
           <CustomSelect
             value={filters.strategy}
@@ -47,7 +47,7 @@ function Filters({ filters, onChange, onReset, onApply, strategies = [] }) {
           />
         </div>
 
-        <div className="min-w-0">
+        <div className="min-w-0 xl:w-[180px]">
           <label className="mb-2 block text-xs font-medium text-white/72">Date range</label>
           <DateRangePicker
             from={filters.from}

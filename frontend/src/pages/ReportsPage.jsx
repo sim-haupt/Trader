@@ -929,8 +929,8 @@ function CompareGroupCard({ title, filters, onChange, tags, strategies, matchedC
         <p className="mt-1 text-xs text-white/44">Trades matches: {matchedCount}</p>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(140px,1fr)_150px_150px_140px_140px_180px] xl:items-end">
-        <div className="min-w-0">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[180px_160px_160px_160px_160px_180px] xl:items-end xl:justify-start">
+        <div className="min-w-0 xl:w-[180px]">
           <label className="mb-2 block text-xs font-medium text-white/72">Symbol</label>
           <input
             value={filters.symbol}
@@ -939,7 +939,7 @@ function CompareGroupCard({ title, filters, onChange, tags, strategies, matchedC
             className="ui-input"
           />
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 xl:w-[160px]">
           <label className="mb-2 block text-xs font-medium text-white/72">Tags</label>
           <CustomSelect
             value={filters.tag}
@@ -952,7 +952,7 @@ function CompareGroupCard({ title, filters, onChange, tags, strategies, matchedC
             buttonClassName="!py-3"
           />
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 xl:w-[160px]">
           <label className="mb-2 block text-xs font-medium text-white/72">Strategy</label>
           <CustomSelect
             value={filters.strategy}
@@ -965,7 +965,7 @@ function CompareGroupCard({ title, filters, onChange, tags, strategies, matchedC
             buttonClassName="!py-3"
           />
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 xl:w-[160px]">
           <label className="mb-2 block text-xs font-medium text-white/72">Side</label>
           <CustomSelect
             value={filters.side}
@@ -979,7 +979,7 @@ function CompareGroupCard({ title, filters, onChange, tags, strategies, matchedC
             buttonClassName="!py-3"
           />
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 xl:w-[160px]">
           <label className="mb-2 block text-xs font-medium text-white/72">Trade P&L</label>
           <CustomSelect
             value={filters.tradePnl}
@@ -994,7 +994,7 @@ function CompareGroupCard({ title, filters, onChange, tags, strategies, matchedC
             buttonClassName="!py-3"
           />
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 xl:w-[180px]">
           <label className="mb-2 block text-xs font-medium text-white/72">Date range</label>
           <DateRangePicker
             from={filters.from}
@@ -1295,8 +1295,8 @@ function ReportsPage() {
     <div className="space-y-5">
       <Card className="relative z-20 overflow-visible">
         <div className="space-y-5">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(170px,1fr)_160px_170px_140px_190px_auto] xl:items-end">
-            <div className="min-w-0">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[180px_160px_160px_160px_180px_auto] xl:items-end xl:justify-start">
+            <div className="min-w-0 xl:w-[180px]">
               <label className="mb-2 block text-xs font-medium text-white/72">Symbol</label>
               <input
                 value={filters.symbol}
@@ -1305,7 +1305,7 @@ function ReportsPage() {
                 className="ui-input"
               />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 xl:w-[160px]">
               <label className="mb-2 block text-xs font-medium text-white/72">Tags</label>
               <CustomSelect
                 value={filters.tag}
@@ -1318,7 +1318,7 @@ function ReportsPage() {
                 buttonClassName="!py-3"
               />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 xl:w-[160px]">
               <label className="mb-2 block text-xs font-medium text-white/72">Strategy</label>
               <CustomSelect
                 value={filters.strategy}
@@ -1331,7 +1331,7 @@ function ReportsPage() {
                 buttonClassName="!py-3"
               />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 xl:w-[160px]">
               <label className="mb-2 block text-xs font-medium text-white/72">Side</label>
               <CustomSelect
                 value={filters.side}
@@ -1345,7 +1345,7 @@ function ReportsPage() {
                 buttonClassName="!py-3"
               />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 xl:w-[180px]">
               <label className="mb-2 block text-xs font-medium text-white/72">Date range</label>
               <DateRangePicker
                 from={filters.from}
