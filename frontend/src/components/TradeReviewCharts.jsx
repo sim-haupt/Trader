@@ -4,6 +4,7 @@ import {
   ColorType,
   HistogramSeries,
   LineSeries,
+  LineStyle,
   createChart
 } from "lightweight-charts";
 import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
@@ -367,7 +368,7 @@ function PremiumChart({
     volumeSeries.setData(buildVolumeData(actualBars));
 
     const ema9Series = mainChart.addSeries(LineSeries, {
-      color: "#60a5fa",
+      color: "#22d3ee",
       lineWidth: 2,
       priceLineVisible: false,
       lastValueVisible: true
@@ -375,17 +376,18 @@ function PremiumChart({
     ema9Series.setData(ema9Data);
 
     const ema20Series = mainChart.addSeries(LineSeries, {
-      color: "#3b82f6",
+      color: "#8b5cf6",
       lineWidth: 2,
-      lineStyle: 2,
+      lineStyle: LineStyle.Solid,
       priceLineVisible: false,
       lastValueVisible: true
     });
     ema20Series.setData(ema20Data);
 
     const vwapSeries = mainChart.addSeries(LineSeries, {
-      color: "#38bdf8",
+      color: "#f59e0b",
       lineWidth: 2,
+      lineStyle: LineStyle.Dotted,
       priceLineVisible: false,
       lastValueVisible: true
     });
