@@ -13,6 +13,7 @@ body[data-theme="dark"] {
   --surface-2: #050505;
   --surface-3: #0b0b0b;
   --surface-soft: #0c0c0c;
+  --surface-inset: #ffffff0d;
   --line: rgb(31, 31, 31);
   --line-strong: rgb(31, 31, 31);
   --line-soft: rgb(31, 31, 31);
@@ -182,7 +183,7 @@ button:disabled {
   .ui-panel {
     border: 1px solid var(--line);
     border-radius: var(--radius-lg);
-    background: var(--surface-1);
+    background: var(--surface-inset);
     box-shadow: none;
     backdrop-filter: none;
   }
@@ -432,7 +433,7 @@ button:disabled {
 
   .ui-content {
     min-width: 0;
-    background-color: #ffffff0d;
+    background: #000000;
   }
 
   .ui-content-body {
