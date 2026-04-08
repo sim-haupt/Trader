@@ -30,6 +30,7 @@ export const DEFAULT_DASHBOARD_LAYOUT = [
 ];
 
 const WIDGET_IDS = new Set(DEFAULT_DASHBOARD_LAYOUT.map((item) => item.id));
+const FIXED_TOOLTIP_POSITION = { x: 16, y: 16 };
 
 export function normalizeDashboardLayout(layout) {
   const safeLayout = Array.isArray(layout) ? layout : [];
@@ -269,7 +270,7 @@ function AnalyticsCharts({
                   <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                  <Tooltip contentStyle={tooltipStyle()} />
+                  <Tooltip contentStyle={tooltipStyle()} position={FIXED_TOOLTIP_POSITION} />
                   <Area type="monotone" dataKey="equity" stroke="#18c87a" strokeWidth={3} fill="url(#equityGradient)" />
                 </AreaChart>
               </ResponsiveContainer>
@@ -384,7 +385,7 @@ function AnalyticsCharts({
                 <CartesianGrid stroke="rgba(255,255,255,0.05)" horizontal={false} />
                 <XAxis type="number" axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} tick={{ fill: "#c6cedb", fontSize: 11 }} />
                 <YAxis type="category" dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} width={48} />
-                <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<ChartTooltipContent />} />
+                <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<ChartTooltipContent />} position={FIXED_TOOLTIP_POSITION} />
                 <Bar dataKey="pnl" barSize={18}>
                   {hourlyPerformance.map((entry) => (
                     <Cell key={entry.label} fill={entry.pnl >= 0 ? "#56f0a9" : "#ff6b6b"} />
@@ -406,7 +407,7 @@ function AnalyticsCharts({
                 <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                 <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} minTickGap={18} />
                 <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<ChartTooltipContent />} />
+                <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<ChartTooltipContent />} position={FIXED_TOOLTIP_POSITION} />
                 <Bar dataKey="grossPnl" barSize={20}>
                   {grossDailyThirtyDays.map((entry) => (
                     <Cell key={entry.date} fill={entry.grossPnl >= 0 ? "#56f0a9" : "#ff6b6b"} />
@@ -428,7 +429,7 @@ function AnalyticsCharts({
                 <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                 <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} minTickGap={18} />
                 <YAxis axisLine={false} tickLine={false} domain={[0, 100]} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<ChartTooltipContent />} />
+                <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<ChartTooltipContent />} position={FIXED_TOOLTIP_POSITION} />
                 <Bar dataKey="winRate" barSize={20}>
                   {winRateThirtyDays.map((entry) => (
                     <Cell key={entry.date} fill="#56f0a9" />
@@ -450,7 +451,7 @@ function AnalyticsCharts({
                 <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                 <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} minTickGap={18} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<ChartTooltipContent />} />
+                <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<ChartTooltipContent />} position={FIXED_TOOLTIP_POSITION} />
                 <Bar dataKey="volume" barSize={20}>
                   {dailyVolumeThirtyDays.map((entry) => (
                     <Cell key={entry.date} fill="#56f0a9" />

@@ -148,6 +148,7 @@ const CurrencyTooltip = buildChartTooltip("currency");
 const PercentTooltip = buildChartTooltip("percent");
 const VolumeTooltip = buildChartTooltip("volume");
 const CountTooltip = buildChartTooltip("count");
+const FIXED_TOOLTIP_POSITION = { x: 16, y: 16 };
 
 const WEEKDAY_ORDER = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 const MONTH_ORDER = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -932,7 +933,7 @@ function HorizontalBreakdownChart({
               width={yAxisWidth}
               tick={{ fill: "#c6cedb", fontSize: 11 }}
             />
-            <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={tooltip} />
+            <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={tooltip} position={FIXED_TOOLTIP_POSITION} />
             <Bar dataKey={dataKey} radius={[0, 6, 6, 0]} barSize={18}>
               {data.map((entry) => (
                 <Cell
@@ -1161,7 +1162,7 @@ function WinVsLossDaysSection({ stats }) {
                   <Cell key={entry.name} fill={entry.fill} />
                 ))}
               </Pie>
-              <Tooltip content={<PercentTooltip />} />
+              <Tooltip content={<PercentTooltip />} position={FIXED_TOOLTIP_POSITION} />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -1191,7 +1192,7 @@ function WinVsLossDaysSection({ stats }) {
                 <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                 <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                <Tooltip />
+                <Tooltip content={<CountTooltip />} position={FIXED_TOOLTIP_POSITION} />
                 <Bar dataKey="winningDays" fill="#56f0a9" radius={[6, 6, 0, 0]} />
                 <Bar dataKey="losingDays" fill="#ffc14d" radius={[6, 6, 0, 0]} />
               </BarChart>
@@ -1206,7 +1207,7 @@ function WinVsLossDaysSection({ stats }) {
                 <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                 <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
                 <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                <Tooltip content={<CurrencyTooltip />} />
+                <Tooltip content={<CurrencyTooltip />} position={FIXED_TOOLTIP_POSITION} />
                 <Bar dataKey="winningPnl" fill="#56f0a9" radius={[6, 6, 0, 0]} />
                 <Bar dataKey="losingPnl" fill="#ff6b6b" radius={[6, 6, 0, 0]} />
               </BarChart>
@@ -1850,7 +1851,7 @@ function ReportsPage() {
                   <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} minTickGap={18} />
                   <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                  <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<CurrencyTooltip />} />
+                  <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<CurrencyTooltip />} position={FIXED_TOOLTIP_POSITION} />
                   <Bar dataKey="grossPnl" barSize={20}>
                     {reportSeries.grossDaily.map((entry) => (
                       <Cell key={entry.date} fill={entry.grossPnl >= 0 ? "#56f0a9" : "#ff6b6b"} />
@@ -1868,7 +1869,7 @@ function ReportsPage() {
                   <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} minTickGap={18} />
                   <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                  <Tooltip content={<CurrencyTooltip />} />
+                  <Tooltip content={<CurrencyTooltip />} position={FIXED_TOOLTIP_POSITION} />
                   <Line type="monotone" dataKey="cumulativeGrossPnl" stroke="#18c87a" strokeWidth={3} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
@@ -1882,7 +1883,7 @@ function ReportsPage() {
                   <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} minTickGap={18} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                  <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<VolumeTooltip />} />
+                  <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<VolumeTooltip />} position={FIXED_TOOLTIP_POSITION} />
                   <Bar dataKey="volume" barSize={20} fill="#56f0a9" />
                 </BarChart>
               </ResponsiveContainer>
@@ -1896,7 +1897,7 @@ function ReportsPage() {
                   <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} minTickGap={18} />
                   <YAxis axisLine={false} tickLine={false} domain={[0, 100]} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                  <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<PercentTooltip />} />
+                  <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<PercentTooltip />} position={FIXED_TOOLTIP_POSITION} />
                   <Bar dataKey="winRate" barSize={20} fill="#56f0a9" />
                 </BarChart>
               </ResponsiveContainer>
