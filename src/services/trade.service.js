@@ -3,6 +3,7 @@ const ApiError = require("../utils/ApiError");
 const buildTradePayload = require("../utils/buildTradePayload");
 const tagService = require("./tag.service");
 const strategyService = require("./strategy.service");
+const { refreshTradeImportContext } = require("./market-data.service");
 
 const adminTradeInclude = {
   user: {
@@ -123,7 +124,7 @@ async function getTradeTags(actor) {
 }
 
 async function getTradeById(actor, tradeId) {
-  const trade = await prisma.trade.findFirst({
+  let trade = await prisma.trade.findFirst({
     where: {
       id: tradeId,
       ...(actor.role === "ADMIN" ? {} : { userId: actor.id })
@@ -133,6 +134,21 @@ async function getTradeById(actor, tradeId) {
 
   if (!trade) {
     throw new ApiError(404, "Trade not found");
+  }
+
+  if (trade.marketDataNeedsBackfill) {
+    try {
+      await refreshTradeImportContext(trade);
+      trade = await prisma.trade.findFirst({
+        where: {
+          id: tradeId,
+          ...(actor.role === "ADMIN" ? {} : { userId: actor.id })
+        },
+        include: tradeDetailInclude
+      });
+    } catch (error) {
+      // Keep the trade accessible even if the deferred SIP backfill is not available yet.
+    }
   }
 
   return trade;

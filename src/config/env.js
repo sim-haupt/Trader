@@ -18,5 +18,7 @@ module.exports = {
   alpacaApiKeyId: process.env.APCA_API_KEY_ID || "",
   alpacaSecretKey: process.env.APCA_API_SECRET_KEY || "",
   alpacaDataUrl: process.env.ALPACA_DATA_URL || "https://data.alpaca.markets",
-  alpacaFeed: process.env.ALPACA_DATA_FEED || "iex"
+  alpacaFeed: process.env.ALPACA_DATA_FEED || "iex",
+  tradeMarketBackfillDelayMs:
+    Number(process.env.TRADE_MARKET_BACKFILL_DELAY_MS) || 2 * 60 * 60 * 1000
 };

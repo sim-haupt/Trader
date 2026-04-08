@@ -24,8 +24,14 @@ function buildTradePayload(data, userId) {
   const entryRelativeVolume = toNumber(data.entryRelativeVolume);
   const instrumentFloat = toNumber(data.instrumentFloat);
   const entryPriorCloseDiffPercent = toNumber(data.entryPriorCloseDiffPercent);
+  const hasEntryVolume = Object.prototype.hasOwnProperty.call(data, "entryVolume");
+  const hasEntryRelativeVolume = Object.prototype.hasOwnProperty.call(data, "entryRelativeVolume");
+  const hasInstrumentFloat = Object.prototype.hasOwnProperty.call(data, "instrumentFloat");
+  const hasEntryPriorCloseDiffPercent = Object.prototype.hasOwnProperty.call(data, "entryPriorCloseDiffPercent");
+  const hasMarketDataFeed = Object.prototype.hasOwnProperty.call(data, "marketDataFeed");
+  const hasMarketDataNeedsBackfill = Object.prototype.hasOwnProperty.call(data, "marketDataNeedsBackfill");
 
-  return {
+  const payload = {
     userId,
     symbol: data.symbol.toUpperCase(),
     side: data.side,
@@ -40,13 +46,35 @@ function buildTradePayload(data, userId) {
     notes: data.notes ?? null,
     grossPnl,
     netPnl,
-    entryVolume,
-    entryRelativeVolume,
-    instrumentFloat,
-    entryPriorCloseDiffPercent,
     reportedExecutionCount:
       reportedExecutionCount === null ? null : Math.max(0, Math.round(reportedExecutionCount))
   };
+
+  if (hasEntryVolume) {
+    payload.entryVolume = entryVolume;
+  }
+
+  if (hasEntryRelativeVolume) {
+    payload.entryRelativeVolume = entryRelativeVolume;
+  }
+
+  if (hasInstrumentFloat) {
+    payload.instrumentFloat = instrumentFloat;
+  }
+
+  if (hasEntryPriorCloseDiffPercent) {
+    payload.entryPriorCloseDiffPercent = entryPriorCloseDiffPercent;
+  }
+
+  if (hasMarketDataFeed) {
+    payload.marketDataFeed = data.marketDataFeed || null;
+  }
+
+  if (hasMarketDataNeedsBackfill) {
+    payload.marketDataNeedsBackfill = Boolean(data.marketDataNeedsBackfill);
+  }
+
+  return payload;
 }
 
 module.exports = buildTradePayload;

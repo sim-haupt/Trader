@@ -71,6 +71,8 @@ model Trade {
   entryRelativeVolume  Decimal?         @db.Decimal(18, 4)
   instrumentFloat      Decimal?         @db.Decimal(20, 4)
   entryPriorCloseDiffPercent Decimal?   @db.Decimal(18, 4)
+  marketDataFeed       String?
+  marketDataNeedsBackfill Boolean       @default(false)
   reportedExecutionCount Int?
   createdAt            DateTime         @default(now())
   updatedAt            DateTime         @updatedAt

@@ -4,7 +4,10 @@ const prisma = require("../config/prisma");
 const buildTradePayload = require("../utils/buildTradePayload");
 const ApiError = require("../utils/ApiError");
 const { validateImportTradeRow } = require("../validators/trade.schemas");
-const { getTradeImportContext } = require("./market-data.service");
+const {
+  getTradeImportContext,
+  scheduleTradeImportContextBackfill
+} = require("./market-data.service");
 const parseNewYorkLocalDateTime = require("../utils/parseMarketDateTime");
 const {
   normalizeImportedCsvRow,
@@ -217,6 +220,18 @@ async function persistImportedTrades(userId, sourceName, validTrades, invalidRow
   }
 
   await prisma.$transaction(operations);
+
+  tradeRows.forEach((trade) => {
+    if (trade.payload.marketDataNeedsBackfill) {
+      scheduleTradeImportContextBackfill({
+        id: trade.payload.id,
+        symbol: trade.payload.symbol,
+        entryDate: trade.payload.entryDate,
+        entryPrice: trade.payload.entryPrice,
+        marketDataNeedsBackfill: trade.payload.marketDataNeedsBackfill
+      });
+    }
+  });
 
   return {
     importId,

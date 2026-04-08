@@ -100,7 +100,7 @@ function TradeTable({
                         onSelectTrade?.(trade);
                       }
                     }}
-                    className="cursor-pointer transition hover:bg-white/[0.02] focus:bg-white/[0.02] focus:outline-none"
+                    className="cursor-pointer bg-[rgba(255,255,255,0.05)] transition hover:bg-white/[0.08] focus:bg-white/[0.08] focus:outline-none"
                   >
                     {onToggleSelection && (
                       <td className="px-4 py-4">

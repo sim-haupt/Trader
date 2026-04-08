@@ -204,9 +204,9 @@ function JournalDayCard({
         <div
           className={`rounded-[6px] border px-3 py-2 text-sm font-semibold ${
             positive
-              ? "border-mint/25 bg-mint/10 text-mint"
+              ? "border-mint bg-mint/10 text-mint"
               : negative
-                ? "border-coral/18 bg-[#1b1012] text-coral"
+                ? "border-coral bg-[#1b1012] text-coral"
                 : "border-[#e5e7eb42] bg-white/[0.05] text-mist"
           }`}
         >
@@ -329,7 +329,7 @@ function JournalDayCard({
                 {day.trades.map((trade) => (
                   <tr
                     key={trade.id}
-                    className="cursor-pointer border-t border-[var(--line)] text-white/82 transition hover:bg-white/[0.03]"
+                    className="cursor-pointer border-t border-[var(--line)] bg-[rgba(255,255,255,0.05)] text-white/82 transition hover:bg-white/[0.08]"
                     onClick={() => onOpenTrade(trade.id)}
                   >
                     <td className="px-4 py-3 whitespace-nowrap">{trade.entryTimeLabel}</td>

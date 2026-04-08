@@ -1,10 +1,12 @@
 const env = require("../config/env");
 const ApiError = require("../utils/ApiError");
+const prisma = require("../config/prisma");
 
 const ALPACA_BASE_URL = String(env.alpacaDataUrl || "https://data.alpaca.markets").replace(/\/$/, "");
 const minuteBarsCache = new Map();
 const dailyBarsCache = new Map();
 const SIP_DELAY_MS = 15 * 60 * 1000;
+const backfillTimers = new Map();
 
 function normalizeSymbol(symbol) {
   return String(symbol || "").trim().toUpperCase().replace(/^NASDAQ:|^NYSE:|^AMEX:/, "");
@@ -73,18 +75,18 @@ async function alpacaFetch(path, params = {}) {
   return response.json();
 }
 
-function shouldUseSip(endTime) {
-  const timestamp = new Date(endTime).getTime();
-
-  if (Number.isNaN(timestamp)) {
-    return false;
-  }
-
-  return timestamp <= Date.now() - SIP_DELAY_MS;
+function canFallbackToNextFeed(error) {
+  return [401, 402, 403, 422, 429].includes(error?.statusCode);
 }
 
-function getPreferredFeed(endTime) {
-  return shouldUseSip(endTime) ? "sip" : env.alpacaFeed;
+function getFeedCandidates() {
+  const candidates = ["sip"];
+
+  if (env.alpacaFeed && env.alpacaFeed !== "sip") {
+    candidates.push(env.alpacaFeed);
+  }
+
+  return candidates;
 }
 
 function normalizeBarPayload(bar) {
@@ -101,13 +103,7 @@ function normalizeBarPayload(bar) {
 }
 
 async function fetchBars(symbol, timeframe, from, to, cache) {
-  const preferredFeed = getPreferredFeed(to);
-  const cacheKey = `${symbol}:${timeframe}:${new Date(from).toISOString()}:${new Date(to).toISOString()}:${preferredFeed}`;
-
-  if (cache.has(cacheKey)) {
-    return cache.get(cacheKey);
-  }
-
+  const feeds = getFeedCandidates();
   async function fetchBarsWithFeed(feed) {
     let pageToken;
     const bars = [];
@@ -132,33 +128,52 @@ async function fetchBars(symbol, timeframe, from, to, cache) {
     return bars;
   }
 
-  let bars;
+  let lastError = null;
 
-  try {
-    bars = await fetchBarsWithFeed(preferredFeed);
-  } catch (error) {
-    const canFallbackToIex =
-      preferredFeed === "sip" &&
-      env.alpacaFeed !== "sip" &&
-      [401, 402, 403, 422, 429].includes(error?.statusCode);
+  for (let index = 0; index < feeds.length; index += 1) {
+    const feed = feeds[index];
+    const cacheKey = `${symbol}:${timeframe}:${new Date(from).toISOString()}:${new Date(to).toISOString()}:${feed}`;
 
-    if (!canFallbackToIex) {
-      throw error;
+    if (cache.has(cacheKey)) {
+      return {
+        bars: cache.get(cacheKey),
+        feed
+      };
     }
 
-    bars = await fetchBarsWithFeed(env.alpacaFeed);
+    try {
+      const bars = await fetchBarsWithFeed(feed);
+      cache.set(cacheKey, bars);
+      return {
+        bars,
+        feed
+      };
+    } catch (error) {
+      lastError = error;
+
+      if (index === feeds.length - 1 || !canFallbackToNextFeed(error)) {
+        throw error;
+      }
+    }
   }
 
-  cache.set(cacheKey, bars);
-  return bars;
+  throw lastError;
 }
 
-async function fetchMinuteBars(symbol, from, to) {
+async function fetchMinuteBarsWithMeta(symbol, from, to) {
   return fetchBars(symbol, "1Min", from, to, minuteBarsCache);
 }
 
-async function fetchDailyBars(symbol, from, to) {
+async function fetchDailyBarsWithMeta(symbol, from, to) {
   return fetchBars(symbol, "1Day", from, to, dailyBarsCache);
+}
+
+async function fetchMinuteBars(symbol, from, to) {
+  return (await fetchMinuteBarsWithMeta(symbol, from, to)).bars;
+}
+
+async function fetchDailyBars(symbol, from, to) {
+  return (await fetchDailyBarsWithMeta(symbol, from, to)).bars;
 }
 
 function calculateEntryVolume(minuteBars, entryDate) {
@@ -245,30 +260,104 @@ async function getTradeImportContext({ symbol, entryDate, entryPrice }) {
   const priorSessionLimit = 20;
 
   try {
-    const [minuteBars, dailyBars] = await Promise.all([
-      fetchMinuteBars(normalizedSymbol, dayStart, dayEnd),
-      fetchDailyBars(normalizedSymbol, dailyHistoryStart, dayEnd)
+    const [minuteBarsResult, dailyBarsResult] = await Promise.all([
+      fetchMinuteBarsWithMeta(normalizedSymbol, dayStart, dayEnd),
+      fetchDailyBarsWithMeta(normalizedSymbol, dailyHistoryStart, dayEnd)
     ]);
 
+    const minuteFeed = minuteBarsResult.feed || null;
+    const dailyFeed = dailyBarsResult.feed || null;
+    const minuteBars = minuteBarsResult.bars || [];
+    const dailyBars = dailyBarsResult.bars || [];
     const priorDailyBars = getPriorSessionBars(dailyBars, parsedEntryDate).slice(-priorSessionLimit);
     const entryVolume = calculateEntryVolume(minuteBars, parsedEntryDate);
     const entryRelativeVolume = calculateRelativeVolume(entryVolume, priorDailyBars);
     const entryPriorCloseDiffPercent = calculatePriorCloseDiffPercent(parsedEntryPrice, priorDailyBars);
+    const resolvedFeed = minuteFeed === dailyFeed ? minuteFeed : minuteFeed || dailyFeed;
+    const marketDataNeedsBackfill = resolvedFeed !== "sip";
 
     return {
       entryVolume: toRoundedNumber(entryVolume),
       entryRelativeVolume: toRoundedNumber(entryRelativeVolume),
       instrumentFloat: null,
-      entryPriorCloseDiffPercent: toRoundedNumber(entryPriorCloseDiffPercent)
+      entryPriorCloseDiffPercent: toRoundedNumber(entryPriorCloseDiffPercent),
+      marketDataFeed: resolvedFeed,
+      marketDataNeedsBackfill
     };
   } catch (error) {
     return {
       entryVolume: null,
       entryRelativeVolume: null,
       instrumentFloat: null,
-      entryPriorCloseDiffPercent: null
+      entryPriorCloseDiffPercent: null,
+      marketDataFeed: null,
+      marketDataNeedsBackfill: true
     };
   }
+}
+
+function shouldAttemptBackfill(trade) {
+  if (!trade?.marketDataNeedsBackfill || !trade?.entryDate) {
+    return false;
+  }
+
+  const timestamp = new Date(trade.entryDate).getTime();
+
+  if (Number.isNaN(timestamp)) {
+    return false;
+  }
+
+  return timestamp <= Date.now() - SIP_DELAY_MS;
+}
+
+async function refreshTradeImportContext(trade) {
+  if (!trade?.id || !shouldAttemptBackfill(trade)) {
+    return trade;
+  }
+
+  const nextContext = await getTradeImportContext({
+    symbol: trade.symbol,
+    entryDate: trade.entryDate,
+    entryPrice: trade.entryPrice
+  });
+
+  const updatedTrade = await prisma.trade.update({
+    where: { id: trade.id },
+    data: {
+      entryVolume: nextContext.entryVolume,
+      entryRelativeVolume: nextContext.entryRelativeVolume,
+      instrumentFloat: nextContext.instrumentFloat,
+      entryPriorCloseDiffPercent: nextContext.entryPriorCloseDiffPercent,
+      marketDataFeed: nextContext.marketDataFeed,
+      marketDataNeedsBackfill: nextContext.marketDataNeedsBackfill
+    }
+  });
+
+  return updatedTrade;
+}
+
+function scheduleTradeImportContextBackfill(trade) {
+  if (!trade?.id || !trade.marketDataNeedsBackfill) {
+    return;
+  }
+
+  const existingTimer = backfillTimers.get(trade.id);
+
+  if (existingTimer) {
+    clearTimeout(existingTimer);
+  }
+
+  const timer = setTimeout(async () => {
+    backfillTimers.delete(trade.id);
+
+    try {
+      await refreshTradeImportContext(trade);
+    } catch (error) {
+      scheduleTradeImportContextBackfill(trade);
+    }
+  }, env.tradeMarketBackfillDelayMs);
+
+  backfillTimers.set(trade.id, timer);
 }
 
 async function getBars({ symbol, resolution, from, to, includeExtended }) {
@@ -294,5 +383,7 @@ async function getBars({ symbol, resolution, from, to, includeExtended }) {
 
 module.exports = {
   getBars,
-  getTradeImportContext
+  getTradeImportContext,
+  refreshTradeImportContext,
+  scheduleTradeImportContextBackfill
 };
