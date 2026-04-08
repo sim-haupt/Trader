@@ -8,21 +8,21 @@
 body,
 body[data-theme="dark"] {
   --bg-canvas: #0a0b0d;
-  --bg-elevated: #0f1115;
-  --surface-1: rgba(15, 17, 21, 0.92);
-  --surface-2: rgba(19, 22, 27, 0.98);
-  --surface-3: rgba(255, 255, 255, 0.045);
-  --surface-soft: rgba(255, 255, 255, 0.028);
-  --line: rgba(255, 255, 255, 0.08);
+  --bg-elevated: #0f1012;
+  --surface-1: rgba(13, 15, 18, 0.98);
+  --surface-2: rgba(16, 18, 22, 0.985);
+  --surface-3: rgba(255, 255, 255, 0.03);
+  --surface-soft: rgba(255, 255, 255, 0.018);
+  --line: rgba(255, 255, 255, 0.09);
   --line-strong: rgba(255, 255, 255, 0.14);
-  --line-soft: rgba(255, 255, 255, 0.05);
-  --text: #fafafa;
+  --line-soft: rgba(255, 255, 255, 0.04);
+  --text: #fcfcfd;
   --text-soft: #e4e4e7;
   --text-muted: #a1a1aa;
-  --text-dim: #71717a;
-  --accent: #7c9cff;
-  --accent-strong: #a4bcff;
-  --accent-soft: rgba(124, 156, 255, 0.14);
+  --text-dim: #6b7280;
+  --accent: #5b8cff;
+  --accent-strong: #90b4ff;
+  --accent-soft: rgba(91, 140, 255, 0.14);
   --success: #5ac58b;
   --success-soft: rgba(90, 197, 139, 0.14);
   --danger: #ef6b73;
@@ -32,13 +32,13 @@ body[data-theme="dark"] {
   --info: #84b7ff;
   --info-soft: rgba(132, 183, 255, 0.14);
   --popover: rgba(14, 16, 20, 0.985);
-  --shadow-lg: 0 24px 72px rgba(0, 0, 0, 0.32);
-  --shadow-md: 0 14px 42px rgba(0, 0, 0, 0.24);
-  --shadow-sm: 0 8px 24px rgba(0, 0, 0, 0.16);
-  --radius-xl: 22px;
-  --radius-lg: 18px;
-  --radius-md: 14px;
-  --radius-sm: 12px;
+  --shadow-lg: 0 18px 54px rgba(0, 0, 0, 0.26);
+  --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.2);
+  --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --radius-xl: 16px;
+  --radius-lg: 14px;
+  --radius-md: 12px;
+  --radius-sm: 10px;
 }
 
 *,
@@ -62,8 +62,8 @@ body {
 body {
   font-family: "Inter", sans-serif;
   background:
-    radial-gradient(circle at top center, rgba(124, 156, 255, 0.06), transparent 20%),
-    linear-gradient(180deg, #0c0d10 0%, #090a0c 22%, var(--bg-canvas) 100%);
+    radial-gradient(circle at top center, rgba(91, 140, 255, 0.045), transparent 18%),
+    linear-gradient(180deg, #0a0b0d 0%, #090a0c 22%, var(--bg-canvas) 100%);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -78,10 +78,8 @@ body::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 18%),
-    radial-gradient(circle at 50% -10%, rgba(124, 156, 255, 0.05), transparent 30%);
-  opacity: 0.8;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 14%);
+  opacity: 1;
 }
 
 body::after {
@@ -89,7 +87,7 @@ body::after {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(circle at center bottom, rgba(255, 255, 255, 0.018), transparent 38%);
+  background: radial-gradient(circle at center bottom, rgba(255, 255, 255, 0.012), transparent 34%);
 }
 
 h1,
@@ -180,14 +178,12 @@ button:disabled {
     gap: 0;
   }
 
-  .top-status {
+.top-status {
     position: sticky;
     top: 0;
     z-index: 60;
     border-bottom: 1px solid var(--line);
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0.006)),
-      rgba(10, 11, 14, 0.94);
+    background: rgba(10, 11, 13, 0.96);
     backdrop-filter: blur(16px);
     box-shadow: none;
     padding: 18px 28px;
@@ -196,19 +192,15 @@ button:disabled {
   .ui-panel {
     border: 1px solid var(--line);
     border-radius: var(--radius-lg);
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0.008) 16%, transparent 100%),
-      var(--surface-1);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.02),
-      var(--shadow-sm);
-    backdrop-filter: blur(10px);
+    background: var(--surface-1);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.015);
+    backdrop-filter: blur(8px);
   }
 
   .ui-title {
-    font-family: "Inter", sans-serif;
+    font-family: "IBM Plex Mono", monospace;
     font-weight: 600;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     line-height: 1.35;
   }
@@ -224,9 +216,7 @@ button:disabled {
     min-height: 44px;
     border: 1px solid var(--line);
     border-radius: var(--radius-sm);
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0.01)),
-      rgba(255, 255, 255, 0.012);
+    background: rgba(255, 255, 255, 0.018);
     color: var(--text);
     padding: 11px 14px;
     font-size: 0.92rem;
@@ -242,8 +232,8 @@ button:disabled {
   }
 
   .ui-input:hover {
-    border-color: rgba(255, 255, 255, 0.12);
-    background: rgba(255, 255, 255, 0.028);
+    border-color: rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.024);
   }
 
   .ui-input:focus {
@@ -260,7 +250,7 @@ button:disabled {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    border-radius: 12px;
+    border-radius: 10px;
     border: 1px solid var(--line);
     transition:
       border-color 120ms ease,
@@ -279,47 +269,45 @@ button:disabled {
   }
 
   .ui-button {
-    background: rgba(255, 255, 255, 0.025);
-    color: var(--text);
-    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.018);
+    color: var(--text-soft);
+    padding: 9px 13px;
     font-size: 0.86rem;
     font-weight: 600;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+    box-shadow: none;
   }
 
   .ui-button:hover {
-    background: rgba(255, 255, 255, 0.04);
+    background: rgba(255, 255, 255, 0.03);
   }
 
   .ui-button-solid {
-    background: linear-gradient(180deg, rgba(131, 160, 255, 0.96), rgba(115, 145, 245, 0.96));
-    border-color: rgba(131, 160, 255, 0.34);
-    color: #0b0d12;
-    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.96);
+    border-color: rgba(255, 255, 255, 0.96);
+    color: #090a0d;
+    padding: 9px 13px;
     font-size: 0.86rem;
     font-weight: 700;
-    box-shadow:
-      0 8px 24px rgba(91, 118, 204, 0.16),
-      inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    box-shadow: none;
   }
 
   .ui-button-solid:hover {
-    background: linear-gradient(180deg, rgba(141, 169, 255, 0.98), rgba(120, 151, 250, 0.98));
+    background: #ffffff;
   }
 
   .ui-button-danger {
-    background: rgba(239, 107, 115, 0.1);
-    border-color: rgba(239, 107, 115, 0.2);
+    background: rgba(239, 107, 115, 0.08);
+    border-color: rgba(239, 107, 115, 0.16);
     color: var(--danger);
-    padding: 10px 14px;
+    padding: 9px 13px;
     font-size: 0.86rem;
     font-weight: 700;
   }
 
   .ui-chip {
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(255, 255, 255, 0.022);
     color: var(--text-muted);
-    padding: 7px 11px;
+    padding: 6px 10px;
     font-size: 0.74rem;
     font-weight: 600;
   }
@@ -339,10 +327,8 @@ button:disabled {
     overflow: hidden;
     border: 1px solid var(--line);
     border-radius: var(--radius-lg);
-    background:
-      linear-gradient(180deg, rgba(255,255,255,0.024), rgba(255,255,255,0.008)),
-      var(--surface-2);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+    background: var(--surface-2);
+    box-shadow: none;
   }
 
   .ui-surface-subtle {
@@ -354,16 +340,14 @@ button:disabled {
   .ui-metric-tile {
     border: 1px solid var(--line);
     border-radius: var(--radius-md);
-    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.008));
+    background: rgba(255,255,255,0.016);
     padding: 16px;
   }
 
   .ui-popover {
     border: 1px solid var(--line);
     border-radius: var(--radius-lg);
-    background:
-      linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)),
-      var(--popover);
+    background: var(--popover);
     box-shadow: var(--shadow-lg);
     backdrop-filter: blur(18px);
   }
@@ -375,7 +359,7 @@ button:disabled {
     padding: 4px;
     border: 1px solid var(--line);
     border-radius: var(--radius-sm);
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(255, 255, 255, 0.016);
   }
 
   .ui-segment button {
@@ -395,9 +379,9 @@ button:disabled {
   }
 
   .ui-segment button[data-active="true"] {
-    background: rgba(124, 156, 255, 0.14);
+    background: rgba(255, 255, 255, 0.06);
     color: var(--text);
-    box-shadow: inset 0 0 0 1px rgba(124, 156, 255, 0.3);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
   }
 
   .ui-link {
@@ -411,9 +395,7 @@ button:disabled {
 
   .ui-sidebar {
     border-right: 1px solid var(--line);
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.018), transparent 20%),
-      rgba(5, 6, 8, 0.92);
+    background: rgba(5, 6, 8, 0.96);
   }
 
   .ui-sidebar-nav {
@@ -443,15 +425,13 @@ button:disabled {
 
   .ui-sidebar-link[data-active="true"] {
     border-color: var(--line);
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.06);
     color: var(--text);
   }
 
   .ui-content {
     min-width: 0;
-    background:
-      linear-gradient(180deg, rgba(255,255,255,0.012), transparent 14%),
-      rgba(8, 9, 11, 0.72);
+    background: rgba(8, 9, 11, 0.72);
   }
 
   .ui-content-body {
