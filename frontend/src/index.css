@@ -13,7 +13,6 @@ body[data-theme="dark"] {
   --surface-2: #050505;
   --surface-3: #0b0b0b;
   --surface-soft: #0c0c0c;
-  --surface-inset: #ffffff0d;
   --line: rgb(31, 31, 31);
   --line-strong: rgb(31, 31, 31);
   --line-soft: rgb(31, 31, 31);
@@ -330,20 +329,20 @@ button:disabled {
   .ui-surface-subtle {
     border: 1px solid var(--line);
     border-radius: var(--radius-md);
-    background: var(--surface-inset);
+    background: #050505;
   }
 
   .ui-metric-tile {
     border: 1px solid var(--line);
     border-radius: var(--radius-md);
-    background: var(--surface-inset);
+    background: #050505;
     padding: 16px;
   }
 
   .ui-inset-box {
     border: 1px solid var(--line);
     border-radius: var(--radius-md);
-    background: var(--surface-inset);
+    background: #050505;
   }
 
   .ui-popover {
@@ -433,7 +432,7 @@ button:disabled {
 
   .ui-content {
     min-width: 0;
-    background: #000000;
+    background-color: #ffffff0d;
   }
 
   .ui-content-body {
