@@ -9,7 +9,7 @@ import TradesPage from "./pages/TradesPage";
 import TradeDetailPage from "./pages/TradeDetailPage";
 import AdminPage from "./pages/AdminPage";
 import CalendarPage from "./pages/CalendarPage";
-import SectionPlaceholderPage from "./pages/SectionPlaceholderPage";
+import JournalPage from "./pages/JournalPage";
 import SettingsPage from "./pages/SettingsPage";
 import ReportsPage from "./pages/ReportsPage";
 
@@ -33,15 +33,7 @@ function App() {
         <Route path="/trades" element={<TradesPage />} />
         <Route path="/trades/:id" element={<TradeDetailPage />} />
         <Route path="/settings" element={<SettingsPage />} />
-        <Route
-          path="/journal"
-          element={
-            <SectionPlaceholderPage
-              title="Journal"
-              description="Narrative notes, review workflows, and decision journaling will live here."
-            />
-          }
-        />
+        <Route path="/journal" element={<JournalPage />} />
         <Route
           path="/admin"
           element={

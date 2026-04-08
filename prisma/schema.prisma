@@ -48,6 +48,7 @@ model User {
   imports      TradeImport[]
   savedTags    SavedTag[]
   savedStrategies SavedStrategy[]
+  journalDays  JournalDay[]
 }
 
 model Trade {
@@ -146,4 +147,17 @@ model SavedStrategy {
 
   @@unique([userId, name])
   @@index([userId, createdAt])
+}
+
+model JournalDay {
+  id        String   @id @default(cuid())
+  userId    String
+  dayKey    String
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dayKey])
+  @@index([userId, dayKey])
 }

@@ -1,18 +1,17 @@
 import { Fragment, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
 import LoadingState from "../components/ui/LoadingState";
 import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 import tradeService from "../services/tradeService";
-import { formatCurrency } from "../utils/formatters";
+import { formatCurrency, formatDateTimeLocal } from "../utils/formatters";
 
 const weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function getDayKey(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  const formatted = formatDateTimeLocal(date);
+  return formatted ? formatted.slice(0, 10) : "";
 }
 
 function buildDailyStats(trades) {
@@ -159,7 +158,7 @@ function MonthCard({ month, onOpen }) {
   );
 }
 
-function MonthDetailSection({ month, onClose }) {
+function MonthDetailSection({ month, onClose, onSelectDay }) {
   return (
     <Card
       title={month.label.toUpperCase()}
@@ -225,7 +224,18 @@ function MonthDetailSection({ month, onClose }) {
                   )}`}
                   style={getDayBorderStyle(day.stats, day.isCurrentMonth)}
                 >
-                  <div className="text-lg font-semibold">{day.dayNumber}</div>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="text-lg font-semibold">{day.dayNumber}</div>
+                    {day.isCurrentMonth && day.stats ? (
+                      <button
+                        type="button"
+                        onClick={() => onSelectDay(day.dayKey)}
+                        className="ui-chip px-2 py-1 text-[10px]"
+                      >
+                        Journal
+                      </button>
+                    ) : null}
+                  </div>
                   {day.isCurrentMonth && (
                     <>
                       <div
@@ -271,6 +281,7 @@ function MonthDetailSection({ month, onClose }) {
 }
 
 function CalendarPage() {
+  const navigate = useNavigate();
   const [selectedMonthIndex, setSelectedMonthIndex] = useState(null);
   const {
     data: trades,
@@ -338,7 +349,11 @@ function CalendarPage() {
   return (
     <div className="space-y-6">
       {selectedMonth && (
-        <MonthDetailSection month={selectedMonth} onClose={() => setSelectedMonthIndex(null)} />
+        <MonthDetailSection
+          month={selectedMonth}
+          onClose={() => setSelectedMonthIndex(null)}
+          onSelectDay={(dayKey) => navigate(`/journal?day=${dayKey}`)}
+        />
       )}
       <Card
         title="CALENDAR OVERVIEW"
