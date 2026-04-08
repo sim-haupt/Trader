@@ -1015,6 +1015,8 @@ function buildWinVsLossDaysStats(trades, options = {}) {
   return {
     winningDayCount: winningDays.length,
     losingDayCount: losingDays.length,
+    winningTrades,
+    losingTrades,
     winningSummary: summarizeTrades(winningTrades, winningDays.length, options),
     losingSummary: summarizeTrades(losingTrades, losingDays.length, options),
     distributionByWeekday: Array.from(distributionMap.values()),
@@ -1023,6 +1025,31 @@ function buildWinVsLossDaysStats(trades, options = {}) {
       { name: "Losing Days", value: losingDays.length, fill: "#ffc14d" }
     ]
   };
+}
+
+function mergeBreakdownSeries(leftData, rightData, leftKey, rightKey) {
+  const labels = [];
+  const seen = new Set();
+
+  for (const item of [...(leftData || []), ...(rightData || [])]) {
+    if (!item?.label || seen.has(item.label)) {
+      continue;
+    }
+
+    seen.add(item.label);
+    labels.push(item.label);
+  }
+
+  return labels.map((label) => {
+    const left = (leftData || []).find((item) => item.label === label);
+    const right = (rightData || []).find((item) => item.label === label);
+
+    return {
+      label,
+      leftValue: Number(left?.[leftKey] || 0),
+      rightValue: Number(right?.[rightKey] || 0)
+    };
+  });
 }
 
 function DetailedStatsTable({ rows }) {
@@ -1107,6 +1134,82 @@ function HorizontalBreakdownChart({
   );
 }
 
+function ComparisonHorizontalBreakdownChart({
+  title,
+  leftTitle,
+  rightTitle,
+  data,
+  leftColor,
+  rightColor,
+  tooltipMode = "count",
+  currencyAxis = false,
+  yAxisWidth = 88
+}) {
+  const tooltip =
+    tooltipMode === "currency" ? <CurrencyTooltip /> : tooltipMode === "percent" ? <PercentTooltip /> : <CountTooltip />;
+
+  return (
+    <Card title={title}>
+      <div className="mb-3 flex flex-wrap items-center gap-4 px-1">
+        <div className="flex items-center gap-2 text-xs text-white/62">
+          <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: leftColor }} />
+          {leftTitle}
+        </div>
+        <div className="flex items-center gap-2 text-xs text-white/62">
+          <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: rightColor }} />
+          {rightTitle}
+        </div>
+      </div>
+      <div className="h-[320px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} layout="vertical" margin={{ top: 4, right: 12, left: 8, bottom: 4 }}>
+            <CartesianGrid stroke="rgba(255,255,255,0.05)" horizontal={false} />
+            <XAxis
+              type="number"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: "#c6cedb", fontSize: 11 }}
+              tickFormatter={currencyAxis ? formatAxisCurrency : undefined}
+            />
+            <YAxis
+              type="category"
+              dataKey="label"
+              axisLine={false}
+              tickLine={false}
+              width={yAxisWidth}
+              tick={{ fill: "#c6cedb", fontSize: 11 }}
+            />
+            <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={tooltip} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
+            <Bar dataKey="leftValue" name={leftTitle} fill={leftColor} radius={[0, 6, 6, 0]} barSize={14} />
+            <Bar dataKey="rightValue" name={rightTitle} fill={rightColor} radius={[0, 6, 6, 0]} barSize={14} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </Card>
+  );
+}
+
+function BreakdownTabs({ activeTab, onTabChange }) {
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-2">
+      {["Days/Times", "Price/Volume", "Instrument"].map((item) => (
+        <button
+          key={item}
+          type="button"
+          onClick={() => onTabChange(item)}
+          className={`rounded-[10px] px-3 py-2 text-xs font-medium ${
+            activeTab === item
+              ? "bg-white/[0.08] text-white"
+              : "border border-white/10 bg-white/[0.03] text-white/58"
+          }`}
+        >
+          {item}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function DetailedBreakdownSection({
   stats,
   bucketStats,
@@ -1118,22 +1221,7 @@ function DetailedBreakdownSection({
 }) {
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        {["Days/Times", "Price/Volume", "Instrument"].map((item) => (
-          <button
-            key={item}
-            type="button"
-            onClick={() => onTabChange(item)}
-            className={`rounded-[10px] px-3 py-2 text-xs font-medium ${
-              activeTab === item
-                ? "bg-white/[0.08] text-white"
-                : "border border-white/10 bg-white/[0.03] text-white/58"
-            }`}
-          >
-            {item}
-          </button>
-        ))}
-      </div>
+      <BreakdownTabs activeTab={activeTab} onTabChange={onTabChange} />
 
       {activeTab === "Days/Times" ? (
         <>
@@ -1360,7 +1448,53 @@ function WinLossColumn({ title, count, rows, accent }) {
   );
 }
 
-function WinVsLossDaysSection({ stats }) {
+function WinVsLossDaysSection({
+  stats,
+  breakdownStats,
+  bucketStats,
+  instrumentStats,
+  timeframeKey,
+  onTimeframeChange,
+  activeTab,
+  onTabChange
+}) {
+  const weekdayDistributionData = mergeBreakdownSeries(
+    breakdownStats.winning.weekdayDistribution,
+    breakdownStats.losing.weekdayDistribution,
+    "count",
+    "count"
+  );
+  const weekdayPerformanceData = mergeBreakdownSeries(
+    breakdownStats.winning.weekdayPerformance,
+    breakdownStats.losing.weekdayPerformance,
+    "pnl",
+    "pnl"
+  );
+  const hourDistributionData = mergeBreakdownSeries(
+    breakdownStats.winning.hourDistribution,
+    breakdownStats.losing.hourDistribution,
+    "count",
+    "count"
+  );
+  const hourPerformanceData = mergeBreakdownSeries(
+    breakdownStats.winning.hourPerformance,
+    breakdownStats.losing.hourPerformance,
+    "pnl",
+    "pnl"
+  );
+  const monthDistributionData = mergeBreakdownSeries(
+    breakdownStats.winning.monthDistribution,
+    breakdownStats.losing.monthDistribution,
+    "count",
+    "count"
+  );
+  const monthPerformanceData = mergeBreakdownSeries(
+    breakdownStats.winning.monthPerformance,
+    breakdownStats.losing.monthPerformance,
+    "pnl",
+    "pnl"
+  );
+
   return (
     <div className="space-y-5">
       <Card title="STATISTICS">
@@ -1405,54 +1539,72 @@ function WinVsLossDaysSection({ stats }) {
           </ResponsiveContainer>
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          {["Day/Times", "Price/Volume", "Instrument", "Market Behavior", "Win/Loss/Expectation", "Liquidity"].map((item, index) => (
-            <button
-              key={item}
-              type="button"
-              className={`rounded-[10px] px-3 py-2 text-xs font-medium ${
-                index === 0
-                  ? "bg-white/[0.08] text-white"
-                  : "border border-white/10 bg-white/[0.03] text-white/58"
-              }`}
-            >
-              {item}
-            </button>
-          ))}
+        <BreakdownTabs activeTab={activeTab} onTabChange={onTabChange} />
+      </div>
+
+      {activeTab === "Days/Times" ? (
+        <>
+          <div className="grid gap-5 xl:grid-cols-2">
+            <ComparisonHorizontalBreakdownChart
+              title="TRADE DISTRIBUTION BY DAY OF WEEK"
+              leftTitle="Winning Days"
+              rightTitle="Losing Days"
+              data={weekdayDistributionData}
+              leftColor="#56f0a9"
+              rightColor="#ffc14d"
+              tooltipMode="count"
+            />
+            <ComparisonHorizontalBreakdownChart
+              title="PERFORMANCE BY DAY OF WEEK"
+              leftTitle="Winning Days"
+              rightTitle="Losing Days"
+              data={weekdayPerformanceData}
+              leftColor="#56f0a9"
+              rightColor="#ffc14d"
+              tooltipMode="currency"
+              currencyAxis
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="ui-title text-[11px] text-white/58">TIMEFRAME</span>
+            <div className="ui-segment">
+              {DETAILED_TIMEFRAME_OPTIONS.map((option) => (
+                <button key={option.key} type="button" data-active={option.key === timeframeKey} onClick={() => onTimeframeChange(option.key)}>
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="grid gap-5 xl:grid-cols-2">
+            <ComparisonHorizontalBreakdownChart title="TRADE DISTRIBUTION BY HOUR OF DAY" leftTitle="Winning Days" rightTitle="Losing Days" data={hourDistributionData} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="count" />
+            <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY HOUR OF DAY" leftTitle="Winning Days" rightTitle="Losing Days" data={hourPerformanceData} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="currency" currencyAxis />
+            <ComparisonHorizontalBreakdownChart title="TRADE DISTRIBUTION BY MONTH OF YEAR" leftTitle="Winning Days" rightTitle="Losing Days" data={monthDistributionData} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="count" />
+            <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY MONTH OF YEAR" leftTitle="Winning Days" rightTitle="Losing Days" data={monthPerformanceData} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="currency" currencyAxis />
+          </div>
+        </>
+      ) : activeTab === "Price/Volume" ? (
+        <div className="grid gap-5 xl:grid-cols-2">
+          <ComparisonHorizontalBreakdownChart title="TRADE DISTRIBUTION BY PRICE" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(bucketStats.winning.priceDistribution, bucketStats.losing.priceDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="count" />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY PRICE" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(bucketStats.winning.pricePerformance, bucketStats.losing.pricePerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="currency" currencyAxis />
+          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY VOLUME TRADED" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(bucketStats.winning.volumeDistribution, bucketStats.losing.volumeDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="count" />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY VOLUME TRADED" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(bucketStats.winning.volumePerformance, bucketStats.losing.volumePerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="currency" currencyAxis />
+          <ComparisonHorizontalBreakdownChart title="TRADE DISTRIBUTION BY IN-TRADE PRICE RANGE" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(bucketStats.winning.rangeDistribution, bucketStats.losing.rangeDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="count" />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY IN-TRADE PRICE RANGE" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(bucketStats.winning.rangePerformance, bucketStats.losing.rangePerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="currency" currencyAxis />
         </div>
-      </div>
-
-      <div className="grid gap-5 xl:grid-cols-2">
-        <Card title="TRADE DISTRIBUTION BY DAY OF WEEK">
-          <div className="h-[320px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats.distributionByWeekday}>
-                <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                <Tooltip content={<CountTooltip />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
-                <Bar dataKey="winningDays" fill="#56f0a9" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="losingDays" fill="#ffc14d" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-
-        <Card title="PERFORMANCE BY DAY OF WEEK">
-          <div className="h-[320px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats.distributionByWeekday}>
-                <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                <Tooltip content={<CurrencyTooltip />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
-                <Bar dataKey="winningPnl" fill="#56f0a9" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="losingPnl" fill="#ff6b6b" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-      </div>
+      ) : (
+        <div className="grid gap-5 xl:grid-cols-2">
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY SYMBOL - TOP 20" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.topSymbols, instrumentStats.losing.topSymbols, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="currency" currencyAxis yAxisWidth={88} />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY SYMBOL - BOTTOM 20" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.bottomSymbols, instrumentStats.losing.bottomSymbols, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="currency" currencyAxis yAxisWidth={88} />
+          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY INSTRUMENT VOLUME" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.instrumentVolumeDistribution, instrumentStats.losing.instrumentVolumeDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="count" yAxisWidth={110} />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY INSTRUMENT VOLUME" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.instrumentVolumePerformance, instrumentStats.losing.instrumentVolumePerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="currency" currencyAxis yAxisWidth={110} />
+          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY RELATIVE VOLUME" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.relativeVolumeDistribution, instrumentStats.losing.relativeVolumeDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="count" yAxisWidth={110} />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY RELATIVE VOLUME" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.relativeVolumePerformance, instrumentStats.losing.relativeVolumePerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="currency" currencyAxis yAxisWidth={110} />
+          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY FLOAT" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.floatDistribution, instrumentStats.losing.floatDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="count" yAxisWidth={120} />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY FLOAT" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.floatPerformance, instrumentStats.losing.floatPerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="currency" currencyAxis yAxisWidth={120} />
+          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY PRIOR CLOSE %" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.priorCloseDistribution, instrumentStats.losing.priorCloseDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="count" yAxisWidth={110} />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY PRIOR CLOSE %" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.priorClosePerformance, instrumentStats.losing.priorClosePerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="currency" currencyAxis yAxisWidth={110} />
+        </div>
+      )}
     </div>
   );
 }
@@ -1633,10 +1785,30 @@ function CompareSection({
   groupBTrades,
   pnlType,
   defaultCommission,
-  defaultFees
+  defaultFees,
+  timeframeKey,
+  onTimeframeChange,
+  activeTab,
+  onTabChange
 }) {
   const groupADetailed = buildDetailedStats(groupATrades, { pnlType, defaultCommission, defaultFees });
   const groupBDetailed = buildDetailedStats(groupBTrades, { pnlType, defaultCommission, defaultFees });
+  const timeframeMinutes =
+    DETAILED_TIMEFRAME_OPTIONS.find((option) => option.key === timeframeKey)?.minutes || 60;
+  const groupABreakdown = buildDetailedBreakdownStats(groupATrades, timeframeMinutes, {
+    pnlType,
+    defaultCommission,
+    defaultFees
+  });
+  const groupBBreakdown = buildDetailedBreakdownStats(groupBTrades, timeframeMinutes, {
+    pnlType,
+    defaultCommission,
+    defaultFees
+  });
+  const groupABuckets = buildBucketStats(groupATrades, { pnlType, defaultCommission, defaultFees });
+  const groupBBuckets = buildBucketStats(groupBTrades, { pnlType, defaultCommission, defaultFees });
+  const groupAInstrument = buildInstrumentStats(groupATrades, { pnlType, defaultCommission, defaultFees });
+  const groupBInstrument = buildInstrumentStats(groupBTrades, { pnlType, defaultCommission, defaultFees });
 
   return (
     <div className="space-y-5">
@@ -1667,6 +1839,57 @@ function CompareSection({
           <CompareStatsColumn title="Group B" rows={groupBDetailed} tradesMatched={groupBTrades.length} />
         </div>
       </Card>
+
+      <BreakdownTabs activeTab={activeTab} onTabChange={onTabChange} />
+
+      {activeTab === "Days/Times" ? (
+        <>
+          <div className="grid gap-5 xl:grid-cols-2">
+            <ComparisonHorizontalBreakdownChart title="TRADE DISTRIBUTION BY DAY OF WEEK" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABreakdown.weekdayDistribution, groupBBreakdown.weekdayDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="count" />
+            <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY DAY OF WEEK" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABreakdown.weekdayPerformance, groupBBreakdown.weekdayPerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="currency" currencyAxis />
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="ui-title text-[11px] text-white/58">TIMEFRAME</span>
+            <div className="ui-segment">
+              {DETAILED_TIMEFRAME_OPTIONS.map((option) => (
+                <button key={option.key} type="button" data-active={option.key === timeframeKey} onClick={() => onTimeframeChange(option.key)}>
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-5 xl:grid-cols-2">
+            <ComparisonHorizontalBreakdownChart title="TRADE DISTRIBUTION BY HOUR OF DAY" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABreakdown.hourDistribution, groupBBreakdown.hourDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="count" />
+            <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY HOUR OF DAY" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABreakdown.hourPerformance, groupBBreakdown.hourPerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="currency" currencyAxis />
+            <ComparisonHorizontalBreakdownChart title="TRADE DISTRIBUTION BY MONTH OF YEAR" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABreakdown.monthDistribution, groupBBreakdown.monthDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="count" />
+            <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY MONTH OF YEAR" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABreakdown.monthPerformance, groupBBreakdown.monthPerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="currency" currencyAxis />
+          </div>
+        </>
+      ) : activeTab === "Price/Volume" ? (
+        <div className="grid gap-5 xl:grid-cols-2">
+          <ComparisonHorizontalBreakdownChart title="TRADE DISTRIBUTION BY PRICE" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABuckets.priceDistribution, groupBBuckets.priceDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="count" />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY PRICE" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABuckets.pricePerformance, groupBBuckets.pricePerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="currency" currencyAxis />
+          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY VOLUME TRADED" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABuckets.volumeDistribution, groupBBuckets.volumeDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="count" />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY VOLUME TRADED" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABuckets.volumePerformance, groupBBuckets.volumePerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="currency" currencyAxis />
+          <ComparisonHorizontalBreakdownChart title="TRADE DISTRIBUTION BY IN-TRADE PRICE RANGE" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABuckets.rangeDistribution, groupBBuckets.rangeDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="count" />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY IN-TRADE PRICE RANGE" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABuckets.rangePerformance, groupBBuckets.rangePerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="currency" currencyAxis />
+        </div>
+      ) : (
+        <div className="grid gap-5 xl:grid-cols-2">
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY SYMBOL - TOP 20" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.topSymbols, groupBInstrument.topSymbols, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="currency" currencyAxis yAxisWidth={88} />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY SYMBOL - BOTTOM 20" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.bottomSymbols, groupBInstrument.bottomSymbols, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="currency" currencyAxis yAxisWidth={88} />
+          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY INSTRUMENT VOLUME" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.instrumentVolumeDistribution, groupBInstrument.instrumentVolumeDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="count" yAxisWidth={110} />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY INSTRUMENT VOLUME" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.instrumentVolumePerformance, groupBInstrument.instrumentVolumePerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="currency" currencyAxis yAxisWidth={110} />
+          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY RELATIVE VOLUME" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.relativeVolumeDistribution, groupBInstrument.relativeVolumeDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="count" yAxisWidth={110} />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY RELATIVE VOLUME" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.relativeVolumePerformance, groupBInstrument.relativeVolumePerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="currency" currencyAxis yAxisWidth={110} />
+          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY FLOAT" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.floatDistribution, groupBInstrument.floatDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="count" yAxisWidth={120} />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY FLOAT" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.floatPerformance, groupBInstrument.floatPerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="currency" currencyAxis yAxisWidth={120} />
+          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY PRIOR CLOSE %" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.priorCloseDistribution, groupBInstrument.priorCloseDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="count" yAxisWidth={110} />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY PRIOR CLOSE %" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.priorClosePerformance, groupBInstrument.priorClosePerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="currency" currencyAxis yAxisWidth={110} />
+        </div>
+      )}
     </div>
   );
 }
@@ -1786,6 +2009,8 @@ function ReportsPage() {
   const [pnlType, setPnlType] = useState("GROSS");
   const [detailedTimeframeKey, setDetailedTimeframeKey] = useState("60");
   const [detailedBreakdownTab, setDetailedBreakdownTab] = useState("Days/Times");
+  const [winLossBreakdownTab, setWinLossBreakdownTab] = useState("Days/Times");
+  const [compareBreakdownTab, setCompareBreakdownTab] = useState("Days/Times");
   const {
     data: trades,
     loading,
@@ -1875,6 +2100,53 @@ function ReportsPage() {
     }),
     [filteredTrades, user?.defaultCommission, user?.defaultFees, pnlType]
   );
+  const winLossBreakdownStats = useMemo(() => {
+    const timeframe =
+      DETAILED_TIMEFRAME_OPTIONS.find((option) => option.key === detailedTimeframeKey)?.minutes || 60;
+
+    return {
+      winning: buildDetailedBreakdownStats(winVsLossDayStats.winningTrades, timeframe, {
+        defaultCommission: user?.defaultCommission ?? 0,
+        defaultFees: user?.defaultFees ?? 0,
+        pnlType
+      }),
+      losing: buildDetailedBreakdownStats(winVsLossDayStats.losingTrades, timeframe, {
+        defaultCommission: user?.defaultCommission ?? 0,
+        defaultFees: user?.defaultFees ?? 0,
+        pnlType
+      })
+    };
+  }, [winVsLossDayStats, detailedTimeframeKey, user?.defaultCommission, user?.defaultFees, pnlType]);
+  const winLossBucketStats = useMemo(
+    () => ({
+      winning: buildBucketStats(winVsLossDayStats.winningTrades, {
+        defaultCommission: user?.defaultCommission ?? 0,
+        defaultFees: user?.defaultFees ?? 0,
+        pnlType
+      }),
+      losing: buildBucketStats(winVsLossDayStats.losingTrades, {
+        defaultCommission: user?.defaultCommission ?? 0,
+        defaultFees: user?.defaultFees ?? 0,
+        pnlType
+      })
+    }),
+    [winVsLossDayStats, user?.defaultCommission, user?.defaultFees, pnlType]
+  );
+  const winLossInstrumentStats = useMemo(
+    () => ({
+      winning: buildInstrumentStats(winVsLossDayStats.winningTrades, {
+        defaultCommission: user?.defaultCommission ?? 0,
+        defaultFees: user?.defaultFees ?? 0,
+        pnlType
+      }),
+      losing: buildInstrumentStats(winVsLossDayStats.losingTrades, {
+        defaultCommission: user?.defaultCommission ?? 0,
+        defaultFees: user?.defaultFees ?? 0,
+        pnlType
+      })
+    }),
+    [winVsLossDayStats, user?.defaultCommission, user?.defaultFees, pnlType]
+  );
   const groupATrades = useMemo(
     () => applyCompareGroupFilters(filteredTrades, groupAFilters, {
       defaultCommission: user?.defaultCommission ?? 0,
@@ -1915,6 +2187,10 @@ function ReportsPage() {
     setActiveTab(nextTab);
     if (nextTab === "Detailed") {
       setDetailedBreakdownTab("Days/Times");
+    } else if (nextTab === "Win vs Loss Days") {
+      setWinLossBreakdownTab("Days/Times");
+    } else if (nextTab === "Compare") {
+      setCompareBreakdownTab("Days/Times");
     }
   }
 
@@ -2080,7 +2356,16 @@ function ReportsPage() {
           />
         </div>
       ) : activeTab === "Win vs Loss Days" ? (
-        <WinVsLossDaysSection stats={winVsLossDayStats} />
+        <WinVsLossDaysSection
+          stats={winVsLossDayStats}
+          breakdownStats={winLossBreakdownStats}
+          bucketStats={winLossBucketStats}
+          instrumentStats={winLossInstrumentStats}
+          timeframeKey={detailedTimeframeKey}
+          onTimeframeChange={setDetailedTimeframeKey}
+          activeTab={winLossBreakdownTab}
+          onTabChange={setWinLossBreakdownTab}
+        />
       ) : activeTab === "Drawdown" ? (
         <DrawdownSection summary={reportSummary} />
       ) : activeTab === "Compare" ? (
@@ -2096,6 +2381,10 @@ function ReportsPage() {
           pnlType={pnlType}
           defaultCommission={user?.defaultCommission ?? 0}
           defaultFees={user?.defaultFees ?? 0}
+          timeframeKey={detailedTimeframeKey}
+          onTimeframeChange={setDetailedTimeframeKey}
+          activeTab={compareBreakdownTab}
+          onTabChange={setCompareBreakdownTab}
         />
       ) : (
         <div className="grid gap-5 xl:grid-cols-2">
