@@ -181,27 +181,13 @@ function buildMarketVolumeRequestBounds(entryDateValue) {
   };
 }
 
-function getCumulativeVolumeAtTrade(bars, tradeDateValue) {
+function getTotalVolumeForDay(bars) {
   if (!Array.isArray(bars) || bars.length === 0) {
     return null;
   }
 
-  const tradeTimestampSeconds = Math.floor(new Date(tradeDateValue).getTime() / 1000);
-  let cumulativeVolume = 0;
-  let found = false;
-
-  for (const bar of bars) {
-    cumulativeVolume += Number(bar.volume || 0);
-
-    if (Number(bar.time || 0) <= tradeTimestampSeconds) {
-      found = true;
-      continue;
-    }
-
-    break;
-  }
-
-  return found ? cumulativeVolume : null;
+  const totalVolume = bars.reduce((sum, bar) => sum + Number(bar.volume || 0), 0);
+  return Number.isFinite(totalVolume) ? totalVolume : null;
 }
 
 function buildOverviewSeries(trades, rangeDays, options = {}) {
@@ -1788,10 +1774,10 @@ function ReportsPage() {
         const requestKey = `${symbol}-${dayKey}`;
         const marketData = barsByRequest.get(requestKey);
         const bars = marketData?.bars || [];
-        const cumulativeVolume = getCumulativeVolumeAtTrade(bars, trade.entryDate);
+        const totalDayVolume = getTotalVolumeForDay(bars);
 
-        if (cumulativeVolume !== null) {
-          nextVolumes[trade.id] = cumulativeVolume;
+        if (totalDayVolume !== null) {
+          nextVolumes[trade.id] = totalDayVolume;
         }
       }
 
