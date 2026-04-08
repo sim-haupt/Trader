@@ -40,7 +40,9 @@ function formatDayLabel(dayKey) {
     month: "short",
     day: "numeric",
     year: "numeric"
-  }).format(date);
+  })
+    .format(date)
+    .toUpperCase();
 }
 
 function formatTimeLabel(value) {
@@ -199,7 +201,7 @@ function JournalDayCard({
 
   return (
     <Card
-      title={day.label.toUpperCase()}
+      title={<span className="text-[14px] text-white/72">{day.label}</span>}
       action={
         <div
           className={`rounded-[6px] border px-3 py-2 text-sm font-semibold ${
@@ -609,7 +611,7 @@ function JournalPage() {
             />
           </div>
 
-          <button type="button" onClick={handleResetFilters} className="ui-button h-[48px] border-[#ededed] px-5 text-sm">
+          <button type="button" onClick={handleResetFilters} className="ui-button h-[44px] border-[#ededed] px-5 text-sm">
             Reset
           </button>
         </div>
