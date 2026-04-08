@@ -13,6 +13,7 @@ body[data-theme="dark"] {
   --surface-2: #050505;
   --surface-3: #0b0b0b;
   --surface-soft: #0c0c0c;
+  --surface-inset: #ffffff0d;
   --line: rgb(31, 31, 31);
   --line-strong: rgb(31, 31, 31);
   --line-soft: rgb(31, 31, 31);
@@ -310,7 +311,7 @@ button:disabled {
   .ui-notice {
     border: 1px solid var(--line-strong);
     border-radius: var(--radius-md);
-    background: #050505;
+    background: var(--surface-inset);
     color: var(--text);
     padding: 14px 16px;
     font-size: 0.93rem;
@@ -329,13 +330,13 @@ button:disabled {
   .ui-surface-subtle {
     border: 1px solid var(--line);
     border-radius: var(--radius-md);
-    background: #050505;
+    background: var(--surface-inset);
   }
 
   .ui-metric-tile {
     border: 1px solid var(--line);
     border-radius: var(--radius-md);
-    background: #050505;
+    background: var(--surface-inset);
     padding: 16px;
   }
 
