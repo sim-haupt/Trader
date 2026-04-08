@@ -609,7 +609,7 @@ function JournalPage() {
             />
           </div>
 
-          <button type="button" onClick={handleResetFilters} className="ui-button h-[48px] px-5 text-sm">
+          <button type="button" onClick={handleResetFilters} className="ui-button h-[48px] border-[#ededed] px-5 text-sm">
             Reset
           </button>
         </div>

@@ -393,7 +393,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                     onClick={() => setIsStrategyEditorOpen((current) => !current)}
                     className="ui-button px-3 py-2 text-xs"
                   >
-                    Select strategy
+                    Add strategy
                   </button>
                 </div>
                 {activeStrategy ? (
@@ -441,9 +441,9 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                   <button
                     type="button"
                     onClick={() => setIsTagEditorOpen((current) => !current)}
-                    className="ui-button px-3 py-2 text-xs"
+                    className="ui-button-solid px-3 py-2 text-xs"
                   >
-                    Select tags
+                    Add tags
                   </button>
                 </div>
                 {activeTags.length > 0 ? (
@@ -500,7 +500,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                   <button
                     type="button"
                     onClick={() => setIsNotesEditorOpen((current) => !current)}
-                    className="ui-button px-3 py-2 text-xs"
+                    className="ui-button-solid px-3 py-2 text-xs"
                   >
                     {activeTrade.notes ? "Edit notes" : "Add notes"}
                   </button>

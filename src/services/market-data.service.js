@@ -79,14 +79,28 @@ function canFallbackToNextFeed(error) {
   return [401, 402, 403, 422, 429].includes(error?.statusCode);
 }
 
-function getFeedCandidates() {
-  const candidates = ["sip"];
+function clampEndToNow(value) {
+  const timestamp = new Date(value).getTime();
 
-  if (env.alpacaFeed && env.alpacaFeed !== "sip") {
-    candidates.push(env.alpacaFeed);
+  if (Number.isNaN(timestamp)) {
+    return new Date(value);
   }
 
-  return candidates;
+  return new Date(Math.min(timestamp, Date.now()));
+}
+
+function mergeBars(...barSets) {
+  const barMap = new Map();
+
+  for (const bars of barSets) {
+    for (const bar of bars || []) {
+      if (Number.isFinite(bar?.time)) {
+        barMap.set(bar.time, bar);
+      }
+    }
+  }
+
+  return [...barMap.values()].sort((left, right) => left.time - right.time);
 }
 
 function normalizeBarPayload(bar) {
@@ -103,16 +117,28 @@ function normalizeBarPayload(bar) {
 }
 
 async function fetchBars(symbol, timeframe, from, to, cache) {
-  const feeds = getFeedCandidates();
-  async function fetchBarsWithFeed(feed) {
+  const startDate = new Date(from);
+  const endDate = clampEndToNow(to);
+
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || startDate > endDate) {
+    return { bars: [], feed: null };
+  }
+
+  async function fetchBarsWithFeed(feed, rangeStart = startDate, rangeEnd = endDate) {
+    const cacheKey = `${symbol}:${timeframe}:${rangeStart.toISOString()}:${rangeEnd.toISOString()}:${feed}`;
+
+    if (cache.has(cacheKey)) {
+      return cache.get(cacheKey);
+    }
+
     let pageToken;
     const bars = [];
 
     do {
       const data = await alpacaFetch(`/v2/stocks/${encodeURIComponent(symbol)}/bars`, {
         timeframe,
-        start: new Date(from).toISOString(),
-        end: new Date(to).toISOString(),
+        start: rangeStart.toISOString(),
+        end: rangeEnd.toISOString(),
         adjustment: "raw",
         sort: "asc",
         limit: "10000",
@@ -125,39 +151,66 @@ async function fetchBars(symbol, timeframe, from, to, cache) {
       pageToken = data?.next_page_token || null;
     } while (pageToken);
 
+    cache.set(cacheKey, bars);
     return bars;
   }
 
-  let lastError = null;
-
-  for (let index = 0; index < feeds.length; index += 1) {
-    const feed = feeds[index];
-    const cacheKey = `${symbol}:${timeframe}:${new Date(from).toISOString()}:${new Date(to).toISOString()}:${feed}`;
-
-    if (cache.has(cacheKey)) {
-      return {
-        bars: cache.get(cacheKey),
-        feed
-      };
-    }
-
+  async function fetchRangeWithPreferredFeed(preferredFeed, fallbackFeed, rangeStart = startDate, rangeEnd = endDate) {
     try {
-      const bars = await fetchBarsWithFeed(feed);
-      cache.set(cacheKey, bars);
+      const bars = await fetchBarsWithFeed(preferredFeed, rangeStart, rangeEnd);
       return {
         bars,
-        feed
+        feed: preferredFeed
       };
     } catch (error) {
-      lastError = error;
-
-      if (index === feeds.length - 1 || !canFallbackToNextFeed(error)) {
+      if (!fallbackFeed || !canFallbackToNextFeed(error)) {
         throw error;
       }
+
+      const bars = await fetchBarsWithFeed(fallbackFeed, rangeStart, rangeEnd);
+      return {
+        bars,
+        feed: fallbackFeed
+      };
     }
   }
 
-  throw lastError;
+  if (!env.alpacaFeed || env.alpacaFeed === "sip") {
+    return fetchRangeWithPreferredFeed("sip", null);
+  }
+
+  const delayedCutoff = new Date(Date.now() - SIP_DELAY_MS);
+  const hasHistoricalSlice = startDate < delayedCutoff;
+  const hasRecentSlice = endDate > delayedCutoff;
+
+  if (hasHistoricalSlice && hasRecentSlice) {
+    try {
+      const [historicalBars, recentBars] = await Promise.all([
+        fetchRangeWithPreferredFeed("sip", env.alpacaFeed, startDate, delayedCutoff),
+        fetchRangeWithPreferredFeed(env.alpacaFeed, null, delayedCutoff, endDate)
+      ]);
+
+      return {
+        bars: mergeBars(historicalBars.bars, recentBars.bars),
+        feed:
+          historicalBars.feed === recentBars.feed
+            ? historicalBars.feed
+            : `${historicalBars.feed || "unknown"}+${recentBars.feed || "unknown"}`
+      };
+    } catch (error) {
+      if (!canFallbackToNextFeed(error)) {
+        throw error;
+      }
+
+      return fetchRangeWithPreferredFeed(env.alpacaFeed, null);
+    }
+  }
+
+  if (hasHistoricalSlice) {
+    return fetchRangeWithPreferredFeed("sip", env.alpacaFeed);
+  }
+
+  return fetchRangeWithPreferredFeed(env.alpacaFeed, null);
 }
 
 async function fetchMinuteBarsWithMeta(symbol, from, to) {
