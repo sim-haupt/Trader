@@ -1677,6 +1677,8 @@ function ReportsPage() {
   const [detailedTimeframeKey, setDetailedTimeframeKey] = useState("60");
   const [detailedBreakdownTab, setDetailedBreakdownTab] = useState("Days/Times");
   const [marketVolumeByTradeId, setMarketVolumeByTradeId] = useState({});
+  const shouldLoadInstrumentMarketVolume =
+    activeTab === "Detailed" && detailedBreakdownTab === "Instrument";
   const {
     data: trades,
     loading,
@@ -1710,6 +1712,10 @@ function ReportsPage() {
     let cancelled = false;
 
     async function loadMarketVolumes() {
+      if (!shouldLoadInstrumentMarketVolume) {
+        return;
+      }
+
       if (filteredTrades.length === 0) {
         setMarketVolumeByTradeId({});
         return;
@@ -1789,7 +1795,7 @@ function ReportsPage() {
     return () => {
       cancelled = true;
     };
-  }, [filteredTrades]);
+  }, [filteredTrades, shouldLoadInstrumentMarketVolume]);
   const reportSeries = useMemo(
     () => buildOverviewSeries(filteredTrades, activeRange.days, {
       defaultCommission: user?.defaultCommission ?? 0,
