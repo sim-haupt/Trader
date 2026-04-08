@@ -477,7 +477,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
           pageMode ? "rounded-[28px] shadow-[0_30px_80px_rgba(0,0,0,0.32)]" : "rounded-[30px] shadow-glow"
         }`}
       >
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-[#e5e7eb42] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))] px-6 py-5 backdrop-blur">
+        <div className="flex items-start justify-between gap-4 border-b border-[#e5e7eb42] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))] px-6 py-5">
           <div>
             <div className="flex flex-wrap items-center gap-3">
               <h2 className="text-4xl font-bold tracking-[-0.05em] text-white">{activeTrade.symbol}</h2>
@@ -498,7 +498,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
             <button
               type="button"
               onClick={onClose}
-              className="ui-button border-coral/25 bg-coral/10 text-sm text-coral"
+              className="ui-button text-sm"
             >
               {pageMode ? "Back to Trades" : "Close"}
             </button>
@@ -524,7 +524,8 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
 
           <Card title="TRADER NOTES">
             <div className="space-y-5">
-              <div className="rounded-[18px] border border-[#e5e7eb42] bg-white/[0.03] p-4">
+              <div className="grid gap-5 xl:grid-cols-2">
+                <div className="rounded-[18px] border border-[#e5e7eb42] bg-white/[0.03] p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="ui-title text-xs text-white/48">Strategy</p>
                   <button
@@ -572,9 +573,9 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                     )}
                   </div>
                 )}
-              </div>
+                </div>
 
-              <div className="rounded-[18px] border border-[#e5e7eb42] bg-white/[0.03] p-4">
+                <div className="rounded-[18px] border border-[#e5e7eb42] bg-white/[0.03] p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="ui-title text-xs text-white/48">Tags</p>
                   <button
@@ -630,6 +631,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                     ) : null}
                   </div>
                 )}
+              </div>
               </div>
 
               <div className="rounded-[18px] border border-[#e5e7eb42] bg-white/[0.03] p-4">
@@ -702,10 +704,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
             </div>
           </Card>
 
-          <Card
-            title="Executions"
-            subtitle="Stored execution rows for this trade. This table is pinned near the top so it is visible immediately when the trade opens."
-          >
+          <Card title="Executions">
             <TimelineTable rows={tradeTimeline} />
           </Card>
 

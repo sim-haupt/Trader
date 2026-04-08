@@ -497,9 +497,9 @@ function TradesPage() {
     <div className="space-y-6">
       {isImportMode && (
         <>
-          <div className="grid gap-6 xl:grid-cols-[1.05fr_1.35fr]">
-            <div className="space-y-6">
-              <Card title="CSV IMPORT">
+          <div className="grid items-stretch gap-6 xl:grid-cols-[1.05fr_1.35fr]">
+            <div className="flex h-full flex-col gap-6">
+              <Card title="CSV IMPORT" className="flex-1" bodyClassName="flex h-full flex-col">
                 <UploadCSV onUpload={handleUpload} isUploading={isUploading} />
                 <div className="ui-notice mt-4 border-dashed border-[#e5e7eb42] text-white/72">
                   Supported CSVs: <span className="text-phosphor">app format and broker exports with Open Datetime / Entry Price / Exit Price columns</span>
@@ -508,12 +508,12 @@ function TradesPage() {
                 </div>
               </Card>
 
-              <Card title="TEXT IMPORT">
+              <Card title="TEXT IMPORT" className="flex-1" bodyClassName="flex h-full flex-col">
                 <TradeTextImport onImport={handleTextImport} isImporting={isUploading} />
               </Card>
             </div>
 
-            <Card title={title}>
+            <Card title={title} className="h-full" bodyClassName="flex h-full flex-col">
               <TradeForm
                 trade={selectedTrade}
                 onSubmit={handleSubmit}

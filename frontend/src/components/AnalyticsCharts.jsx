@@ -183,6 +183,40 @@ function widgetSpanClass(span) {
   return span === 2 ? "md:col-span-2 xl:col-span-2" : "";
 }
 
+function getLastSevenDayTone(day) {
+  if (day.trades === 0) {
+    return {
+      className: "ui-metric-tile rounded-[14px] px-4 py-4",
+      valueTone: "text-mist",
+      style: undefined
+    };
+  }
+
+  if (day.pnl > 0) {
+    return {
+      className:
+        "ui-metric-tile rounded-[14px] bg-[linear-gradient(180deg,rgba(24,200,122,0.12),rgba(24,200,122,0.04))] px-4 py-4",
+      valueTone: "text-mint",
+      style: { boxShadow: "inset 0 0 0 1px rgba(45, 212, 143, 0.34)" }
+    };
+  }
+
+  if (day.pnl < 0) {
+    return {
+      className:
+        "ui-metric-tile rounded-[14px] bg-[linear-gradient(180deg,rgba(255,93,87,0.12),rgba(255,93,87,0.04))] px-4 py-4",
+      valueTone: "text-coral",
+      style: { boxShadow: "inset 0 0 0 1px rgba(255, 107, 107, 0.34)" }
+    };
+  }
+
+  return {
+    className: "ui-metric-tile rounded-[14px] bg-white/[0.03] px-4 py-4",
+    valueTone: "text-phosphor",
+    style: { boxShadow: "inset 0 0 0 1px rgba(229, 231, 235, 0.16)" }
+  };
+}
+
 function AnalyticsCharts({
   analytics,
   layout = DEFAULT_DASHBOARD_LAYOUT,
@@ -475,21 +509,25 @@ function AnalyticsCharts({
     <div className="space-y-6">
       <div className="ui-panel p-5">
         <div className="grid gap-3 md:grid-cols-7">
-          {lastSevenDays.map((day) => (
+          {lastSevenDays.map((day) => {
+            const tone = getLastSevenDayTone(day);
+
+            return (
             <div
               key={day.date}
-              className="ui-metric-tile rounded-[14px] px-4 py-4"
+              className={tone.className}
+              style={tone.style}
             >
               <p className="ui-title text-[10px] uppercase text-white/45">{day.weekday}</p>
               <p className="mt-2 text-sm text-white/62">{day.label}</p>
-              <p className={`mt-4 text-2xl font-bold tracking-[-0.04em] ${day.trades === 0 ? "text-mist" : day.pnl >= 0 ? "text-mint" : "text-coral"}`}>
+              <p className={`mt-4 text-2xl font-bold tracking-[-0.04em] ${tone.valueTone}`}>
                 {formatCurrency(day.pnl)}
               </p>
               <p className="mt-2 text-xs text-white/56">
                 {day.trades} trade{day.trades === 1 ? "" : "s"}
               </p>
             </div>
-          ))}
+          )})}
         </div>
       </div>
 

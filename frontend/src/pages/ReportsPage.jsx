@@ -929,8 +929,8 @@ function CompareGroupCard({ title, filters, onChange, tags, strategies, matchedC
         <p className="mt-1 text-xs text-white/44">Trades matches: {matchedCount}</p>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2">
-        <div>
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(140px,1fr)_150px_150px_140px_140px_180px] xl:items-end">
+        <div className="min-w-0">
           <label className="mb-2 block text-xs font-medium text-white/72">Symbol</label>
           <input
             value={filters.symbol}
@@ -939,7 +939,7 @@ function CompareGroupCard({ title, filters, onChange, tags, strategies, matchedC
             className="ui-input"
           />
         </div>
-        <div>
+        <div className="min-w-0">
           <label className="mb-2 block text-xs font-medium text-white/72">Tags</label>
           <CustomSelect
             value={filters.tag}
@@ -949,9 +949,10 @@ function CompareGroupCard({ title, filters, onChange, tags, strategies, matchedC
               ...tags.map((tag) => ({ label: tag.name, value: tag.name }))
             ]}
             placeholder="Select"
+            buttonClassName="!py-3"
           />
         </div>
-        <div>
+        <div className="min-w-0">
           <label className="mb-2 block text-xs font-medium text-white/72">Strategy</label>
           <CustomSelect
             value={filters.strategy}
@@ -961,9 +962,10 @@ function CompareGroupCard({ title, filters, onChange, tags, strategies, matchedC
               ...strategies.map((strategy) => ({ label: strategy.name, value: strategy.name }))
             ]}
             placeholder="All"
+            buttonClassName="!py-3"
           />
         </div>
-        <div>
+        <div className="min-w-0">
           <label className="mb-2 block text-xs font-medium text-white/72">Side</label>
           <CustomSelect
             value={filters.side}
@@ -974,9 +976,10 @@ function CompareGroupCard({ title, filters, onChange, tags, strategies, matchedC
               { label: "Short", value: "SHORT" }
             ]}
             placeholder="All"
+            buttonClassName="!py-3"
           />
         </div>
-        <div>
+        <div className="min-w-0">
           <label className="mb-2 block text-xs font-medium text-white/72">Trade P&L</label>
           <CustomSelect
             value={filters.tradePnl}
@@ -988,9 +991,10 @@ function CompareGroupCard({ title, filters, onChange, tags, strategies, matchedC
               { label: "Scratch", value: "SCRATCH" }
             ]}
             placeholder="All"
+            buttonClassName="!py-3"
           />
         </div>
-        <div>
+        <div className="min-w-0">
           <label className="mb-2 block text-xs font-medium text-white/72">Date range</label>
           <DateRangePicker
             from={filters.from}
@@ -1000,6 +1004,7 @@ function CompareGroupCard({ title, filters, onChange, tags, strategies, matchedC
               onChange("to", to);
             }}
             placeholder="From - To"
+            buttonClassName="!py-3"
           />
         </div>
       </div>
@@ -1290,8 +1295,8 @@ function ReportsPage() {
     <div className="space-y-5">
       <Card className="relative z-20 overflow-visible">
         <div className="space-y-5">
-          <div className="grid gap-3 xl:grid-cols-[repeat(3,minmax(0,1fr))_1.2fr_auto]">
-            <div>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(170px,1fr)_160px_170px_140px_190px_auto] xl:items-end">
+            <div className="min-w-0">
               <label className="mb-2 block text-xs font-medium text-white/72">Symbol</label>
               <input
                 value={filters.symbol}
@@ -1300,7 +1305,7 @@ function ReportsPage() {
                 className="ui-input"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <label className="mb-2 block text-xs font-medium text-white/72">Tags</label>
               <CustomSelect
                 value={filters.tag}
@@ -1310,9 +1315,10 @@ function ReportsPage() {
                   ...tags.map((tag) => ({ label: tag.name, value: tag.name }))
                 ]}
                 placeholder="Select"
+                buttonClassName="!py-3"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <label className="mb-2 block text-xs font-medium text-white/72">Strategy</label>
               <CustomSelect
                 value={filters.strategy}
@@ -1322,9 +1328,10 @@ function ReportsPage() {
                   ...strategies.map((strategy) => ({ label: strategy.name, value: strategy.name }))
                 ]}
                 placeholder="All"
+                buttonClassName="!py-3"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <label className="mb-2 block text-xs font-medium text-white/72">Side</label>
               <CustomSelect
                 value={filters.side}
@@ -1335,9 +1342,10 @@ function ReportsPage() {
                   { label: "Short", value: "SHORT" }
                 ]}
                 placeholder="All"
+                buttonClassName="!py-3"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <label className="mb-2 block text-xs font-medium text-white/72">Date range</label>
               <DateRangePicker
                 from={filters.from}
@@ -1347,6 +1355,7 @@ function ReportsPage() {
                   updateFilter("to", to);
                 }}
                 placeholder="From - To"
+                buttonClassName="!py-3"
               />
             </div>
             <div className="flex items-end justify-end gap-2">
