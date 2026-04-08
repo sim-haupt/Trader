@@ -129,6 +129,8 @@ function buildChartTooltip(mode = "currency") {
         ? `${value.toFixed(1)}%`
         : mode === "volume"
           ? value.toLocaleString("en-US")
+          : mode === "count"
+            ? value.toLocaleString("en-US")
           : formatCurrency(value);
 
     return (
@@ -145,6 +147,25 @@ function buildChartTooltip(mode = "currency") {
 const CurrencyTooltip = buildChartTooltip("currency");
 const PercentTooltip = buildChartTooltip("percent");
 const VolumeTooltip = buildChartTooltip("volume");
+const CountTooltip = buildChartTooltip("count");
+
+const WEEKDAY_ORDER = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+const MONTH_ORDER = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const DETAILED_TIMEFRAME_OPTIONS = [
+  { key: "60", label: "1H", minutes: 60 },
+  { key: "30", label: "30M", minutes: 30 },
+  { key: "15", label: "15M", minutes: 15 }
+];
+
+function formatHourBucket(totalMinutes) {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${hours}:${String(minutes).padStart(2, "0")}`;
+}
+
+function formatAxisCurrency(value) {
+  return `${value < 0 ? "-" : ""}$${Math.abs(value)}`;
+}
 
 function buildOverviewSeries(trades, rangeDays, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
@@ -599,7 +620,8 @@ function buildDetailedStats(trades, options = {}) {
     ],
     [
       { label: "Kelly Percentage", value: formatPercent(summary.kellyPercentage), tone: summary.kellyPercentage >= 0 ? "text-mint" : "text-coral" },
-      { label: "Profit Factor", value: summary.profitFactor ? summary.profitFactor.toFixed(2) : "0.00", tone: "text-white" }
+      { label: "Profit Factor", value: summary.profitFactor ? summary.profitFactor.toFixed(2) : "0.00", tone: "text-white" },
+      null
     ],
     [
       { label: "Total Commissions", value: formatCurrency(summary.totalCommissions), tone: "text-white" },
@@ -609,6 +631,68 @@ function buildDetailedStats(trades, options = {}) {
   ];
 
   return rows;
+}
+
+function buildDetailedBreakdownStats(trades, timeframeMinutes, options = {}) {
+  const defaultCommission = options.defaultCommission || 0;
+  const defaultFees = options.defaultFees || 0;
+  const pnlType = options.pnlType || "NET";
+
+  const weekdayMap = new Map(
+    WEEKDAY_ORDER.map((day) => [day, { label: day, count: 0, pnl: 0 }])
+  );
+  const monthMap = new Map(
+    MONTH_ORDER.map((month) => [month, { label: month, count: 0, pnl: 0 }])
+  );
+  const hourBucketMap = new Map();
+  const startMinutes = 4 * 60;
+  const endMinutes = 20 * 60;
+
+  for (let minutes = startMinutes; minutes <= endMinutes; minutes += timeframeMinutes) {
+    const label = formatHourBucket(minutes);
+    hourBucketMap.set(label, { label, count: 0, pnl: 0 });
+  }
+
+  for (const trade of trades) {
+    const entryDate = new Date(trade.entryDate);
+    const pnl = getTradePnlByType(trade, pnlType, defaultCommission, defaultFees);
+    const weekday = entryDate.toLocaleDateString("en-US", { weekday: "short" });
+    const month = entryDate.toLocaleDateString("en-US", { month: "short" });
+
+    if (weekdayMap.has(weekday)) {
+      const current = weekdayMap.get(weekday);
+      current.count += 1;
+      current.pnl = Number((current.pnl + pnl).toFixed(2));
+    }
+
+    if (monthMap.has(month)) {
+      const current = monthMap.get(month);
+      current.count += 1;
+      current.pnl = Number((current.pnl + pnl).toFixed(2));
+    }
+
+    const totalMinutes = entryDate.getHours() * 60 + entryDate.getMinutes();
+    const bucketMinutes =
+      Math.floor(totalMinutes / timeframeMinutes) * timeframeMinutes;
+    const bucketLabel = formatHourBucket(bucketMinutes);
+
+    if (!hourBucketMap.has(bucketLabel)) {
+      hourBucketMap.set(bucketLabel, { label: bucketLabel, count: 0, pnl: 0 });
+    }
+
+    const hourBucket = hourBucketMap.get(bucketLabel);
+    hourBucket.count += 1;
+    hourBucket.pnl = Number((hourBucket.pnl + pnl).toFixed(2));
+  }
+
+  return {
+    weekdayDistribution: Array.from(weekdayMap.values()),
+    weekdayPerformance: Array.from(weekdayMap.values()),
+    hourDistribution: Array.from(hourBucketMap.values()),
+    hourPerformance: Array.from(hourBucketMap.values()),
+    monthDistribution: Array.from(monthMap.values()),
+    monthPerformance: Array.from(monthMap.values())
+  };
 }
 
 function buildWinLossDayRows(summary) {
@@ -726,6 +810,130 @@ function DetailedStatsTable({ rows }) {
         ))}
       </div>
     </Card>
+  );
+}
+
+function HorizontalBreakdownChart({
+  title,
+  data,
+  dataKey,
+  tooltip,
+  currencyAxis = false,
+  positiveNegative = false
+}) {
+  return (
+    <Card title={title}>
+      <div className="h-[320px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} layout="vertical" margin={{ top: 4, right: 12, left: 8, bottom: 4 }}>
+            <CartesianGrid stroke="rgba(255,255,255,0.05)" horizontal={false} />
+            <XAxis
+              type="number"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: "#c6cedb", fontSize: 11 }}
+              tickFormatter={currencyAxis ? formatAxisCurrency : undefined}
+            />
+            <YAxis
+              type="category"
+              dataKey="label"
+              axisLine={false}
+              tickLine={false}
+              width={72}
+              tick={{ fill: "#c6cedb", fontSize: 11 }}
+            />
+            <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={tooltip} />
+            <Bar dataKey={dataKey} radius={[0, 6, 6, 0]} barSize={18}>
+              {data.map((entry) => (
+                <Cell
+                  key={`${title}-${entry.label}`}
+                  fill={
+                    positiveNegative
+                      ? entry[dataKey] >= 0
+                        ? "#56f0a9"
+                        : "#ff6b6b"
+                      : "#56f0a9"
+                  }
+                />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </Card>
+  );
+}
+
+function DetailedBreakdownSection({ stats, timeframeKey, onTimeframeChange }) {
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-5 xl:grid-cols-2">
+        <HorizontalBreakdownChart
+          title="TRADE DISTRIBUTION BY DAY OF WEEK"
+          data={stats.weekdayDistribution}
+          dataKey="count"
+          tooltip={<CountTooltip />}
+        />
+        <HorizontalBreakdownChart
+          title="PERFORMANCE BY DAY OF WEEK"
+          data={stats.weekdayPerformance}
+          dataKey="pnl"
+          tooltip={<CurrencyTooltip />}
+          currencyAxis
+          positiveNegative
+        />
+      </div>
+
+      <div className="flex items-center gap-3">
+        <span className="ui-title text-[11px] text-white/58">TIMEFRAME</span>
+        <div className="ui-segment">
+          {DETAILED_TIMEFRAME_OPTIONS.map((option) => (
+            <button
+              key={option.key}
+              type="button"
+              data-active={option.key === timeframeKey}
+              onClick={() => onTimeframeChange(option.key)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-2">
+        <HorizontalBreakdownChart
+          title="TRADE DISTRIBUTION BY HOUR OF DAY"
+          data={stats.hourDistribution}
+          dataKey="count"
+          tooltip={<CountTooltip />}
+        />
+        <HorizontalBreakdownChart
+          title="PERFORMANCE BY HOUR OF DAY"
+          data={stats.hourPerformance}
+          dataKey="pnl"
+          tooltip={<CurrencyTooltip />}
+          currencyAxis
+          positiveNegative
+        />
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-2">
+        <HorizontalBreakdownChart
+          title="TRADE DISTRIBUTION BY MONTH OF YEAR"
+          data={stats.monthDistribution}
+          dataKey="count"
+          tooltip={<CountTooltip />}
+        />
+        <HorizontalBreakdownChart
+          title="PERFORMANCE BY MONTH OF YEAR"
+          data={stats.monthPerformance}
+          dataKey="pnl"
+          tooltip={<CurrencyTooltip />}
+          currencyAxis
+          positiveNegative
+        />
+      </div>
+    </div>
   );
 }
 
@@ -1174,6 +1382,7 @@ function ReportsPage() {
   const [groupAFilters, setGroupAFilters] = useState(COMPARE_GROUP_FILTERS);
   const [groupBFilters, setGroupBFilters] = useState(COMPARE_GROUP_FILTERS);
   const [pnlType, setPnlType] = useState("GROSS");
+  const [detailedTimeframeKey, setDetailedTimeframeKey] = useState("60");
   const {
     data: trades,
     loading,
@@ -1227,6 +1436,16 @@ function ReportsPage() {
     }),
     [filteredTrades, user?.defaultCommission, user?.defaultFees, pnlType]
   );
+  const detailedBreakdownStats = useMemo(() => {
+    const timeframe =
+      DETAILED_TIMEFRAME_OPTIONS.find((option) => option.key === detailedTimeframeKey)?.minutes || 60;
+
+    return buildDetailedBreakdownStats(filteredTrades, timeframe, {
+      defaultCommission: user?.defaultCommission ?? 0,
+      defaultFees: user?.defaultFees ?? 0,
+      pnlType
+    });
+  }, [filteredTrades, detailedTimeframeKey, user?.defaultCommission, user?.defaultFees, pnlType]);
   const winVsLossDayStats = useMemo(
     () => buildWinVsLossDaysStats(filteredTrades, {
       defaultCommission: user?.defaultCommission ?? 0,
@@ -1420,7 +1639,14 @@ function ReportsPage() {
           description="Try expanding the date range or clearing one of the report filters."
         />
       ) : activeTab === "Detailed" ? (
-        <DetailedStatsTable rows={detailedStats} />
+        <div className="space-y-5">
+          <DetailedStatsTable rows={detailedStats} />
+          <DetailedBreakdownSection
+            stats={detailedBreakdownStats}
+            timeframeKey={detailedTimeframeKey}
+            onTimeframeChange={setDetailedTimeframeKey}
+          />
+        </div>
       ) : activeTab === "Win vs Loss Days" ? (
         <WinVsLossDaysSection stats={winVsLossDayStats} />
       ) : activeTab === "Drawdown" ? (
