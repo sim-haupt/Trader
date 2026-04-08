@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
 import Filters from "../components/Filters";
 import TradeForm from "../components/TradeForm";
-import TradeDetailModal from "../components/TradeDetailModal";
 import TradeTable from "../components/TradeTable";
 import UploadCSV from "../components/UploadCSV";
 import TradeTextImport from "../components/TradeTextImport";
@@ -30,10 +29,10 @@ const pageSizeOptions = [
 ];
 
 function TradesPage() {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [trades, setTrades] = useState(() => tradeService.peekTrades(initialFilters) || []);
   const [selectedTrade, setSelectedTrade] = useState(null);
-  const [activeTradeId, setActiveTradeId] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
   const [bulkTags, setBulkTags] = useState("");
   const [bulkTagsMode, setBulkTagsMode] = useState("append");
@@ -130,10 +129,6 @@ function TradesPage() {
     () => (selectedTrade ? `Editing ${selectedTrade.symbol}` : "Add a new trade"),
     [selectedTrade]
   );
-  const activeTrade = useMemo(
-    () => trades.find((trade) => trade.id === activeTradeId) ?? null,
-    [activeTradeId, trades]
-  );
   const totalPages = useMemo(() => {
     if (pageSize === "all") {
       return 1;
@@ -149,12 +144,6 @@ function TradesPage() {
     const startIndex = (currentPage - 1) * pageSize;
     return trades.slice(startIndex, startIndex + pageSize);
   }, [currentPage, pageSize, trades]);
-
-  useEffect(() => {
-    if (activeTradeId && !activeTrade) {
-      setActiveTradeId(null);
-    }
-  }, [activeTrade, activeTradeId]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -372,10 +361,6 @@ function TradesPage() {
     try {
       const result = await tradeService.bulkDeleteTrades(selectedIds);
 
-      if (activeTradeId && selectedIds.includes(activeTradeId)) {
-        setActiveTradeId(null);
-      }
-
       if (selectedTrade && selectedIds.includes(selectedTrade.id)) {
         setSelectedTrade(null);
       }
@@ -440,7 +425,6 @@ function TradesPage() {
     try {
       const result = await tradeService.deleteAllTrades();
       setSelectedTrade(null);
-      setActiveTradeId(null);
       clearSelection();
       setMessage(`Deleted ${result.deletedCount} trades.`);
       await loadTrades(initialFilters);
@@ -816,7 +800,7 @@ function TradesPage() {
                 trades={paginatedTrades}
                 onEdit={setSelectedTrade}
                 onDelete={handleDelete}
-                onSelectTrade={(trade) => setActiveTradeId(trade.id)}
+                onSelectTrade={(trade) => navigate(`/trades/${trade.id}`, { state: { trade } })}
                 selectedIds={selectedIds}
                 onToggleSelection={handleToggleSelection}
                 onToggleAll={handleToggleAll}
@@ -825,8 +809,6 @@ function TradesPage() {
           )}
         </Card>
       ) : null}
-
-      {activeTrade && <TradeDetailModal trade={activeTrade} onClose={() => setActiveTradeId(null)} />}
     </div>
   );
 }

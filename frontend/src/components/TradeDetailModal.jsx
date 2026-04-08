@@ -157,7 +157,7 @@ function MarkdownButton({ label, onClick }) {
   );
 }
 
-function TradeDetailModal({ trade, onClose }) {
+function TradeDetailModal({ trade, onClose, pageMode = false }) {
   const initialDayStart = new Date(trade.entryDate);
   initialDayStart.setHours(0, 0, 0, 0);
   const initialDayEnd = new Date(trade.entryDate);
@@ -465,8 +465,18 @@ function TradeDetailModal({ trade, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-black/80 px-4 pb-4 pt-0 backdrop-blur">
-      <div className="w-full max-w-[1520px] rounded-[30px] border border-[#e5e7eb42] bg-[linear-gradient(180deg,rgba(16,19,26,0.98),rgba(9,11,16,0.98))] shadow-glow">
+    <div
+      className={
+        pageMode
+          ? "w-full"
+          : "fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-black/80 px-4 pb-4 pt-0 backdrop-blur"
+      }
+    >
+      <div
+        className={`w-full max-w-[1520px] border border-[#e5e7eb42] bg-[linear-gradient(180deg,rgba(16,19,26,0.98),rgba(9,11,16,0.98))] ${
+          pageMode ? "rounded-[28px] shadow-[0_30px_80px_rgba(0,0,0,0.32)]" : "rounded-[30px] shadow-glow"
+        }`}
+      >
         <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-[#e5e7eb42] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))] px-6 py-5 backdrop-blur">
           <div>
             <div className="flex flex-wrap items-center gap-3">
@@ -490,7 +500,7 @@ function TradeDetailModal({ trade, onClose }) {
               onClick={onClose}
               className="ui-button border-coral/25 bg-coral/10 text-sm text-coral"
             >
-              Close
+              {pageMode ? "Back to Trades" : "Close"}
             </button>
         </div>
 
