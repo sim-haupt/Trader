@@ -26,7 +26,7 @@ function buildIframeSrc(symbol) {
     toolbarbg: "#12192b",
     theme: "dark",
     style: "1",
-    timezone: "Europe/Berlin",
+    timezone: "America/New_York",
     studies: "[]",
     withdateranges: "1",
     hide_top_toolbar: "0",
@@ -56,28 +56,28 @@ function TradingViewChart({ symbol }) {
 
   return (
     <div className="space-y-3">
-      <div className="overflow-hidden rounded-3xl border border-white/10 bg-[#12192b]">
+      <div className="overflow-hidden rounded-[16px] border border-[#e5e7eb42] bg-[#0f1420] shadow-[0_24px_50px_rgba(0,0,0,0.28)]">
         <iframe
           key={normalizedSymbol}
           title={`${symbol} 1 minute chart`}
           src={iframeSrc}
-          className="h-[420px] w-full border-0"
+          className="h-[620px] w-full border-0"
           loading="lazy"
           referrerPolicy="no-referrer-when-downgrade"
           allowTransparency
         />
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-[#e5e7eb42] bg-white/[0.03] px-4 py-3 text-sm">
         <p className="text-mist">
-          If the symbol does not render correctly, it may be listed on a different exchange than the
-          default <span className="text-white">{normalizedSymbol}</span>.
+          Embedded TradingView chart in New York market time. Exact fill markers remain listed in the
+          executions table below.
         </p>
         <a
           href={publicSymbolUrl}
           target="_blank"
           rel="noreferrer"
-          className="rounded-full border border-white/15 px-4 py-2 font-medium text-white transition hover:border-mint hover:text-mint"
+          className="ui-button px-4 py-2 font-medium text-white transition hover:text-white"
         >
           Open On TradingView
         </a>
