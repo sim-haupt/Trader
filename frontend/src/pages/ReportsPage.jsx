@@ -134,7 +134,7 @@ function buildChartTooltip(mode = "currency") {
           : formatCurrency(value);
 
     return (
-      <div className="rounded-[12px] border border-white/10 bg-[#171d29]/95 px-3 py-2 shadow-[0_18px_40px_rgba(0,0,0,0.32)] backdrop-blur">
+      <div className="rounded-[6px] border border-[var(--line)] bg-black px-3 py-2">
         <div className="text-xs font-medium text-white/72">{label}</div>
         <div className={`mt-1 text-sm font-semibold ${value >= 0 ? "text-mint" : "text-coral"}`}>
           {formattedValue}
@@ -1021,8 +1021,8 @@ function buildWinVsLossDaysStats(trades, options = {}) {
     losingSummary: summarizeTrades(losingTrades, losingDays.length, options),
     distributionByWeekday: Array.from(distributionMap.values()),
     pieData: [
-      { name: "Winning Days", value: winningDays.length, fill: "#56f0a9" },
-      { name: "Losing Days", value: losingDays.length, fill: "#ffc14d" }
+      { name: "Winning Days", value: winningDays.length, fill: "oklch(71.7% 0.1648 250.794)" },
+      { name: "Losing Days", value: losingDays.length, fill: "oklch(25.45% 0.0811 255.8)" }
     ]
   };
 }
@@ -1055,7 +1055,7 @@ function mergeBreakdownSeries(leftData, rightData, leftKey, rightKey) {
 function DetailedStatsTable({ rows }) {
   return (
     <Card title="STATS">
-      <div className="overflow-hidden rounded-[18px] border border-[#e5e7eb42] bg-white/[0.02]">
+      <div className="overflow-hidden rounded-[6px] border border-[var(--line)] bg-black">
         {rows.map((row, rowIndex) => (
           <div key={`row-${rowIndex}`} className="grid border-b border-[#e5e7eb42] last:border-b-0 xl:grid-cols-3">
             {row.map((cell, cellIndex) => (
@@ -1121,9 +1121,9 @@ function HorizontalBreakdownChart({
                   fill={
                     positiveNegative
                       ? entry[dataKey] >= 0
-                        ? "#56f0a9"
-                        : "#ff6b6b"
-                      : "#56f0a9"
+                        ? "oklch(71.7% 0.1648 250.794)"
+                        : "oklch(25.45% 0.0811 255.8)"
+                      : "oklch(71.7% 0.1648 250.794)"
                   }
                 />
               ))}
@@ -1153,11 +1153,11 @@ function ComparisonHorizontalBreakdownChart({
     <Card title={title}>
       <div className="mb-3 flex flex-wrap items-center gap-4 px-1">
         <div className="flex items-center gap-2 text-xs text-white/62">
-          <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: leftColor }} />
+          <span className="h-2.5 w-2.5 rounded-[6px]" style={{ backgroundColor: leftColor }} />
           {leftTitle}
         </div>
         <div className="flex items-center gap-2 text-xs text-white/62">
-          <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: rightColor }} />
+          <span className="h-2.5 w-2.5 rounded-[6px]" style={{ backgroundColor: rightColor }} />
           {rightTitle}
         </div>
       </div>
@@ -1199,7 +1199,7 @@ function BreakdownTabs({ activeTab, onTabChange }) {
           key={item}
           type="button"
           onClick={() => onTabChange(item)}
-          className={`rounded-[10px] px-3 py-2 text-xs font-medium ${
+          className={`rounded-[6px] px-3 py-2 text-xs font-medium ${
             activeTab === item
               ? "bg-white/[0.08] text-white"
               : "border border-white/10 bg-white/[0.03] text-white/58"
@@ -1431,7 +1431,7 @@ function DetailedBreakdownSection({
 
 function WinLossColumn({ title, count, rows, accent }) {
   return (
-    <div className="rounded-[18px] border border-[#e5e7eb42] bg-white/[0.02]">
+    <div className="rounded-[6px] border border-[var(--line)] bg-black">
       <div className="border-b border-[#e5e7eb42] px-4 py-3">
         <p className={`text-sm font-semibold ${accent}`}>{count} {title}</p>
       </div>
@@ -1514,7 +1514,7 @@ function WinVsLossDaysSection({
             title="Losing Days"
             count={stats.losingDayCount}
             rows={buildWinLossDayRows(stats.losingSummary)}
-            accent="text-[#ffc14d]"
+            accent="text-coral"
           />
         </div>
       </Card>
@@ -1552,8 +1552,8 @@ function WinVsLossDaysSection({
               leftTitle="Winning Days"
               rightTitle="Losing Days"
               data={weekdayDistributionData}
-              leftColor="#56f0a9"
-              rightColor="#ffc14d"
+              leftColor="oklch(71.7% 0.1648 250.794)"
+              rightColor="oklch(25.45% 0.0811 255.8)"
               tooltipMode="count"
             />
             <ComparisonHorizontalBreakdownChart
@@ -1561,8 +1561,8 @@ function WinVsLossDaysSection({
               leftTitle="Winning Days"
               rightTitle="Losing Days"
               data={weekdayPerformanceData}
-              leftColor="#56f0a9"
-              rightColor="#ffc14d"
+              leftColor="oklch(71.7% 0.1648 250.794)"
+              rightColor="oklch(25.45% 0.0811 255.8)"
               tooltipMode="currency"
               currencyAxis
             />
@@ -1578,33 +1578,33 @@ function WinVsLossDaysSection({
             </div>
           </div>
           <div className="grid gap-5 xl:grid-cols-2">
-            <ComparisonHorizontalBreakdownChart title="TRADE DISTRIBUTION BY HOUR OF DAY" leftTitle="Winning Days" rightTitle="Losing Days" data={hourDistributionData} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="count" />
-            <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY HOUR OF DAY" leftTitle="Winning Days" rightTitle="Losing Days" data={hourPerformanceData} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="currency" currencyAxis />
-            <ComparisonHorizontalBreakdownChart title="TRADE DISTRIBUTION BY MONTH OF YEAR" leftTitle="Winning Days" rightTitle="Losing Days" data={monthDistributionData} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="count" />
-            <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY MONTH OF YEAR" leftTitle="Winning Days" rightTitle="Losing Days" data={monthPerformanceData} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="currency" currencyAxis />
+            <ComparisonHorizontalBreakdownChart title="TRADE DISTRIBUTION BY HOUR OF DAY" leftTitle="Winning Days" rightTitle="Losing Days" data={hourDistributionData} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="count" />
+            <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY HOUR OF DAY" leftTitle="Winning Days" rightTitle="Losing Days" data={hourPerformanceData} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="currency" currencyAxis />
+            <ComparisonHorizontalBreakdownChart title="TRADE DISTRIBUTION BY MONTH OF YEAR" leftTitle="Winning Days" rightTitle="Losing Days" data={monthDistributionData} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="count" />
+            <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY MONTH OF YEAR" leftTitle="Winning Days" rightTitle="Losing Days" data={monthPerformanceData} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="currency" currencyAxis />
           </div>
         </>
       ) : activeTab === "Price/Volume" ? (
         <div className="grid gap-5 xl:grid-cols-2">
-          <ComparisonHorizontalBreakdownChart title="TRADE DISTRIBUTION BY PRICE" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(bucketStats.winning.priceDistribution, bucketStats.losing.priceDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="count" />
-          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY PRICE" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(bucketStats.winning.pricePerformance, bucketStats.losing.pricePerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="currency" currencyAxis />
-          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY VOLUME TRADED" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(bucketStats.winning.volumeDistribution, bucketStats.losing.volumeDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="count" />
-          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY VOLUME TRADED" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(bucketStats.winning.volumePerformance, bucketStats.losing.volumePerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="currency" currencyAxis />
-          <ComparisonHorizontalBreakdownChart title="TRADE DISTRIBUTION BY IN-TRADE PRICE RANGE" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(bucketStats.winning.rangeDistribution, bucketStats.losing.rangeDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="count" />
-          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY IN-TRADE PRICE RANGE" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(bucketStats.winning.rangePerformance, bucketStats.losing.rangePerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="currency" currencyAxis />
+          <ComparisonHorizontalBreakdownChart title="TRADE DISTRIBUTION BY PRICE" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(bucketStats.winning.priceDistribution, bucketStats.losing.priceDistribution, "count", "count")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="count" />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY PRICE" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(bucketStats.winning.pricePerformance, bucketStats.losing.pricePerformance, "pnl", "pnl")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="currency" currencyAxis />
+          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY VOLUME TRADED" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(bucketStats.winning.volumeDistribution, bucketStats.losing.volumeDistribution, "count", "count")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="count" />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY VOLUME TRADED" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(bucketStats.winning.volumePerformance, bucketStats.losing.volumePerformance, "pnl", "pnl")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="currency" currencyAxis />
+          <ComparisonHorizontalBreakdownChart title="TRADE DISTRIBUTION BY IN-TRADE PRICE RANGE" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(bucketStats.winning.rangeDistribution, bucketStats.losing.rangeDistribution, "count", "count")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="count" />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY IN-TRADE PRICE RANGE" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(bucketStats.winning.rangePerformance, bucketStats.losing.rangePerformance, "pnl", "pnl")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="currency" currencyAxis />
         </div>
       ) : (
         <div className="grid gap-5 xl:grid-cols-2">
-          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY SYMBOL - TOP 20" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.topSymbols, instrumentStats.losing.topSymbols, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="currency" currencyAxis yAxisWidth={88} />
-          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY SYMBOL - BOTTOM 20" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.bottomSymbols, instrumentStats.losing.bottomSymbols, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="currency" currencyAxis yAxisWidth={88} />
-          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY INSTRUMENT VOLUME" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.instrumentVolumeDistribution, instrumentStats.losing.instrumentVolumeDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="count" yAxisWidth={110} />
-          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY INSTRUMENT VOLUME" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.instrumentVolumePerformance, instrumentStats.losing.instrumentVolumePerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="currency" currencyAxis yAxisWidth={110} />
-          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY RELATIVE VOLUME" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.relativeVolumeDistribution, instrumentStats.losing.relativeVolumeDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="count" yAxisWidth={110} />
-          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY RELATIVE VOLUME" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.relativeVolumePerformance, instrumentStats.losing.relativeVolumePerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="currency" currencyAxis yAxisWidth={110} />
-          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY FLOAT" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.floatDistribution, instrumentStats.losing.floatDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="count" yAxisWidth={120} />
-          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY FLOAT" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.floatPerformance, instrumentStats.losing.floatPerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="currency" currencyAxis yAxisWidth={120} />
-          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY PRIOR CLOSE %" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.priorCloseDistribution, instrumentStats.losing.priorCloseDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="count" yAxisWidth={110} />
-          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY PRIOR CLOSE %" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.priorClosePerformance, instrumentStats.losing.priorClosePerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#ffc14d" tooltipMode="currency" currencyAxis yAxisWidth={110} />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY SYMBOL - TOP 20" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.topSymbols, instrumentStats.losing.topSymbols, "pnl", "pnl")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="currency" currencyAxis yAxisWidth={88} />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY SYMBOL - BOTTOM 20" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.bottomSymbols, instrumentStats.losing.bottomSymbols, "pnl", "pnl")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="currency" currencyAxis yAxisWidth={88} />
+          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY INSTRUMENT VOLUME" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.instrumentVolumeDistribution, instrumentStats.losing.instrumentVolumeDistribution, "count", "count")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="count" yAxisWidth={110} />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY INSTRUMENT VOLUME" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.instrumentVolumePerformance, instrumentStats.losing.instrumentVolumePerformance, "pnl", "pnl")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="currency" currencyAxis yAxisWidth={110} />
+          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY RELATIVE VOLUME" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.relativeVolumeDistribution, instrumentStats.losing.relativeVolumeDistribution, "count", "count")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="count" yAxisWidth={110} />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY RELATIVE VOLUME" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.relativeVolumePerformance, instrumentStats.losing.relativeVolumePerformance, "pnl", "pnl")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="currency" currencyAxis yAxisWidth={110} />
+          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY FLOAT" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.floatDistribution, instrumentStats.losing.floatDistribution, "count", "count")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="count" yAxisWidth={120} />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY FLOAT" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.floatPerformance, instrumentStats.losing.floatPerformance, "pnl", "pnl")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="currency" currencyAxis yAxisWidth={120} />
+          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY PRIOR CLOSE %" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.priorCloseDistribution, instrumentStats.losing.priorCloseDistribution, "count", "count")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="count" yAxisWidth={110} />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY PRIOR CLOSE %" leftTitle="Winning Days" rightTitle="Losing Days" data={mergeBreakdownSeries(instrumentStats.winning.priorClosePerformance, instrumentStats.losing.priorClosePerformance, "pnl", "pnl")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="currency" currencyAxis yAxisWidth={110} />
         </div>
       )}
     </div>
@@ -1629,7 +1629,7 @@ function DrawdownSection({ summary }) {
 
   return (
     <Card title="STATISTICS">
-      <div className="overflow-hidden rounded-[18px] border border-[#e5e7eb42] bg-white/[0.02]">
+      <div className="overflow-hidden rounded-[6px] border border-[var(--line)] bg-black">
         {rows.map((row, rowIndex) => (
           <div
             key={`drawdown-row-${rowIndex}`}
@@ -1663,7 +1663,7 @@ function CompareStatsColumn({ title, rows, tradesMatched }) {
   const flattenedRows = rows.flat().filter(Boolean);
 
   return (
-    <div className="rounded-[18px] border border-[#e5e7eb42] bg-white/[0.02]">
+    <div className="rounded-[6px] border border-[var(--line)] bg-black">
       <div className="border-b border-[#e5e7eb42] px-4 py-3">
         <p className="text-sm font-semibold text-white">{title}</p>
         <p className="mt-1 text-xs text-white/44">Trades matches: {tradesMatched}</p>
@@ -1687,7 +1687,7 @@ function CompareStatsColumn({ title, rows, tradesMatched }) {
 
 function CompareGroupCard({ title, filters, onChange, tags, strategies, matchedCount }) {
   return (
-    <div className="relative z-20 overflow-visible rounded-[18px] border border-[#e5e7eb42] bg-white/[0.02] p-4">
+    <div className="relative z-20 overflow-visible rounded-[6px] border border-[var(--line)] bg-black p-4">
       <div className="mb-4">
         <p className="text-sm font-semibold text-white">{title}</p>
         <p className="mt-1 text-xs text-white/44">Trades matches: {matchedCount}</p>
@@ -1847,8 +1847,8 @@ function CompareSection({
       {activeTab === "Days/Times" ? (
         <>
           <div className="grid gap-5 xl:grid-cols-2">
-            <ComparisonHorizontalBreakdownChart title="TRADE DISTRIBUTION BY DAY OF WEEK" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABreakdown.weekdayDistribution, groupBBreakdown.weekdayDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="count" />
-            <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY DAY OF WEEK" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABreakdown.weekdayPerformance, groupBBreakdown.weekdayPerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="currency" currencyAxis />
+            <ComparisonHorizontalBreakdownChart title="TRADE DISTRIBUTION BY DAY OF WEEK" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABreakdown.weekdayDistribution, groupBBreakdown.weekdayDistribution, "count", "count")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="count" />
+            <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY DAY OF WEEK" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABreakdown.weekdayPerformance, groupBBreakdown.weekdayPerformance, "pnl", "pnl")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="currency" currencyAxis />
           </div>
 
           <div className="flex items-center gap-3">
@@ -1863,33 +1863,33 @@ function CompareSection({
           </div>
 
           <div className="grid gap-5 xl:grid-cols-2">
-            <ComparisonHorizontalBreakdownChart title="TRADE DISTRIBUTION BY HOUR OF DAY" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABreakdown.hourDistribution, groupBBreakdown.hourDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="count" />
-            <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY HOUR OF DAY" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABreakdown.hourPerformance, groupBBreakdown.hourPerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="currency" currencyAxis />
-            <ComparisonHorizontalBreakdownChart title="TRADE DISTRIBUTION BY MONTH OF YEAR" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABreakdown.monthDistribution, groupBBreakdown.monthDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="count" />
-            <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY MONTH OF YEAR" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABreakdown.monthPerformance, groupBBreakdown.monthPerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="currency" currencyAxis />
+            <ComparisonHorizontalBreakdownChart title="TRADE DISTRIBUTION BY HOUR OF DAY" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABreakdown.hourDistribution, groupBBreakdown.hourDistribution, "count", "count")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="count" />
+            <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY HOUR OF DAY" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABreakdown.hourPerformance, groupBBreakdown.hourPerformance, "pnl", "pnl")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="currency" currencyAxis />
+            <ComparisonHorizontalBreakdownChart title="TRADE DISTRIBUTION BY MONTH OF YEAR" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABreakdown.monthDistribution, groupBBreakdown.monthDistribution, "count", "count")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="count" />
+            <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY MONTH OF YEAR" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABreakdown.monthPerformance, groupBBreakdown.monthPerformance, "pnl", "pnl")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="currency" currencyAxis />
           </div>
         </>
       ) : activeTab === "Price/Volume" ? (
         <div className="grid gap-5 xl:grid-cols-2">
-          <ComparisonHorizontalBreakdownChart title="TRADE DISTRIBUTION BY PRICE" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABuckets.priceDistribution, groupBBuckets.priceDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="count" />
-          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY PRICE" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABuckets.pricePerformance, groupBBuckets.pricePerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="currency" currencyAxis />
-          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY VOLUME TRADED" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABuckets.volumeDistribution, groupBBuckets.volumeDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="count" />
-          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY VOLUME TRADED" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABuckets.volumePerformance, groupBBuckets.volumePerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="currency" currencyAxis />
-          <ComparisonHorizontalBreakdownChart title="TRADE DISTRIBUTION BY IN-TRADE PRICE RANGE" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABuckets.rangeDistribution, groupBBuckets.rangeDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="count" />
-          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY IN-TRADE PRICE RANGE" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABuckets.rangePerformance, groupBBuckets.rangePerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="currency" currencyAxis />
+          <ComparisonHorizontalBreakdownChart title="TRADE DISTRIBUTION BY PRICE" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABuckets.priceDistribution, groupBBuckets.priceDistribution, "count", "count")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="count" />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY PRICE" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABuckets.pricePerformance, groupBBuckets.pricePerformance, "pnl", "pnl")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="currency" currencyAxis />
+          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY VOLUME TRADED" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABuckets.volumeDistribution, groupBBuckets.volumeDistribution, "count", "count")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="count" />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY VOLUME TRADED" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABuckets.volumePerformance, groupBBuckets.volumePerformance, "pnl", "pnl")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="currency" currencyAxis />
+          <ComparisonHorizontalBreakdownChart title="TRADE DISTRIBUTION BY IN-TRADE PRICE RANGE" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABuckets.rangeDistribution, groupBBuckets.rangeDistribution, "count", "count")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="count" />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY IN-TRADE PRICE RANGE" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupABuckets.rangePerformance, groupBBuckets.rangePerformance, "pnl", "pnl")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="currency" currencyAxis />
         </div>
       ) : (
         <div className="grid gap-5 xl:grid-cols-2">
-          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY SYMBOL - TOP 20" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.topSymbols, groupBInstrument.topSymbols, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="currency" currencyAxis yAxisWidth={88} />
-          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY SYMBOL - BOTTOM 20" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.bottomSymbols, groupBInstrument.bottomSymbols, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="currency" currencyAxis yAxisWidth={88} />
-          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY INSTRUMENT VOLUME" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.instrumentVolumeDistribution, groupBInstrument.instrumentVolumeDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="count" yAxisWidth={110} />
-          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY INSTRUMENT VOLUME" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.instrumentVolumePerformance, groupBInstrument.instrumentVolumePerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="currency" currencyAxis yAxisWidth={110} />
-          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY RELATIVE VOLUME" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.relativeVolumeDistribution, groupBInstrument.relativeVolumeDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="count" yAxisWidth={110} />
-          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY RELATIVE VOLUME" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.relativeVolumePerformance, groupBInstrument.relativeVolumePerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="currency" currencyAxis yAxisWidth={110} />
-          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY FLOAT" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.floatDistribution, groupBInstrument.floatDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="count" yAxisWidth={120} />
-          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY FLOAT" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.floatPerformance, groupBInstrument.floatPerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="currency" currencyAxis yAxisWidth={120} />
-          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY PRIOR CLOSE %" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.priorCloseDistribution, groupBInstrument.priorCloseDistribution, "count", "count")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="count" yAxisWidth={110} />
-          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY PRIOR CLOSE %" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.priorClosePerformance, groupBInstrument.priorClosePerformance, "pnl", "pnl")} leftColor="#56f0a9" rightColor="#7aa2ff" tooltipMode="currency" currencyAxis yAxisWidth={110} />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY SYMBOL - TOP 20" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.topSymbols, groupBInstrument.topSymbols, "pnl", "pnl")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="currency" currencyAxis yAxisWidth={88} />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY SYMBOL - BOTTOM 20" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.bottomSymbols, groupBInstrument.bottomSymbols, "pnl", "pnl")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="currency" currencyAxis yAxisWidth={88} />
+          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY INSTRUMENT VOLUME" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.instrumentVolumeDistribution, groupBInstrument.instrumentVolumeDistribution, "count", "count")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="count" yAxisWidth={110} />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY INSTRUMENT VOLUME" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.instrumentVolumePerformance, groupBInstrument.instrumentVolumePerformance, "pnl", "pnl")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="currency" currencyAxis yAxisWidth={110} />
+          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY RELATIVE VOLUME" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.relativeVolumeDistribution, groupBInstrument.relativeVolumeDistribution, "count", "count")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="count" yAxisWidth={110} />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY RELATIVE VOLUME" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.relativeVolumePerformance, groupBInstrument.relativeVolumePerformance, "pnl", "pnl")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="currency" currencyAxis yAxisWidth={110} />
+          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY FLOAT" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.floatDistribution, groupBInstrument.floatDistribution, "count", "count")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="count" yAxisWidth={120} />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY FLOAT" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.floatPerformance, groupBInstrument.floatPerformance, "pnl", "pnl")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="currency" currencyAxis yAxisWidth={120} />
+          <ComparisonHorizontalBreakdownChart title="DISTRIBUTION BY PRIOR CLOSE %" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.priorCloseDistribution, groupBInstrument.priorCloseDistribution, "count", "count")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="count" yAxisWidth={110} />
+          <ComparisonHorizontalBreakdownChart title="PERFORMANCE BY PRIOR CLOSE %" leftTitle="Group A" rightTitle="Group B" data={mergeBreakdownSeries(groupAInstrument.priorClosePerformance, groupBInstrument.priorClosePerformance, "pnl", "pnl")} leftColor="oklch(71.7% 0.1648 250.794)" rightColor="oklch(25.45% 0.0811 255.8)" tooltipMode="currency" currencyAxis yAxisWidth={110} />
         </div>
       )}
     </div>
@@ -2299,7 +2299,7 @@ function ReportsPage() {
                   onClick={() => handleTabChange(tab)}
                   className={`text-sm font-medium transition ${
                     tab === activeTab
-                      ? "border-b border-[var(--accent)] pb-3 text-[var(--accent-strong)]"
+                      ? "border-b border-mint pb-3 text-mint"
                       : "pb-3 text-white/62 hover:text-white"
                   }`}
                 >
@@ -2400,7 +2400,7 @@ function ReportsPage() {
                   <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<CurrencyTooltip />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
                   <Bar dataKey="grossPnl" barSize={20}>
                     {reportSeries.grossDaily.map((entry) => (
-                      <Cell key={entry.date} fill={entry.grossPnl >= 0 ? "#56f0a9" : "#ff6b6b"} />
+                      <Cell key={entry.date} fill={entry.grossPnl >= 0 ? "oklch(71.7% 0.1648 250.794)" : "oklch(25.45% 0.0811 255.8)"} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -2416,7 +2416,7 @@ function ReportsPage() {
                   <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} minTickGap={18} />
                   <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} tick={{ fill: "#c6cedb", fontSize: 11 }} />
                   <Tooltip content={<CurrencyTooltip />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
-                  <Line type="monotone" dataKey="cumulativeGrossPnl" stroke="#18c87a" strokeWidth={3} dot={false} />
+                  <Line type="monotone" dataKey="cumulativeGrossPnl" stroke="oklch(71.7% 0.1648 250.794)" strokeWidth={3} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -2430,7 +2430,7 @@ function ReportsPage() {
                   <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} minTickGap={18} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
                   <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<VolumeTooltip />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
-                  <Bar dataKey="volume" barSize={20} fill="#56f0a9" />
+                  <Bar dataKey="volume" barSize={20} fill="oklch(71.7% 0.1648 250.794)" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -2444,7 +2444,7 @@ function ReportsPage() {
                   <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} minTickGap={18} />
                   <YAxis axisLine={false} tickLine={false} domain={[0, 100]} tick={{ fill: "#c6cedb", fontSize: 11 }} />
                   <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<PercentTooltip />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
-                  <Bar dataKey="winRate" barSize={20} fill="#56f0a9" />
+                  <Bar dataKey="winRate" barSize={20} fill="oklch(71.7% 0.1648 250.794)" />
                 </BarChart>
               </ResponsiveContainer>
             </div>

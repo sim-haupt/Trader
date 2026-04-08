@@ -173,7 +173,7 @@ function JournalChartTooltip({ active, payload, label }) {
   }
 
   return (
-    <div className="rounded-[14px] border border-[#e5e7eb42] bg-[#171d2b]/96 px-3 py-2 text-xs text-white shadow-[0_18px_50px_rgba(4,10,22,0.45)] backdrop-blur">
+    <div className="rounded-[6px] border border-[var(--line)] bg-black px-3 py-2 text-xs text-white">
       <div className="text-white/52">{label}</div>
       <div className="mt-1 font-medium text-white">{formatCurrency(payload[0].value)}</div>
     </div>
@@ -198,7 +198,7 @@ function JournalDayCard({
       title={day.label.toUpperCase()}
       action={
         <div
-          className={`rounded-[12px] border px-3 py-2 text-sm font-semibold ${
+          className={`rounded-[6px] border px-3 py-2 text-sm font-semibold ${
             positive
               ? "border-mint/25 bg-mint/10 text-mint"
               : negative
@@ -212,7 +212,7 @@ function JournalDayCard({
     >
       <div className="space-y-5">
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)]">
-          <div className="h-[180px] rounded-[18px] border border-[var(--line)] bg-black/20 p-3">
+          <div className="h-[180px] rounded-[6px] border border-[var(--line)] bg-black p-3">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={day.chartData}>
                 <defs>
@@ -256,7 +256,7 @@ function JournalDayCard({
           </div>
         </div>
 
-        <div className="rounded-[18px] border border-[var(--line)] bg-white/[0.03] p-4">
+        <div className="rounded-[6px] border border-[var(--line)] bg-black p-4">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div className="ui-title text-[10px] text-white/56">Day Notes</div>
             <button

@@ -627,7 +627,7 @@ function TradesPage() {
                 <div className="ui-panel p-5 shadow-none">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="ui-chip rounded-full px-3 py-1.5 text-xs uppercase tracking-[0.14em] text-white/80">
+                      <div className="ui-chip rounded-[6px] px-3 py-1.5 text-xs uppercase tracking-[0.14em] text-white/80">
                         {selectedIds.length} selected
                       </div>
                       <div className="text-sm text-white/56">
@@ -654,7 +654,7 @@ function TradesPage() {
                             <button
                               type="button"
                               onClick={() => setBulkStrategy("")}
-                              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-xs text-white/82"
+                              className="inline-flex items-center gap-2 rounded-[6px] border border-[var(--line)] bg-black px-3 py-1.5 text-xs text-white/82"
                             >
                               <span>{bulkStrategy}</span>
                               <span className="text-white/48">x</span>
@@ -675,7 +675,7 @@ function TradesPage() {
                                   key={strategy.id}
                                   type="button"
                                   onClick={() => setBulkStrategy(strategy.name)}
-                                  className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5 text-xs font-medium text-white/78 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                                  className="rounded-[6px] border border-[var(--line)] bg-black px-3 py-1.5 text-xs font-medium text-white/78 transition hover:border-white/20 hover:bg-[#1f1f1f] hover:text-white"
                                 >
                                   {strategy.name}
                                 </button>
@@ -695,7 +695,7 @@ function TradesPage() {
                               key={tag}
                               type="button"
                               onClick={() => removeBulkTag(tag)}
-                              className="inline-flex items-center gap-2 rounded-full border border-mint/20 bg-mint/[0.08] px-3 py-1.5 text-xs font-medium text-white/88 transition hover:bg-mint/[0.14]"
+                              className="inline-flex items-center gap-2 rounded-[6px] border border-[var(--line)] bg-black px-3 py-1.5 text-xs font-medium text-white/88 transition hover:bg-[#1f1f1f]"
                             >
                               <span>{tag}</span>
                               <span className="text-white/45">×</span>
@@ -715,7 +715,7 @@ function TradesPage() {
                               key={tag.id}
                               type="button"
                               onClick={() => addBulkTag(tag.name)}
-                              className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5 text-xs font-medium text-white/78 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                              className="rounded-[6px] border border-[var(--line)] bg-black px-3 py-1.5 text-xs font-medium text-white/78 transition hover:border-white/20 hover:bg-[#1f1f1f] hover:text-white"
                             >
                               {tag.name}
                             </button>
@@ -752,7 +752,7 @@ function TradesPage() {
                           </div>
                         </div>
 
-                        <div className="rounded-[12px] border border-coral/15 bg-coral/[0.06] px-4 py-3 text-sm leading-6 text-white/68">
+                        <div className="rounded-[6px] border border-[var(--line)] bg-black px-4 py-3 text-sm leading-6 text-white/68">
                           Delete will permanently remove the selected trades.
                         </div>
                       </div>
@@ -770,7 +770,7 @@ function TradesPage() {
                           type="button"
                           onClick={handleBulkDelete}
                           disabled={isBulkDeleting}
-                          className="w-full rounded-[12px] border border-coral/25 bg-coral/[0.08] px-4 py-3 text-sm font-semibold text-coral transition hover:bg-coral/[0.14] disabled:cursor-not-allowed disabled:opacity-50"
+                          className="w-full rounded-[6px] border border-[var(--line)] bg-black px-4 py-3 text-sm font-semibold text-coral transition hover:bg-[#1f1f1f] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {isBulkDeleting ? "Deleting..." : "Delete Selected"}
                         </button>

@@ -69,7 +69,7 @@ function AppShell() {
               <NavLink key={item.path} to={item.path}>
                 {({ isActive }) => (
                   <span className="ui-sidebar-link" data-active={isActive || location.pathname.startsWith(item.path)}>
-                    <span className={(isActive || location.pathname.startsWith(item.path)) ? "text-[var(--accent-strong)]" : "text-white/42"}>
+                    <span className={(isActive || location.pathname.startsWith(item.path)) ? "text-mint" : "text-white/42"}>
                       <NavIcon path={item.icon} />
                     </span>
                     <span>{item.label}</span>
@@ -82,7 +82,7 @@ function AppShell() {
               <NavLink to="/admin">
                 {({ isActive }) => (
                   <span className="ui-sidebar-link" data-active={isActive || location.pathname.startsWith("/admin")}>
-                    <span className={(isActive || location.pathname.startsWith("/admin")) ? "text-[var(--accent-strong)]" : "text-white/42"}>
+                    <span className={(isActive || location.pathname.startsWith("/admin")) ? "text-mint" : "text-white/42"}>
                       <NavIcon path="M12 3l7 4v10l-7 4-7-4V7l7-4zm0 5v4m0 4h.01" />
                     </span>
                     <span>Admin</span>

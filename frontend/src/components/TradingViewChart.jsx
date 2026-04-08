@@ -48,7 +48,7 @@ function TradingViewChart({ symbol }) {
 
   if (!symbol) {
     return (
-      <div className="flex h-[420px] items-center justify-center rounded-3xl border border-dashed border-white/10 bg-slate-950/30 text-sm text-mist">
+      <div className="flex h-[420px] items-center justify-center rounded-[6px] border border-dashed border-[var(--line)] bg-black text-sm text-mist">
         No symbol available for chart context.
       </div>
     );
@@ -56,7 +56,7 @@ function TradingViewChart({ symbol }) {
 
   return (
     <div className="space-y-3">
-      <div className="overflow-hidden rounded-[16px] border border-[#e5e7eb42] bg-[#0f1420] shadow-[0_24px_50px_rgba(0,0,0,0.28)]">
+      <div className="overflow-hidden rounded-[6px] border border-[var(--line)] bg-black">
         <iframe
           key={normalizedSymbol}
           title={`${symbol} 1 minute chart`}
@@ -68,7 +68,7 @@ function TradingViewChart({ symbol }) {
         />
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-[#e5e7eb42] bg-white/[0.03] px-4 py-3 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[6px] border border-[var(--line)] bg-black px-4 py-3 text-sm">
         <p className="text-mist">
           Embedded TradingView chart in New York market time. Exact fill markers remain listed in the
           executions table below.

@@ -89,11 +89,11 @@ export function normalizeDashboardLayout(layout) {
 
 function tooltipStyle() {
   return {
-    background: "rgba(25,30,43,0.96)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: "12px",
-    color: "#f5f7fb",
-    boxShadow: "0 18px 40px rgba(0,0,0,0.28)"
+    background: "#050505",
+    border: "1px solid rgb(31,31,31)",
+    borderRadius: "6px",
+    color: "#ededed",
+    boxShadow: "none"
   };
 }
 
@@ -114,9 +114,9 @@ function ChartTooltipContent({ active, payload, label }) {
   }
 
   return (
-    <div className="rounded-[12px] border border-white/10 bg-[#171d29]/95 px-3 py-2 shadow-[0_18px_40px_rgba(0,0,0,0.32)] backdrop-blur">
-      <div className="text-xs font-medium text-white/72">{label}</div>
-      <div className={`mt-1 text-sm font-semibold ${value >= 0 ? "text-mint" : "text-coral"}`}>
+    <div className="rounded-[6px] border border-[var(--line)] bg-[#050505] px-3 py-2">
+      <div className="text-xs font-medium text-[var(--text-muted)]">{label}</div>
+      <div className="mt-1 text-sm font-semibold text-mint">
         {formattedValue}
       </div>
     </div>
@@ -138,7 +138,7 @@ function toneForValue(value) {
   }
 
   if (value < 0) {
-    return "text-coral";
+    return "text-mint";
   }
 
   return "text-mist";
@@ -152,7 +152,7 @@ function BreakdownRows({ entries }) {
       {entries.map((entry) => {
         const pct = entry.percentage ?? 0;
         const width = entry.pnl === 0 ? 0 : Math.max(4, (Math.abs(entry.pnl) / maxMagnitude) * 100);
-        const tone = entry.pnl >= 0 ? "bg-mint" : "bg-coral";
+        const tone = "bg-mint";
         const label = entry.label ?? entry.day;
 
         return (
@@ -160,15 +160,15 @@ function BreakdownRows({ entries }) {
             <div className="mb-2 flex items-center justify-between gap-4">
               <span className="text-sm font-medium text-white/88">{label}</span>
               <div className="flex items-center gap-2 text-right">
-                <span className={`text-sm font-semibold ${entry.pnl >= 0 ? "text-mint" : "text-coral"}`}>
+                <span className="text-sm font-semibold text-mint">
                   {formatCurrency(entry.pnl)}
                 </span>
                 <span className="text-xs text-white/46">{pct.toFixed(2)}%</span>
               </div>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-white/10">
+            <div className="h-2 overflow-hidden rounded-[6px] bg-white/10">
               <div
-                className={`h-full rounded-full ${tone}`}
+                className={`h-full rounded-[6px] ${tone}`}
                 style={{ width: `${width}%`, opacity: entry.pnl === 0 ? 0.22 : 0.9 }}
               />
             </div>
@@ -186,7 +186,7 @@ function widgetSpanClass(span) {
 function getLastSevenDayTone(day) {
   if (day.trades === 0) {
     return {
-      className: "ui-metric-tile rounded-[14px] px-4 py-4",
+      className: "ui-metric-tile rounded-[6px] px-4 py-4",
       valueTone: "text-mist",
       style: undefined
     };
@@ -195,23 +195,29 @@ function getLastSevenDayTone(day) {
   if (day.pnl > 0) {
     return {
       className:
-        "ui-metric-tile rounded-[14px] bg-[linear-gradient(180deg,rgba(24,200,122,0.12),rgba(24,200,122,0.04))] px-4 py-4",
+        "ui-metric-tile rounded-[6px] px-4 py-4",
       valueTone: "text-mint",
-      style: { boxShadow: "inset 0 0 0 1px rgba(45, 212, 143, 0.34)" }
+      style: {
+        backgroundColor: "oklch(25.45% 0.0811 255.8 / 0.35)",
+        boxShadow: "inset 0 0 0 1px oklch(71.7% 0.1648 250.794 / 0.28)"
+      }
     };
   }
 
   if (day.pnl < 0) {
     return {
       className:
-        "ui-metric-tile rounded-[14px] bg-[linear-gradient(180deg,rgba(255,93,87,0.12),rgba(255,93,87,0.04))] px-4 py-4",
-      valueTone: "text-coral",
-      style: { boxShadow: "inset 0 0 0 1px rgba(255, 107, 107, 0.34)" }
+        "ui-metric-tile rounded-[6px] px-4 py-4",
+      valueTone: "text-mint",
+      style: {
+        backgroundColor: "oklch(25.45% 0.0811 255.8 / 0.35)",
+        boxShadow: "inset 0 0 0 1px oklch(71.7% 0.1648 250.794 / 0.28)"
+      }
     };
   }
 
   return {
-    className: "ui-metric-tile rounded-[14px] bg-white/[0.03] px-4 py-4",
+    className: "ui-metric-tile rounded-[6px] bg-white/[0.03] px-4 py-4",
     valueTone: "text-phosphor",
     style: { boxShadow: "inset 0 0 0 1px rgba(229, 231, 235, 0.16)" }
   };
@@ -261,16 +267,16 @@ function AnalyticsCharts({
                 <AreaChart data={equityCurve}>
                   <defs>
                     <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#2be28c" stopOpacity={0.22} />
-                      <stop offset="55%" stopColor="#2be28c" stopOpacity={0.08} />
-                      <stop offset="100%" stopColor="#2be28c" stopOpacity={0.01} />
+                      <stop offset="0%" stopColor="oklch(71.7% 0.1648 250.794)" stopOpacity={0.22} />
+                      <stop offset="55%" stopColor="oklch(71.7% 0.1648 250.794)" stopOpacity={0.08} />
+                      <stop offset="100%" stopColor="oklch(71.7% 0.1648 250.794)" stopOpacity={0.01} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
                   <Tooltip contentStyle={tooltipStyle()} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
-                  <Area type="monotone" dataKey="equity" stroke="#18c87a" strokeWidth={3} fill="url(#equityGradient)" />
+                  <Area type="monotone" dataKey="equity" stroke="oklch(71.7% 0.1648 250.794)" strokeWidth={3} fill="url(#equityGradient)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -287,22 +293,18 @@ function AnalyticsCharts({
             <MiniMetric
               label="WIN RATE"
               value={formatPercent(summary.winRate)}
-              tone={summary.winRate >= 68 ? "text-mint" : summary.winRate < 50 ? "text-coral" : "text-[#ffc14d]"}
+              tone="text-mint"
             />
             <MiniMetric
               label="EXPECTANCY"
               value={formatCurrency(summary.expectancyPerTrade)}
-              tone={summary.winRate >= 68 ? "text-mint" : summary.winRate < 50 ? "text-coral" : "text-[#ffc14d]"}
+              tone="text-mint"
             />
             <MiniMetric
               label="R:R"
               value={summary.riskRewardRatio ? `${summary.riskRewardRatio.toFixed(2)} : 1` : "0.00 : 1"}
               tone={
-                summary.riskRewardRatio < 1
-                  ? "text-coral"
-                  : summary.riskRewardRatio >= 2
-                    ? "text-mint"
-                    : "text-[#ffc14d]"
+                "text-mint"
               }
             />
           </div>
@@ -316,9 +318,9 @@ function AnalyticsCharts({
         body: (
           <div className="grid gap-3 md:grid-cols-2">
             <MiniMetric label="AVG WIN" value={formatCurrency(summary.averageWin)} tone="text-mint" />
-            <MiniMetric label="AVG LOSS" value={formatCurrency(summary.averageLoss)} tone="text-coral" />
+            <MiniMetric label="AVG LOSS" value={formatCurrency(summary.averageLoss)} tone="text-mint" />
             <MiniMetric label="AVG GAIN / SHARE" value={formatCurrency(summary.averageGainPerShare)} tone="text-mint" />
-            <MiniMetric label="AVG LOSS / SHARE" value={formatCurrency(summary.averageLossPerShare)} tone="text-coral" />
+            <MiniMetric label="AVG LOSS / SHARE" value={formatCurrency(summary.averageLossPerShare)} tone="text-mint" />
           </div>
         )
       },
@@ -329,23 +331,23 @@ function AnalyticsCharts({
         body: (
           <>
             <div className="mb-4 grid gap-3 md:grid-cols-2">
-              <MiniMetric label="MAX DRAWDOWN" value={formatCurrency(summary.maxDrawdown)} tone="text-coral" />
-              <MiniMetric label="CURRENT DRAWDOWN" value={formatCurrency(summary.currentDrawdown)} tone="text-coral" />
+              <MiniMetric label="MAX DRAWDOWN" value={formatCurrency(summary.maxDrawdown)} tone="text-mint" />
+              <MiniMetric label="CURRENT DRAWDOWN" value={formatCurrency(summary.currentDrawdown)} tone="text-mint" />
             </div>
             <div className="h-[220px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={drawdownCurve}>
                   <defs>
                     <linearGradient id="drawdownGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#ff6b6b" stopOpacity={0.22} />
-                      <stop offset="100%" stopColor="#ff6b6b" stopOpacity={0.02} />
+                      <stop offset="0%" stopColor="oklch(71.7% 0.1648 250.794)" stopOpacity={0.22} />
+                      <stop offset="100%" stopColor="oklch(71.7% 0.1648 250.794)" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
                   <Tooltip contentStyle={tooltipStyle()} />
-                  <Area type="monotone" dataKey="drawdown" stroke="#ff6b6b" strokeWidth={2.5} fill="url(#drawdownGradient)" />
+                  <Area type="monotone" dataKey="drawdown" stroke="oklch(71.7% 0.1648 250.794)" strokeWidth={2.5} fill="url(#drawdownGradient)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -387,7 +389,7 @@ function AnalyticsCharts({
                 <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<ChartTooltipContent />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
                 <Bar dataKey="pnl" barSize={18}>
                   {hourlyPerformance.map((entry) => (
-                    <Cell key={entry.label} fill={entry.pnl >= 0 ? "#56f0a9" : "#ff6b6b"} />
+                    <Cell key={entry.label} fill={entry.pnl >= 0 ? "oklch(71.7% 0.1648 250.794)" : "oklch(25.45% 0.0811 255.8)"} />
                   ))}
                 </Bar>
               </BarChart>
@@ -409,7 +411,7 @@ function AnalyticsCharts({
                 <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<ChartTooltipContent />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
                 <Bar dataKey="grossPnl" barSize={20}>
                   {grossDailyThirtyDays.map((entry) => (
-                    <Cell key={entry.date} fill={entry.grossPnl >= 0 ? "#56f0a9" : "#ff6b6b"} />
+                    <Cell key={entry.date} fill={entry.grossPnl >= 0 ? "oklch(71.7% 0.1648 250.794)" : "oklch(25.45% 0.0811 255.8)"} />
                   ))}
                 </Bar>
               </BarChart>
@@ -431,7 +433,7 @@ function AnalyticsCharts({
                 <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<ChartTooltipContent />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
                 <Bar dataKey="winRate" barSize={20}>
                   {winRateThirtyDays.map((entry) => (
-                    <Cell key={entry.date} fill="#56f0a9" />
+                    <Cell key={entry.date} fill="oklch(71.7% 0.1648 250.794)" />
                   ))}
                 </Bar>
               </BarChart>
@@ -453,7 +455,7 @@ function AnalyticsCharts({
                 <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<ChartTooltipContent />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
                 <Bar dataKey="volume" barSize={20}>
                   {dailyVolumeThirtyDays.map((entry) => (
-                    <Cell key={entry.date} fill="#56f0a9" />
+                    <Cell key={entry.date} fill="oklch(71.7% 0.1648 250.794)" />
                   ))}
                 </Bar>
               </BarChart>
@@ -577,7 +579,7 @@ function AnalyticsCharts({
               onDrop={() => handleDrop(id)}
               className={`${widgetSpanClass(span)} ${editing && draggedId === id ? "opacity-60" : ""} ${
                 editing && dropTargetId === id && draggedId !== id
-                  ? "rounded-[16px] bg-mint/8 p-[3px] ring-2 ring-mint/90 shadow-[0_0_0_1px_rgba(86,240,169,0.35)]"
+                  ? "rounded-[6px] bg-mint/8 p-[3px] ring-2 ring-mint/90 shadow-[0_0_0_1px_rgba(86,240,169,0.35)]"
                   : ""
               }`}
             >

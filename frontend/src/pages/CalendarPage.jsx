@@ -81,19 +81,19 @@ function createMonthGrid(year, monthIndex, dailyStats) {
 
 function getDayTone(stats, isCurrentMonth) {
   if (!isCurrentMonth) {
-    return "bg-transparent text-slate-600";
+    return "bg-transparent text-mist";
   }
 
   if (!stats) {
-    return "bg-white/[0.015] text-slate-400";
+    return "bg-white/[0.015] text-mist";
   }
 
   if (stats.pnl > 0) {
-    return "bg-[linear-gradient(180deg,rgba(24,200,122,0.12),rgba(24,200,122,0.04))] text-mint";
+    return "bg-black text-mint";
   }
 
   if (stats.pnl < 0) {
-    return "bg-[linear-gradient(180deg,rgba(255,93,87,0.12),rgba(255,93,87,0.04))] text-coral";
+    return "bg-black text-coral";
   }
 
   return "bg-white/[0.03] text-phosphor";
@@ -109,11 +109,11 @@ function getDayBorderStyle(stats, isCurrentMonth) {
   }
 
   if (stats.pnl > 0) {
-    return { boxShadow: "inset 0 0 0 1px rgba(45, 212, 143, 0.34)" };
+    return { boxShadow: "inset 0 0 0 1px oklch(71.7% 0.1648 250.794 / 0.34)" };
   }
 
   if (stats.pnl < 0) {
-    return { boxShadow: "inset 0 0 0 1px rgba(255, 107, 107, 0.34)" };
+    return { boxShadow: "inset 0 0 0 1px oklch(71.7% 0.1648 250.794 / 0.34)" };
   }
 
   return { boxShadow: "inset 0 0 0 1px rgba(229, 231, 235, 0.16)" };
@@ -144,7 +144,7 @@ function MonthCard({ month, onOpen }) {
         {month.weeks.flat().map((day) => (
           <div
             key={day.dayKey}
-            className={`aspect-square rounded-[12px] border border-transparent px-2 py-4 text-lg font-medium transition ${getDayTone(
+            className={`aspect-square rounded-[6px] border border-transparent px-2 py-4 text-lg font-medium transition ${getDayTone(
               day.stats,
               day.isCurrentMonth
             )}`}
@@ -170,9 +170,9 @@ function MonthDetailSection({ month, onClose, onSelectDay }) {
           <div
             className={`border px-4 py-2 text-sm font-semibold ${
               month.monthPnl > 0
-                ? "border-mint/18 bg-mint/8 text-mint"
+                ? "border-mint/18 bg-black text-mint"
                 : month.monthPnl < 0
-                  ? "border-coral/18 bg-[#1b1012] text-coral"
+                  ? "border-coral/18 bg-black text-coral"
                   : "border-[#e5e7eb42] bg-white/5 text-mist"
             }`}
           >
@@ -185,7 +185,7 @@ function MonthDetailSection({ month, onClose, onSelectDay }) {
       }
       className="p-6 shadow-none"
     >
-      <div className="grid grid-cols-8 gap-0 overflow-hidden rounded-[18px] border border-[var(--line)] bg-[linear-gradient(180deg,rgba(255,255,255,0.022),rgba(255,255,255,0.01))]">
+      <div className="grid grid-cols-8 gap-0 overflow-hidden rounded-[6px] border border-[var(--line)] bg-black">
         {weekdayLabels.map((label) => (
           <div
             key={label}
@@ -236,7 +236,7 @@ function MonthDetailSection({ month, onClose, onSelectDay }) {
                       <div
                         className={`mt-4 text-base font-semibold ${
                           !day.stats
-                            ? "text-slate-400"
+                            ? "text-mist"
                             : day.stats.pnl > 0
                               ? "text-mint"
                               : day.stats.pnl < 0
@@ -258,7 +258,7 @@ function MonthDetailSection({ month, onClose, onSelectDay }) {
                 <div className="ui-title text-sm text-white">Week {index + 1}</div>
                 <div
                   className={`mt-4 text-base font-semibold ${
-                    weekStats.pnl > 0 ? "text-mint" : weekStats.pnl < 0 ? "text-coral" : "text-slate-400"
+                    weekStats.pnl > 0 ? "text-mint" : weekStats.pnl < 0 ? "text-coral" : "text-mist"
                   }`}
                 >
                   {formatCurrency(weekStats.pnl)}

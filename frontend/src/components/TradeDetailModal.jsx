@@ -38,7 +38,7 @@ function parseTags(value) {
 
 function SummaryMetric({ label, value, accent = "text-white" }) {
   return (
-    <div className="rounded-[18px] border border-[#e5e7eb42] bg-white/[0.03] p-4">
+    <div className="rounded-[6px] border border-[var(--line)] bg-black p-4">
       <p className="ui-title text-[10px] text-white/48">{label}</p>
       <p className={`mt-3 text-2xl font-bold tracking-[-0.04em] ${accent}`}>{value}</p>
     </div>
@@ -51,7 +51,7 @@ function ChartTooltip({ active, payload, label }) {
   }
 
   return (
-    <div className="rounded-2xl border border-[#e5e7eb42] bg-[#0d1016]/95 px-3 py-2 text-xs text-phosphor shadow-[0_20px_50px_rgba(0,0,0,0.42)]">
+    <div className="rounded-[6px] border border-[var(--line)] bg-black px-3 py-2 text-xs text-phosphor">
       <div className="font-medium text-white">{label}</div>
       <div className="mt-1 text-mint">{formatCurrency(payload[0].value)}</div>
     </div>
@@ -332,7 +332,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
     >
       <div
         className={`w-full max-w-[1520px] border border-[#e5e7eb42] bg-[linear-gradient(180deg,rgba(16,19,26,0.98),rgba(9,11,16,0.98))] ${
-          pageMode ? "rounded-[28px] shadow-[0_30px_80px_rgba(0,0,0,0.32)]" : "rounded-[30px] shadow-glow"
+          pageMode ? "rounded-[6px]" : "rounded-[6px]"
         }`}
       >
         <div className="flex items-start justify-between gap-4 border-b border-[#e5e7eb42] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))] px-6 py-5">
@@ -340,7 +340,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
             <div className="flex flex-wrap items-center gap-3">
               <h2 className="text-4xl font-bold tracking-[-0.05em] text-white">{activeTrade.symbol}</h2>
               <span
-                className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold ${
+                className={`inline-flex rounded-[6px] border px-3 py-1 text-[11px] font-semibold ${
                   activeTrade.side === "LONG" ? "bg-mint/15 text-mint" : "bg-coral/15 text-coral"
                 }`}
               >
@@ -383,7 +383,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
           <Card title="TRADER NOTES">
             <div className="space-y-5">
               <div className="grid gap-5 xl:grid-cols-2">
-                <div className="rounded-[18px] border border-[#e5e7eb42] bg-white/[0.03] p-4">
+                <div className="rounded-[6px] border border-[var(--line)] bg-black p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="ui-title text-xs text-white/48">Strategy</p>
                   <button
@@ -399,7 +399,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                     <button
                       type="button"
                       onClick={handleRemoveStrategy}
-                      className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs text-white/78"
+                      className="inline-flex items-center gap-2 rounded-[6px] border border-[var(--line)] bg-black px-3 py-1 text-xs text-white/78"
                     >
                       <span>{activeStrategy}</span>
                       <span className="text-white/45">x</span>
@@ -433,7 +433,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                 )}
                 </div>
 
-                <div className="rounded-[18px] border border-[#e5e7eb42] bg-white/[0.03] p-4">
+                <div className="rounded-[6px] border border-[var(--line)] bg-black p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="ui-title text-xs text-white/48">Tags</p>
                   <button
@@ -451,7 +451,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                         key={tag}
                         type="button"
                         onClick={() => handleRemoveTag(tag)}
-                        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs text-white/78"
+                        className="inline-flex items-center gap-2 rounded-[6px] border border-[var(--line)] bg-black px-3 py-1 text-xs text-white/78"
                       >
                         <span>{tag}</span>
                         <span className="text-white/45">x</span>
@@ -492,7 +492,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
               </div>
               </div>
 
-              <div className="rounded-[18px] border border-[#e5e7eb42] bg-white/[0.03] p-4">
+              <div className="rounded-[6px] border border-[var(--line)] bg-black p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="ui-title text-xs text-white/48">Notes</p>
                   <button
@@ -533,7 +533,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                     </div>
                   </div>
                 ) : (
-                  <div className="mt-2 rounded-[16px] border border-[#e5e7eb33] bg-black/10 px-4 py-4">
+                  <div className="mt-2 rounded-[6px] border border-[var(--line)] bg-black px-4 py-4">
                     {activeTrade.notes ? (
                       <div
                         className="prose prose-invert max-w-none text-sm leading-7 text-white/70"

@@ -252,7 +252,7 @@ function renderOverlay({ overlayEl, chart, candleSeries, bars, markers, dayStamp
 
     const label = document.createElement("div");
     label.className =
-      "absolute whitespace-nowrap rounded-md border px-2.5 py-1 text-[10px] font-semibold tracking-[0.03em] backdrop-blur";
+      "absolute whitespace-nowrap rounded-[6px] border px-2.5 py-1 text-[10px] font-semibold tracking-[0.03em] backdrop-blur";
     label.style.left = "12px";
     label.style.top = `${marker.shape === "arrowUp" ? -24 : 6}px`;
     label.style.color = marker.color;
@@ -513,15 +513,15 @@ function PremiumChart({
         </div>
       </div>
 
-      <div className="rounded-[16px] border border-[#e5e7eb42] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01))] p-2 shadow-[0_24px_50px_rgba(0,0,0,0.28)]">
-        <div className="relative overflow-hidden rounded-[12px] border border-white/[0.08] bg-[#0b1018]">
+      <div className="rounded-[6px] border border-[var(--line)] bg-black p-2">
+        <div className="relative overflow-hidden rounded-[6px] border border-[var(--line)] bg-black">
           <div ref={mainRef} />
           <div ref={overlayRef} className="pointer-events-none absolute inset-0 z-10" />
         </div>
       </div>
 
-      <div className="rounded-[16px] border border-[#e5e7eb42] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01))] p-2 shadow-[0_18px_40px_rgba(0,0,0,0.24)]">
-        <div className="relative overflow-hidden rounded-[12px] border border-white/[0.08] bg-[#0b1018]">
+      <div className="rounded-[6px] border border-[var(--line)] bg-black p-2">
+        <div className="relative overflow-hidden rounded-[6px] border border-[var(--line)] bg-black">
           <div ref={macdRef} />
         </div>
       </div>
@@ -566,14 +566,14 @@ function TradeReviewCharts({ trade }) {
     return (
       <LoadingState
         label="Loading market data..."
-        className="min-h-[420px] rounded-[16px] border border-[#e5e7eb42] bg-black/30"
+        className="min-h-[420px] rounded-[6px] border border-[var(--line)] bg-black"
       />
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-[16px] border border-[#e5e7eb42] bg-black/30 p-5 text-sm text-mist">
+      <div className="rounded-[6px] border border-[var(--line)] bg-black p-5 text-sm text-mist">
         {error}
       </div>
     );
@@ -581,7 +581,7 @@ function TradeReviewCharts({ trade }) {
 
   if (!timeline.actualBars.length) {
     return (
-      <div className="rounded-[16px] border border-[#e5e7eb42] bg-black/30 p-5 text-sm text-mist">
+      <div className="rounded-[6px] border border-[var(--line)] bg-black p-5 text-sm text-mist">
         No market bars were returned for this trade window.
       </div>
     );

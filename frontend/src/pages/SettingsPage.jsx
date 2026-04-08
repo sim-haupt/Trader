@@ -330,9 +330,9 @@ function SettingsPage() {
               <button
                 type="button"
                 onClick={() => setActiveSection("tags")}
-                className={`flex w-full items-center justify-between rounded-[14px] px-4 py-3 text-left text-sm transition ${
+                className={`flex w-full items-center justify-between rounded-[6px] px-4 py-3 text-left text-sm transition ${
                   activeSection === "tags"
-                    ? "border border-[rgba(124,156,255,0.22)] bg-[rgba(124,156,255,0.1)] text-white shadow-[inset_0_0_0_1px_rgba(124,156,255,0.14)]"
+                    ? "border border-[var(--line)] bg-[#1f1f1f] text-white shadow-[inset_0_0_0_1px_rgb(31,31,31)]"
                     : "border border-transparent text-white/64 hover:bg-white/[0.03] hover:text-white"
                 }`}
               >
@@ -342,9 +342,9 @@ function SettingsPage() {
               <button
                 type="button"
                 onClick={() => setActiveSection("commissions")}
-                className={`flex w-full items-center justify-between rounded-[14px] px-4 py-3 text-left text-sm transition ${
+                className={`flex w-full items-center justify-between rounded-[6px] px-4 py-3 text-left text-sm transition ${
                   activeSection === "commissions"
-                    ? "border border-[rgba(124,156,255,0.22)] bg-[rgba(124,156,255,0.1)] text-white shadow-[inset_0_0_0_1px_rgba(124,156,255,0.14)]"
+                    ? "border border-[var(--line)] bg-[#1f1f1f] text-white shadow-[inset_0_0_0_1px_rgb(31,31,31)]"
                     : "border border-transparent text-white/64 hover:bg-white/[0.03] hover:text-white"
                 }`}
               >
@@ -356,9 +356,9 @@ function SettingsPage() {
               <button
                 type="button"
                 onClick={() => setActiveSection("strategies")}
-                className={`flex w-full items-center justify-between rounded-[14px] px-4 py-3 text-left text-sm transition ${
+                className={`flex w-full items-center justify-between rounded-[6px] px-4 py-3 text-left text-sm transition ${
                   activeSection === "strategies"
-                    ? "border border-[rgba(124,156,255,0.22)] bg-[rgba(124,156,255,0.1)] text-white shadow-[inset_0_0_0_1px_rgba(124,156,255,0.14)]"
+                    ? "border border-[var(--line)] bg-[#1f1f1f] text-white shadow-[inset_0_0_0_1px_rgb(31,31,31)]"
                     : "border border-transparent text-white/64 hover:bg-white/[0.03] hover:text-white"
                 }`}
               >
@@ -435,9 +435,9 @@ function SettingsPage() {
                     {tags.map((tag) => (
                       <div
                         key={tag.id}
-                        className={`ui-panel flex items-center justify-between gap-3 rounded-[16px] px-4 py-3 transition ${
+                        className={`ui-panel flex items-center justify-between gap-3 rounded-[6px] px-4 py-3 transition ${
                           selectedTagIds.includes(tag.id)
-                            ? "border-[rgba(124,156,255,0.28)] bg-[rgba(124,156,255,0.08)]"
+                            ? "border-[var(--line)] bg-[#1f1f1f]"
                             : ""
                         }`}
                       >
@@ -533,9 +533,9 @@ function SettingsPage() {
                     {strategies.map((strategy) => (
                       <div
                         key={strategy.id}
-                        className={`ui-panel flex items-center justify-between gap-3 rounded-[16px] px-4 py-3 transition ${
+                        className={`ui-panel flex items-center justify-between gap-3 rounded-[6px] px-4 py-3 transition ${
                           selectedStrategyIds.includes(strategy.id)
-                            ? "border-[rgba(124,156,255,0.28)] bg-[rgba(124,156,255,0.08)]"
+                            ? "border-[var(--line)] bg-[#1f1f1f]"
                             : ""
                         }`}
                       >
@@ -604,7 +604,7 @@ function SettingsPage() {
                   >
                     {savingCommission ? "Saving..." : "Save Costs"}
                   </button>
-                  <span className="rounded-[12px] border border-[var(--line)] bg-white/[0.03] px-3 py-2 text-sm text-white/50">
+                  <span className="rounded-[6px] border border-[var(--line)] bg-black px-3 py-2 text-sm text-white/50">
                     Current total: $
                     {(
                       Number(user?.defaultCommission ?? 0) + Number(user?.defaultFees ?? 0)

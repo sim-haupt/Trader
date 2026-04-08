@@ -278,14 +278,14 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
                 <button
                   type="button"
                   onClick={handleRemoveStrategy}
-                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-xs text-white/82"
+                  className="inline-flex items-center gap-2 rounded-[6px] border border-[var(--line)] bg-black px-3 py-1.5 text-xs text-white/82"
                 >
                   <span>{selectedStrategy}</span>
                   <span className="text-white/48">x</span>
                 </button>
               </div>
             ) : (
-              <div className="rounded-[12px] border border-black/20 bg-white/[0.02] px-4 py-3 text-sm text-white/54">
+              <div className="rounded-[6px] border border-[var(--line)] bg-black px-4 py-3 text-sm text-white/54">
                 No strategy selected
               </div>
             )}
@@ -324,7 +324,7 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
                     key={tag}
                     type="button"
                     onClick={() => handleRemoveTag(tag)}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-xs text-white/82"
+                    className="inline-flex items-center gap-2 rounded-[6px] border border-[var(--line)] bg-black px-3 py-1.5 text-xs text-white/82"
                   >
                     <span>{tag}</span>
                     <span className="text-white/48">x</span>
@@ -332,7 +332,7 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
                 ))}
               </div>
             ) : (
-              <div className="rounded-[12px] border border-black/20 bg-white/[0.02] px-4 py-3 text-sm text-white/54">
+              <div className="rounded-[6px] border border-[var(--line)] bg-black px-4 py-3 text-sm text-white/54">
                 No tags selected
               </div>
             )}
