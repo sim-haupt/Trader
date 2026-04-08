@@ -116,7 +116,7 @@ function ChartTooltipContent({ active, payload, label }) {
   return (
     <div className="rounded-[6px] border border-[var(--line)] bg-[#050505] px-3 py-2">
       <div className="text-xs font-medium text-[var(--text-muted)]">{label}</div>
-      <div className="mt-1 text-sm font-semibold text-mint">
+      <div className={`mt-1 text-sm font-semibold ${value >= 0 ? "text-mint" : "text-coral"}`}>
         {formattedValue}
       </div>
     </div>
@@ -138,7 +138,7 @@ function toneForValue(value) {
   }
 
   if (value < 0) {
-    return "text-mint";
+    return "text-coral";
   }
 
   return "text-mist";
@@ -152,7 +152,7 @@ function BreakdownRows({ entries }) {
       {entries.map((entry) => {
         const pct = entry.percentage ?? 0;
         const width = entry.pnl === 0 ? 0 : Math.max(4, (Math.abs(entry.pnl) / maxMagnitude) * 100);
-        const tone = "bg-mint";
+        const tone = entry.pnl >= 0 ? "bg-mint" : "bg-coral";
         const label = entry.label ?? entry.day;
 
         return (
@@ -160,7 +160,7 @@ function BreakdownRows({ entries }) {
             <div className="mb-2 flex items-center justify-between gap-4">
               <span className="text-sm font-medium text-white/88">{label}</span>
               <div className="flex items-center gap-2 text-right">
-                <span className="text-sm font-semibold text-mint">
+                <span className={`text-sm font-semibold ${entry.pnl >= 0 ? "text-mint" : "text-coral"}`}>
                   {formatCurrency(entry.pnl)}
                 </span>
                 <span className="text-xs text-white/46">{pct.toFixed(2)}%</span>
@@ -195,11 +195,10 @@ function getLastSevenDayTone(day) {
   if (day.pnl > 0) {
     return {
       className:
-        "ui-metric-tile rounded-[6px] px-4 py-4",
+        "ui-metric-tile rounded-[6px] bg-[linear-gradient(180deg,rgba(24,200,122,0.12),rgba(24,200,122,0.04))] px-4 py-4",
       valueTone: "text-mint",
       style: {
-        backgroundColor: "oklch(25.45% 0.0811 255.8 / 0.35)",
-        boxShadow: "inset 0 0 0 1px oklch(71.7% 0.1648 250.794 / 0.28)"
+        boxShadow: "inset 0 0 0 1px rgba(45, 212, 143, 0.34)"
       }
     };
   }
@@ -207,11 +206,10 @@ function getLastSevenDayTone(day) {
   if (day.pnl < 0) {
     return {
       className:
-        "ui-metric-tile rounded-[6px] px-4 py-4",
-      valueTone: "text-mint",
+        "ui-metric-tile rounded-[6px] bg-[linear-gradient(180deg,rgba(255,93,87,0.12),rgba(255,93,87,0.04))] px-4 py-4",
+      valueTone: "text-coral",
       style: {
-        backgroundColor: "oklch(25.45% 0.0811 255.8 / 0.35)",
-        boxShadow: "inset 0 0 0 1px oklch(71.7% 0.1648 250.794 / 0.28)"
+        boxShadow: "inset 0 0 0 1px rgba(255, 107, 107, 0.34)"
       }
     };
   }
@@ -267,16 +265,16 @@ function AnalyticsCharts({
                 <AreaChart data={equityCurve}>
                   <defs>
                     <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="oklch(71.7% 0.1648 250.794)" stopOpacity={0.22} />
-                      <stop offset="55%" stopColor="oklch(71.7% 0.1648 250.794)" stopOpacity={0.08} />
-                      <stop offset="100%" stopColor="oklch(71.7% 0.1648 250.794)" stopOpacity={0.01} />
+                      <stop offset="0%" stopColor="#2be28c" stopOpacity={0.22} />
+                      <stop offset="55%" stopColor="#2be28c" stopOpacity={0.08} />
+                      <stop offset="100%" stopColor="#2be28c" stopOpacity={0.01} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
                   <Tooltip contentStyle={tooltipStyle()} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
-                  <Area type="monotone" dataKey="equity" stroke="oklch(71.7% 0.1648 250.794)" strokeWidth={3} fill="url(#equityGradient)" />
+                  <Area type="monotone" dataKey="equity" stroke="#18c87a" strokeWidth={3} fill="url(#equityGradient)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -293,18 +291,22 @@ function AnalyticsCharts({
             <MiniMetric
               label="WIN RATE"
               value={formatPercent(summary.winRate)}
-              tone="text-mint"
+              tone={summary.winRate >= 68 ? "text-mint" : summary.winRate < 50 ? "text-coral" : "text-gold"}
             />
             <MiniMetric
               label="EXPECTANCY"
               value={formatCurrency(summary.expectancyPerTrade)}
-              tone="text-mint"
+              tone={summary.winRate >= 68 ? "text-mint" : summary.winRate < 50 ? "text-coral" : "text-gold"}
             />
             <MiniMetric
               label="R:R"
               value={summary.riskRewardRatio ? `${summary.riskRewardRatio.toFixed(2)} : 1` : "0.00 : 1"}
               tone={
-                "text-mint"
+                summary.riskRewardRatio < 1
+                  ? "text-coral"
+                  : summary.riskRewardRatio >= 2
+                    ? "text-mint"
+                    : "text-gold"
               }
             />
           </div>
@@ -318,9 +320,9 @@ function AnalyticsCharts({
         body: (
           <div className="grid gap-3 md:grid-cols-2">
             <MiniMetric label="AVG WIN" value={formatCurrency(summary.averageWin)} tone="text-mint" />
-            <MiniMetric label="AVG LOSS" value={formatCurrency(summary.averageLoss)} tone="text-mint" />
+            <MiniMetric label="AVG LOSS" value={formatCurrency(summary.averageLoss)} tone="text-coral" />
             <MiniMetric label="AVG GAIN / SHARE" value={formatCurrency(summary.averageGainPerShare)} tone="text-mint" />
-            <MiniMetric label="AVG LOSS / SHARE" value={formatCurrency(summary.averageLossPerShare)} tone="text-mint" />
+            <MiniMetric label="AVG LOSS / SHARE" value={formatCurrency(summary.averageLossPerShare)} tone="text-coral" />
           </div>
         )
       },
@@ -331,23 +333,23 @@ function AnalyticsCharts({
         body: (
           <>
             <div className="mb-4 grid gap-3 md:grid-cols-2">
-              <MiniMetric label="MAX DRAWDOWN" value={formatCurrency(summary.maxDrawdown)} tone="text-mint" />
-              <MiniMetric label="CURRENT DRAWDOWN" value={formatCurrency(summary.currentDrawdown)} tone="text-mint" />
+              <MiniMetric label="MAX DRAWDOWN" value={formatCurrency(summary.maxDrawdown)} tone="text-coral" />
+              <MiniMetric label="CURRENT DRAWDOWN" value={formatCurrency(summary.currentDrawdown)} tone="text-coral" />
             </div>
             <div className="h-[220px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={drawdownCurve}>
                   <defs>
                     <linearGradient id="drawdownGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="oklch(71.7% 0.1648 250.794)" stopOpacity={0.22} />
-                      <stop offset="100%" stopColor="oklch(71.7% 0.1648 250.794)" stopOpacity={0.02} />
+                      <stop offset="0%" stopColor="#ff6b6b" stopOpacity={0.22} />
+                      <stop offset="100%" stopColor="#ff6b6b" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
                   <Tooltip contentStyle={tooltipStyle()} />
-                  <Area type="monotone" dataKey="drawdown" stroke="oklch(71.7% 0.1648 250.794)" strokeWidth={2.5} fill="url(#drawdownGradient)" />
+                  <Area type="monotone" dataKey="drawdown" stroke="#ff6b6b" strokeWidth={2.5} fill="url(#drawdownGradient)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>

@@ -7,9 +7,9 @@ function toneStyles(tone) {
     case "success":
       return "border-[var(--line)] bg-black text-mint";
     case "error":
-      return "border-[var(--line)] bg-black text-mint";
+      return "border-[var(--line)] bg-black text-coral";
     case "warning":
-      return "border-[var(--line)] bg-black text-mint";
+      return "border-[var(--line)] bg-black text-gold";
     default:
       return "border-[var(--line)] bg-black text-white";
   }
