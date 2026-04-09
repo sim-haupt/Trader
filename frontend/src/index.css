@@ -148,8 +148,13 @@ button:disabled {
 }
 
 :focus-visible {
-  outline: 0;
-  box-shadow: 0 0 0 1px #ededed;
+  outline: 1px solid #ededed;
+  outline-offset: 0;
+}
+
+b,
+strong {
+  font-weight: 500;
 }
 
 @layer components {
@@ -192,7 +197,7 @@ button:disabled {
 
   .ui-title {
     font-family: "Geist", sans-serif;
-    font-weight: 600;
+    font-weight: 500;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     line-height: 1.35;
@@ -216,7 +221,6 @@ button:disabled {
     transition:
       border-color 140ms ease,
       background-color 140ms ease,
-      box-shadow 140ms ease,
       color 140ms ease;
   }
 
@@ -230,9 +234,8 @@ button:disabled {
   }
 
   .ui-input:focus {
-    border-color: var(--line);
+    border-color: #ededed;
     background: rgba(255, 255, 255, 0.07);
-    box-shadow: 0 0 0 1px #ededed;
   }
 
   .ui-button,
@@ -248,7 +251,6 @@ button:disabled {
     transition:
       border-color 120ms ease,
       background-color 120ms ease,
-      box-shadow 120ms ease,
       color 120ms ease,
       opacity 120ms ease;
     white-space: nowrap;
@@ -266,8 +268,7 @@ button:disabled {
     color: #ededed;
     padding: 9px 13px;
     font-size: 0.86rem;
-    font-weight: 600;
-    box-shadow: none;
+    font-weight: 500;
   }
 
   .ui-button:hover {
@@ -280,8 +281,7 @@ button:disabled {
     color: #000000;
     padding: 9px 13px;
     font-size: 0.86rem;
-    font-weight: 700;
-    box-shadow: none;
+    font-weight: 500;
   }
 
   .ui-button-solid:hover {
@@ -295,7 +295,7 @@ button:disabled {
     color: var(--danger);
     padding: 9px 13px;
     font-size: 0.86rem;
-    font-weight: 700;
+    font-weight: 500;
   }
 
   .ui-button-danger:hover {
@@ -308,7 +308,7 @@ button:disabled {
     color: var(--text-muted);
     padding: 6px 10px;
     font-size: 0.74rem;
-    font-weight: 600;
+    font-weight: 500;
   }
 
   .ui-notice {
@@ -373,9 +373,10 @@ button:disabled {
     border-radius: var(--radius-sm);
     padding: 8px 12px;
     font-size: 0.78rem;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--text-muted);
-    transition: background-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
+    transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+    border: 1px solid transparent;
   }
 
   .ui-segment button:hover {
@@ -386,7 +387,7 @@ button:disabled {
   .ui-segment button[data-active="true"] {
     background: #1f1f1f;
     color: var(--text);
-    box-shadow: inset 0 0 0 1px var(--line);
+    border-color: var(--line);
   }
 
   .ui-link {
@@ -448,6 +449,13 @@ button:disabled {
     background-color: #ffffff0d;
     padding: 24px 28px 32px;
   }
+}
+
+.font-semibold,
+.font-bold,
+.font-extrabold,
+.font-black {
+  font-weight: 500 !important;
 }
 
 @media (max-width: 1180px) {

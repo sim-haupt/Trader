@@ -67,17 +67,17 @@ function ChartTooltipContent({ active, payload, label }) {
   );
 }
 
-function metricInsetShadow(tone) {
+function metricBorderColor(tone) {
   switch (tone) {
     case "text-mint":
-      return "inset 0 0 0 1px rgba(45, 212, 143, 0.34)";
+      return "rgba(45, 212, 143, 0.34)";
     case "text-coral":
-      return "inset 0 0 0 1px rgba(255, 107, 107, 0.34)";
+      return "rgba(255, 107, 107, 0.34)";
     case "text-gold":
-      return "inset 0 0 0 1px rgba(255, 216, 77, 0.34)";
+      return "rgba(255, 216, 77, 0.34)";
     case "text-mist":
     case "text-phosphor":
-      return "inset 0 0 0 1px rgba(229, 231, 235, 0.18)";
+      return "rgba(229, 231, 235, 0.18)";
     default:
       return undefined;
   }
@@ -87,7 +87,7 @@ function MiniMetric({ label, value, tone = "text-white", shadow = false }) {
   return (
     <div
       className="ui-metric-tile h-full"
-      style={shadow ? { boxShadow: metricInsetShadow(tone) } : undefined}
+      style={shadow ? { borderColor: metricBorderColor(tone) } : undefined}
     >
       <p className="ui-title text-[10px] text-white/48">{label}</p>
       <p className={`mt-3 text-2xl font-bold tracking-[-0.04em] ${tone}`}>{value}</p>
@@ -108,7 +108,7 @@ function SplitMetric({
   return (
     <div
       className="ui-metric-tile h-full"
-      style={{ boxShadow: metricInsetShadow(shadowTone) }}
+      style={{ borderColor: metricBorderColor(shadowTone) }}
     >
       <p className="ui-title text-[10px] text-white/48">{label}</p>
       {inlinePrefix ? (
@@ -253,7 +253,7 @@ function getLastSevenDayTone(day) {
         "ui-metric-tile rounded-[6px] bg-[linear-gradient(180deg,rgba(61,255,154,0.16),rgba(61,255,154,0.05))] px-4 py-4",
       valueTone: "text-mint",
       style: {
-        boxShadow: "inset 0 0 0 1px rgba(45, 212, 143, 0.34)"
+        borderColor: "rgba(45, 212, 143, 0.34)"
       }
     };
   }
@@ -264,7 +264,7 @@ function getLastSevenDayTone(day) {
         "ui-metric-tile rounded-[6px] bg-[linear-gradient(180deg,rgba(255,95,122,0.16),rgba(255,95,122,0.05))] px-4 py-4",
       valueTone: "text-coral",
       style: {
-        boxShadow: "inset 0 0 0 1px rgba(255, 107, 107, 0.34)"
+        borderColor: "rgba(255, 107, 107, 0.34)"
       }
     };
   }
@@ -272,7 +272,7 @@ function getLastSevenDayTone(day) {
   return {
     className: "ui-metric-tile rounded-[6px] bg-white/[0.03] px-4 py-4",
     valueTone: "text-phosphor",
-    style: { boxShadow: "inset 0 0 0 1px rgba(229, 231, 235, 0.16)" }
+    style: { borderColor: "rgba(229, 231, 235, 0.16)" }
   };
 }
 

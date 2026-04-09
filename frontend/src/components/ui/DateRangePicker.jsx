@@ -333,7 +333,7 @@ function DateRangePicker({
                 onClick={() => handleDayClick(cellDate)}
                 className={`h-10 rounded-[6px] text-sm font-medium transition ${
                   selectedStart || selectedEnd
-                    ? "bg-[#1f1f1f] text-[var(--text)] shadow-[inset_0_0_0_1px_rgb(31,31,31)]"
+                    ? "border border-[var(--line)] bg-[#1f1f1f] text-[var(--text)]"
                     : inRange
                       ? "bg-[#111111] text-[var(--text)]"
                       : currentMonth
@@ -398,7 +398,7 @@ function DateRangePicker({
                       onClick={() => applyPreset(option.key)}
                         className={`flex w-full items-center justify-between rounded-[6px] px-4 py-3 text-left text-sm font-medium transition ${
                         active
-                      ? "bg-[#1f1f1f] text-[var(--text)] shadow-[inset_0_0_0_1px_rgb(31,31,31)]"
+                      ? "border border-[var(--line)] bg-[#1f1f1f] text-[var(--text)]"
                           : "text-[var(--text-muted)] hover:bg-[#1f1f1f] hover:text-[var(--text)]"
                       }`}
                     >

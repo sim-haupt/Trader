@@ -372,7 +372,7 @@ function SettingsPage() {
                 onClick={() => setActiveSection("library")}
                 className={`flex w-full items-center justify-between rounded-[6px] px-4 py-3 text-left text-sm transition ${
                   activeSection === "library"
-                    ? "border border-[var(--line)] bg-[#1f1f1f] text-white shadow-[inset_0_0_0_1px_rgb(31,31,31)]"
+                    ? "border border-[var(--line)] bg-[#1f1f1f] text-white"
                     : "border border-transparent text-white/64 hover:bg-white/[0.03] hover:text-white"
                 }`}
               >
@@ -384,7 +384,7 @@ function SettingsPage() {
                 onClick={() => setActiveSection("costs")}
                 className={`flex w-full items-center justify-between rounded-[6px] px-4 py-3 text-left text-sm transition ${
                   activeSection === "costs"
-                    ? "border border-[var(--line)] bg-[#1f1f1f] text-white shadow-[inset_0_0_0_1px_rgb(31,31,31)]"
+                    ? "border border-[var(--line)] bg-[#1f1f1f] text-white"
                     : "border border-transparent text-white/64 hover:bg-white/[0.03] hover:text-white"
                 }`}
               >
@@ -398,7 +398,7 @@ function SettingsPage() {
                 onClick={() => setActiveSection("data")}
                 className={`flex w-full items-center justify-between rounded-[6px] px-4 py-3 text-left text-sm transition ${
                   activeSection === "data"
-                    ? "border border-[var(--line)] bg-[#1f1f1f] text-white shadow-[inset_0_0_0_1px_rgb(31,31,31)]"
+                    ? "border border-[var(--line)] bg-[#1f1f1f] text-white"
                     : "border border-transparent text-white/64 hover:bg-white/[0.03] hover:text-white"
                 }`}
               >

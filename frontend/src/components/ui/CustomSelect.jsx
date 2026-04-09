@@ -98,7 +98,7 @@ function CustomSelect({
                     option.disabled
                       ? "cursor-not-allowed text-white/24"
                       : active
-                        ? "bg-[#1f1f1f] text-[var(--text)] shadow-[inset_0_0_0_1px_rgb(31,31,31)]"
+                        ? "border border-[var(--line)] bg-[#1f1f1f] text-[var(--text)]"
                         : "text-[var(--text-muted)] hover:bg-[#1f1f1f] hover:text-[var(--text)]"
                   }`}
                 >
