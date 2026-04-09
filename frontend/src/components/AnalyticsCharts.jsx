@@ -27,8 +27,8 @@ export const DEFAULT_DASHBOARD_LAYOUT = [
   { id: "winPct", span: 2 },
   { id: "dailyVolume", span: 2 },
   { id: "performanceWeekday", span: 1 },
-  { id: "performancePrice", span: 1 },
-  { id: "performanceHourSummary", span: 2 }
+  { id: "performanceHourSummary", span: 1 },
+  { id: "performancePrice", span: 2 }
 ];
 
 function tooltipStyle() {
@@ -552,14 +552,14 @@ function AnalyticsCharts({
       {
         id: "performancePrice",
         title: `${pnlLabel} BY PRICE`,
-        defaultSpan: 1,
+        defaultSpan: 2,
         className: "min-h-[300px]",
         body: <BreakdownRows entries={performanceByPrice} columns={2} />
       },
       {
         id: "performanceHourSummary",
         title: `${pnlLabel} BY HOUR OF DAY`,
-        defaultSpan: 2,
+        defaultSpan: 1,
         className: "min-h-[300px]",
         body: <BreakdownRows entries={performanceByTimeOfDaySummary} />
       }
