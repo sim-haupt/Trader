@@ -177,7 +177,7 @@ function TradeTable({
                               event.stopPropagation();
                               onDelete(trade);
                             }}
-                            className="ui-button inline-flex h-9 w-9 items-center justify-center rounded-[6px] p-0 text-coral hover:text-coral"
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-[6px] border border-coral/35 bg-coral/10 p-0 text-coral transition hover:bg-coral/15"
                             aria-label={`Delete ${trade.symbol} trade`}
                             title="Delete trade"
                           >

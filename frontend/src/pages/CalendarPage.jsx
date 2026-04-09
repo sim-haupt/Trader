@@ -176,9 +176,9 @@ function MonthDetailSection({ month, onClose, onSelectDay }) {
           <div
             className={`border px-4 py-2 text-sm font-semibold ${
               month.monthPnl > 0
-                ? "border-mint/18 bg-black text-mint"
+                ? "border-mint/35 bg-mint/10 text-mint"
                 : month.monthPnl < 0
-                  ? "border-coral/18 bg-black text-coral"
+                  ? "border-coral/35 bg-coral/10 text-coral"
                   : "border-[#e5e7eb42] bg-white/5 text-mist"
             }`}
           >

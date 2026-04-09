@@ -752,9 +752,9 @@ function TradesPage() {
                           type="button"
                           onClick={handleBulkDelete}
                           disabled={isBulkDeleting}
-                          className="w-full rounded-[6px] border border-[var(--line)] bg-black px-4 py-3 text-sm font-semibold text-coral transition hover:bg-[#1f1f1f] disabled:cursor-not-allowed disabled:opacity-50"
+                          className="w-full rounded-[6px] border border-coral/35 bg-coral/10 px-4 py-3 text-sm font-semibold text-coral transition hover:bg-coral/15 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          {isBulkDeleting ? "Deleting..." : "Delete Selected"}
+                          {isBulkDeleting ? "Deleting..." : "Delete"}
                         </button>
                       </div>
                     </div>

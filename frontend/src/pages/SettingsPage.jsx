@@ -415,7 +415,7 @@ function SettingsPage() {
                       type="button"
                       onClick={handleCreateTag}
                       disabled={savingTag || !newTag.trim()}
-                      className="ui-button-solid whitespace-nowrap px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                      className="ui-button whitespace-nowrap px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {savingTag ? "Saving..." : "Add Tag"}
                     </button>
@@ -445,14 +445,14 @@ function SettingsPage() {
                           Clear
                         </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={handleBulkDeleteTags}
-                        disabled={selectedTagIds.length === 0 || bulkDeletingTags}
-                        className="ui-button-danger px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {bulkDeletingTags ? "Deleting..." : `Delete Selected${selectedTagIds.length ? ` (${selectedTagIds.length})` : ""}`}
-                      </button>
+                    <button
+                      type="button"
+                      onClick={handleBulkDeleteTags}
+                      disabled={selectedTagIds.length === 0 || bulkDeletingTags}
+                      className="ui-button-danger px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {bulkDeletingTags ? "Deleting..." : `Delete${selectedTagIds.length ? ` (${selectedTagIds.length})` : ""}`}
+                    </button>
                     </div>
                   )}
 
@@ -464,11 +464,11 @@ function SettingsPage() {
                       description="Create a few reusable tags here and they will be available from each trade."
                     />
                   ) : (
-                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid auto-rows-min items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
                       {tags.map((tag) => (
                         <div
                           key={tag.id}
-                          className={`ui-panel flex items-center justify-between gap-3 rounded-[6px] px-4 py-3 transition ${
+                          className={`ui-panel self-start flex items-center justify-between gap-3 rounded-[6px] px-4 py-3 transition ${
                             selectedTagIds.includes(tag.id)
                               ? "border-[var(--line)] bg-[#1f1f1f]"
                               : ""
@@ -487,7 +487,7 @@ function SettingsPage() {
                             type="button"
                             onClick={() => handleDeleteTag(tag)}
                             disabled={deletingId === tag.id || bulkDeletingTags}
-                            className="ui-chip text-coral disabled:opacity-50"
+                            className="rounded-[6px] border border-coral/35 bg-coral/10 px-3 py-1.5 text-xs font-semibold text-coral transition hover:bg-coral/15 disabled:opacity-50"
                           >
                             {deletingId === tag.id ? "..." : "Delete"}
                           </button>
@@ -511,7 +511,7 @@ function SettingsPage() {
                       type="button"
                       onClick={handleCreateStrategy}
                       disabled={savingStrategy || !newStrategy.trim()}
-                      className="ui-button-solid whitespace-nowrap px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                      className="ui-button whitespace-nowrap px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {savingStrategy ? "Saving..." : "Add Strategy"}
                     </button>
@@ -541,16 +541,16 @@ function SettingsPage() {
                           Clear
                         </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={handleBulkDeleteStrategies}
-                        disabled={selectedStrategyIds.length === 0 || bulkDeletingStrategies}
-                        className="ui-button-danger px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {bulkDeletingStrategies
-                          ? "Deleting..."
-                          : `Delete Selected${selectedStrategyIds.length ? ` (${selectedStrategyIds.length})` : ""}`}
-                      </button>
+                    <button
+                      type="button"
+                      onClick={handleBulkDeleteStrategies}
+                      disabled={selectedStrategyIds.length === 0 || bulkDeletingStrategies}
+                      className="ui-button-danger px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {bulkDeletingStrategies
+                        ? "Deleting..."
+                        : `Delete${selectedStrategyIds.length ? ` (${selectedStrategyIds.length})` : ""}`}
+                    </button>
                     </div>
                   )}
 
@@ -562,11 +562,11 @@ function SettingsPage() {
                       description="Create reusable strategies here and they will be available from each trade."
                     />
                   ) : (
-                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid auto-rows-min items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
                       {strategies.map((strategy) => (
                         <div
                           key={strategy.id}
-                          className={`ui-panel flex items-center justify-between gap-3 rounded-[6px] px-4 py-3 transition ${
+                          className={`ui-panel self-start flex items-center justify-between gap-3 rounded-[6px] px-4 py-3 transition ${
                             selectedStrategyIds.includes(strategy.id)
                               ? "border-[var(--line)] bg-[#1f1f1f]"
                               : ""
@@ -585,7 +585,7 @@ function SettingsPage() {
                             type="button"
                             onClick={() => handleDeleteStrategy(strategy)}
                             disabled={deletingStrategyId === strategy.id || bulkDeletingStrategies}
-                            className="ui-chip text-coral disabled:opacity-50"
+                            className="rounded-[6px] border border-coral/35 bg-coral/10 px-3 py-1.5 text-xs font-semibold text-coral transition hover:bg-coral/15 disabled:opacity-50"
                           >
                             {deletingStrategyId === strategy.id ? "..." : "Delete"}
                           </button>
@@ -636,7 +636,7 @@ function SettingsPage() {
                       disabled={savingCommission}
                       className="ui-button-solid px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      {savingCommission ? "Saving..." : "Save Costs"}
+                      {savingCommission ? "Saving..." : "Save"}
                     </button>
                     <span className="rounded-[6px] border border-[var(--line)] bg-black px-3 py-2 text-sm text-white/50">
                       Current total: $

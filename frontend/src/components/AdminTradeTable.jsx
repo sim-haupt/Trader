@@ -249,7 +249,7 @@ function AdminTradeTable({
                             type="button"
                             onClick={() => onDelete(trade.id)}
                             disabled={isDeleting}
-                            className="ui-button border-coral/35 bg-[linear-gradient(180deg,#452222,#2d1616)] px-3 py-1.5 text-[11px] text-coral hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
+                            className="ui-button-danger px-3 py-1.5 text-[11px] disabled:cursor-not-allowed disabled:opacity-70"
                           >
                             Delete
                           </button>

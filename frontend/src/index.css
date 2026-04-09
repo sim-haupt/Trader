@@ -290,8 +290,8 @@ button:disabled {
   }
 
   .ui-button-danger {
-    background: #000000;
-    border-color: var(--line);
+    background: rgba(255, 95, 122, 0.08);
+    border-color: rgba(255, 95, 122, 0.35);
     color: var(--danger);
     padding: 9px 13px;
     font-size: 0.86rem;
@@ -299,7 +299,8 @@ button:disabled {
   }
 
   .ui-button-danger:hover {
-    background: #1f1f1f;
+    background: rgba(255, 95, 122, 0.12);
+    border-color: rgba(255, 95, 122, 0.45);
   }
 
   .ui-chip {
