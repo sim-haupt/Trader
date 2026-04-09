@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import frontendPackage from "../../package.json";
 import Card from "../components/ui/Card";
 import LoadingState from "../components/ui/LoadingState";
 import EmptyState from "../components/ui/EmptyState";
@@ -667,6 +668,12 @@ function SettingsPage() {
                 </div>
               </Card>
           )}
+        </div>
+
+        <div className="mt-8 border-t border-[var(--line)] pt-4 text-right">
+          <span className="text-xs text-white/42">
+            Version {frontendPackage.version}
+          </span>
         </div>
       </Card>
     </div>
