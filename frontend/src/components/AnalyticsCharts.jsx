@@ -27,8 +27,8 @@ export const DEFAULT_DASHBOARD_LAYOUT = [
   { id: "winPct", span: 2 },
   { id: "dailyVolume", span: 2 },
   { id: "performanceWeekday", span: 1 },
-  { id: "performancePrice", span: 1 },
-  { id: "performanceHourSummary", span: 2 }
+  { id: "performanceHourSummary", span: 1 },
+  { id: "performancePrice", span: 2 }
 ];
 
 function tooltipStyle() {
