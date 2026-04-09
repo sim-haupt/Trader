@@ -3,6 +3,7 @@ import frontendPackage from "../../package.json";
 import Card from "../components/ui/Card";
 import LoadingState from "../components/ui/LoadingState";
 import EmptyState from "../components/ui/EmptyState";
+import authService from "../services/authService";
 import tagService from "../services/tagService";
 import strategyService from "../services/strategyService";
 import tradeService from "../services/tradeService";
