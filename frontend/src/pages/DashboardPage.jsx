@@ -97,13 +97,10 @@ function DashboardPage() {
   }
 
   function toggleSpan(widgetId) {
-    const defaultSpan =
-      DEFAULT_DASHBOARD_LAYOUT.find((item) => item.id === widgetId)?.span ?? 2;
-
     setLayout((current) =>
       normalizeDashboardLayout(current).map((item) =>
         item.id === widgetId
-          ? { ...item, span: item.span > 1 ? 1 : defaultSpan }
+          ? { ...item, span: item.span === 2 ? 1 : 2 }
           : item
       )
     );
