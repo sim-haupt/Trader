@@ -96,7 +96,7 @@ function getDayTone(stats, isCurrentMonth) {
     return "bg-[linear-gradient(180deg,rgba(255,95,122,0.16),rgba(255,95,122,0.05))] text-coral";
   }
 
-  return "bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04))] text-phosphor";
+  return "bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04))] text-mist";
 }
 
 function getDayBorderStyle(stats, isCurrentMonth) {

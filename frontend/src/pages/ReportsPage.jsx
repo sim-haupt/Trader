@@ -2376,34 +2376,6 @@ function ReportsPage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <CustomSelect
-                value={pnlType}
-                onChange={(nextValue) => setPnlType(nextValue)}
-                options={[
-                  { label: "Gross", value: "GROSS" },
-                  { label: "Net", value: "NET" }
-                ]}
-                className="max-w-[150px]"
-                buttonClassName="max-w-[150px]"
-              />
-            </div>
-
-            <div className="ui-segment">
-              {RANGE_OPTIONS.map((option) => (
-                <button
-                  key={option.key}
-                  type="button"
-                  data-active={option.key === rangeKey}
-                  onClick={() => setRangeKey(option.key)}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
           <div className="flex flex-wrap items-center gap-6 border-t border-white/10 pt-4">
             <div className="flex flex-wrap items-center gap-5">
               {TAB_ITEMS.map((tab) => (
@@ -2424,6 +2396,34 @@ function ReportsPage() {
           </div>
         </div>
       </Card>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+        <div className="flex flex-wrap items-center gap-3">
+          <CustomSelect
+            value={pnlType}
+            onChange={(nextValue) => setPnlType(nextValue)}
+            options={[
+              { label: "Gross", value: "GROSS" },
+              { label: "Net", value: "NET" }
+            ]}
+            className="max-w-[150px]"
+            buttonClassName="max-w-[150px]"
+          />
+        </div>
+
+        <div className="ui-segment">
+          {RANGE_OPTIONS.map((option) => (
+            <button
+              key={option.key}
+              type="button"
+              data-active={option.key === rangeKey}
+              onClick={() => setRangeKey(option.key)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {filteredTrades.length === 0 ? (
         <EmptyState
