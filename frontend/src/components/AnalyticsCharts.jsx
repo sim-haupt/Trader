@@ -129,7 +129,7 @@ function CircularCompareMetric({
       style={{ borderColor: metricBorderColor(shadowTone) }}
     >
       <p className="ui-title text-[10px] text-white/48">{label}</p>
-      <div className="group mt-4 flex h-full flex-col items-center justify-center">
+      <div className="group flex h-full flex-col items-center justify-center py-3">
         <div
           className="relative flex h-28 w-28 items-center justify-center rounded-full"
           style={ringStyle}
