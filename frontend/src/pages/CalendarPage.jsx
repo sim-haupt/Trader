@@ -14,6 +14,13 @@ function getDayKey(date) {
   return formatted ? formatted.slice(0, 10) : "";
 }
 
+function getCalendarGridKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function buildDailyStats(trades) {
   const dailyMap = new Map();
 
@@ -60,7 +67,7 @@ function createMonthGrid(year, monthIndex, dailyStats) {
 
     for (let dayIndex = 0; dayIndex < 7; dayIndex += 1) {
       const currentDate = new Date(cursor);
-      const dayKey = getDayKey(currentDate);
+      const dayKey = getCalendarGridKey(currentDate);
 
       week.push({
         date: currentDate,
