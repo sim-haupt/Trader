@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   Area,
   AreaChart,
@@ -30,51 +30,6 @@ export const DEFAULT_DASHBOARD_LAYOUT = [
   { id: "winPct", span: 2 },
   { id: "dailyVolume", span: 2 }
 ];
-
-const WIDGET_IDS = new Set(DEFAULT_DASHBOARD_LAYOUT.map((item) => item.id));
-
-export function normalizeDashboardLayout(layout) {
-  const safeLayout = Array.isArray(layout) ? layout : [];
-  const seen = new Set();
-  const normalized = [];
-  let insertedPerformanceSnapshot = false;
-
-  for (const item of safeLayout) {
-    if (!item) {
-      continue;
-    }
-
-    if (["summaryMetrics", "avgStats", "streaks", "expectancy", "riskReward", "winStats"].includes(item.id)) {
-      if (!insertedPerformanceSnapshot) {
-        insertedPerformanceSnapshot = true;
-        seen.add("performanceSnapshot");
-        normalized.push({
-          id: "performanceSnapshot",
-          span: 2
-        });
-      }
-      continue;
-    }
-
-    if (!WIDGET_IDS.has(item.id) || seen.has(item.id)) {
-      continue;
-    }
-
-    seen.add(item.id);
-    normalized.push({
-      id: item.id,
-      span: item.span === 2 ? 2 : 1
-    });
-  }
-
-  for (const fallback of DEFAULT_DASHBOARD_LAYOUT) {
-    if (!seen.has(fallback.id)) {
-      normalized.push(fallback);
-    }
-  }
-
-  return normalized;
-}
 
 function tooltipStyle() {
   return {
@@ -280,7 +235,7 @@ function BreakdownRows({ entries }) {
 }
 
 function widgetSpanClass(span) {
-  return span === 2 ? "md:col-span-2 xl:col-span-2" : "";
+  return span === 2 ? "md:col-span-2 lg:col-span-2" : "";
 }
 
 function getLastSevenDayTone(day) {
@@ -322,11 +277,7 @@ function getLastSevenDayTone(day) {
 }
 
 function AnalyticsCharts({
-  analytics,
-  layout = DEFAULT_DASHBOARD_LAYOUT,
-  editing = false,
-  onReorder,
-  onToggleSpan
+  analytics
 }) {
   const {
     summary,
@@ -344,8 +295,6 @@ function AnalyticsCharts({
   } = analytics;
   const pnlLabel = pnlType === "GROSS" ? "GROSS" : "NET";
 
-  const [draggedId, setDraggedId] = useState(null);
-  const [dropTargetId, setDropTargetId] = useState(null);
   const widgets = useMemo(
     () => [
       {
@@ -389,7 +338,7 @@ function AnalyticsCharts({
         className: "min-h-[620px]",
         body: (
           <div className="flex h-full flex-col gap-3">
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <MiniMetric
                 label="WIN RATE"
                 value={formatPercent(summary.winRate)}
@@ -410,7 +359,7 @@ function AnalyticsCharts({
               />
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <MiniMetric
                 label="PROFIT FACTOR"
                 value={summary.profitFactor ? summary.profitFactor.toFixed(2) : "0.00"}
@@ -437,7 +386,7 @@ function AnalyticsCharts({
               />
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <MiniMetric label="AVG WIN" value={formatCurrency(summary.averageWin)} tone={toneForValue(summary.averageWin)} shadow />
               <MiniMetric
                 label="AVG LOSS"
@@ -447,7 +396,7 @@ function AnalyticsCharts({
               />
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <MiniMetric
                 label="AVG GAIN / SHARE"
                 value={formatCurrency(summary.averageGainPerShare)}
@@ -462,7 +411,7 @@ function AnalyticsCharts({
               />
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <MiniMetric label="WINNING STREAK" value={summary.longestWinStreak} tone="text-mist" shadow />
               <MiniMetric
                 label="LOSING STREAK"
@@ -629,22 +578,6 @@ function AnalyticsCharts({
     ]
   );
 
-  const widgetMap = new Map(widgets.map((widget) => [widget.id, widget]));
-  const orderedWidgets = normalizeDashboardLayout(layout)
-    .map((item) => ({ ...item, widget: widgetMap.get(item.id) }))
-    .filter((item) => item.widget);
-
-  function handleDrop(targetId) {
-    if (!draggedId || draggedId === targetId) {
-      setDropTargetId(null);
-      return;
-    }
-
-    onReorder?.(draggedId, targetId);
-    setDraggedId(null);
-    setDropTargetId(null);
-  }
-
   return (
     <div className="space-y-6">
       <div className="ui-panel p-5">
@@ -671,60 +604,17 @@ function AnalyticsCharts({
         </div>
       </div>
 
-      <div className="grid items-start gap-5 md:grid-cols-2 xl:grid-cols-4">
-        {orderedWidgets.map(({ id, span, widget }) => {
-          const cardAction = editing ? (
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => onToggleSpan?.(id)}
-                className="ui-button px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/76 hover:text-white"
-              >
-                {span === 2 ? "Normal" : "Wide"}
-              </button>
-              <span className="ui-button cursor-grab select-none px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/56">
-                Drag
-              </span>
-            </div>
-          ) : null;
-
+      <div className="grid items-start gap-5 md:grid-cols-2 lg:grid-cols-4">
+        {widgets.map((widget, index) => {
+          const span = DEFAULT_DASHBOARD_LAYOUT[index]?.span ?? 1;
           return (
             <div
-              key={id}
-              draggable={editing}
-              onDragStart={() => {
-                setDraggedId(id);
-                setDropTargetId(id);
-              }}
-              onDragEnd={() => {
-                setDraggedId(null);
-                setDropTargetId(null);
-              }}
-              onDragEnter={() => {
-                if (editing && draggedId && draggedId !== id) {
-                  setDropTargetId(id);
-                }
-              }}
-              onDragOver={(event) => {
-                if (editing) {
-                  event.preventDefault();
-                  event.dataTransfer.dropEffect = "move";
-                  if (draggedId && draggedId !== id && dropTargetId !== id) {
-                    setDropTargetId(id);
-                  }
-                }
-              }}
-              onDrop={() => handleDrop(id)}
-              className={`${widgetSpanClass(span)} ${editing && draggedId === id ? "opacity-60" : ""} ${
-                editing && dropTargetId === id && draggedId !== id
-                  ? "rounded-[6px] bg-mint/8 p-[3px] ring-2 ring-mint/90 shadow-[0_0_0_1px_rgba(86,240,169,0.35)]"
-                  : ""
-              }`}
+              key={widget.id}
+              className={widgetSpanClass(span)}
             >
               <Card
                 title={widget.title}
-                action={cardAction}
-                className={`h-full transition ${widget.className || ""} ${editing ? "ring-1 ring-white/10" : ""}`}
+                className={`h-full ${widget.className || ""}`}
               >
                 {widget.body}
               </Card>
