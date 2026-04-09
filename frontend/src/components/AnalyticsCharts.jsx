@@ -127,9 +127,28 @@ function ChartTooltipContent({ active, payload, label }) {
   );
 }
 
-function MiniMetric({ label, value, tone = "text-white" }) {
+function metricInsetShadow(tone) {
+  switch (tone) {
+    case "text-mint":
+      return "inset 0 0 0 1px rgba(45, 212, 143, 0.34)";
+    case "text-coral":
+      return "inset 0 0 0 1px rgba(255, 107, 107, 0.34)";
+    case "text-gold":
+      return "inset 0 0 0 1px rgba(255, 216, 77, 0.34)";
+    case "text-mist":
+    case "text-phosphor":
+      return "inset 0 0 0 1px rgba(229, 231, 235, 0.18)";
+    default:
+      return undefined;
+  }
+}
+
+function MiniMetric({ label, value, tone = "text-white", shadow = false }) {
   return (
-    <div className="ui-metric-tile h-full">
+    <div
+      className="ui-metric-tile h-full"
+      style={shadow ? { boxShadow: metricInsetShadow(tone) } : undefined}
+    >
       <p className="ui-title text-[10px] text-white/48">{label}</p>
       <p className={`mt-3 text-2xl font-bold tracking-[-0.04em] ${tone}`}>{value}</p>
     </div>
@@ -259,10 +278,10 @@ function AnalyticsCharts({
         body: (
           <>
             <div className="mb-5 grid gap-3 md:grid-cols-4">
-              <MiniMetric label="TOTAL" value={formatCurrency(summary.totalPnl)} tone={toneForValue(summary.totalPnl)} />
-              <MiniMetric label="MONTH" value={formatCurrency(summary.totalMonthPnl)} tone={toneForValue(summary.totalMonthPnl)} />
-              <MiniMetric label="WEEK" value={formatCurrency(summary.totalWeekPnl)} tone={toneForValue(summary.totalWeekPnl)} />
-              <MiniMetric label="TODAY" value={formatCurrency(summary.totalTodayPnl)} tone={toneForValue(summary.totalTodayPnl)} />
+              <MiniMetric label="TOTAL" value={formatCurrency(summary.totalPnl)} tone={toneForValue(summary.totalPnl)} shadow />
+              <MiniMetric label="MONTH" value={formatCurrency(summary.totalMonthPnl)} tone={toneForValue(summary.totalMonthPnl)} shadow />
+              <MiniMetric label="WEEK" value={formatCurrency(summary.totalWeekPnl)} tone={toneForValue(summary.totalWeekPnl)} shadow />
+              <MiniMetric label="TODAY" value={formatCurrency(summary.totalTodayPnl)} tone={toneForValue(summary.totalTodayPnl)} shadow />
             </div>
             <div className="h-[420px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -296,11 +315,13 @@ function AnalyticsCharts({
               label="WIN RATE"
               value={formatPercent(summary.winRate)}
               tone={summary.winRate >= 68 ? "text-mint" : summary.winRate < 50 ? "text-coral" : "text-gold"}
+              shadow
             />
             <MiniMetric
               label="EXPECTANCY"
               value={formatCurrency(summary.expectancyPerTrade)}
               tone={summary.winRate >= 68 ? "text-mint" : summary.winRate < 50 ? "text-coral" : "text-gold"}
+              shadow
             />
             <MiniMetric
               label="R:R"
@@ -312,6 +333,7 @@ function AnalyticsCharts({
                     ? "text-mint"
                     : "text-gold"
               }
+              shadow
             />
           </div>
         )
@@ -323,10 +345,10 @@ function AnalyticsCharts({
         className: "min-h-[205px]",
         body: (
           <div className="grid gap-3 md:grid-cols-2">
-            <MiniMetric label="AVG WIN" value={formatCurrency(summary.averageWin)} tone="text-mint" />
-            <MiniMetric label="AVG LOSS" value={formatCurrency(summary.averageLoss)} tone="text-coral" />
-            <MiniMetric label="AVG GAIN / SHARE" value={formatCurrency(summary.averageGainPerShare)} tone="text-mint" />
-            <MiniMetric label="AVG LOSS / SHARE" value={formatCurrency(summary.averageLossPerShare)} tone="text-coral" />
+            <MiniMetric label="AVG WIN" value={formatCurrency(summary.averageWin)} tone="text-mint" shadow />
+            <MiniMetric label="AVG LOSS" value={formatCurrency(summary.averageLoss)} tone="text-coral" shadow />
+            <MiniMetric label="AVG GAIN / SHARE" value={formatCurrency(summary.averageGainPerShare)} tone="text-mint" shadow />
+            <MiniMetric label="AVG LOSS / SHARE" value={formatCurrency(summary.averageLossPerShare)} tone="text-coral" shadow />
           </div>
         )
       },
@@ -476,8 +498,8 @@ function AnalyticsCharts({
         className: "min-h-[205px]",
         body: (
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-            <MiniMetric label="WINNING STREAK" value={summary.longestWinStreak} tone="text-mint" />
-            <MiniMetric label="LOSING STREAK" value={summary.longestLossStreak} tone="text-coral" />
+            <MiniMetric label="WINNING STREAK" value={summary.longestWinStreak} tone="text-mint" shadow />
+            <MiniMetric label="LOSING STREAK" value={summary.longestLossStreak} tone="text-coral" shadow />
           </div>
         )
       }
