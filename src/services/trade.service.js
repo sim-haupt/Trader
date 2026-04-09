@@ -5,6 +5,8 @@ const tagService = require("./tag.service");
 const strategyService = require("./strategy.service");
 const { refreshTradeImportContext } = require("./market-data.service");
 
+const MARKET_TIME_ZONE = "America/New_York";
+
 const adminTradeInclude = {
   user: {
     select: {
@@ -32,6 +34,92 @@ const tradeDetailInclude = {
 
 function hasGlobalTradeScope(actor, filters = {}) {
   return actor.role === "ADMIN" && filters.scope === "all";
+}
+
+function asNumber(value, fallback = 0) {
+  const numericValue = Number(value);
+  return Number.isNaN(numericValue) ? fallback : numericValue;
+}
+
+function getMarketDateParts(date) {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: MARKET_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    weekday: "short"
+  });
+
+  const parts = formatter.formatToParts(date);
+
+  return Object.fromEntries(
+    parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value])
+  );
+}
+
+function getMarketDayKey(date) {
+  const parts = getMarketDateParts(date);
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+function dayKeyToDate(dayKey) {
+  const [year, month, day] = String(dayKey)
+    .split("-")
+    .map((value) => Number(value));
+
+  return new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+}
+
+function shiftDayKey(dayKey, amount) {
+  const date = dayKeyToDate(dayKey);
+  date.setUTCDate(date.getUTCDate() + amount);
+  return getMarketDayKey(date);
+}
+
+function getStartOfCurrentWeekKey(currentDayKey) {
+  const date = dayKeyToDate(currentDayKey);
+  const dayOfWeek = date.getUTCDay();
+  const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  date.setUTCDate(date.getUTCDate() + diff);
+  return getMarketDayKey(date);
+}
+
+function formatLastSevenDayLabel(dayKey) {
+  const date = dayKeyToDate(dayKey);
+
+  return {
+    label: date.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" }),
+    weekday: date.toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" })
+  };
+}
+
+function getEffectiveTradeCosts(trade, actor) {
+  const explicitFees = asNumber(trade?.fees, 0);
+
+  if (explicitFees > 0) {
+    return explicitFees;
+  }
+
+  return Number(
+    (asNumber(actor?.defaultCommission, 0) + asNumber(actor?.defaultFees, 0)).toFixed(4)
+  );
+}
+
+function getTradeNetPnl(trade, actor) {
+  const grossPnl = trade?.grossPnl;
+  const storedNetPnl = trade?.netPnl;
+  const effectiveCosts = getEffectiveTradeCosts(trade, actor);
+
+  if (grossPnl !== undefined && grossPnl !== null && grossPnl !== "") {
+    return Number((asNumber(grossPnl, 0) - effectiveCosts).toFixed(4));
+  }
+
+  if (storedNetPnl !== undefined && storedNetPnl !== null && storedNetPnl !== "") {
+    const baseNetPnl = asNumber(storedNetPnl, 0);
+    return Number((baseNetPnl - (asNumber(trade?.fees, 0) > 0 ? 0 : effectiveCosts)).toFixed(4));
+  }
+
+  return Number((0 - effectiveCosts).toFixed(4));
 }
 
 function buildTradeWhere(actor, filters = {}) {
@@ -116,6 +204,95 @@ async function getTrades(actor, filters) {
       entryDate: "desc"
     }
   });
+}
+
+async function getWidgetSummary(actor, filters = {}) {
+  const where = buildTradeWhere(actor, filters);
+  const trades = await prisma.trade.findMany({
+    where,
+    select: {
+      id: true,
+      entryDate: true,
+      grossPnl: true,
+      netPnl: true,
+      fees: true
+    },
+    orderBy: {
+      entryDate: "asc"
+    }
+  });
+
+  const currentDayKey = getMarketDayKey(new Date());
+  const currentWeekStartKey = getStartOfCurrentWeekKey(currentDayKey);
+  const currentMonthPrefix = currentDayKey.slice(0, 7);
+  const dailyMap = new Map();
+
+  let total = 0;
+  let month = 0;
+  let week = 0;
+  let today = 0;
+  let tradeCount = 0;
+  let wins = 0;
+
+  for (const trade of trades) {
+    const pnl = getTradeNetPnl(trade, actor);
+    const entryDate = new Date(trade.entryDate);
+    const dayKey = getMarketDayKey(entryDate);
+    const currentDayStats = dailyMap.get(dayKey) || { pnl: 0, trades: 0 };
+
+    currentDayStats.pnl = Number((currentDayStats.pnl + pnl).toFixed(4));
+    currentDayStats.trades += 1;
+    dailyMap.set(dayKey, currentDayStats);
+
+    total += pnl;
+    tradeCount += 1;
+
+    if (pnl > 0) {
+      wins += 1;
+    }
+
+    if (dayKey.startsWith(currentMonthPrefix)) {
+      month += pnl;
+    }
+
+    if (dayKey >= currentWeekStartKey && dayKey <= currentDayKey) {
+      week += pnl;
+    }
+
+    if (dayKey === currentDayKey) {
+      today += pnl;
+    }
+  }
+
+  const lastSevenDays = Array.from({ length: 7 }, (_, index) => {
+    const dayKey = shiftDayKey(currentDayKey, index - 6);
+    const stats = dailyMap.get(dayKey);
+    const { label, weekday } = formatLastSevenDayLabel(dayKey);
+
+    return {
+      date: dayKey,
+      label,
+      weekday,
+      pnl: Number((stats?.pnl || 0).toFixed(2)),
+      trades: stats?.trades || 0
+    };
+  });
+
+  return {
+    pnlType: "NET",
+    asOf: currentDayKey,
+    cumulative: {
+      total: Number(total.toFixed(2)),
+      month: Number(month.toFixed(2)),
+      week: Number(week.toFixed(2)),
+      today: Number(today.toFixed(2))
+    },
+    winRate: tradeCount ? Number(((wins / tradeCount) * 100).toFixed(2)) : 0,
+    tradeCount,
+    wins,
+    losses: tradeCount - wins,
+    lastSevenDays
+  };
 }
 
 async function getTradeTags(actor) {
@@ -426,6 +603,7 @@ async function createManyTrades(userId, trades) {
 module.exports = {
   createTrade,
   getTrades,
+  getWidgetSummary,
   getTradeTags,
   getTradeById,
   updateTrade,

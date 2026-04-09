@@ -19,6 +19,7 @@ router.use(authenticate);
 
 router.post("/", validate(tradeSchema), tradeController.createTrade);
 router.get("/", validate(tradeQuerySchema, "query"), tradeController.getTrades);
+router.get("/widget-summary", validate(tradeQuerySchema, "query"), tradeController.getWidgetSummary);
 router.get("/tags", tradeController.getTradeTags);
 router.get("/:id", tradeController.getTradeById);
 router.put("/:id", validate(tradeSchema), tradeController.updateTrade);

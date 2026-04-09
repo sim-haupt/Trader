@@ -21,6 +21,15 @@ const getTrades = asyncHandler(async (req, res) => {
   });
 });
 
+const getWidgetSummary = asyncHandler(async (req, res) => {
+  const summary = await tradeService.getWidgetSummary(req.user, req.validatedQuery || {});
+
+  res.status(200).json({
+    success: true,
+    data: summary
+  });
+});
+
 const getTradeTags = asyncHandler(async (req, res) => {
   const tags = await tradeService.getTradeTags(req.user);
 
@@ -126,6 +135,7 @@ const importTradesFromText = asyncHandler(async (req, res) => {
 module.exports = {
   createTrade,
   getTrades,
+  getWidgetSummary,
   getTradeTags,
   getTradeById,
   updateTrade,
