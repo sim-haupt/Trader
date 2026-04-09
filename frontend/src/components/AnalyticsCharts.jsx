@@ -359,8 +359,8 @@ function AnalyticsCharts({
         body: (
           <>
             <div className="mb-4 grid gap-3 md:grid-cols-2">
-              <MiniMetric label="MAX DRAWDOWN" value={formatCurrency(summary.maxDrawdown)} tone="text-coral" />
-              <MiniMetric label="CURRENT DRAWDOWN" value={formatCurrency(summary.currentDrawdown)} tone="text-coral" />
+              <MiniMetric label="MAX DRAWDOWN" value={formatCurrency(summary.maxDrawdown)} tone="text-coral" shadow />
+              <MiniMetric label="CURRENT DRAWDOWN" value={formatCurrency(summary.currentDrawdown)} tone="text-coral" shadow />
             </div>
             <div className="h-[220px]">
               <ResponsiveContainer width="100%" height="100%">

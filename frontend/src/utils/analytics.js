@@ -325,6 +325,7 @@ export function buildAnalytics(trades, options = {}) {
   const latestTradeDate = processedTrades.length
     ? new Date(processedTrades[processedTrades.length - 1].entryDate)
     : new Date();
+  const currentMarketDayKey = getLocalDayKey(new Date());
   const latestDayStart = startOfDay(latestTradeDate);
   const latestDayEnd = endOfDay(latestTradeDate);
   const latestWeekStart = startOfWeek(latestTradeDate);
@@ -342,7 +343,7 @@ export function buildAnalytics(trades, options = {}) {
   );
   const totalTodayPnl = processedTrades.reduce(
     (sum, item) =>
-      item.entryDate >= latestDayStart && item.entryDate <= latestDayEnd ? sum + item.pnl : sum,
+      getLocalDayKey(item.entryDate) === currentMarketDayKey ? sum + item.pnl : sum,
     0
   );
 
