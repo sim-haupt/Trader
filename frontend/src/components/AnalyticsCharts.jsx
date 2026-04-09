@@ -27,8 +27,8 @@ export const DEFAULT_DASHBOARD_LAYOUT = [
   { id: "winPct", span: 2 },
   { id: "dailyVolume", span: 2 },
   { id: "performanceWeekday", span: 1 },
-  { id: "performanceHourSummary", span: 1 },
-  { id: "performancePrice", span: 2 }
+  { id: "performancePrice", span: 1 },
+  { id: "performanceHourSummary", span: 2 }
 ];
 
 function tooltipStyle() {
@@ -199,11 +199,12 @@ function formatMetricMinutes(value) {
   return `${hours}h ${minutes}m`;
 }
 
-function BreakdownRows({ entries }) {
+function BreakdownRows({ entries, columns = 1 }) {
   const maxMagnitude = Math.max(1, ...entries.map((entry) => Math.abs(entry.pnl || 0)));
+  const containerClass = columns === 2 ? "grid gap-4 md:grid-cols-2" : "space-y-4";
 
   return (
-    <div className="space-y-4">
+    <div className={containerClass}>
       {entries.map((entry) => {
         const pct = entry.percentage ?? 0;
         const width = entry.pnl === 0 ? 0 : Math.max(4, (Math.abs(entry.pnl) / maxMagnitude) * 100);
@@ -553,12 +554,12 @@ function AnalyticsCharts({
         title: `${pnlLabel} BY PRICE`,
         defaultSpan: 1,
         className: "min-h-[300px]",
-        body: <BreakdownRows entries={performanceByPrice} />
+        body: <BreakdownRows entries={performanceByPrice} columns={2} />
       },
       {
         id: "performanceHourSummary",
         title: `${pnlLabel} BY HOUR OF DAY`,
-        defaultSpan: 1,
+        defaultSpan: 2,
         className: "min-h-[300px]",
         body: <BreakdownRows entries={performanceByTimeOfDaySummary} />
       }
@@ -604,7 +605,7 @@ function AnalyticsCharts({
         </div>
       </div>
 
-      <div className="grid items-start gap-5 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
         {widgets.map((widget, index) => {
           const span = DEFAULT_DASHBOARD_LAYOUT[index]?.span ?? 1;
           return (

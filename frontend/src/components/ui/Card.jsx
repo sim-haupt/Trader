@@ -21,7 +21,7 @@ function Card({
           </div>
         </div>
       )}
-      <div className={`flex-1 p-5 lg:p-6 ${bodyClassName}`}>{children}</div>
+      <div className={`flex flex-1 flex-col justify-start p-5 lg:p-6 ${bodyClassName}`}>{children}</div>
     </section>
   );
 }
