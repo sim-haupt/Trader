@@ -107,7 +107,7 @@ function AppShell() {
             <button
               type="button"
               onClick={logout}
-              className="ui-button w-full justify-center px-4 py-2.5 text-sm text-white/76"
+              className="rounded-[6px] border border-[var(--line)] bg-black px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1f1f1f] w-full justify-center"
             >
               Logout
             </button>
@@ -171,7 +171,7 @@ function AppShell() {
               <button
                 type="button"
                 onClick={logout}
-                className="ui-button px-4 py-2.5 text-sm text-white/74 xl:hidden"
+                className="xl:hidden rounded-[6px] border border-[var(--line)] bg-black px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1f1f1f]"
               >
                 Logout
               </button>

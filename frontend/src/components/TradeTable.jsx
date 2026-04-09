@@ -45,7 +45,7 @@ function TradeTable({
     <div className="ui-table-shell">
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-[var(--line)] text-sm">
-          <thead className="bg-[#050505]">
+          <thead className="bg-[rgba(255,255,255,0.05)]">
             <tr className="ui-title text-left text-[11px] text-white/58">
               {onToggleSelection && (
                 <th className="px-4 py-4">
@@ -177,7 +177,7 @@ function TradeTable({
                               event.stopPropagation();
                               onDelete(trade);
                             }}
-                            className="ui-button-danger inline-flex h-9 w-9 items-center justify-center rounded-[6px] p-0"
+                            className="ui-button inline-flex h-9 w-9 items-center justify-center rounded-[6px] p-0 text-coral hover:text-coral"
                             aria-label={`Delete ${trade.symbol} trade`}
                             title="Delete trade"
                           >

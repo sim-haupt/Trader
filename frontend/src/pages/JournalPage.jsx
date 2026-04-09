@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Area,
-  AreaChart,
   CartesianGrid,
+  ComposedChart,
   Line,
   ResponsiveContainer,
   Tooltip,
@@ -395,7 +395,7 @@ function JournalDayCard({
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)]">
           <div className="h-[180px] rounded-[6px] border border-[var(--line)] bg-black p-3">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={day.chartData}>
+              <ComposedChart data={day.chartData}>
                 <defs>
                   <linearGradient id={`journal-${day.dayKey}`} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#3dff9a" stopOpacity={0.28} />
@@ -489,7 +489,7 @@ function JournalDayCard({
                     );
                   }}
                 />
-              </AreaChart>
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
 
@@ -515,7 +515,9 @@ function JournalDayCard({
 
         <div className="rounded-[6px] border border-[var(--line)] bg-black p-4">
           <div className="mb-3 flex items-center justify-between gap-3">
-            <div className="ui-title text-[10px] text-white/56">Day Notes</div>
+            <div className="ui-title inline-flex min-h-[36px] items-center text-[10px] leading-none text-white/56">
+              Day Notes
+            </div>
             {!isEditingNote ? (
               <button
                 type="button"
@@ -862,7 +864,7 @@ function JournalPage() {
             />
           </div>
 
-          <button type="button" onClick={handleResetFilters} className="ui-button h-[44px] px-5 text-sm">
+          <button type="button" onClick={handleResetFilters} className="ui-button min-h-[46px] px-5 py-3 text-sm">
             Reset
           </button>
         </div>

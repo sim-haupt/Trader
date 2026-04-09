@@ -586,7 +586,7 @@ function TradesPage() {
             </div>
           }
         >
-      <div className="relative z-20 pb-5">
+      <div className="relative z-20 pb-14">
             <Filters
               filters={filters}
               onChange={handleFilterChange}

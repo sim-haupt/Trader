@@ -152,6 +152,27 @@ const REPORT_GREEN = "#3dff9a";
 const REPORT_RED = "#ff5f7a";
 const REPORT_YELLOW = "#ffd84d";
 
+function WinLossDaysPieTooltip({ active, payload }) {
+  if (!active || !payload?.length) {
+    return null;
+  }
+
+  const point = payload[0]?.payload;
+  const value = Number(point?.value || 0);
+  const total = Number(point?.total || 0);
+  const share = total > 0 ? (value / total) * 100 : 0;
+
+  return (
+    <div className="rounded-[6px] border border-[var(--line)] bg-black px-3 py-2">
+      <div className="text-xs font-medium text-white/72">{point?.name || "Days"}</div>
+      <div className={`mt-1 text-sm font-semibold ${value >= 0 ? "text-mint" : "text-coral"}`}>
+        {value} day{value === 1 ? "" : "s"}
+      </div>
+      <div className="mt-1 text-xs text-white/52">{share.toFixed(1)}%</div>
+    </div>
+  );
+}
+
 const WEEKDAY_ORDER = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 const MONTH_ORDER = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const DETAILED_TIMEFRAME_OPTIONS = [
@@ -367,7 +388,9 @@ function calculateDrawdownStats(sortedTrades, defaultCommission, defaultFees, pn
       biggestDrawdown: 0,
       averageDaysInDrawdown: 0,
       daysInDrawdown: 0,
-      averageTradesInDrawdown: 0
+      averageTradesInDrawdown: 0,
+      currentDrawdown: 0,
+      drawdownCurve: []
     };
   }
 
@@ -394,11 +417,16 @@ function calculateDrawdownStats(sortedTrades, defaultCommission, defaultFees, pn
   let peakEquity = 0;
   let currentEpisode = null;
   const episodes = [];
+  const drawdownCurve = [];
 
   for (const day of dailySeries) {
     runningEquity = Number((runningEquity + day.pnl).toFixed(2));
     peakEquity = Math.max(peakEquity, runningEquity);
     const drawdown = Number((runningEquity - peakEquity).toFixed(2));
+    drawdownCurve.push({
+      date: day.date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      drawdown
+    });
 
     if (drawdown < 0) {
       if (!currentEpisode) {
@@ -428,7 +456,9 @@ function calculateDrawdownStats(sortedTrades, defaultCommission, defaultFees, pn
       biggestDrawdown: 0,
       averageDaysInDrawdown: 0,
       daysInDrawdown: 0,
-      averageTradesInDrawdown: 0
+      averageTradesInDrawdown: 0,
+      currentDrawdown: 0,
+      drawdownCurve
     };
   }
 
@@ -446,7 +476,9 @@ function calculateDrawdownStats(sortedTrades, defaultCommission, defaultFees, pn
     biggestDrawdown,
     averageDaysInDrawdown,
     daysInDrawdown,
-    averageTradesInDrawdown
+    averageTradesInDrawdown,
+    currentDrawdown: Math.abs(drawdownCurve[drawdownCurve.length - 1]?.drawdown || 0),
+    drawdownCurve
   };
 }
 
@@ -1024,8 +1056,8 @@ function buildWinVsLossDaysStats(trades, options = {}) {
     losingSummary: summarizeTrades(losingTrades, losingDays.length, options),
     distributionByWeekday: Array.from(distributionMap.values()),
     pieData: [
-      { name: "Winning Days", value: winningDays.length, fill: REPORT_GREEN },
-      { name: "Losing Days", value: losingDays.length, fill: REPORT_RED }
+      { name: "Winning Days", value: winningDays.length, fill: REPORT_GREEN, total: winningDays.length + losingDays.length },
+      { name: "Losing Days", value: losingDays.length, fill: REPORT_RED, total: winningDays.length + losingDays.length }
     ]
   };
 }
@@ -1539,9 +1571,22 @@ function WinVsLossDaysSection({
                   <Cell key={entry.name} fill={entry.fill} />
                 ))}
               </Pie>
-              <Tooltip content={<PercentTooltip />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
+              <Tooltip content={<WinLossDaysPieTooltip />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
             </PieChart>
           </ResponsiveContainer>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-white/62">
+          {stats.pieData.map((entry) => (
+            <div key={entry.name} className="flex items-center gap-2">
+              <span
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: entry.fill }}
+              />
+              <span>{entry.name}</span>
+              <span className="text-white">{entry.value}</span>
+            </div>
+          ))}
         </div>
 
         <BreakdownTabs activeTab={activeTab} onTabChange={onTabChange} />
@@ -1631,34 +1676,72 @@ function DrawdownSection({ summary }) {
   ];
 
   return (
-    <Card title="STATISTICS">
-      <div className="overflow-hidden rounded-[6px] border border-[var(--line)] bg-black">
-        {rows.map((row, rowIndex) => (
-          <div
-            key={`drawdown-row-${rowIndex}`}
-            className="grid border-b border-[#e5e7eb42] last:border-b-0 xl:grid-cols-2"
-          >
-            {row.map((cell, cellIndex) => (
-              <div
-                key={`drawdown-cell-${rowIndex}-${cellIndex}`}
-                className={`min-h-[72px] border-r border-[#e5e7eb42] px-5 py-5 last:border-r-0 ${
-                  !cell ? "hidden xl:block" : ""
-                }`}
-              >
-                {cell ? (
-                  <div className="flex h-full items-center justify-between gap-4">
-                    <span className="text-sm font-medium text-white/70">
-                      {cell.label}
-                    </span>
-                    <span className={`text-sm font-semibold ${cell.tone}`}>{cell.value}</span>
-                  </div>
-                ) : null}
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
-    </Card>
+    <div className="space-y-5">
+      <Card title="STATISTICS">
+        <div className="overflow-hidden rounded-[6px] border border-[var(--line)] bg-black">
+          {rows.map((row, rowIndex) => (
+            <div
+              key={`drawdown-row-${rowIndex}`}
+              className="grid border-b border-[#e5e7eb42] last:border-b-0 xl:grid-cols-2"
+            >
+              {row.map((cell, cellIndex) => (
+                <div
+                  key={`drawdown-cell-${rowIndex}-${cellIndex}`}
+                  className={`min-h-[72px] border-r border-[#e5e7eb42] px-5 py-5 last:border-r-0 ${
+                    !cell ? "hidden xl:block" : ""
+                  }`}
+                >
+                  {cell ? (
+                    <div className="flex h-full items-center justify-between gap-4">
+                      <span className="text-sm font-medium text-white/70">
+                        {cell.label}
+                      </span>
+                      <span className={`text-sm font-semibold ${cell.tone}`}>{cell.value}</span>
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card title="DRAWDOWN CURVE">
+        <div className="h-[280px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={summary.drawdownCurve || []}>
+              <defs>
+                <linearGradient id="reportsDrawdownGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={REPORT_RED} stopOpacity={0.22} />
+                  <stop offset="100%" stopColor={REPORT_RED} stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+              <XAxis
+                dataKey="date"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#c6cedb", fontSize: 11 }}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#c6cedb", fontSize: 11 }}
+                tickFormatter={formatAxisCurrency}
+              />
+              <Tooltip content={<CurrencyTooltip />} />
+              <Area
+                type="monotone"
+                dataKey="drawdown"
+                stroke={REPORT_RED}
+                strokeWidth={2.5}
+                fill="url(#reportsDrawdownGradient)"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
+    </div>
   );
 }
 
@@ -2287,7 +2370,7 @@ function ReportsPage() {
               />
             </div>
             <div className="flex items-end justify-end gap-2">
-              <button type="button" onClick={resetFilters} className="ui-button h-[44px] px-4 text-sm">
+              <button type="button" onClick={resetFilters} className="ui-button min-h-[46px] px-4 py-3 text-sm">
                 Reset
               </button>
             </div>

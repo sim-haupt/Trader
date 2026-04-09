@@ -79,7 +79,7 @@ function Filters({ filters, onChange, onReset, strategies = [], tags = [] }) {
         </div>
 
         <div className="flex items-end justify-end gap-2 self-end">
-          <button type="button" onClick={onReset} className="ui-button h-[44px] px-5 text-sm">
+          <button type="button" onClick={onReset} className="ui-button min-h-[46px] px-5 py-3 text-sm">
             Reset
           </button>
         </div>
