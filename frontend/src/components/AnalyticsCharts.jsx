@@ -136,6 +136,64 @@ function SplitMetric({
   );
 }
 
+function CircularCompareMetric({
+  label,
+  centerValue,
+  centerHint,
+  primaryValue,
+  secondaryValue,
+  primaryDisplay,
+  secondaryDisplay,
+  primaryLabel,
+  secondaryLabel,
+  primaryTone = "text-mint",
+  secondaryTone = "text-coral",
+  shadowTone = "text-mist"
+}) {
+  const safePrimary = Number(primaryValue || 0);
+  const safeSecondary = Number(secondaryValue || 0);
+  const total = Math.max(0, safePrimary) + Math.max(0, safeSecondary);
+  const primaryPct = total > 0 ? (Math.max(0, safePrimary) / total) * 100 : 0;
+  const ringStyle =
+    total > 0
+      ? {
+          background: `conic-gradient(${CHART_GREEN} 0 ${primaryPct}%, ${CHART_RED} ${primaryPct}% 100%)`
+        }
+      : {
+          background: "conic-gradient(rgba(255,255,255,0.16) 0 100%)"
+        };
+
+  return (
+    <div
+      className="ui-metric-tile h-full"
+      style={{ borderColor: metricBorderColor(shadowTone) }}
+    >
+      <p className="ui-title text-[10px] text-white/48">{label}</p>
+      <div className="mt-4 flex flex-col items-center">
+        <div
+          className="relative flex h-28 w-28 items-center justify-center rounded-full"
+          style={ringStyle}
+        >
+          <div className="flex h-[82px] w-[82px] flex-col items-center justify-center rounded-full border border-[var(--line)] bg-black text-center">
+            <span className="text-lg font-medium tracking-[-0.04em] text-white">{centerValue}</span>
+            {centerHint ? <span className="mt-1 text-[10px] uppercase tracking-[0.12em] text-white/42">{centerHint}</span> : null}
+          </div>
+        </div>
+        <div className="mt-4 grid w-full gap-3 sm:grid-cols-2">
+          <div className="rounded-[6px] border border-[var(--line)] bg-white/[0.02] px-3 py-2 text-center">
+            <p className="ui-title text-[10px] text-white/42">{primaryLabel}</p>
+            <p className={`mt-2 text-base font-medium ${primaryTone}`}>{primaryDisplay ?? safePrimary}</p>
+          </div>
+          <div className="rounded-[6px] border border-[var(--line)] bg-white/[0.02] px-3 py-2 text-center">
+            <p className="ui-title text-[10px] text-white/42">{secondaryLabel}</p>
+            <p className={`mt-2 text-base font-medium ${secondaryTone}`}>{secondaryDisplay ?? safeSecondary}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function toneForValue(value) {
   if (value > 0) {
     return "text-mint";
@@ -367,24 +425,34 @@ function AnalyticsCharts({
                 tone={toneForRiskReward(summary.profitFactor)}
                 shadow
               />
-              <SplitMetric
-                label="TRADE COUNT"
-                prefix={summary.tradeCount.toLocaleString("en-US")}
-                primary={summary.wins.toLocaleString("en-US")}
-                secondary={summary.losses.toLocaleString("en-US")}
-                primaryTone="text-mint"
-                secondaryTone="text-coral"
-                shadowTone="text-mist"
-                inlinePrefix
-              />
-              <SplitMetric
-                label="AVG HOLD"
-                primary={formatMetricMinutes(summary.averageWinningHoldMinutes)}
-                secondary={formatMetricMinutes(summary.averageLosingHoldMinutes)}
-                primaryTone="text-mint"
-                secondaryTone="text-coral"
-                shadowTone="text-mist"
-              />
+              <div className="grid gap-3 sm:grid-cols-2 lg:col-span-2">
+                <CircularCompareMetric
+                  label="TRADE COUNT"
+                  centerValue={summary.tradeCount.toLocaleString("en-US")}
+                  centerHint="TOTAL"
+                  primaryValue={summary.wins}
+                  secondaryValue={summary.losses}
+                  primaryLabel="WINS"
+                  secondaryLabel="LOSSES"
+                  primaryTone="text-mint"
+                  secondaryTone="text-coral"
+                  shadowTone="text-mist"
+                />
+                <CircularCompareMetric
+                  label="AVG HOLD"
+                  centerValue={formatMetricMinutes(summary.averageHoldMinutes)}
+                  centerHint="AVERAGE"
+                  primaryValue={Math.round(summary.averageWinningHoldMinutes || 0)}
+                  secondaryValue={Math.round(summary.averageLosingHoldMinutes || 0)}
+                  primaryDisplay={formatMetricMinutes(summary.averageWinningHoldMinutes)}
+                  secondaryDisplay={formatMetricMinutes(summary.averageLosingHoldMinutes)}
+                  primaryLabel="WIN"
+                  secondaryLabel="LOSS"
+                  primaryTone="text-mint"
+                  secondaryTone="text-coral"
+                  shadowTone="text-mist"
+                />
+              </div>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
