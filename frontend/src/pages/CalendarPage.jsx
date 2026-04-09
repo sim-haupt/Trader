@@ -7,7 +7,7 @@ import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 import tradeService from "../services/tradeService";
 import { formatCurrency, formatDateTimeLocal } from "../utils/formatters";
 
-const weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const weekdayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 function getDayKey(date) {
   const formatted = formatDateTimeLocal(date);
@@ -54,10 +54,12 @@ function buildDailyStats(trades) {
 function createMonthGrid(year, monthIndex, dailyStats) {
   const firstDay = new Date(year, monthIndex, 1);
   const startDay = new Date(firstDay);
-  startDay.setDate(1 - firstDay.getDay());
+  const firstWeekday = (firstDay.getDay() + 6) % 7;
+  startDay.setDate(1 - firstWeekday);
   const lastDay = new Date(year, monthIndex + 1, 0);
   const endDay = new Date(lastDay);
-  endDay.setDate(lastDay.getDate() + (6 - lastDay.getDay()));
+  const lastWeekday = (lastDay.getDay() + 6) % 7;
+  endDay.setDate(lastDay.getDate() + (6 - lastWeekday));
 
   const weeks = [];
   let cursor = new Date(startDay);

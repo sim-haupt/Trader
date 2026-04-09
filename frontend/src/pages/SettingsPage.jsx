@@ -401,9 +401,10 @@ function SettingsPage() {
           </aside>
 
           {activeSection === "library" ? (
-            <div className="space-y-6">
-              <Card title="TAGS">
+            <Card title="TRADE LIBRARY">
+              <div className="space-y-8">
                 <div className="space-y-5">
+                  <div className="ui-title text-[11px] text-white/60">Tags</div>
                   <div className="flex flex-col gap-3 lg:flex-row">
                     <input
                       value={newTag}
@@ -496,10 +497,10 @@ function SettingsPage() {
                     </div>
                   )}
                 </div>
-              </Card>
 
-              <Card title="STRATEGIES">
-                <div className="space-y-5">
+                <div className="border-t border-[var(--line)] pt-8">
+                  <div className="space-y-5">
+                    <div className="ui-title text-[11px] text-white/60">Strategies</div>
                   <div className="flex flex-col gap-3 lg:flex-row">
                     <input
                       value={newStrategy}
@@ -594,8 +595,9 @@ function SettingsPage() {
                     </div>
                   )}
                 </div>
-              </Card>
-            </div>
+                </div>
+              </div>
+            </Card>
           ) : activeSection === "costs" ? (
             <Card title="TRADE COSTS">
                 <div className="space-y-5">
