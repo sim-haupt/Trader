@@ -140,6 +140,33 @@ function MiniMetric({ label, value, tone = "text-white", shadow = false }) {
   );
 }
 
+function SplitMetric({
+  label,
+  primary,
+  secondary,
+  primaryTone = "text-mint",
+  secondaryTone = "text-coral",
+  prefix,
+  shadowTone = "text-mist"
+}) {
+  return (
+    <div
+      className="ui-metric-tile h-full"
+      style={{ boxShadow: metricInsetShadow(shadowTone) }}
+    >
+      <p className="ui-title text-[10px] text-white/48">{label}</p>
+      {prefix ? (
+        <p className="mt-3 text-2xl font-bold tracking-[-0.04em] text-mist">{prefix}</p>
+      ) : null}
+      <div className={`${prefix ? "mt-2" : "mt-3"} flex items-baseline gap-2 text-xl font-bold tracking-[-0.04em]`}>
+        <span className={primaryTone}>{primary}</span>
+        <span className="text-white/30">/</span>
+        <span className={secondaryTone}>{secondary}</span>
+      </div>
+    </div>
+  );
+}
+
 function toneForValue(value) {
   if (value > 0) {
     return "text-mint";
@@ -376,17 +403,22 @@ function AnalyticsCharts({
                 tone={toneForRiskReward(summary.profitFactor)}
                 shadow
               />
-              <MiniMetric
+              <SplitMetric
                 label="TRADE COUNT"
-                value={summary.tradeCount.toLocaleString("en-US")}
-                tone="text-mist"
-                shadow
+                prefix={summary.tradeCount.toLocaleString("en-US")}
+                primary={summary.wins.toLocaleString("en-US")}
+                secondary={summary.losses.toLocaleString("en-US")}
+                primaryTone="text-mint"
+                secondaryTone="text-coral"
+                shadowTone="text-mist"
               />
-              <MiniMetric
+              <SplitMetric
                 label="AVG HOLD"
-                value={formatMetricMinutes(summary.averageHoldMinutes)}
-                tone="text-mist"
-                shadow
+                primary={formatMetricMinutes(summary.averageWinningHoldMinutes)}
+                secondary={formatMetricMinutes(summary.averageLosingHoldMinutes)}
+                primaryTone="text-mint"
+                secondaryTone="text-coral"
+                shadowTone="text-mist"
               />
             </div>
 
