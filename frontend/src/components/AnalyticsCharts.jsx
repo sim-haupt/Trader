@@ -377,21 +377,18 @@ function AnalyticsCharts({
               />
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <MiniMetric label="AVG WIN" value={formatCurrency(summary.averageWin)} tone={toneForValue(summary.averageWin)} shadow />
-              <MiniMetric
-                label="AVG LOSS"
-                value={formatCurrency(summary.averageLoss)}
-                tone={summary.averageLoss === 0 ? "text-mist" : "text-coral"}
-                shadow
-              />
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <MiniMetric
                 label="AVG GAIN / SHARE"
                 value={formatCurrency(summary.averageGainPerShare)}
                 tone={toneForValue(summary.averageGainPerShare)}
+                shadow
+              />
+              <MiniMetric
+                label="AVG LOSS"
+                value={formatCurrency(summary.averageLoss)}
+                tone={summary.averageLoss === 0 ? "text-mist" : "text-coral"}
                 shadow
               />
               <MiniMetric
