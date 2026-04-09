@@ -89,7 +89,7 @@ function MiniMetric({ label, value, tone = "text-white", shadow = false }) {
   return (
     <div
       className="ui-metric-tile h-full"
-      style={shadow ? { borderColor: metricBorderColor(tone) } : undefined}
+      style={shadow ? { borderColor: metricBorderColor("text-mist") } : undefined}
     >
       <p className="ui-title text-[10px] text-white/48">{label}</p>
       <p className={`mt-3 text-2xl font-bold tracking-[-0.04em] ${tone}`}>{value}</p>

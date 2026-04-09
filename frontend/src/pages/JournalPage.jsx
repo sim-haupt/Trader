@@ -466,6 +466,7 @@ function JournalDayCard({
 }) {
   const positive = day.totalPnl >= 0;
   const negative = day.totalPnl < 0;
+  const hasTrades = day.totalTrades > 0;
   const winRateClass =
     day.winRate < 50 ? "text-coral" : day.winRate <= 65 ? "text-gold" : "text-mint";
 
@@ -598,7 +599,9 @@ function JournalDayCard({
             </div>
             <div className="ui-metric-tile">
               <div className="ui-title text-[10px] text-white/52">Win %</div>
-              <div className={`mt-2 text-2xl font-semibold ${winRateClass}`}>{day.winRate.toFixed(1)}%</div>
+              <div className={`mt-2 text-2xl font-semibold ${hasTrades ? winRateClass : "text-white"}`}>
+                {hasTrades ? `${day.winRate.toFixed(1)}%` : "No trades"}
+              </div>
             </div>
             <div className="ui-metric-tile">
               <div className="ui-title text-[10px] text-white/52">Total Volume</div>
