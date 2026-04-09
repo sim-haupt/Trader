@@ -96,7 +96,7 @@ function getDayTone(stats, isCurrentMonth) {
     return "bg-[linear-gradient(180deg,rgba(255,95,122,0.16),rgba(255,95,122,0.05))] text-coral";
   }
 
-  return "bg-white/[0.03] text-phosphor";
+  return "bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04))] text-phosphor";
 }
 
 function getDayBorderStyle(stats, isCurrentMonth) {
@@ -116,7 +116,7 @@ function getDayBorderStyle(stats, isCurrentMonth) {
     return { boxShadow: "inset 0 0 0 1px rgba(251, 113, 133, 0.28)" };
   }
 
-  return { boxShadow: "inset 0 0 0 1px rgba(229, 231, 235, 0.16)" };
+  return { boxShadow: "inset 0 0 0 1px rgba(229, 231, 235, 0.22)" };
 }
 
 function MonthCard({ month, onOpen }) {

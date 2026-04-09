@@ -11,9 +11,8 @@ import {
   YAxis
 } from "recharts";
 import Card from "../components/ui/Card";
-import CustomSelect from "../components/ui/CustomSelect";
-import DateRangePicker from "../components/ui/DateRangePicker";
 import EmptyState from "../components/ui/EmptyState";
+import Filters from "../components/Filters";
 import LoadingState from "../components/ui/LoadingState";
 import RichTextEditor from "../components/ui/RichTextEditor";
 import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
@@ -699,15 +698,6 @@ function JournalPage() {
     }));
   }, [journalDaysResource.data]);
 
-  const sideOptions = useMemo(
-    () => [
-      { label: "All", value: "" },
-      { label: "Long", value: "LONG" },
-      { label: "Short", value: "SHORT" }
-    ],
-    []
-  );
-
   const filteredTrades = useMemo(
     () => tradesResource.data.filter((trade) => matchesTradeFilters(trade, filters)),
     [tradesResource.data, filters]
@@ -817,59 +807,13 @@ function JournalPage() {
   return (
     <div className="space-y-6">
       <Card title="TRADING JOURNAL">
-        <div className="flex flex-wrap items-end gap-4">
-          <div className="w-[170px]">
-            <label className="mb-2 block text-sm font-medium text-white/72">Symbol</label>
-            <input
-              value={filters.symbol}
-              onChange={(event) => updateFilter("symbol", event.target.value)}
-              placeholder="Symbol"
-              className="ui-input"
-            />
-          </div>
-
-          <div className="w-[170px]">
-            <label className="mb-2 block text-sm font-medium text-white/72">Tags</label>
-            <CustomSelect
-              value={filters.tag}
-              onChange={(value) => updateFilter("tag", value)}
-              options={[{ label: "All", value: "" }, ...tagsResource.data.map((tag) => ({ label: tag.name, value: tag.name }))]}
-            />
-          </div>
-
-          <div className="w-[170px]">
-            <label className="mb-2 block text-sm font-medium text-white/72">Strategy</label>
-            <CustomSelect
-              value={filters.strategy}
-              onChange={(value) => updateFilter("strategy", value)}
-              options={[
-                { label: "All", value: "" },
-                ...strategiesResource.data.map((strategy) => ({ label: strategy.name, value: strategy.name }))
-              ]}
-            />
-          </div>
-
-          <div className="w-[170px]">
-            <label className="mb-2 block text-sm font-medium text-white/72">Side</label>
-            <CustomSelect value={filters.side} onChange={(value) => updateFilter("side", value)} options={sideOptions} />
-          </div>
-
-          <div className="w-[280px]">
-            <label className="mb-2 block text-sm font-medium text-white/72">Date range</label>
-            <DateRangePicker
-              from={filters.from}
-              to={filters.to}
-              onChange={({ from, to }) => {
-                updateFilter("from", from || "");
-                updateFilter("to", to || "");
-              }}
-            />
-          </div>
-
-          <button type="button" onClick={handleResetFilters} className="ui-button min-h-[46px] px-5 py-3 text-sm">
-            Reset
-          </button>
-        </div>
+        <Filters
+          filters={filters}
+          onChange={updateFilter}
+          onReset={handleResetFilters}
+          strategies={strategiesResource.data || []}
+          tags={tagsResource.data || []}
+        />
       </Card>
 
       {pagedDays.length === 0 ? (
