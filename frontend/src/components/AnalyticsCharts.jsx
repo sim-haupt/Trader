@@ -27,8 +27,8 @@ export const DEFAULT_DASHBOARD_LAYOUT = [
   { id: "winPct", span: 2 },
   { id: "dailyVolume", span: 2 },
   { id: "performanceWeekday", span: 1 },
-  { id: "performanceHourSummary", span: 1 },
-  { id: "performancePrice", span: 2 }
+  { id: "performancePrice", span: 1 },
+  { id: "performanceHourSummary", span: 2 }
 ];
 
 function tooltipStyle() {
@@ -579,6 +579,15 @@ function AnalyticsCharts({
     ]
   );
 
+  const orderedWidgets = useMemo(() => {
+    const widgetMap = new Map(widgets.map((widget) => [widget.id, widget]));
+
+    return DEFAULT_DASHBOARD_LAYOUT.map((layoutItem) => ({
+      ...widgetMap.get(layoutItem.id),
+      span: layoutItem.span
+    })).filter((widget) => Boolean(widget?.id));
+  }, [widgets]);
+
   return (
     <div className="space-y-6">
       <div className="ui-panel p-5">
@@ -606,12 +615,11 @@ function AnalyticsCharts({
       </div>
 
       <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-        {widgets.map((widget, index) => {
-          const span = DEFAULT_DASHBOARD_LAYOUT[index]?.span ?? 1;
+        {orderedWidgets.map((widget) => {
           return (
             <div
               key={widget.id}
-              className={widgetSpanClass(span)}
+              className={widgetSpanClass(widget.span ?? widget.defaultSpan ?? 1)}
             >
               <Card
                 title={widget.title}
