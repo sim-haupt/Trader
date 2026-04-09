@@ -27,6 +27,19 @@ import { getTradeFeeDisplayValue, getTradeNetPnl } from "../utils/tradePnl";
 import { normalizeRichTextHtml } from "../utils/richText";
 
 const PAGE_SIZE = 5;
+const SESSION_START_SECONDS = 4 * 60 * 60;
+const SESSION_END_SECONDS = 20 * 60 * 60;
+const JOURNAL_TIME_TICKS = [
+  SESSION_START_SECONDS,
+  6 * 60 * 60,
+  8 * 60 * 60,
+  9 * 60 * 60 + 30 * 60,
+  12 * 60 * 60,
+  14 * 60 * 60,
+  16 * 60 * 60,
+  18 * 60 * 60,
+  SESSION_END_SECONDS
+];
 
 function getDayKey(value) {
   const formatted = formatDateTimeLocal(value);
@@ -48,6 +61,27 @@ function formatDayLabel(dayKey) {
 function formatTimeLabel(value) {
   const formatted = formatDateTimeLocal(value);
   return formatted ? formatted.slice(11, 19) : "--:--:--";
+}
+
+function getSessionSeconds(value) {
+  const timeLabel = formatTimeLabel(value);
+
+  if (!timeLabel || timeLabel === "--:--:--") {
+    return SESSION_START_SECONDS;
+  }
+
+  const [hours = 0, minutes = 0, seconds = 0] = timeLabel.split(":").map((part) => Number(part) || 0);
+  const totalSeconds = hours * 60 * 60 + minutes * 60 + seconds;
+
+  return Math.max(SESSION_START_SECONDS, Math.min(SESSION_END_SECONDS, totalSeconds));
+}
+
+function formatSessionAxisTime(totalSeconds) {
+  const normalized = Math.max(0, Number(totalSeconds) || 0);
+  const hours = Math.floor(normalized / 3600);
+  const minutes = Math.floor((normalized % 3600) / 60);
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
 function getTradeTags(trade) {
@@ -148,13 +182,40 @@ function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees) {
       );
       let cumulative = 0;
 
-      const chartData = sortedTrades.map((trade) => {
+      const chartData = [
+        {
+          timeValue: SESSION_START_SECONDS,
+          timeLabel: "04:00:00",
+          cumulative: 0,
+          isTrade: false
+        }
+      ];
+
+      for (const trade of sortedTrades) {
+        const tradeTimeSeconds = getSessionSeconds(trade.entryDate);
+
+        chartData.push({
+          timeValue: tradeTimeSeconds,
+          timeLabel: trade.entryTimeLabel,
+          cumulative: Number(cumulative.toFixed(2)),
+          isTrade: false
+        });
+
         cumulative += trade.dayPnl;
 
-        return {
-          label: trade.entryTimeLabel,
-          cumulative: Number(cumulative.toFixed(2))
-        };
+        chartData.push({
+          timeValue: Math.min(tradeTimeSeconds + 1, SESSION_END_SECONDS),
+          timeLabel: trade.entryTimeLabel,
+          cumulative: Number(cumulative.toFixed(2)),
+          isTrade: true
+        });
+      }
+
+      chartData.push({
+        timeValue: SESSION_END_SECONDS,
+        timeLabel: "20:00:00",
+        cumulative: Number(cumulative.toFixed(2)),
+        isTrade: false
       });
 
       return {
@@ -175,9 +236,12 @@ function JournalChartTooltip({ active, payload, label }) {
     return null;
   }
 
+  const point = payload[0]?.payload;
+  const timeLabel = point?.timeLabel || formatSessionAxisTime(label);
+
   return (
     <div className="rounded-[6px] border border-[var(--line)] bg-black px-3 py-2 text-xs text-white">
-      <div className="text-white/52">{label}</div>
+      <div className="text-white/52">{timeLabel}</div>
       <div className="mt-1 font-medium text-white">{formatCurrency(payload[0].value)}</div>
     </div>
   );
@@ -228,15 +292,46 @@ function JournalDayCard({
                   </linearGradient>
                 </defs>
                 <CartesianGrid stroke="rgba(255,255,255,0.07)" vertical={false} />
-                <XAxis dataKey="label" tick={{ fill: "#9aa4b7", fontSize: 11 }} axisLine={false} tickLine={false} minTickGap={28} />
+                <XAxis
+                  type="number"
+                  dataKey="timeValue"
+                  domain={[SESSION_START_SECONDS, SESSION_END_SECONDS]}
+                  ticks={JOURNAL_TIME_TICKS}
+                  tickFormatter={formatSessionAxisTime}
+                  tick={{ fill: "#9aa4b7", fontSize: 11 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
                 <YAxis tickFormatter={(value) => `$${value}`} tick={{ fill: "#9aa4b7", fontSize: 11 }} axisLine={false} tickLine={false} width={52} />
                 <Tooltip content={<JournalChartTooltip />} />
                 <Area
-                  type="monotone"
+                  type="stepAfter"
                   dataKey="cumulative"
                   stroke={positive ? "#5fd49b" : negative ? "#ff7b72" : "#aeb7c7"}
                   strokeWidth={2.3}
                   fill={`url(#journal-${day.dayKey})`}
+                  dot={(props) => {
+                    if (!props.payload?.isTrade) {
+                      return null;
+                    }
+
+                    return (
+                      <circle
+                        cx={props.cx}
+                        cy={props.cy}
+                        r={3}
+                        fill={positive ? "#5fd49b" : negative ? "#ff7b72" : "#aeb7c7"}
+                        stroke="#000000"
+                        strokeWidth={1.5}
+                      />
+                    );
+                  }}
+                  activeDot={{
+                    r: 4,
+                    fill: positive ? "#5fd49b" : negative ? "#ff7b72" : "#aeb7c7",
+                    stroke: "#000000",
+                    strokeWidth: 1.5
+                  }}
                 />
               </AreaChart>
             </ResponsiveContainer>
