@@ -9,6 +9,10 @@ import tradeService from "../services/tradeService";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
 
+const appVersion = typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : frontendPackage.version;
+const buildSha = typeof __APP_BUILD_SHA__ !== "undefined" ? __APP_BUILD_SHA__ : "unknown";
+const buildTime = typeof __APP_BUILD_TIME__ !== "undefined" ? __APP_BUILD_TIME__ : null;
+
 function SettingsPage() {
   const { user, updateSettings, refreshSettings } = useAuth();
   const { notify, confirm } = useNotifications();
@@ -672,7 +676,8 @@ function SettingsPage() {
 
         <div className="mt-8 border-t border-[var(--line)] pt-4 text-right">
           <span className="text-xs text-white/42">
-            Version {frontendPackage.version}
+            Version {appVersion} · {buildSha}
+            {buildTime ? ` · ${new Date(buildTime).toLocaleString("en-US", { hour12: false })}` : ""}
           </span>
         </div>
       </Card>
