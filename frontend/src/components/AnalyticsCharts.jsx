@@ -17,6 +17,8 @@ import { formatCurrency, formatPercent } from "../utils/formatters";
 const CHART_GREEN = "#3dff9a";
 const CHART_RED = "#ff5f7a";
 const CHART_YELLOW = "#ffd84d";
+const STANDARD_CHART_MARGIN = { top: 8, right: 8, left: 0, bottom: 16 };
+const VERTICAL_CHART_MARGIN = { top: 8, right: 18, left: 6, bottom: 16 };
 
 export const DEFAULT_DASHBOARD_LAYOUT = [
   { id: "cumulative", span: 2 },
@@ -328,9 +330,9 @@ function AnalyticsCharts({
               <MiniMetric label="WEEK" value={formatCurrency(summary.totalWeekPnl)} tone={toneForValue(summary.totalWeekPnl)} shadow />
               <MiniMetric label="TODAY" value={formatCurrency(summary.totalTodayPnl)} tone={toneForValue(summary.totalTodayPnl)} shadow />
             </div>
-            <div className="h-[420px]">
+            <div className="h-[420px] pb-4">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={equityCurve}>
+                <AreaChart data={equityCurve} margin={STANDARD_CHART_MARGIN}>
                   <defs>
                     <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#2be28c" stopOpacity={0.22} />
@@ -469,9 +471,9 @@ function AnalyticsCharts({
               <MiniMetric label="MAX DRAWDOWN" value={formatCurrency(summary.maxDrawdown)} tone={toneForValue(summary.maxDrawdown)} shadow />
               <MiniMetric label="CURRENT DRAWDOWN" value={formatCurrency(summary.currentDrawdown)} tone={toneForValue(summary.currentDrawdown)} shadow />
             </div>
-            <div className="h-[220px]">
+            <div className="h-[220px] pb-4">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={drawdownCurve}>
+                <AreaChart data={drawdownCurve} margin={STANDARD_CHART_MARGIN}>
                   <defs>
                     <linearGradient id="drawdownGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#ff6b6b" stopOpacity={0.22} />
@@ -494,9 +496,9 @@ function AnalyticsCharts({
         title: `${pnlLabel} DAILY P&L (30 DAYS)`,
         defaultSpan: 2,
         body: (
-          <div className="h-[320px]">
+          <div className="h-[320px] pb-4">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={grossDailyThirtyDays}>
+              <BarChart data={grossDailyThirtyDays} margin={STANDARD_CHART_MARGIN}>
                 <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                 <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} minTickGap={18} />
                 <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} tick={{ fill: "#c6cedb", fontSize: 11 }} />
@@ -516,9 +518,9 @@ function AnalyticsCharts({
         title: `${pnlLabel} BY TIME OF DAY`,
         defaultSpan: 2,
         body: (
-          <div className="h-[320px]">
+          <div className="h-[320px] pb-4">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={hourlyPerformance} layout="vertical" margin={{ top: 4, right: 18, left: 6, bottom: 4 }}>
+              <BarChart data={hourlyPerformance} layout="vertical" margin={VERTICAL_CHART_MARGIN}>
                 <CartesianGrid stroke="rgba(255,255,255,0.05)" horizontal={false} />
                 <XAxis type="number" axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} tick={{ fill: "#c6cedb", fontSize: 11 }} />
                 <YAxis type="category" dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} width={48} />
@@ -538,9 +540,9 @@ function AnalyticsCharts({
         title: "WIN %",
         defaultSpan: 2,
         body: (
-          <div className="h-[320px]">
+          <div className="h-[320px] pb-4">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={winRateThirtyDays}>
+              <BarChart data={winRateThirtyDays} margin={STANDARD_CHART_MARGIN}>
                 <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                 <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} minTickGap={18} />
                 <YAxis axisLine={false} tickLine={false} domain={[0, 100]} tick={{ fill: "#c6cedb", fontSize: 11 }} />
@@ -560,9 +562,9 @@ function AnalyticsCharts({
         title: "DAILY VOLUME",
         defaultSpan: 2,
         body: (
-          <div className="h-[320px]">
+          <div className="h-[320px] pb-4">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dailyVolumeThirtyDays}>
+              <BarChart data={dailyVolumeThirtyDays} margin={STANDARD_CHART_MARGIN}>
                 <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                 <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} minTickGap={18} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />

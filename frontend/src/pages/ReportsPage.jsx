@@ -1151,9 +1151,9 @@ function HorizontalBreakdownChart({
 }) {
   return (
     <Card title={title}>
-      <div className="h-[320px]">
+      <div className="h-[320px] pb-4">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} layout="vertical" margin={{ top: 4, right: 12, left: 8, bottom: 4 }}>
+          <BarChart data={data} layout="vertical" margin={{ top: 8, right: 12, left: 8, bottom: 16 }}>
             <CartesianGrid stroke="rgba(255,255,255,0.05)" horizontal={false} />
             <XAxis
               type="number"
@@ -1219,9 +1219,9 @@ function ComparisonHorizontalBreakdownChart({
           {rightTitle}
         </div>
       </div>
-      <div className="h-[320px]">
+      <div className="h-[320px] pb-4">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} layout="vertical" margin={{ top: 4, right: 12, left: 8, bottom: 4 }}>
+          <BarChart data={data} layout="vertical" margin={{ top: 8, right: 12, left: 8, bottom: 16 }}>
             <CartesianGrid stroke="rgba(255,255,255,0.05)" horizontal={false} />
             <XAxis
               type="number"
@@ -1730,9 +1730,9 @@ function DrawdownSection({ summary }) {
       </Card>
 
       <Card title="DRAWDOWN CURVE">
-        <div className="h-[280px]">
+        <div className="h-[280px] pb-4">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={summary.drawdownCurve || []}>
+            <AreaChart data={summary.drawdownCurve || []} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
               <defs>
                 <linearGradient id="reportsDrawdownGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={REPORT_RED} stopOpacity={0.22} />
@@ -1804,12 +1804,12 @@ function CompareGroupCard({ title, filters, onChange, tags, strategies, matchedC
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         <div className="min-w-0">
-          <label className="mb-2 block text-xs font-medium text-white/72">Symbol</label>
+          <label className="mb-2 block text-xs font-medium text-white/72">Ticker</label>
           <input
             value={filters.symbol}
             onChange={(event) => onChange("symbol", event.target.value)}
-            placeholder="Symbol"
-            className="ui-input max-w-full"
+            placeholder="Ticker"
+            className="ui-input min-h-[48px] max-w-full"
           />
         </div>
         <div className="min-w-0">
@@ -2331,12 +2331,12 @@ function ReportsPage() {
         <div className="space-y-5">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[180px_160px_160px_160px_180px_auto] xl:items-end xl:justify-start">
             <div className="min-w-0 xl:w-[180px]">
-              <label className="mb-2 block text-xs font-medium text-white/72">Symbol</label>
+              <label className="mb-2 block text-xs font-medium text-white/72">Ticker</label>
               <input
                 value={filters.symbol}
                 onChange={(event) => updateFilter("symbol", event.target.value)}
-                placeholder="Symbol"
-                className="ui-input"
+                placeholder="Ticker"
+                className="ui-input min-h-[48px]"
               />
             </div>
             <div className="min-w-0 xl:w-[160px]">
@@ -2500,9 +2500,9 @@ function ReportsPage() {
       ) : (
         <div className="grid gap-5 xl:grid-cols-2">
           <Card title={`${pnlLabel} DAILY P&L ${suffix.toUpperCase()}`}>
-            <div className="h-[320px]">
+            <div className="h-[320px] pb-4">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={reportSeries.grossDaily}>
+                <BarChart data={reportSeries.grossDaily} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
                   <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} minTickGap={18} />
                   <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} tick={{ fill: "#c6cedb", fontSize: 11 }} />
@@ -2518,9 +2518,9 @@ function ReportsPage() {
           </Card>
 
           <Card title={`${pnlLabel} CUMULATIVE P&L ${suffix.toUpperCase()}`}>
-            <div className="h-[320px]">
+            <div className="h-[320px] pb-4">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={reportSeries.cumulative}>
+                <LineChart data={reportSeries.cumulative} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
                   <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} minTickGap={18} />
                   <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} tick={{ fill: "#c6cedb", fontSize: 11 }} />
@@ -2532,9 +2532,9 @@ function ReportsPage() {
           </Card>
 
           <Card title={`DAILY VOLUME ${suffix.toUpperCase()}`}>
-            <div className="h-[320px]">
+            <div className="h-[320px] pb-4">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={reportSeries.dailyVolume}>
+                <BarChart data={reportSeries.dailyVolume} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
                   <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} minTickGap={18} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
@@ -2546,9 +2546,9 @@ function ReportsPage() {
           </Card>
 
           <Card title={`WIN % ${suffix.toUpperCase()}`}>
-            <div className="h-[320px]">
+            <div className="h-[320px] pb-4">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={reportSeries.winRate}>
+                <BarChart data={reportSeries.winRate} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
                   <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} minTickGap={18} />
                   <YAxis axisLine={false} tickLine={false} domain={[0, 100]} tick={{ fill: "#c6cedb", fontSize: 11 }} />

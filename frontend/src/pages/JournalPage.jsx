@@ -392,9 +392,12 @@ function JournalDayCard({
     >
       <div className="space-y-5">
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)]">
-          <div className="h-[180px] rounded-[6px] border border-[var(--line)] bg-black p-3">
+          <div className="h-[180px] rounded-[6px] border border-[var(--line)] bg-black p-3 pb-4">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={day.chartData}>
+              <ComposedChart
+                data={day.chartData}
+                margin={{ top: 8, right: 8, left: 0, bottom: 16 }}
+              >
                 <defs>
                   <linearGradient id={`journal-${day.dayKey}`} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#3dff9a" stopOpacity={0.28} />

@@ -568,9 +568,9 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
               {loadingTradeDetail ? (
                 <LoadingState label="Loading trade detail..." className="min-h-[290px]" />
               ) : (
-                <div className="h-[290px]">
+                <div className="h-[290px] pb-4">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={tradeRunningPnl}>
+                    <LineChart data={tradeRunningPnl} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
                       <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
                       <XAxis
                         dataKey="label"
@@ -609,9 +609,9 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                   {dayTradesError}
                 </div>
               ) : (
-                <div className="h-[290px]">
+                <div className="h-[290px] pb-4">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={dayRunningPnl}>
+                    <LineChart data={dayRunningPnl} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
                       <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
                       <XAxis
                         dataKey="label"

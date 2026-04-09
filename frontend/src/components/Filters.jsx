@@ -6,12 +6,12 @@ function Filters({ filters, onChange, onReset, strategies = [], tags = [] }) {
     <div className="relative z-20 overflow-visible">
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[180px_160px_160px_160px_180px_auto] xl:items-end xl:justify-start">
         <div className="min-w-0 xl:w-[180px]">
-          <label className="mb-2 block text-xs font-medium text-white/72">Symbol</label>
+          <label className="mb-2 block text-xs font-medium text-white/72">Ticker</label>
           <input
-            placeholder="Symbol"
+            placeholder="Ticker"
             value={filters.symbol}
             onChange={(event) => onChange("symbol", event.target.value)}
-            className="ui-input"
+            className="ui-input min-h-[48px]"
           />
         </div>
 
