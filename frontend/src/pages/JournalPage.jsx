@@ -4,6 +4,7 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
+  Line,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -27,19 +28,9 @@ import { getTradeFeeDisplayValue, getTradeNetPnl } from "../utils/tradePnl";
 import { normalizeRichTextHtml } from "../utils/richText";
 
 const PAGE_SIZE = 5;
-const SESSION_START_SECONDS = 4 * 60 * 60;
-const SESSION_END_SECONDS = 20 * 60 * 60;
-const JOURNAL_TIME_TICKS = [
-  SESSION_START_SECONDS,
-  6 * 60 * 60,
-  8 * 60 * 60,
-  9 * 60 * 60 + 30 * 60,
-  12 * 60 * 60,
-  14 * 60 * 60,
-  16 * 60 * 60,
-  18 * 60 * 60,
-  SESSION_END_SECONDS
-];
+const JOURNAL_TIMELINE_PADDING_SECONDS = 2 * 60 * 60;
+const DAY_START_SECONDS = 0;
+const DAY_END_SECONDS = 24 * 60 * 60 - 1;
 
 function getDayKey(value) {
   const formatted = formatDateTimeLocal(value);
@@ -67,13 +58,13 @@ function getSessionSeconds(value) {
   const timeLabel = formatTimeLabel(value);
 
   if (!timeLabel || timeLabel === "--:--:--") {
-    return SESSION_START_SECONDS;
+    return DAY_START_SECONDS;
   }
 
   const [hours = 0, minutes = 0, seconds = 0] = timeLabel.split(":").map((part) => Number(part) || 0);
   const totalSeconds = hours * 60 * 60 + minutes * 60 + seconds;
 
-  return Math.max(SESSION_START_SECONDS, Math.min(SESSION_END_SECONDS, totalSeconds));
+  return Math.max(DAY_START_SECONDS, Math.min(DAY_END_SECONDS, totalSeconds));
 }
 
 function formatSessionAxisTime(totalSeconds) {
@@ -82,6 +73,29 @@ function formatSessionAxisTime(totalSeconds) {
   const minutes = Math.floor((normalized % 3600) / 60);
 
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function buildJournalTimeTicks(startSeconds, endSeconds) {
+  const safeStart = Math.max(DAY_START_SECONDS, Math.min(DAY_END_SECONDS, Number(startSeconds) || 0));
+  const safeEnd = Math.max(safeStart, Math.min(DAY_END_SECONDS, Number(endSeconds) || safeStart));
+  const range = safeEnd - safeStart;
+  const step = range <= 6 * 60 * 60 ? 30 * 60 : 60 * 60;
+  const ticks = [safeStart];
+  let nextTick = Math.ceil(safeStart / step) * step;
+
+  while (nextTick < safeEnd) {
+    if (nextTick > safeStart) {
+      ticks.push(nextTick);
+    }
+
+    nextTick += step;
+  }
+
+  if (ticks[ticks.length - 1] !== safeEnd) {
+    ticks.push(safeEnd);
+  }
+
+  return [...new Set(ticks)];
 }
 
 function getTradeTags(trade) {
@@ -181,18 +195,25 @@ function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees) {
         (left, right) => new Date(left.entryDate).getTime() - new Date(right.entryDate).getTime()
       );
       let cumulative = 0;
+      const tradeTimeValues = sortedTrades.map((trade) => getSessionSeconds(trade.entryDate));
+      const firstTradeTime = tradeTimeValues[0] ?? 9.5 * 60 * 60;
+      const lastTradeTime = tradeTimeValues[tradeTimeValues.length - 1] ?? firstTradeTime;
+      const timelineStart = Math.max(DAY_START_SECONDS, firstTradeTime - JOURNAL_TIMELINE_PADDING_SECONDS);
+      const timelineEnd = Math.min(DAY_END_SECONDS, lastTradeTime + JOURNAL_TIMELINE_PADDING_SECONDS);
+      const timeTicks = buildJournalTimeTicks(timelineStart, timelineEnd);
 
       const chartData = [
         {
-          timeValue: SESSION_START_SECONDS,
-          timeLabel: "04:00:00",
+          timeValue: timelineStart,
+          timeLabel: formatSessionAxisTime(timelineStart),
           cumulative: 0,
           isTrade: false
         }
       ];
 
-      for (const trade of sortedTrades) {
-        const tradeTimeSeconds = getSessionSeconds(trade.entryDate);
+      for (let tradeIndex = 0; tradeIndex < sortedTrades.length; tradeIndex += 1) {
+        const trade = sortedTrades[tradeIndex];
+        const tradeTimeSeconds = tradeTimeValues[tradeIndex];
 
         chartData.push({
           timeValue: tradeTimeSeconds,
@@ -204,7 +225,7 @@ function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees) {
         cumulative += trade.dayPnl;
 
         chartData.push({
-          timeValue: Math.min(tradeTimeSeconds + 1, SESSION_END_SECONDS),
+          timeValue: Math.min(tradeTimeSeconds + 1, timelineEnd),
           timeLabel: trade.entryTimeLabel,
           cumulative: Number(cumulative.toFixed(2)),
           isTrade: true
@@ -212,16 +233,106 @@ function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees) {
       }
 
       chartData.push({
-        timeValue: SESSION_END_SECONDS,
-        timeLabel: "20:00:00",
+        timeValue: timelineEnd,
+        timeLabel: formatSessionAxisTime(timelineEnd),
         cumulative: Number(cumulative.toFixed(2)),
         isTrade: false
       });
 
+      const chartSeries = chartData.map((point) => ({
+        ...point,
+        positiveCumulative: point.cumulative >= 0 ? point.cumulative : null,
+        negativeCumulative: point.cumulative < 0 ? point.cumulative : null
+      }));
+
+      const chartSegments = [];
+
+      for (let index = 1; index < chartSeries.length; index += 1) {
+        const previousPoint = chartSeries[index - 1];
+        const currentPoint = chartSeries[index];
+        const previousColor = previousPoint.cumulative < 0 ? "#ff5f7a" : "#3dff9a";
+        const currentColor = currentPoint.cumulative < 0 ? "#ff5f7a" : "#3dff9a";
+
+        chartSegments.push({
+          key: `${day.dayKey}-horizontal-${index}`,
+          color: previousColor,
+          data: [
+            {
+              timeValue: previousPoint.timeValue,
+              segmentValue: previousPoint.cumulative
+            },
+            {
+              timeValue: currentPoint.timeValue,
+              segmentValue: previousPoint.cumulative
+            }
+          ]
+        });
+
+        if (previousPoint.cumulative === currentPoint.cumulative) {
+          continue;
+        }
+
+        const crossedZero =
+          (previousPoint.cumulative < 0 && currentPoint.cumulative >= 0) ||
+          (previousPoint.cumulative >= 0 && currentPoint.cumulative < 0);
+
+        if (crossedZero) {
+          chartSegments.push({
+            key: `${day.dayKey}-vertical-${index}-from`,
+            color: previousColor,
+            data: [
+              {
+                timeValue: currentPoint.timeValue,
+                segmentValue: previousPoint.cumulative
+              },
+              {
+                timeValue: currentPoint.timeValue,
+                segmentValue: 0
+              }
+            ]
+          });
+
+          chartSegments.push({
+            key: `${day.dayKey}-vertical-${index}-to`,
+            color: currentColor,
+            data: [
+              {
+                timeValue: currentPoint.timeValue,
+                segmentValue: 0
+              },
+              {
+                timeValue: currentPoint.timeValue,
+                segmentValue: currentPoint.cumulative
+              }
+            ]
+          });
+          continue;
+        }
+
+        chartSegments.push({
+          key: `${day.dayKey}-vertical-${index}`,
+          color: currentColor,
+          data: [
+            {
+              timeValue: currentPoint.timeValue,
+              segmentValue: previousPoint.cumulative
+            },
+            {
+              timeValue: currentPoint.timeValue,
+              segmentValue: currentPoint.cumulative
+            }
+          ]
+        });
+      }
+
       return {
         ...day,
         trades: sortedTrades,
-        chartData,
+        chartData: chartSeries,
+        chartSegments,
+        timelineStart,
+        timelineEnd,
+        timeTicks,
         totalPnl: Number(day.totalPnl.toFixed(2)),
         totalFees: Number(day.totalFees.toFixed(2)),
         winRate: day.totalTrades ? (day.wins / day.totalTrades) * 100 : 0,
@@ -287,16 +398,20 @@ function JournalDayCard({
               <AreaChart data={day.chartData}>
                 <defs>
                   <linearGradient id={`journal-${day.dayKey}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={positive ? "#5fd49b" : negative ? "#ff7b72" : "#aeb7c7"} stopOpacity={0.32} />
-                    <stop offset="100%" stopColor={positive ? "#5fd49b" : negative ? "#ff7b72" : "#aeb7c7"} stopOpacity={0.03} />
+                    <stop offset="0%" stopColor="#3dff9a" stopOpacity={0.28} />
+                    <stop offset="100%" stopColor="#3dff9a" stopOpacity={0.03} />
+                  </linearGradient>
+                  <linearGradient id={`journal-negative-${day.dayKey}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#ff5f7a" stopOpacity={0.24} />
+                    <stop offset="100%" stopColor="#ff5f7a" stopOpacity={0.03} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid stroke="rgba(255,255,255,0.07)" vertical={false} />
                 <XAxis
                   type="number"
                   dataKey="timeValue"
-                  domain={[SESSION_START_SECONDS, SESSION_END_SECONDS]}
-                  ticks={JOURNAL_TIME_TICKS}
+                  domain={[day.timelineStart, day.timelineEnd]}
+                  ticks={day.timeTicks}
                   tickFormatter={formatSessionAxisTime}
                   tick={{ fill: "#9aa4b7", fontSize: 11 }}
                   axisLine={false}
@@ -306,10 +421,41 @@ function JournalDayCard({
                 <Tooltip content={<JournalChartTooltip />} />
                 <Area
                   type="stepAfter"
-                  dataKey="cumulative"
-                  stroke={positive ? "#5fd49b" : negative ? "#ff7b72" : "#aeb7c7"}
-                  strokeWidth={2.3}
+                  dataKey="positiveCumulative"
+                  stroke="none"
                   fill={`url(#journal-${day.dayKey})`}
+                  isAnimationActive={false}
+                  activeDot={false}
+                />
+                <Area
+                  type="stepAfter"
+                  dataKey="negativeCumulative"
+                  stroke="none"
+                  fill={`url(#journal-negative-${day.dayKey})`}
+                  isAnimationActive={false}
+                  activeDot={false}
+                />
+                {day.chartSegments.map((segment) => (
+                  <Line
+                    key={segment.key}
+                    data={segment.data}
+                    type="linear"
+                    dataKey="segmentValue"
+                    stroke={segment.color}
+                    strokeWidth={2.3}
+                    dot={false}
+                    activeDot={false}
+                    isAnimationActive={false}
+                  />
+                ))}
+                <Area
+                  type="stepAfter"
+                  dataKey="cumulative"
+                  stroke="transparent"
+                  strokeWidth={0}
+                  fill={`url(#journal-${day.dayKey})`}
+                  fillOpacity={0}
+                  isAnimationActive={false}
                   dot={(props) => {
                     if (!props.payload?.isTrade) {
                       return null;
@@ -320,17 +466,27 @@ function JournalDayCard({
                         cx={props.cx}
                         cy={props.cy}
                         r={3}
-                        fill={positive ? "#5fd49b" : negative ? "#ff7b72" : "#aeb7c7"}
+                        fill={props.payload.cumulative < 0 ? "#ff5f7a" : "#3dff9a"}
                         stroke="#000000"
                         strokeWidth={1.5}
                       />
                     );
                   }}
-                  activeDot={{
-                    r: 4,
-                    fill: positive ? "#5fd49b" : negative ? "#ff7b72" : "#aeb7c7",
-                    stroke: "#000000",
-                    strokeWidth: 1.5
+                  activeDot={(props) => {
+                    if (!props.payload?.isTrade) {
+                      return null;
+                    }
+
+                    return (
+                      <circle
+                        cx={props.cx}
+                        cy={props.cy}
+                        r={4}
+                        fill={props.payload.cumulative < 0 ? "#ff5f7a" : "#3dff9a"}
+                        stroke="#000000"
+                        strokeWidth={1.5}
+                      />
+                    );
                   }}
                 />
               </AreaChart>
@@ -706,7 +862,7 @@ function JournalPage() {
             />
           </div>
 
-          <button type="button" onClick={handleResetFilters} className="ui-button h-[44px] border-[#ededed] px-5 text-sm">
+          <button type="button" onClick={handleResetFilters} className="ui-button h-[44px] px-5 text-sm">
             Reset
           </button>
         </div>

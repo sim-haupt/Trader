@@ -441,7 +441,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                   <button
                     type="button"
                     onClick={() => setIsTagEditorOpen((current) => !current)}
-                    className="ui-button-solid px-3 py-2 text-xs"
+                    className="ui-button px-3 py-2 text-xs"
                   >
                     Add tags
                   </button>
@@ -500,7 +500,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                   <button
                     type="button"
                     onClick={() => setIsNotesEditorOpen((current) => !current)}
-                    className="ui-button-solid px-3 py-2 text-xs"
+                    className="ui-button px-3 py-2 text-xs"
                   >
                     {activeTrade.notes ? "Edit notes" : "Add notes"}
                   </button>

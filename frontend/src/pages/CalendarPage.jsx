@@ -129,7 +129,7 @@ function MonthCard({ month, onOpen }) {
         <button
           type="button"
           onClick={() => onOpen(month)}
-          className="ui-button self-center border-[#ededed] px-4 py-2 text-[11px]"
+          className="ui-button self-center px-4 py-2 text-[11px]"
         >
           Open
         </button>

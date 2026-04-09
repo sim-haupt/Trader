@@ -262,7 +262,7 @@ button:disabled {
   }
 
   .ui-button {
-    background: #000000;
+    background: #1f1f1f;
     color: #ededed;
     padding: 9px 13px;
     font-size: 0.86rem;
@@ -271,7 +271,7 @@ button:disabled {
   }
 
   .ui-button:hover {
-    background: #1f1f1f;
+    background: #262626;
   }
 
   .ui-button-solid {

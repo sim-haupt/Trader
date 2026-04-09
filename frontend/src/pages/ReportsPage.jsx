@@ -2287,7 +2287,7 @@ function ReportsPage() {
               />
             </div>
             <div className="flex items-end justify-end gap-2">
-              <button type="button" onClick={resetFilters} className="ui-button h-[44px] border-[#ededed] px-4 text-sm">
+              <button type="button" onClick={resetFilters} className="ui-button h-[44px] px-4 text-sm">
                 Reset
               </button>
             </div>
