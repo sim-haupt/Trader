@@ -40,11 +40,12 @@ function filterTradesByRange(trades, days) {
 }
 
 function DashboardPage() {
-  const { user } = useAuth();
+  const { user, updateSettings } = useAuth();
   const [rangeKey, setRangeKey] = useState("30");
   const [pnlType, setPnlType] = useState("NET");
   const [editingLayout, setEditingLayout] = useState(false);
   const [layout, setLayout] = useState(DEFAULT_DASHBOARD_LAYOUT);
+  const [hasHydratedLayout, setHasHydratedLayout] = useState(false);
   const {
     data: trades,
     error,
@@ -57,22 +58,60 @@ function DashboardPage() {
   });
 
   useEffect(() => {
+    if (!user?.id) {
+      setLayout(DEFAULT_DASHBOARD_LAYOUT);
+      setHasHydratedLayout(false);
+      return;
+    }
+
+    const normalizedPersistedLayout =
+      Array.isArray(user.dashboardLayout) && user.dashboardLayout.length
+        ? normalizeDashboardLayout(user.dashboardLayout)
+        : null;
+
+    if (normalizedPersistedLayout) {
+      setLayout(normalizedPersistedLayout);
+      setHasHydratedLayout(true);
+      return;
+    }
+
     try {
       const stored = window.localStorage.getItem(DASHBOARD_LAYOUT_STORAGE_KEY);
+
       if (stored) {
-        setLayout(normalizeDashboardLayout(JSON.parse(stored)));
+        const normalizedStoredLayout = normalizeDashboardLayout(JSON.parse(stored));
+        setLayout(normalizedStoredLayout);
+        setHasHydratedLayout(true);
+        window.localStorage.removeItem(DASHBOARD_LAYOUT_STORAGE_KEY);
+        updateSettings({ dashboardLayout: normalizedStoredLayout }).catch(() => {});
+        return;
       }
     } catch {
-      setLayout(DEFAULT_DASHBOARD_LAYOUT);
+      // Ignore stale browser-only dashboard layout and fall back to the shared default.
     }
-  }, []);
+
+    setLayout(DEFAULT_DASHBOARD_LAYOUT);
+    setHasHydratedLayout(true);
+  }, [user?.id, user?.dashboardLayout, updateSettings]);
 
   useEffect(() => {
-    window.localStorage.setItem(
-      DASHBOARD_LAYOUT_STORAGE_KEY,
-      JSON.stringify(normalizeDashboardLayout(layout))
-    );
-  }, [layout]);
+    if (!user?.id || !hasHydratedLayout) {
+      return;
+    }
+
+    const normalizedLayout = normalizeDashboardLayout(layout);
+    const normalizedPersistedLayout = normalizeDashboardLayout(user.dashboardLayout);
+
+    if (JSON.stringify(normalizedLayout) === JSON.stringify(normalizedPersistedLayout)) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      updateSettings({ dashboardLayout: normalizedLayout }).catch(() => {});
+    }, 350);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [layout, hasHydratedLayout, user?.id, user?.dashboardLayout, updateSettings]);
 
   const activeRange = RANGE_OPTIONS.find((option) => option.key === rangeKey) || RANGE_OPTIONS[0];
   const filteredTrades = useMemo(

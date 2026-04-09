@@ -22,11 +22,12 @@ async function authenticate(req, res, next) {
         id: true,
         email: true,
         name: true,
-        role: true,
-        defaultCommission: true,
-        defaultFees: true
-      }
-    });
+      role: true,
+      defaultCommission: true,
+      defaultFees: true,
+      dashboardLayout: true
+    }
+  });
 
     if (!user) {
       return res.status(401).json({

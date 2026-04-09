@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import authService from "../services/authService";
 import api from "../services/api";
@@ -31,23 +31,23 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener("auth:unauthorized", handleUnauthorized);
   }, [navigate]);
 
-  async function login(credentials) {
+  const login = useCallback(async (credentials) => {
     const data = await authService.login(credentials);
     api.defaults.headers.common.Authorization = `Bearer ${data.token}`;
     writeStoredAuth(data);
     setAuth(data);
     return data;
-  }
+  }, []);
 
-  async function register(payload) {
+  const register = useCallback(async (payload) => {
     const data = await authService.register(payload);
     api.defaults.headers.common.Authorization = `Bearer ${data.token}`;
     writeStoredAuth(data);
     setAuth(data);
     return data;
-  }
+  }, []);
 
-  async function refreshSettings() {
+  const refreshSettings = useCallback(async () => {
     const user = await authService.getSettings();
     setAuth((current) => {
       const next = {
@@ -58,9 +58,9 @@ export function AuthProvider({ children }) {
       return next;
     });
     return user;
-  }
+  }, []);
 
-  async function updateSettings(payload) {
+  const updateSettings = useCallback(async (payload) => {
     const user = await authService.updateSettings(payload);
     setAuth((current) => {
       const next = {
@@ -71,12 +71,12 @@ export function AuthProvider({ children }) {
       return next;
     });
     return user;
-  }
+  }, []);
 
-  function logout() {
+  const logout = useCallback(() => {
     setAuth({ token: null, user: null });
     navigate("/login", { replace: true });
-  }
+  }, [navigate]);
 
   const value = useMemo(
     () => ({
@@ -89,7 +89,7 @@ export function AuthProvider({ children }) {
       updateSettings,
       logout
     }),
-    [auth]
+    [auth, login, logout, refreshSettings, register, updateSettings]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

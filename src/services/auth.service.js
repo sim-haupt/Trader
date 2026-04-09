@@ -25,7 +25,8 @@ function serializeUser(user) {
     email: user.email,
     role: user.role,
     defaultCommission: Number(user.defaultCommission || 0),
-    defaultFees: Number(user.defaultFees || 0)
+    defaultFees: Number(user.defaultFees || 0),
+    dashboardLayout: Array.isArray(user.dashboardLayout) ? user.dashboardLayout : null
   };
 }
 
@@ -88,7 +89,8 @@ async function getSettings(actor) {
       email: true,
       role: true,
       defaultCommission: true,
-      defaultFees: true
+      defaultFees: true,
+      dashboardLayout: true
     }
   });
 
@@ -104,7 +106,8 @@ async function updateSettings(actor, data) {
     where: { id: actor.id },
     data: {
       defaultCommission: data.defaultCommission,
-      defaultFees: data.defaultFees
+      defaultFees: data.defaultFees,
+      dashboardLayout: data.dashboardLayout
     },
     select: {
       id: true,
@@ -112,7 +115,8 @@ async function updateSettings(actor, data) {
       email: true,
       role: true,
       defaultCommission: true,
-      defaultFees: true
+      defaultFees: true,
+      dashboardLayout: true
     }
   });
 
