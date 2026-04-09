@@ -31,6 +31,33 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener("auth:unauthorized", handleUnauthorized);
   }, [navigate]);
 
+  useEffect(() => {
+    if (!auth?.token) {
+      return;
+    }
+
+    authService
+      .getSettings()
+      .then((user) => {
+        setAuth((current) => {
+          if (!current?.token) {
+            return current;
+          }
+
+          const next = {
+            ...current,
+            user
+          };
+
+          writeStoredAuth(next);
+          return next;
+        });
+      })
+      .catch(() => {
+        // Unauthorized responses are already handled centrally by the API interceptor.
+      });
+  }, [auth?.token]);
+
   const login = useCallback(async (credentials) => {
     const data = await authService.login(credentials);
     api.defaults.headers.common.Authorization = `Bearer ${data.token}`;
