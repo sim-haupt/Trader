@@ -19,16 +19,16 @@ const CHART_RED = "#ff5f7a";
 const CHART_YELLOW = "#ffd84d";
 
 export const DEFAULT_DASHBOARD_LAYOUT = [
-  { id: "cumulative", span: 2 },
+  { id: "cumulative", span: 3 },
   { id: "performanceSnapshot", span: 2 },
   { id: "drawdown", span: 2 },
-  { id: "performanceWeekday", span: 1 },
-  { id: "performancePrice", span: 1 },
-  { id: "performanceHourSummary", span: 1 },
-  { id: "performanceTimeChart", span: 2 },
   { id: "grossDaily", span: 2 },
+  { id: "performancePrice", span: 1 },
+  { id: "performanceTimeChart", span: 3 },
+  { id: "performanceWeekday", span: 1 },
+  { id: "performanceHourSummary", span: 1 },
   { id: "winPct", span: 2 },
-  { id: "dailyVolume", span: 2 }
+  { id: "dailyVolume", span: 3 }
 ];
 
 const WIDGET_IDS = new Set(DEFAULT_DASHBOARD_LAYOUT.map((item) => item.id));
@@ -63,7 +63,7 @@ export function normalizeDashboardLayout(layout) {
     seen.add(item.id);
     normalized.push({
       id: item.id,
-      span: item.span === 2 ? 2 : 1
+      span: [1, 2, 3, 4, 5].includes(item.span) ? item.span : 1
     });
   }
 
@@ -220,7 +220,15 @@ function BreakdownRows({ entries }) {
 }
 
 function widgetSpanClass(span) {
-  return span === 2 ? "md:col-span-2 xl:col-span-2" : "";
+  const spanClasses = {
+    1: "",
+    2: "md:col-span-2 xl:col-span-2",
+    3: "md:col-span-2 xl:col-span-3",
+    4: "md:col-span-2 xl:col-span-4",
+    5: "md:col-span-2 xl:col-span-5"
+  };
+
+  return spanClasses[span] || "";
 }
 
 function getLastSevenDayTone(day) {
@@ -291,7 +299,7 @@ function AnalyticsCharts({
       {
         id: "cumulative",
         title: `${pnlLabel} CUMULATIVE P&L`,
-        defaultSpan: 2,
+        defaultSpan: 3,
         className: "min-h-[620px]",
         body: (
           <>
@@ -324,7 +332,7 @@ function AnalyticsCharts({
       },
       {
         id: "performanceSnapshot",
-        title: "PERFORMANCE SNAPSHOT",
+        title: "PERFORMANCE",
         defaultSpan: 2,
         className: "min-h-[620px]",
         body: (
@@ -378,7 +386,7 @@ function AnalyticsCharts({
       },
       {
         id: "drawdown",
-        title: `${pnlLabel} DRAWDOWN TRACKER`,
+        title: `${pnlLabel} DRAWDOWN`,
         defaultSpan: 2,
         body: (
           <>
@@ -430,7 +438,7 @@ function AnalyticsCharts({
       {
         id: "performanceTimeChart",
         title: `${pnlLabel} BY TIME OF DAY`,
-        defaultSpan: 2,
+        defaultSpan: 3,
         body: (
           <div className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -451,7 +459,7 @@ function AnalyticsCharts({
       },
       {
         id: "grossDaily",
-        title: `${pnlLabel} DAILY P&L (30 DAYS)`,
+        title: `${pnlLabel} DAILY`,
         defaultSpan: 2,
         body: (
           <div className="h-[320px]">
@@ -496,7 +504,7 @@ function AnalyticsCharts({
       {
         id: "dailyVolume",
         title: "DAILY VOLUME",
-        defaultSpan: 2,
+        defaultSpan: 3,
         body: (
           <div className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -573,7 +581,7 @@ function AnalyticsCharts({
         </div>
       </div>
 
-      <div className="grid items-start gap-5 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid items-start gap-5 md:grid-cols-2 xl:grid-cols-5">
         {orderedWidgets.map(({ id, span, widget }) => {
           const cardAction = editing ? (
             <div className="flex items-center gap-2">
@@ -582,7 +590,7 @@ function AnalyticsCharts({
                 onClick={() => onToggleSpan?.(id)}
                 className="ui-button px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/76 hover:text-white"
               >
-                {span === 2 ? "Normal" : "Wide"}
+                {span > 1 ? "Normal" : "Wide"}
               </button>
               <span className="ui-button cursor-grab select-none px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/56">
                 Drag
