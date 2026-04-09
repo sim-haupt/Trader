@@ -1,8 +1,10 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { execSync } = require("node:child_process");
 const prisma = require("../config/prisma");
 const env = require("../config/env");
 const ApiError = require("../utils/ApiError");
+const packageJson = require("../../package.json");
 
 function generateToken(user) {
   return jwt.sign(
@@ -28,6 +30,27 @@ function serializeUser(user) {
     defaultFees: Number(user.defaultFees || 0),
     dashboardLayout: Array.isArray(user.dashboardLayout) ? user.dashboardLayout : null
   };
+}
+
+function getRuntimeGitSha() {
+  const envSha =
+    process.env.APP_BUILD_SHA ||
+    process.env.RAILWAY_GIT_COMMIT_SHA ||
+    process.env.VERCEL_GIT_COMMIT_SHA;
+
+  if (envSha) {
+    return String(envSha).slice(0, 7);
+  }
+
+  try {
+    return execSync("git rev-parse --short HEAD", { encoding: "utf8" }).trim();
+  } catch {
+    return "unknown";
+  }
+}
+
+function getRuntimeBuildTime() {
+  return process.env.APP_BUILD_TIME || process.env.RAILWAY_DEPLOYMENT_CREATED_AT || null;
 }
 
 async function register(data) {
@@ -123,9 +146,18 @@ async function updateSettings(actor, data) {
   return serializeUser(user);
 }
 
+function getMeta() {
+  return {
+    version: packageJson.version,
+    sha: getRuntimeGitSha(),
+    buildTime: getRuntimeBuildTime()
+  };
+}
+
 module.exports = {
   register,
   login,
   getSettings,
-  updateSettings
+  updateSettings,
+  getMeta
 };

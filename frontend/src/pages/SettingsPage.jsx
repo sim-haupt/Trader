@@ -16,6 +16,7 @@ const buildTime = typeof __APP_BUILD_TIME__ !== "undefined" ? __APP_BUILD_TIME__
 function SettingsPage() {
   const { user, updateSettings, refreshSettings } = useAuth();
   const { notify, confirm } = useNotifications();
+  const [backendMeta, setBackendMeta] = useState(null);
   const [activeSection, setActiveSection] = useState("library");
   const [tags, setTags] = useState(() => tagService.peekTags() || []);
   const [strategies, setStrategies] = useState(() => strategyService.peekStrategies() || []);
@@ -78,6 +79,7 @@ function SettingsPage() {
     loadTags();
     loadStrategies();
     refreshSettings().catch(() => {});
+    authService.getMeta().then(setBackendMeta).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -675,10 +677,22 @@ function SettingsPage() {
         </div>
 
         <div className="mt-8 border-t border-[var(--line)] pt-4 text-right">
-          <span className="text-xs text-white/42">
-            Version {appVersion} · {buildSha}
-            {buildTime ? ` · ${new Date(buildTime).toLocaleString("en-US", { hour12: false })}` : ""}
-          </span>
+          <div className="space-y-1 text-xs text-white/42">
+            <div>
+              Frontend {appVersion} · {buildSha}
+              {buildTime
+                ? ` · ${new Date(buildTime).toLocaleString("en-US", { hour12: false })}`
+                : ""}
+            </div>
+            <div>
+              Backend {backendMeta?.version || "unknown"} · {backendMeta?.sha || "unknown"}
+              {backendMeta?.buildTime
+                ? ` · ${new Date(backendMeta.buildTime).toLocaleString("en-US", {
+                    hour12: false
+                  })}`
+                : ""}
+            </div>
+          </div>
         </div>
       </Card>
     </div>

@@ -37,9 +37,19 @@ const updateSettings = asyncHandler(async (req, res) => {
   });
 });
 
+const getMeta = asyncHandler(async (_req, res) => {
+  const result = authService.getMeta();
+
+  res.status(200).json({
+    success: true,
+    data: result
+  });
+});
+
 module.exports = {
   register,
   login,
   getSettings,
-  updateSettings
+  updateSettings,
+  getMeta
 };

@@ -16,6 +16,11 @@ const authService = {
     return response.data.data;
   },
 
+  async getMeta() {
+    const response = await api.get("/auth/meta");
+    return response.data.data;
+  },
+
   async updateSettings(payload) {
     const response = await api.patch("/auth/settings", payload);
     return response.data.data;

@@ -8,6 +8,7 @@ const router = express.Router();
 
 router.post("/register", validate(registerSchema), authController.register);
 router.post("/login", validate(loginSchema), authController.login);
+router.get("/meta", authController.getMeta);
 router.get("/settings", authenticate, authController.getSettings);
 router.patch("/settings", authenticate, validate(updateSettingsSchema), authController.updateSettings);
 
