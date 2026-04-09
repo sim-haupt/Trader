@@ -315,8 +315,12 @@ export function buildAnalytics(trades, options = {}) {
     ? (wins / tradeCount) * averageWin - (losses / tradeCount) * averageLoss
     : 0;
   const riskRewardRatio = averageLoss ? averageWin / averageLoss : 0;
+  const profitFactor = totalLoss ? totalWin / totalLoss : totalWin > 0 ? totalWin : 0;
   const averageGainPerShare = wins ? totalPositivePerShare / wins : 0;
   const averageLossPerShare = losses ? totalNegativePerShare / losses : 0;
+  const averageHoldMinutes = tradeCount
+    ? processedTrades.reduce((sum, item) => sum + item.holdMinutes, 0) / tradeCount
+    : 0;
 
   const latestTradeDate = processedTrades.length
     ? new Date(processedTrades[processedTrades.length - 1].entryDate)
@@ -414,8 +418,10 @@ export function buildAnalytics(trades, options = {}) {
       averageLoss,
       averageTradePnl,
       expectancyPerTrade,
+      profitFactor,
       largestWin,
       largestLoss,
+      averageHoldMinutes,
       averageWinningHoldMinutes: winningHoldCount ? winningHoldMinutesTotal / winningHoldCount : 0,
       averageLosingHoldMinutes: losingHoldCount ? losingHoldMinutesTotal / losingHoldCount : 0,
       averageGainPerShare,

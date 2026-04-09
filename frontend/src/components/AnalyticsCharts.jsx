@@ -184,6 +184,25 @@ function toneForRiskReward(value) {
   return "text-gold";
 }
 
+function formatMetricMinutes(value) {
+  if (!value) {
+    return "0 min";
+  }
+
+  if (value < 60) {
+    return `${Math.round(value)} min`;
+  }
+
+  const hours = Math.floor(value / 60);
+  const minutes = Math.round(value % 60);
+
+  if (!minutes) {
+    return `${hours}h`;
+  }
+
+  return `${hours}h ${minutes}m`;
+}
+
 function BreakdownRows({ entries }) {
   const maxMagnitude = Math.max(1, ...entries.map((entry) => Math.abs(entry.pnl || 0)));
 
@@ -328,54 +347,83 @@ function AnalyticsCharts({
         defaultSpan: 2,
         className: "min-h-[620px]",
         body: (
-          <div className="grid h-full gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            <MiniMetric
-              label="WIN RATE"
-              value={formatPercent(summary.winRate)}
-              tone={toneForWinRate(summary.winRate)}
-              shadow
-            />
-            <MiniMetric
-              label="R:R"
-              value={summary.riskRewardRatio ? `${summary.riskRewardRatio.toFixed(2)} : 1` : "0.00 : 1"}
-              tone={toneForRiskReward(summary.riskRewardRatio)}
-              shadow
-            />
-            <MiniMetric
-              label="EXPECTANCY"
-              value={formatCurrency(summary.expectancyPerTrade)}
-              tone={toneForValue(summary.expectancyPerTrade)}
-              shadow
-            />
-            <MiniMetric label="AVG WIN" value={formatCurrency(summary.averageWin)} tone={toneForValue(summary.averageWin)} shadow />
-            <MiniMetric
-              label="AVG LOSS"
-              value={formatCurrency(summary.averageLoss)}
-              tone={summary.averageLoss === 0 ? "text-mist" : "text-coral"}
-              shadow
-            />
-            <div className="hidden xl:block" aria-hidden="true" />
-            <MiniMetric
-              label="AVG GAIN / SHARE"
-              value={formatCurrency(summary.averageGainPerShare)}
-              tone={toneForValue(summary.averageGainPerShare)}
-              shadow
-            />
-            <MiniMetric
-              label="AVG LOSS / SHARE"
-              value={formatCurrency(summary.averageLossPerShare)}
-              tone={summary.averageLossPerShare === 0 ? "text-mist" : "text-coral"}
-              shadow
-            />
-            <div className="hidden xl:block" aria-hidden="true" />
-            <MiniMetric label="WINNING STREAK" value={summary.longestWinStreak} tone="text-mist" shadow />
-            <MiniMetric
-              label="LOSING STREAK"
-              value={summary.longestLossStreak}
-              tone="text-mist"
-              shadow
-            />
-            <div className="hidden xl:block" aria-hidden="true" />
+          <div className="flex h-full flex-col gap-3">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <MiniMetric
+                label="WIN RATE"
+                value={formatPercent(summary.winRate)}
+                tone={toneForWinRate(summary.winRate)}
+                shadow
+              />
+              <MiniMetric
+                label="R:R"
+                value={summary.riskRewardRatio ? `${summary.riskRewardRatio.toFixed(2)} : 1` : "0.00 : 1"}
+                tone={toneForRiskReward(summary.riskRewardRatio)}
+                shadow
+              />
+              <MiniMetric
+                label="EXPECTANCY"
+                value={formatCurrency(summary.expectancyPerTrade)}
+                tone={toneForValue(summary.expectancyPerTrade)}
+                shadow
+              />
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <MiniMetric
+                label="PROFIT FACTOR"
+                value={summary.profitFactor ? summary.profitFactor.toFixed(2) : "0.00"}
+                tone={toneForRiskReward(summary.profitFactor)}
+                shadow
+              />
+              <MiniMetric
+                label="TRADE COUNT"
+                value={summary.tradeCount.toLocaleString("en-US")}
+                tone="text-mist"
+                shadow
+              />
+              <MiniMetric
+                label="AVG HOLD"
+                value={formatMetricMinutes(summary.averageHoldMinutes)}
+                tone="text-mist"
+                shadow
+              />
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <MiniMetric label="AVG WIN" value={formatCurrency(summary.averageWin)} tone={toneForValue(summary.averageWin)} shadow />
+              <MiniMetric
+                label="AVG LOSS"
+                value={formatCurrency(summary.averageLoss)}
+                tone={summary.averageLoss === 0 ? "text-mist" : "text-coral"}
+                shadow
+              />
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <MiniMetric
+                label="AVG GAIN / SHARE"
+                value={formatCurrency(summary.averageGainPerShare)}
+                tone={toneForValue(summary.averageGainPerShare)}
+                shadow
+              />
+              <MiniMetric
+                label="AVG LOSS / SHARE"
+                value={formatCurrency(summary.averageLossPerShare)}
+                tone={summary.averageLossPerShare === 0 ? "text-mist" : "text-coral"}
+                shadow
+              />
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <MiniMetric label="WINNING STREAK" value={summary.longestWinStreak} tone="text-mist" shadow />
+              <MiniMetric
+                label="LOSING STREAK"
+                value={summary.longestLossStreak}
+                tone="text-mist"
+                shadow
+              />
+            </div>
           </div>
         )
       },
