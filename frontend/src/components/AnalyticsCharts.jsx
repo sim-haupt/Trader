@@ -20,8 +20,7 @@ const CHART_YELLOW = "#ffd84d";
 
 export const DEFAULT_DASHBOARD_LAYOUT = [
   { id: "cumulative", span: 2 },
-  { id: "summaryMetrics", span: 1 },
-  { id: "avgStats", span: 1 },
+  { id: "performanceSnapshot", span: 2 },
   { id: "drawdown", span: 2 },
   { id: "performanceWeekday", span: 1 },
   { id: "performancePrice", span: 1 },
@@ -29,8 +28,7 @@ export const DEFAULT_DASHBOARD_LAYOUT = [
   { id: "performanceTimeChart", span: 2 },
   { id: "grossDaily", span: 2 },
   { id: "winPct", span: 2 },
-  { id: "dailyVolume", span: 2 },
-  { id: "streaks", span: 1 }
+  { id: "dailyVolume", span: 2 }
 ];
 
 const WIDGET_IDS = new Set(DEFAULT_DASHBOARD_LAYOUT.map((item) => item.id));
@@ -39,33 +37,20 @@ export function normalizeDashboardLayout(layout) {
   const safeLayout = Array.isArray(layout) ? layout : [];
   const seen = new Set();
   const normalized = [];
-  let insertedSummaryMetrics = false;
-  let insertedAvgStats = false;
+  let insertedPerformanceSnapshot = false;
 
   for (const item of safeLayout) {
     if (!item) {
       continue;
     }
 
-    if (["expectancy", "riskReward"].includes(item.id)) {
-      if (!insertedSummaryMetrics) {
-        insertedSummaryMetrics = true;
-        seen.add("summaryMetrics");
+    if (["summaryMetrics", "avgStats", "streaks", "expectancy", "riskReward", "winStats"].includes(item.id)) {
+      if (!insertedPerformanceSnapshot) {
+        insertedPerformanceSnapshot = true;
+        seen.add("performanceSnapshot");
         normalized.push({
-          id: "summaryMetrics",
-          span: 1
-        });
-      }
-      continue;
-    }
-
-    if (item.id === "winStats") {
-      if (!insertedAvgStats) {
-        insertedAvgStats = true;
-        seen.add("avgStats");
-        normalized.push({
-          id: "avgStats",
-          span: 1
+          id: "performanceSnapshot",
+          span: 2
         });
       }
       continue;
@@ -156,7 +141,7 @@ function MiniMetric({ label, value, tone = "text-white", shadow = false }) {
 }
 
 function toneForValue(value) {
-  if (value >= 0) {
+  if (value > 0) {
     return "text-mint";
   }
 
@@ -165,6 +150,38 @@ function toneForValue(value) {
   }
 
   return "text-mist";
+}
+
+function toneForWinRate(value) {
+  if (value === 0) {
+    return "text-mist";
+  }
+
+  if (value >= 68) {
+    return "text-mint";
+  }
+
+  if (value < 50) {
+    return "text-coral";
+  }
+
+  return "text-gold";
+}
+
+function toneForRiskReward(value) {
+  if (value === 0) {
+    return "text-mist";
+  }
+
+  if (value < 1) {
+    return "text-coral";
+  }
+
+  if (value >= 2) {
+    return "text-mint";
+  }
+
+  return "text-gold";
 }
 
 function BreakdownRows({ entries }) {
@@ -275,6 +292,7 @@ function AnalyticsCharts({
         id: "cumulative",
         title: `${pnlLabel} CUMULATIVE P&L`,
         defaultSpan: 2,
+        className: "min-h-[620px]",
         body: (
           <>
             <div className="mb-5 grid gap-3 md:grid-cols-4">
@@ -305,50 +323,56 @@ function AnalyticsCharts({
         )
       },
       {
-        id: "summaryMetrics",
-        title: "WIN RATE / EXPECTANCY / R:R",
-        defaultSpan: 1,
-        className: "min-h-[205px]",
+        id: "performanceSnapshot",
+        title: "PERFORMANCE SNAPSHOT",
+        defaultSpan: 2,
+        className: "min-h-[620px]",
         body: (
-          <div className="grid gap-3">
+          <div className="grid h-full gap-3 sm:grid-cols-2 xl:grid-cols-3">
             <MiniMetric
               label="WIN RATE"
               value={formatPercent(summary.winRate)}
-              tone={summary.winRate >= 68 ? "text-mint" : summary.winRate < 50 ? "text-coral" : "text-gold"}
+              tone={toneForWinRate(summary.winRate)}
               shadow
             />
             <MiniMetric
               label="EXPECTANCY"
               value={formatCurrency(summary.expectancyPerTrade)}
-              tone={summary.winRate >= 68 ? "text-mint" : summary.winRate < 50 ? "text-coral" : "text-gold"}
+              tone={toneForValue(summary.expectancyPerTrade)}
               shadow
             />
             <MiniMetric
               label="R:R"
               value={summary.riskRewardRatio ? `${summary.riskRewardRatio.toFixed(2)} : 1` : "0.00 : 1"}
-              tone={
-                summary.riskRewardRatio < 1
-                  ? "text-coral"
-                  : summary.riskRewardRatio >= 2
-                    ? "text-mint"
-                    : "text-gold"
-              }
+              tone={toneForRiskReward(summary.riskRewardRatio)}
               shadow
             />
-          </div>
-        )
-      },
-      {
-        id: "avgStats",
-        title: "AVG WIN / AVG LOSS / SHARE",
-        defaultSpan: 1,
-        className: "min-h-[205px]",
-        body: (
-          <div className="grid gap-3 md:grid-cols-2">
-            <MiniMetric label="AVG WIN" value={formatCurrency(summary.averageWin)} tone="text-mint" shadow />
-            <MiniMetric label="AVG LOSS" value={formatCurrency(summary.averageLoss)} tone="text-coral" shadow />
-            <MiniMetric label="AVG GAIN / SHARE" value={formatCurrency(summary.averageGainPerShare)} tone="text-mint" shadow />
-            <MiniMetric label="AVG LOSS / SHARE" value={formatCurrency(summary.averageLossPerShare)} tone="text-coral" shadow />
+            <MiniMetric label="AVG WIN" value={formatCurrency(summary.averageWin)} tone={toneForValue(summary.averageWin)} shadow />
+            <MiniMetric
+              label="AVG LOSS"
+              value={formatCurrency(summary.averageLoss)}
+              tone={summary.averageLoss === 0 ? "text-mist" : "text-coral"}
+              shadow
+            />
+            <MiniMetric
+              label="AVG GAIN / SHARE"
+              value={formatCurrency(summary.averageGainPerShare)}
+              tone={toneForValue(summary.averageGainPerShare)}
+              shadow
+            />
+            <MiniMetric
+              label="AVG LOSS / SHARE"
+              value={formatCurrency(summary.averageLossPerShare)}
+              tone={summary.averageLossPerShare === 0 ? "text-mist" : "text-coral"}
+              shadow
+            />
+            <MiniMetric label="WINNING STREAK" value={summary.longestWinStreak} tone={toneForValue(summary.longestWinStreak)} shadow />
+            <MiniMetric
+              label="LOSING STREAK"
+              value={summary.longestLossStreak}
+              tone={summary.longestLossStreak === 0 ? "text-mist" : "text-coral"}
+              shadow
+            />
           </div>
         )
       },
@@ -359,8 +383,8 @@ function AnalyticsCharts({
         body: (
           <>
             <div className="mb-4 grid gap-3 md:grid-cols-2">
-              <MiniMetric label="MAX DRAWDOWN" value={formatCurrency(summary.maxDrawdown)} tone="text-coral" shadow />
-              <MiniMetric label="CURRENT DRAWDOWN" value={formatCurrency(summary.currentDrawdown)} tone="text-coral" shadow />
+              <MiniMetric label="MAX DRAWDOWN" value={formatCurrency(summary.maxDrawdown)} tone={toneForValue(summary.maxDrawdown)} shadow />
+              <MiniMetric label="CURRENT DRAWDOWN" value={formatCurrency(summary.currentDrawdown)} tone={toneForValue(summary.currentDrawdown)} shadow />
             </div>
             <div className="h-[220px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -488,18 +512,6 @@ function AnalyticsCharts({
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
-          </div>
-        )
-      },
-      {
-        id: "streaks",
-        title: "STREAKS",
-        defaultSpan: 1,
-        className: "min-h-[205px]",
-        body: (
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-            <MiniMetric label="WINNING STREAK" value={summary.longestWinStreak} tone="text-mint" shadow />
-            <MiniMetric label="LOSING STREAK" value={summary.longestLossStreak} tone="text-coral" shadow />
           </div>
         )
       }
