@@ -147,7 +147,8 @@ function SplitMetric({
   primaryTone = "text-mint",
   secondaryTone = "text-coral",
   prefix,
-  shadowTone = "text-mist"
+  shadowTone = "text-mist",
+  inlinePrefix = false
 }) {
   return (
     <div
@@ -155,14 +156,27 @@ function SplitMetric({
       style={{ boxShadow: metricInsetShadow(shadowTone) }}
     >
       <p className="ui-title text-[10px] text-white/48">{label}</p>
-      {prefix ? (
-        <p className="mt-3 text-2xl font-bold tracking-[-0.04em] text-mist">{prefix}</p>
-      ) : null}
-      <div className={`${prefix ? "mt-2" : "mt-3"} flex items-baseline gap-2 text-xl font-bold tracking-[-0.04em]`}>
-        <span className={primaryTone}>{primary}</span>
-        <span className="text-white/30">/</span>
-        <span className={secondaryTone}>{secondary}</span>
-      </div>
+      {inlinePrefix ? (
+        <div className="mt-3 flex items-baseline justify-between gap-6 whitespace-nowrap">
+          <span className="text-2xl font-bold tracking-[-0.04em] text-mist">{prefix}</span>
+          <div className="flex items-baseline gap-2 text-xl font-bold tracking-[-0.04em]">
+            <span className={primaryTone}>{primary}</span>
+            <span className="text-white/30">/</span>
+            <span className={secondaryTone}>{secondary}</span>
+          </div>
+        </div>
+      ) : (
+        <>
+          {prefix ? (
+            <p className="mt-3 text-2xl font-bold tracking-[-0.04em] text-mist">{prefix}</p>
+          ) : null}
+          <div className={`${prefix ? "mt-2" : "mt-3"} flex items-baseline gap-2 text-xl font-bold tracking-[-0.04em]`}>
+            <span className={primaryTone}>{primary}</span>
+            <span className="text-white/30">/</span>
+            <span className={secondaryTone}>{secondary}</span>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -411,6 +425,7 @@ function AnalyticsCharts({
                 primaryTone="text-mint"
                 secondaryTone="text-coral"
                 shadowTone="text-mist"
+                inlinePrefix
               />
               <SplitMetric
                 label="AVG HOLD"
