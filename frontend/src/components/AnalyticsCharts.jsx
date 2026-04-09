@@ -368,11 +368,11 @@ function AnalyticsCharts({
               shadow
             />
             <div className="hidden xl:block" aria-hidden="true" />
-            <MiniMetric label="WINNING STREAK" value={summary.longestWinStreak} tone={toneForValue(summary.longestWinStreak)} shadow />
+            <MiniMetric label="WINNING STREAK" value={summary.longestWinStreak} tone="text-mist" shadow />
             <MiniMetric
               label="LOSING STREAK"
               value={summary.longestLossStreak}
-              tone={summary.longestLossStreak === 0 ? "text-mist" : "text-coral"}
+              tone="text-mist"
               shadow
             />
             <div className="hidden xl:block" aria-hidden="true" />
