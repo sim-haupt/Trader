@@ -336,15 +336,15 @@ function AnalyticsCharts({
               shadow
             />
             <MiniMetric
-              label="EXPECTANCY"
-              value={formatCurrency(summary.expectancyPerTrade)}
-              tone={toneForValue(summary.expectancyPerTrade)}
-              shadow
-            />
-            <MiniMetric
               label="R:R"
               value={summary.riskRewardRatio ? `${summary.riskRewardRatio.toFixed(2)} : 1` : "0.00 : 1"}
               tone={toneForRiskReward(summary.riskRewardRatio)}
+              shadow
+            />
+            <MiniMetric
+              label="EXPECTANCY"
+              value={formatCurrency(summary.expectancyPerTrade)}
+              tone={toneForValue(summary.expectancyPerTrade)}
               shadow
             />
             <MiniMetric label="AVG WIN" value={formatCurrency(summary.averageWin)} tone={toneForValue(summary.averageWin)} shadow />
@@ -354,6 +354,7 @@ function AnalyticsCharts({
               tone={summary.averageLoss === 0 ? "text-mist" : "text-coral"}
               shadow
             />
+            <div className="hidden xl:block" aria-hidden="true" />
             <MiniMetric
               label="AVG GAIN / SHARE"
               value={formatCurrency(summary.averageGainPerShare)}
@@ -366,6 +367,7 @@ function AnalyticsCharts({
               tone={summary.averageLossPerShare === 0 ? "text-mist" : "text-coral"}
               shadow
             />
+            <div className="hidden xl:block" aria-hidden="true" />
             <MiniMetric label="WINNING STREAK" value={summary.longestWinStreak} tone={toneForValue(summary.longestWinStreak)} shadow />
             <MiniMetric
               label="LOSING STREAK"
@@ -373,6 +375,7 @@ function AnalyticsCharts({
               tone={summary.longestLossStreak === 0 ? "text-mist" : "text-coral"}
               shadow
             />
+            <div className="hidden xl:block" aria-hidden="true" />
           </div>
         )
       },
