@@ -22,13 +22,13 @@ export const DEFAULT_DASHBOARD_LAYOUT = [
   { id: "cumulative", span: 2 },
   { id: "performanceSnapshot", span: 2 },
   { id: "drawdown", span: 2 },
-  { id: "performanceWeekday", span: 1 },
-  { id: "performancePrice", span: 1 },
-  { id: "performanceHourSummary", span: 1 },
-  { id: "performanceTimeChart", span: 2 },
   { id: "grossDaily", span: 2 },
+  { id: "performanceTimeChart", span: 2 },
   { id: "winPct", span: 2 },
-  { id: "dailyVolume", span: 2 }
+  { id: "dailyVolume", span: 2 },
+  { id: "performanceWeekday", span: 1 },
+  { id: "performanceHourSummary", span: 1 },
+  { id: "performancePrice", span: 2 }
 ];
 
 function tooltipStyle() {
@@ -454,25 +454,26 @@ function AnalyticsCharts({
         )
       },
       {
-        id: "performanceWeekday",
-        title: `${pnlLabel} BY DAY OF WEEK`,
-        defaultSpan: 1,
-        className: "min-h-[300px]",
-        body: <BreakdownRows entries={performanceByWeekday} />
-      },
-      {
-        id: "performancePrice",
-        title: `${pnlLabel} BY PRICE`,
-        defaultSpan: 1,
-        className: "min-h-[300px]",
-        body: <BreakdownRows entries={performanceByPrice} />
-      },
-      {
-        id: "performanceHourSummary",
-        title: `${pnlLabel} BY HOUR OF DAY`,
-        defaultSpan: 1,
-        className: "min-h-[300px]",
-        body: <BreakdownRows entries={performanceByTimeOfDaySummary} />
+        id: "grossDaily",
+        title: `${pnlLabel} DAILY P&L (30 DAYS)`,
+        defaultSpan: 2,
+        body: (
+          <div className="h-[320px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={grossDailyThirtyDays}>
+                <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} minTickGap={18} />
+                <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} tick={{ fill: "#c6cedb", fontSize: 11 }} />
+                <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<ChartTooltipContent />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
+                <Bar dataKey="grossPnl" barSize={20}>
+                  {grossDailyThirtyDays.map((entry) => (
+                    <Cell key={entry.date} fill={entry.grossPnl >= 0 ? CHART_GREEN : CHART_RED} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )
       },
       {
         id: "performanceTimeChart",
@@ -489,28 +490,6 @@ function AnalyticsCharts({
                 <Bar dataKey="pnl" barSize={18}>
                   {hourlyPerformance.map((entry) => (
                     <Cell key={entry.label} fill={entry.pnl >= 0 ? CHART_GREEN : CHART_RED} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        )
-      },
-      {
-        id: "grossDaily",
-        title: `${pnlLabel} DAILY P&L (30 DAYS)`,
-        defaultSpan: 2,
-        body: (
-          <div className="h-[320px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={grossDailyThirtyDays}>
-                <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} minTickGap={18} />
-                <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<ChartTooltipContent />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
-                <Bar dataKey="grossPnl" barSize={20}>
-                  {grossDailyThirtyDays.map((entry) => (
-                    <Cell key={entry.date} fill={entry.grossPnl >= 0 ? CHART_GREEN : CHART_RED} />
                   ))}
                 </Bar>
               </BarChart>
@@ -561,6 +540,27 @@ function AnalyticsCharts({
             </ResponsiveContainer>
           </div>
         )
+      },
+      {
+        id: "performanceWeekday",
+        title: `${pnlLabel} BY DAY OF WEEK`,
+        defaultSpan: 1,
+        className: "min-h-[300px]",
+        body: <BreakdownRows entries={performanceByWeekday} />
+      },
+      {
+        id: "performancePrice",
+        title: `${pnlLabel} BY PRICE`,
+        defaultSpan: 1,
+        className: "min-h-[300px]",
+        body: <BreakdownRows entries={performanceByPrice} />
+      },
+      {
+        id: "performanceHourSummary",
+        title: `${pnlLabel} BY HOUR OF DAY`,
+        defaultSpan: 1,
+        className: "min-h-[300px]",
+        body: <BreakdownRows entries={performanceByTimeOfDaySummary} />
       }
     ],
     [

@@ -32,11 +32,6 @@ body[data-theme="dark"] {
   --warning-soft: rgba(255, 216, 77, 0.16);
   --info: #84b7ff;
   --info-soft: rgba(132, 183, 255, 0.12);
-  --glow-neutral: rgba(255, 255, 255, 0.045);
-  --glow-neutral-strong: rgba(255, 255, 255, 0.075);
-  --glow-accent: rgba(104, 168, 255, 0.24);
-  --glow-accent-soft: rgba(27, 50, 88, 0.32);
-  --glow-danger: rgba(255, 95, 122, 0.18);
   --popover: #050505;
   --shadow-lg: none;
   --shadow-md: none;
@@ -192,13 +187,10 @@ strong {
     border: 1px solid var(--line);
     border-radius: var(--radius-lg);
     background: var(--surface-1);
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.015),
-      0 0 28px var(--glow-neutral);
+    box-shadow: none;
     backdrop-filter: none;
     transition:
       border-color 140ms ease,
-      box-shadow 140ms ease,
       background-color 140ms ease;
   }
 
@@ -231,12 +223,9 @@ strong {
     font-size: 0.92rem;
     transition:
       border-color 140ms ease,
-      box-shadow 140ms ease,
       background-color 140ms ease,
       color 140ms ease;
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.02),
-      0 0 18px rgba(255, 255, 255, 0.025);
+    box-shadow: none;
   }
 
   .ui-input::placeholder {
@@ -246,18 +235,11 @@ strong {
   .ui-input:hover {
     border-color: var(--line);
     background: rgba(255, 255, 255, 0.07);
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.03),
-      0 0 24px var(--glow-neutral);
   }
 
   .ui-input:focus {
     border-color: #ededed;
     background: rgba(255, 255, 255, 0.07);
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.05),
-      0 0 0 3px rgba(104, 168, 255, 0.12),
-      0 0 28px var(--glow-accent);
   }
 
   .ui-button,
@@ -272,14 +254,11 @@ strong {
     border: 1px solid var(--line);
     transition:
       border-color 120ms ease,
-      box-shadow 120ms ease,
       background-color 120ms ease,
       color 120ms ease,
       opacity 120ms ease;
     white-space: nowrap;
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.02),
-      0 0 18px rgba(255, 255, 255, 0.025);
+    box-shadow: none;
   }
 
   .ui-button:hover,
@@ -287,9 +266,6 @@ strong {
   .ui-button-danger:hover,
   .ui-chip:hover {
     border-color: var(--line-strong);
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.03),
-      0 0 24px var(--glow-neutral-strong);
   }
 
   .ui-button {
@@ -311,17 +287,11 @@ strong {
     padding: 9px 13px;
     font-size: 0.86rem;
     font-weight: 500;
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.12),
-      0 0 28px rgba(255, 255, 255, 0.18);
   }
 
   .ui-button-solid:hover {
     background: #ededed;
     border-color: #ededed;
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.16),
-      0 0 34px rgba(255, 255, 255, 0.24);
   }
 
   .ui-button-danger {
@@ -331,17 +301,11 @@ strong {
     padding: 9px 13px;
     font-size: 0.86rem;
     font-weight: 500;
-    box-shadow:
-      0 0 0 1px rgba(255, 95, 122, 0.08),
-      0 0 22px var(--glow-danger);
   }
 
   .ui-button-danger:hover {
     background: rgba(255, 95, 122, 0.12);
     border-color: rgba(255, 95, 122, 0.45);
-    box-shadow:
-      0 0 0 1px rgba(255, 95, 122, 0.12),
-      0 0 28px rgba(255, 95, 122, 0.22);
   }
 
   .ui-chip {
@@ -360,9 +324,7 @@ strong {
     padding: 14px 16px;
     font-size: 0.93rem;
     line-height: 1.6;
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.015),
-      0 0 24px var(--glow-neutral);
+    box-shadow: none;
   }
 
   .ui-table-shell {
@@ -370,18 +332,14 @@ strong {
     border: 1px solid var(--line);
     border-radius: var(--radius-lg);
     background: var(--surface-2);
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.015),
-      0 0 28px var(--glow-neutral);
+    box-shadow: none;
   }
 
   .ui-surface-subtle {
     border: 1px solid var(--line);
     border-radius: var(--radius-md);
     background: #050505;
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.015),
-      0 0 24px var(--glow-neutral);
+    box-shadow: none;
   }
 
   .ui-metric-tile {
@@ -389,28 +347,21 @@ strong {
     border-radius: var(--radius-md);
     background: #050505;
     padding: 16px;
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.015),
-      0 0 24px var(--glow-neutral);
+    box-shadow: none;
   }
 
   .ui-inset-box {
     border: 1px solid var(--line);
     border-radius: var(--radius-md);
     background: #050505;
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.015),
-      0 0 24px var(--glow-neutral);
+    box-shadow: none;
   }
 
   .ui-popover {
     border: 1px solid var(--line);
     border-radius: var(--radius-lg);
     background: var(--popover);
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.03),
-      0 0 36px rgba(0, 0, 0, 0.65),
-      0 0 28px var(--glow-neutral);
+    box-shadow: none;
     backdrop-filter: none;
   }
 
@@ -422,9 +373,7 @@ strong {
     border: 1px solid var(--line);
     border-radius: var(--radius-sm);
     background: #000000;
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.015),
-      0 0 18px rgba(255, 255, 255, 0.02);
+    box-shadow: none;
   }
 
   .ui-segment button {
@@ -448,9 +397,6 @@ strong {
     background: #1f1f1f;
     color: var(--text);
     border-color: var(--line);
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.025),
-      0 0 18px rgba(255, 255, 255, 0.03);
   }
 
   .ui-link {
@@ -492,25 +438,18 @@ strong {
     transition:
       background-color 120ms ease,
       color 120ms ease,
-      border-color 120ms ease,
-      box-shadow 120ms ease;
+      border-color 120ms ease;
   }
 
   .ui-sidebar-link:hover {
     background: #1f1f1f;
     color: var(--text);
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.02),
-      0 0 20px rgba(255, 255, 255, 0.025);
   }
 
   .ui-sidebar-link[data-active="true"] {
     border-color: var(--line);
     background: #1f1f1f;
     color: var(--text);
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.03),
-      0 0 24px var(--glow-accent-soft);
   }
 
   .ui-content {
