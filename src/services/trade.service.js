@@ -207,6 +207,10 @@ async function getTrades(actor, filters) {
 }
 
 async function getWidgetSummary(actor, filters = {}) {
+  return getWidgetSummaryForActor(actor, filters);
+}
+
+async function getWidgetSummaryForActor(actor, filters = {}) {
   const where = buildTradeWhere(actor, filters);
   const trades = await prisma.trade.findMany({
     where,
@@ -293,6 +297,31 @@ async function getWidgetSummary(actor, filters = {}) {
     losses: tradeCount - wins,
     lastSevenDays
   };
+}
+
+async function getPublicWidgetSummary(userId, filters = {}) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      defaultCommission: true,
+      defaultFees: true
+    }
+  });
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return getWidgetSummaryForActor(
+    {
+      id: user.id,
+      role: "USER",
+      defaultCommission: user.defaultCommission,
+      defaultFees: user.defaultFees
+    },
+    filters
+  );
 }
 
 async function getTradeTags(actor) {
@@ -604,6 +633,7 @@ module.exports = {
   createTrade,
   getTrades,
   getWidgetSummary,
+  getPublicWidgetSummary,
   getTradeTags,
   getTradeById,
   updateTrade,
