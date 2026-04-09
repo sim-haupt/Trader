@@ -11,7 +11,7 @@ import { useNotifications } from "../context/NotificationContext";
 function SettingsPage() {
   const { user, updateSettings, refreshSettings } = useAuth();
   const { notify, confirm } = useNotifications();
-  const [activeSection, setActiveSection] = useState("tags");
+  const [activeSection, setActiveSection] = useState("library");
   const [tags, setTags] = useState(() => tagService.peekTags() || []);
   const [strategies, setStrategies] = useState(() => strategyService.peekStrategies() || []);
   const [newTag, setNewTag] = useState("");
@@ -361,242 +361,243 @@ function SettingsPage() {
               <div className="ui-title text-[11px] text-white/48">Navigation</div>
               <button
                 type="button"
-                onClick={() => setActiveSection("tags")}
+                onClick={() => setActiveSection("library")}
                 className={`flex w-full items-center justify-between rounded-[6px] px-4 py-3 text-left text-sm transition ${
-                  activeSection === "tags"
+                  activeSection === "library"
                     ? "border border-[var(--line)] bg-[#1f1f1f] text-white shadow-[inset_0_0_0_1px_rgb(31,31,31)]"
                     : "border border-transparent text-white/64 hover:bg-white/[0.03] hover:text-white"
                 }`}
               >
-                <span>Tags</span>
-                <span className="text-white/40">{tags.length}</span>
+                <span>Trade Library</span>
+                <span className="text-white/40">{tags.length + strategies.length}</span>
               </button>
               <button
                 type="button"
-                onClick={() => setActiveSection("commissions")}
+                onClick={() => setActiveSection("costs")}
                 className={`flex w-full items-center justify-between rounded-[6px] px-4 py-3 text-left text-sm transition ${
-                  activeSection === "commissions"
+                  activeSection === "costs"
                     ? "border border-[var(--line)] bg-[#1f1f1f] text-white shadow-[inset_0_0_0_1px_rgb(31,31,31)]"
                     : "border border-transparent text-white/64 hover:bg-white/[0.03] hover:text-white"
                 }`}
               >
-                <span>Commissions</span>
+                <span>Trade Costs</span>
                 <span className="text-white/40">
                   {(Number(user?.defaultCommission ?? 0) + Number(user?.defaultFees ?? 0)).toFixed(2)}
                 </span>
               </button>
               <button
                 type="button"
-                onClick={() => setActiveSection("strategies")}
+                onClick={() => setActiveSection("data")}
                 className={`flex w-full items-center justify-between rounded-[6px] px-4 py-3 text-left text-sm transition ${
-                  activeSection === "strategies"
+                  activeSection === "data"
                     ? "border border-[var(--line)] bg-[#1f1f1f] text-white shadow-[inset_0_0_0_1px_rgb(31,31,31)]"
                     : "border border-transparent text-white/64 hover:bg-white/[0.03] hover:text-white"
                 }`}
               >
-                <span>Strategies</span>
-                <span className="text-white/40">{strategies.length}</span>
+                <span>Data Management</span>
+                <span className="text-white/40">1</span>
               </button>
             </div>
           </aside>
 
-          {activeSection === "tags" ? (
-            <Card title="TAGS">
-              <div className="space-y-5">
-                <div className="flex flex-col gap-3 lg:flex-row">
-                  <input
-                    value={newTag}
-                    onChange={(event) => setNewTag(event.target.value)}
-                    placeholder="Add a new tag"
-                    className="ui-input"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleCreateTag}
-                    disabled={savingTag || !newTag.trim()}
-                    className="ui-button-solid whitespace-nowrap px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {savingTag ? "Saving..." : "Add Tag"}
-                  </button>
-                </div>
-
-                <p className="text-sm text-white/58">
-                  Manage the shared tag list here. Trades can only select from this saved set.
-                </p>
-
-                {!!tags.length && (
-                  <div className="ui-panel flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between">
-                    <div className="flex flex-wrap items-center gap-2 text-sm text-white/62">
-                      <span>{selectedTagIds.length} selected</span>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedTagIds(tags.map((tag) => tag.id))}
-                        className="ui-chip"
-                      >
-                        Select all
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedTagIds([])}
-                        className="ui-chip"
-                        disabled={selectedTagIds.length === 0}
-                      >
-                        Clear
-                      </button>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleBulkDeleteTags}
-                      disabled={selectedTagIds.length === 0 || bulkDeletingTags}
-                      className="ui-button-danger px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {bulkDeletingTags ? "Deleting..." : `Delete Selected${selectedTagIds.length ? ` (${selectedTagIds.length})` : ""}`}
-                    </button>
-                  </div>
-                )}
-
-                {loading ? (
-                  <LoadingState label="Loading tags..." className="min-h-[180px]" />
-                ) : tags.length === 0 ? (
-                  <EmptyState
-                    title="No saved tags yet"
-                    description="Create a few reusable tags here and they will be available from each trade."
-                  />
-                ) : (
-                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    {tags.map((tag) => (
-                      <div
-                        key={tag.id}
-                        className={`ui-panel flex items-center justify-between gap-3 rounded-[6px] px-4 py-3 transition ${
-                          selectedTagIds.includes(tag.id)
-                            ? "border-[var(--line)] bg-[#1f1f1f]"
-                            : ""
-                        }`}
-                      >
-                        <label className="flex min-w-0 flex-1 items-center gap-3">
-                          <input
-                            type="checkbox"
-                            checked={selectedTagIds.includes(tag.id)}
-                            onChange={() => toggleTagSelection(tag.id)}
-                            className="h-4 w-4 rounded border border-[var(--line-strong)] bg-transparent accent-[var(--accent)]"
-                          />
-                          <span className="truncate text-sm text-white/82">{tag.name}</span>
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteTag(tag)}
-                          disabled={deletingId === tag.id || bulkDeletingTags}
-                          className="ui-chip text-coral disabled:opacity-50"
-                        >
-                          {deletingId === tag.id ? "..." : "Delete"}
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </Card>
-          ) : activeSection === "strategies" ? (
-            <Card title="STRATEGIES">
-              <div className="space-y-5">
-                <div className="flex flex-col gap-3 lg:flex-row">
-                  <input
-                    value={newStrategy}
-                    onChange={(event) => setNewStrategy(event.target.value)}
-                    placeholder="Add a new strategy"
-                    className="ui-input"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleCreateStrategy}
-                    disabled={savingStrategy || !newStrategy.trim()}
-                    className="ui-button-solid whitespace-nowrap px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {savingStrategy ? "Saving..." : "Add Strategy"}
-                  </button>
-                </div>
-
-                <p className="text-sm text-white/58">
-                  Manage the shared strategy list here. Trades can only select from this saved set.
-                </p>
-
-                {!!strategies.length && (
-                  <div className="ui-panel flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between">
-                    <div className="flex flex-wrap items-center gap-2 text-sm text-white/62">
-                      <span>{selectedStrategyIds.length} selected</span>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedStrategyIds(strategies.map((strategy) => strategy.id))}
-                        className="ui-chip"
-                      >
-                        Select all
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedStrategyIds([])}
-                        className="ui-chip"
-                        disabled={selectedStrategyIds.length === 0}
-                      >
-                        Clear
-                      </button>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleBulkDeleteStrategies}
-                      disabled={selectedStrategyIds.length === 0 || bulkDeletingStrategies}
-                      className="ui-button-danger px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {bulkDeletingStrategies
-                        ? "Deleting..."
-                        : `Delete Selected${selectedStrategyIds.length ? ` (${selectedStrategyIds.length})` : ""}`}
-                    </button>
-                  </div>
-                )}
-
-                {loading ? (
-                  <LoadingState label="Loading strategies..." className="min-h-[180px]" />
-                ) : strategies.length === 0 ? (
-                  <EmptyState
-                    title="No saved strategies yet"
-                    description="Create reusable strategies here and they will be available from each trade."
-                  />
-                ) : (
-                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    {strategies.map((strategy) => (
-                      <div
-                        key={strategy.id}
-                        className={`ui-panel flex items-center justify-between gap-3 rounded-[6px] px-4 py-3 transition ${
-                          selectedStrategyIds.includes(strategy.id)
-                            ? "border-[var(--line)] bg-[#1f1f1f]"
-                            : ""
-                        }`}
-                      >
-                        <label className="flex min-w-0 flex-1 items-center gap-3">
-                          <input
-                            type="checkbox"
-                            checked={selectedStrategyIds.includes(strategy.id)}
-                            onChange={() => toggleStrategySelection(strategy.id)}
-                            className="h-4 w-4 rounded border border-[var(--line-strong)] bg-transparent accent-[var(--accent)]"
-                          />
-                          <span className="truncate text-sm text-white/82">{strategy.name}</span>
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteStrategy(strategy)}
-                          disabled={deletingStrategyId === strategy.id || bulkDeletingStrategies}
-                          className="ui-chip text-coral disabled:opacity-50"
-                        >
-                          {deletingStrategyId === strategy.id ? "..." : "Delete"}
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </Card>
-          ) : (
+          {activeSection === "library" ? (
             <div className="space-y-6">
-              <Card title="COMMISSIONS">
+              <Card title="TAGS">
+                <div className="space-y-5">
+                  <div className="flex flex-col gap-3 lg:flex-row">
+                    <input
+                      value={newTag}
+                      onChange={(event) => setNewTag(event.target.value)}
+                      placeholder="Add a new tag"
+                      className="ui-input"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCreateTag}
+                      disabled={savingTag || !newTag.trim()}
+                      className="ui-button-solid whitespace-nowrap px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {savingTag ? "Saving..." : "Add Tag"}
+                    </button>
+                  </div>
+
+                  <p className="text-sm text-white/58">
+                    Manage the shared tag list here. Trades can only select from this saved set.
+                  </p>
+
+                  {!!tags.length && (
+                    <div className="ui-panel flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between">
+                      <div className="flex flex-wrap items-center gap-2 text-sm text-white/62">
+                        <span>{selectedTagIds.length} selected</span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedTagIds(tags.map((tag) => tag.id))}
+                          className="ui-chip"
+                        >
+                          Select all
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedTagIds([])}
+                          className="ui-chip"
+                          disabled={selectedTagIds.length === 0}
+                        >
+                          Clear
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleBulkDeleteTags}
+                        disabled={selectedTagIds.length === 0 || bulkDeletingTags}
+                        className="ui-button-danger px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {bulkDeletingTags ? "Deleting..." : `Delete Selected${selectedTagIds.length ? ` (${selectedTagIds.length})` : ""}`}
+                      </button>
+                    </div>
+                  )}
+
+                  {loading ? (
+                    <LoadingState label="Loading tags..." className="min-h-[180px]" />
+                  ) : tags.length === 0 ? (
+                    <EmptyState
+                      title="No saved tags yet"
+                      description="Create a few reusable tags here and they will be available from each trade."
+                    />
+                  ) : (
+                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                      {tags.map((tag) => (
+                        <div
+                          key={tag.id}
+                          className={`ui-panel flex items-center justify-between gap-3 rounded-[6px] px-4 py-3 transition ${
+                            selectedTagIds.includes(tag.id)
+                              ? "border-[var(--line)] bg-[#1f1f1f]"
+                              : ""
+                          }`}
+                        >
+                          <label className="flex min-w-0 flex-1 items-center gap-3">
+                            <input
+                              type="checkbox"
+                              checked={selectedTagIds.includes(tag.id)}
+                              onChange={() => toggleTagSelection(tag.id)}
+                              className="h-4 w-4 rounded border border-[var(--line-strong)] bg-transparent accent-[var(--accent)]"
+                            />
+                            <span className="truncate text-sm text-white/82">{tag.name}</span>
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteTag(tag)}
+                            disabled={deletingId === tag.id || bulkDeletingTags}
+                            className="ui-chip text-coral disabled:opacity-50"
+                          >
+                            {deletingId === tag.id ? "..." : "Delete"}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Card>
+
+              <Card title="STRATEGIES">
+                <div className="space-y-5">
+                  <div className="flex flex-col gap-3 lg:flex-row">
+                    <input
+                      value={newStrategy}
+                      onChange={(event) => setNewStrategy(event.target.value)}
+                      placeholder="Add a new strategy"
+                      className="ui-input"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCreateStrategy}
+                      disabled={savingStrategy || !newStrategy.trim()}
+                      className="ui-button-solid whitespace-nowrap px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {savingStrategy ? "Saving..." : "Add Strategy"}
+                    </button>
+                  </div>
+
+                  <p className="text-sm text-white/58">
+                    Manage the shared strategy list here. Trades can only select from this saved set.
+                  </p>
+
+                  {!!strategies.length && (
+                    <div className="ui-panel flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between">
+                      <div className="flex flex-wrap items-center gap-2 text-sm text-white/62">
+                        <span>{selectedStrategyIds.length} selected</span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedStrategyIds(strategies.map((strategy) => strategy.id))}
+                          className="ui-chip"
+                        >
+                          Select all
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedStrategyIds([])}
+                          className="ui-chip"
+                          disabled={selectedStrategyIds.length === 0}
+                        >
+                          Clear
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleBulkDeleteStrategies}
+                        disabled={selectedStrategyIds.length === 0 || bulkDeletingStrategies}
+                        className="ui-button-danger px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {bulkDeletingStrategies
+                          ? "Deleting..."
+                          : `Delete Selected${selectedStrategyIds.length ? ` (${selectedStrategyIds.length})` : ""}`}
+                      </button>
+                    </div>
+                  )}
+
+                  {loading ? (
+                    <LoadingState label="Loading strategies..." className="min-h-[180px]" />
+                  ) : strategies.length === 0 ? (
+                    <EmptyState
+                      title="No saved strategies yet"
+                      description="Create reusable strategies here and they will be available from each trade."
+                    />
+                  ) : (
+                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                      {strategies.map((strategy) => (
+                        <div
+                          key={strategy.id}
+                          className={`ui-panel flex items-center justify-between gap-3 rounded-[6px] px-4 py-3 transition ${
+                            selectedStrategyIds.includes(strategy.id)
+                              ? "border-[var(--line)] bg-[#1f1f1f]"
+                              : ""
+                          }`}
+                        >
+                          <label className="flex min-w-0 flex-1 items-center gap-3">
+                            <input
+                              type="checkbox"
+                              checked={selectedStrategyIds.includes(strategy.id)}
+                              onChange={() => toggleStrategySelection(strategy.id)}
+                              className="h-4 w-4 rounded border border-[var(--line-strong)] bg-transparent accent-[var(--accent)]"
+                            />
+                            <span className="truncate text-sm text-white/82">{strategy.name}</span>
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteStrategy(strategy)}
+                            disabled={deletingStrategyId === strategy.id || bulkDeletingStrategies}
+                            className="ui-chip text-coral disabled:opacity-50"
+                          >
+                            {deletingStrategyId === strategy.id ? "..." : "Delete"}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </div>
+          ) : activeSection === "costs" ? (
+            <Card title="TRADE COSTS">
                 <div className="space-y-5">
                   <p className="text-sm text-white/58">
                     Set default fallback trade costs. These are used whenever a trade does not already contain explicit fees from imports or manual entry.
@@ -646,8 +647,8 @@ function SettingsPage() {
                   </div>
                 </div>
               </Card>
-
-              <Card title="TRADE DATA">
+          ) : (
+              <Card title="WORKSPACE DATA">
                 <div className="space-y-5">
                   <p className="text-sm text-white/58">
                     Permanently remove all trades from your workspace. This action cannot be undone.
@@ -663,7 +664,6 @@ function SettingsPage() {
                   </button>
                 </div>
               </Card>
-            </div>
           )}
         </div>
       </Card>
