@@ -30,6 +30,8 @@ const PAGE_SIZE = 5;
 const JOURNAL_TIMELINE_PADDING_SECONDS = 2 * 60 * 60;
 const DAY_START_SECONDS = 0;
 const DAY_END_SECONDS = 24 * 60 * 60 - 1;
+const EMPTY_DAY_TIMELINE_START_SECONDS = 4 * 60 * 60;
+const EMPTY_DAY_TIMELINE_END_SECONDS = 20 * 60 * 60;
 
 function getDayKey(value) {
   const formatted = formatDateTimeLocal(value);
@@ -142,7 +144,215 @@ function matchesTradeFilters(trade, filters) {
   return true;
 }
 
-function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees) {
+function matchesJournalDayRange(dayKey, filters) {
+  if (!dayKey) {
+    return false;
+  }
+
+  if (filters.from && dayKey < filters.from) {
+    return false;
+  }
+
+  if (filters.to && dayKey > filters.to) {
+    return false;
+  }
+
+  return true;
+}
+
+function buildJournalVisualization(dayKey, trades) {
+  const sortedTrades = [...trades].sort(
+    (left, right) => new Date(left.entryDate).getTime() - new Date(right.entryDate).getTime()
+  );
+
+  if (sortedTrades.length === 0) {
+    const timelineStart = EMPTY_DAY_TIMELINE_START_SECONDS;
+    const timelineEnd = EMPTY_DAY_TIMELINE_END_SECONDS;
+
+    return {
+      trades: sortedTrades,
+      timelineStart,
+      timelineEnd,
+      timeTicks: buildJournalTimeTicks(timelineStart, timelineEnd),
+      chartData: [
+        {
+          timeValue: timelineStart,
+          timeLabel: formatSessionAxisTime(timelineStart),
+          cumulative: 0,
+          positiveCumulative: 0,
+          negativeCumulative: null,
+          isTrade: false
+        },
+        {
+          timeValue: timelineEnd,
+          timeLabel: formatSessionAxisTime(timelineEnd),
+          cumulative: 0,
+          positiveCumulative: 0,
+          negativeCumulative: null,
+          isTrade: false
+        }
+      ],
+      chartSegments: [
+        {
+          key: `${dayKey}-empty`,
+          color: "#3dff9a",
+          data: [
+            {
+              timeValue: timelineStart,
+              segmentValue: 0
+            },
+            {
+              timeValue: timelineEnd,
+              segmentValue: 0
+            }
+          ]
+        }
+      ]
+    };
+  }
+
+  let cumulative = 0;
+  const tradeTimeValues = sortedTrades.map((trade) => getSessionSeconds(trade.entryDate));
+  const firstTradeTime = tradeTimeValues[0];
+  const lastTradeTime = tradeTimeValues[tradeTimeValues.length - 1];
+  const timelineStart = Math.max(DAY_START_SECONDS, firstTradeTime - JOURNAL_TIMELINE_PADDING_SECONDS);
+  const timelineEnd = Math.min(DAY_END_SECONDS, lastTradeTime + JOURNAL_TIMELINE_PADDING_SECONDS);
+  const timeTicks = buildJournalTimeTicks(timelineStart, timelineEnd);
+
+  const chartData = [
+    {
+      timeValue: timelineStart,
+      timeLabel: formatSessionAxisTime(timelineStart),
+      cumulative: 0,
+      isTrade: false
+    }
+  ];
+
+  for (let tradeIndex = 0; tradeIndex < sortedTrades.length; tradeIndex += 1) {
+    const trade = sortedTrades[tradeIndex];
+    const tradeTimeSeconds = tradeTimeValues[tradeIndex];
+
+    chartData.push({
+      timeValue: tradeTimeSeconds,
+      timeLabel: trade.entryTimeLabel,
+      cumulative: Number(cumulative.toFixed(2)),
+      isTrade: false
+    });
+
+    cumulative += trade.dayPnl;
+
+    chartData.push({
+      timeValue: Math.min(tradeTimeSeconds + 1, timelineEnd),
+      timeLabel: trade.entryTimeLabel,
+      cumulative: Number(cumulative.toFixed(2)),
+      isTrade: true
+    });
+  }
+
+  chartData.push({
+    timeValue: timelineEnd,
+    timeLabel: formatSessionAxisTime(timelineEnd),
+    cumulative: Number(cumulative.toFixed(2)),
+    isTrade: false
+  });
+
+  const chartSeries = chartData.map((point) => ({
+    ...point,
+    positiveCumulative: point.cumulative >= 0 ? point.cumulative : null,
+    negativeCumulative: point.cumulative < 0 ? point.cumulative : null
+  }));
+
+  const chartSegments = [];
+
+  for (let index = 1; index < chartSeries.length; index += 1) {
+    const previousPoint = chartSeries[index - 1];
+    const currentPoint = chartSeries[index];
+    const previousColor = previousPoint.cumulative < 0 ? "#ff5f7a" : "#3dff9a";
+    const currentColor = currentPoint.cumulative < 0 ? "#ff5f7a" : "#3dff9a";
+
+    chartSegments.push({
+      key: `${dayKey}-horizontal-${index}`,
+      color: previousColor,
+      data: [
+        {
+          timeValue: previousPoint.timeValue,
+          segmentValue: previousPoint.cumulative
+        },
+        {
+          timeValue: currentPoint.timeValue,
+          segmentValue: previousPoint.cumulative
+        }
+      ]
+    });
+
+    if (previousPoint.cumulative === currentPoint.cumulative) {
+      continue;
+    }
+
+    const crossedZero =
+      (previousPoint.cumulative < 0 && currentPoint.cumulative >= 0) ||
+      (previousPoint.cumulative >= 0 && currentPoint.cumulative < 0);
+
+    if (crossedZero) {
+      chartSegments.push({
+        key: `${dayKey}-vertical-${index}-from`,
+        color: previousColor,
+        data: [
+          {
+            timeValue: currentPoint.timeValue,
+            segmentValue: previousPoint.cumulative
+          },
+          {
+            timeValue: currentPoint.timeValue,
+            segmentValue: 0
+          }
+        ]
+      });
+
+      chartSegments.push({
+        key: `${dayKey}-vertical-${index}-to`,
+        color: currentColor,
+        data: [
+          {
+            timeValue: currentPoint.timeValue,
+            segmentValue: 0
+          },
+          {
+            timeValue: currentPoint.timeValue,
+            segmentValue: currentPoint.cumulative
+          }
+        ]
+      });
+      continue;
+    }
+
+    chartSegments.push({
+      key: `${dayKey}-vertical-${index}`,
+      color: currentColor,
+      data: [
+        {
+          timeValue: currentPoint.timeValue,
+          segmentValue: previousPoint.cumulative
+        },
+        {
+          timeValue: currentPoint.timeValue,
+          segmentValue: currentPoint.cumulative
+        }
+      ]
+    });
+  }
+
+  return {
+    trades: sortedTrades,
+    chartData: chartSeries,
+    chartSegments,
+    timelineStart,
+    timelineEnd,
+    timeTicks
+  };
+}
+
+function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees, includeDayKeys = []) {
   const grouped = new Map();
 
   for (const trade of trades) {
@@ -188,150 +398,36 @@ function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees) {
     grouped.set(dayKey, existing);
   }
 
+  for (const dayKey of includeDayKeys) {
+    if (!dayKey || grouped.has(dayKey)) {
+      continue;
+    }
+
+    grouped.set(dayKey, {
+      dayKey,
+      label: formatDayLabel(dayKey),
+      trades: [],
+      totalTrades: 0,
+      totalVolume: 0,
+      totalFees: 0,
+      totalPnl: 0,
+      wins: 0,
+      losses: 0
+    });
+  }
+
   return [...grouped.values()]
     .map((day) => {
-      const sortedTrades = [...day.trades].sort(
-        (left, right) => new Date(left.entryDate).getTime() - new Date(right.entryDate).getTime()
-      );
-      let cumulative = 0;
-      const tradeTimeValues = sortedTrades.map((trade) => getSessionSeconds(trade.entryDate));
-      const firstTradeTime = tradeTimeValues[0] ?? 9.5 * 60 * 60;
-      const lastTradeTime = tradeTimeValues[tradeTimeValues.length - 1] ?? firstTradeTime;
-      const timelineStart = Math.max(DAY_START_SECONDS, firstTradeTime - JOURNAL_TIMELINE_PADDING_SECONDS);
-      const timelineEnd = Math.min(DAY_END_SECONDS, lastTradeTime + JOURNAL_TIMELINE_PADDING_SECONDS);
-      const timeTicks = buildJournalTimeTicks(timelineStart, timelineEnd);
-
-      const chartData = [
-        {
-          timeValue: timelineStart,
-          timeLabel: formatSessionAxisTime(timelineStart),
-          cumulative: 0,
-          isTrade: false
-        }
-      ];
-
-      for (let tradeIndex = 0; tradeIndex < sortedTrades.length; tradeIndex += 1) {
-        const trade = sortedTrades[tradeIndex];
-        const tradeTimeSeconds = tradeTimeValues[tradeIndex];
-
-        chartData.push({
-          timeValue: tradeTimeSeconds,
-          timeLabel: trade.entryTimeLabel,
-          cumulative: Number(cumulative.toFixed(2)),
-          isTrade: false
-        });
-
-        cumulative += trade.dayPnl;
-
-        chartData.push({
-          timeValue: Math.min(tradeTimeSeconds + 1, timelineEnd),
-          timeLabel: trade.entryTimeLabel,
-          cumulative: Number(cumulative.toFixed(2)),
-          isTrade: true
-        });
-      }
-
-      chartData.push({
-        timeValue: timelineEnd,
-        timeLabel: formatSessionAxisTime(timelineEnd),
-        cumulative: Number(cumulative.toFixed(2)),
-        isTrade: false
-      });
-
-      const chartSeries = chartData.map((point) => ({
-        ...point,
-        positiveCumulative: point.cumulative >= 0 ? point.cumulative : null,
-        negativeCumulative: point.cumulative < 0 ? point.cumulative : null
-      }));
-
-      const chartSegments = [];
-
-      for (let index = 1; index < chartSeries.length; index += 1) {
-        const previousPoint = chartSeries[index - 1];
-        const currentPoint = chartSeries[index];
-        const previousColor = previousPoint.cumulative < 0 ? "#ff5f7a" : "#3dff9a";
-        const currentColor = currentPoint.cumulative < 0 ? "#ff5f7a" : "#3dff9a";
-
-        chartSegments.push({
-          key: `${day.dayKey}-horizontal-${index}`,
-          color: previousColor,
-          data: [
-            {
-              timeValue: previousPoint.timeValue,
-              segmentValue: previousPoint.cumulative
-            },
-            {
-              timeValue: currentPoint.timeValue,
-              segmentValue: previousPoint.cumulative
-            }
-          ]
-        });
-
-        if (previousPoint.cumulative === currentPoint.cumulative) {
-          continue;
-        }
-
-        const crossedZero =
-          (previousPoint.cumulative < 0 && currentPoint.cumulative >= 0) ||
-          (previousPoint.cumulative >= 0 && currentPoint.cumulative < 0);
-
-        if (crossedZero) {
-          chartSegments.push({
-            key: `${day.dayKey}-vertical-${index}-from`,
-            color: previousColor,
-            data: [
-              {
-                timeValue: currentPoint.timeValue,
-                segmentValue: previousPoint.cumulative
-              },
-              {
-                timeValue: currentPoint.timeValue,
-                segmentValue: 0
-              }
-            ]
-          });
-
-          chartSegments.push({
-            key: `${day.dayKey}-vertical-${index}-to`,
-            color: currentColor,
-            data: [
-              {
-                timeValue: currentPoint.timeValue,
-                segmentValue: 0
-              },
-              {
-                timeValue: currentPoint.timeValue,
-                segmentValue: currentPoint.cumulative
-              }
-            ]
-          });
-          continue;
-        }
-
-        chartSegments.push({
-          key: `${day.dayKey}-vertical-${index}`,
-          color: currentColor,
-          data: [
-            {
-              timeValue: currentPoint.timeValue,
-              segmentValue: previousPoint.cumulative
-            },
-            {
-              timeValue: currentPoint.timeValue,
-              segmentValue: currentPoint.cumulative
-            }
-          ]
-        });
-      }
+      const visualization = buildJournalVisualization(day.dayKey, day.trades);
 
       return {
         ...day,
-        trades: sortedTrades,
-        chartData: chartSeries,
-        chartSegments,
-        timelineStart,
-        timelineEnd,
-        timeTicks,
+        trades: visualization.trades,
+        chartData: visualization.chartData,
+        chartSegments: visualization.chartSegments,
+        timelineStart: visualization.timelineStart,
+        timelineEnd: visualization.timelineEnd,
+        timeTicks: visualization.timeTicks,
         totalPnl: Number(day.totalPnl.toFixed(2)),
         totalFees: Number(day.totalFees.toFixed(2)),
         winRate: day.totalTrades ? (day.wins / day.totalTrades) * 100 : 0,
@@ -585,40 +681,48 @@ function JournalDayCard({
                 </tr>
               </thead>
               <tbody>
-                {day.trades.map((trade) => (
-                  <tr
-                    key={trade.id}
-                    className="cursor-pointer border-t border-[var(--line)] bg-[rgba(255,255,255,0.05)] text-white/82 transition hover:bg-white/[0.08]"
-                    onClick={() => onOpenTrade(trade.id)}
-                  >
-                    <td className="px-4 py-3 whitespace-nowrap">{trade.entryTimeLabel}</td>
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-white">{trade.symbol}</div>
-                      {trade.strategy ? <div className="mt-1 text-xs text-white/50">{trade.strategy}</div> : null}
-                    </td>
-                    <td className="px-4 py-3">{Math.round(Number(trade.quantity || 0)).toLocaleString()}</td>
-                    <td className="px-4 py-3">{trade.execCount}</td>
-                    <td className={`px-4 py-3 font-medium ${trade.dayPnl > 0 ? "text-mint" : trade.dayPnl < 0 ? "text-coral" : "text-white/70"}`}>
-                      {formatCurrency(trade.dayPnl)}
-                    </td>
-                    <td className="px-4 py-3 text-white/54">
-                      {trade.strategy ? trade.strategy : <span className="text-white/26">—</span>}
-                    </td>
-                    <td className="px-4 py-3">
-                      {trade.parsedTags.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {trade.parsedTags.map((tag) => (
-                            <span key={`${trade.id}-${tag}`} className="ui-chip">
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-white/26">—</span>
-                      )}
+                {day.trades.length > 0 ? (
+                  day.trades.map((trade) => (
+                    <tr
+                      key={trade.id}
+                      className="cursor-pointer border-t border-[var(--line)] bg-[rgba(255,255,255,0.05)] text-white/82 transition hover:bg-white/[0.08]"
+                      onClick={() => onOpenTrade(trade.id)}
+                    >
+                      <td className="px-4 py-3 whitespace-nowrap">{trade.entryTimeLabel}</td>
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-white">{trade.symbol}</div>
+                        {trade.strategy ? <div className="mt-1 text-xs text-white/50">{trade.strategy}</div> : null}
+                      </td>
+                      <td className="px-4 py-3">{Math.round(Number(trade.quantity || 0)).toLocaleString()}</td>
+                      <td className="px-4 py-3">{trade.execCount}</td>
+                      <td className={`px-4 py-3 font-medium ${trade.dayPnl > 0 ? "text-mint" : trade.dayPnl < 0 ? "text-coral" : "text-white/70"}`}>
+                        {formatCurrency(trade.dayPnl)}
+                      </td>
+                      <td className="px-4 py-3 text-white/54">
+                        {trade.strategy ? trade.strategy : <span className="text-white/26">—</span>}
+                      </td>
+                      <td className="px-4 py-3">
+                        {trade.parsedTags.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {trade.parsedTags.map((tag) => (
+                              <span key={`${trade.id}-${tag}`} className="ui-chip">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-white/26">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr className="border-t border-[var(--line)] bg-[rgba(255,255,255,0.05)]">
+                    <td colSpan={7} className="px-4 py-5 text-sm text-white/40">
+                      No trades logged for this day.
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
@@ -708,13 +812,44 @@ function JournalPage() {
 
   const journalDays = useMemo(() => {
     const notesByDay = new Map(journalDaysResource.data.map((day) => [day.dayKey, day]));
+    const includeDayKeys = new Set();
+    const hasTradeSpecificFilters = Boolean(
+      filters.symbol || filters.tag || filters.strategy || filters.side
+    );
+
+    if (!hasTradeSpecificFilters) {
+      for (const day of journalDaysResource.data) {
+        if (matchesJournalDayRange(day.dayKey, filters)) {
+          includeDayKeys.add(day.dayKey);
+        }
+      }
+
+      const todayKey = getDayKey(new Date());
+
+      if (matchesJournalDayRange(todayKey, filters)) {
+        includeDayKeys.add(todayKey);
+      }
+    }
+
     return buildDailyJournal(
       filteredTrades,
       notesByDay,
       user?.defaultCommission ?? 0,
-      user?.defaultFees ?? 0
+      user?.defaultFees ?? 0,
+      [...includeDayKeys]
     );
-  }, [filteredTrades, journalDaysResource.data, user?.defaultCommission, user?.defaultFees]);
+  }, [
+    filteredTrades,
+    journalDaysResource.data,
+    user?.defaultCommission,
+    user?.defaultFees,
+    filters.symbol,
+    filters.tag,
+    filters.strategy,
+    filters.side,
+    filters.from,
+    filters.to
+  ]);
 
   const totalPages = Math.max(1, Math.ceil(journalDays.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
