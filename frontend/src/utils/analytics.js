@@ -60,6 +60,29 @@ function getHoldMinutes(trade, entryDate) {
   return Math.max(0, (exitDate.getTime() - entryDate.getTime()) / 60000);
 }
 
+function getTrimmedAverage(values) {
+  const numericValues = values
+    .map((value) => asNumber(value))
+    .filter((value) => Number.isFinite(value));
+
+  if (numericValues.length === 0) {
+    return 0;
+  }
+
+  if (numericValues.length < 3) {
+    return numericValues.reduce((sum, value) => sum + value, 0) / numericValues.length;
+  }
+
+  const sortedValues = [...numericValues].sort((a, b) => a - b);
+  const trimmedValues = sortedValues.slice(1, -1);
+
+  if (trimmedValues.length === 0) {
+    return numericValues.reduce((sum, value) => sum + value, 0) / numericValues.length;
+  }
+
+  return trimmedValues.reduce((sum, value) => sum + value, 0) / trimmedValues.length;
+}
+
 function getTimeBucket(date) {
   const hours = Number(getMarketDateParts(date).hour);
 
@@ -225,10 +248,9 @@ export function buildAnalytics(trades, options = {}) {
   let totalNegativePerShare = 0;
   let largestWin = 0;
   let largestLoss = 0;
-  let winningHoldMinutesTotal = 0;
-  let losingHoldMinutesTotal = 0;
-  let winningHoldCount = 0;
-  let losingHoldCount = 0;
+  const allHoldMinutes = [];
+  const winningHoldMinutes = [];
+  const losingHoldMinutes = [];
   let currentWinStreak = 0;
   let currentLossStreak = 0;
   let longestWinStreak = 0;
@@ -244,13 +266,14 @@ export function buildAnalytics(trades, options = {}) {
     const weekday = getMarketDateParts(entryDate).weekday;
     const timeBucket = getTimeBucket(entryDate);
 
+    allHoldMinutes.push(holdMinutes);
+
     if (pnl > 0) {
       wins += 1;
       totalWin += pnl;
       totalPositivePerShare += perSharePnl;
       largestWin = Math.max(largestWin, pnl);
-      winningHoldMinutesTotal += holdMinutes;
-      winningHoldCount += 1;
+      winningHoldMinutes.push(holdMinutes);
       currentWinStreak += 1;
       currentLossStreak = 0;
       longestWinStreak = Math.max(longestWinStreak, currentWinStreak);
@@ -259,8 +282,7 @@ export function buildAnalytics(trades, options = {}) {
       totalLoss += Math.abs(pnl);
       totalNegativePerShare += Math.abs(perSharePnl);
       largestLoss = Math.min(largestLoss, pnl);
-      losingHoldMinutesTotal += holdMinutes;
-      losingHoldCount += 1;
+      losingHoldMinutes.push(holdMinutes);
       currentLossStreak += 1;
       currentWinStreak = 0;
       longestLossStreak = Math.max(longestLossStreak, currentLossStreak);
@@ -318,9 +340,9 @@ export function buildAnalytics(trades, options = {}) {
   const profitFactor = totalLoss ? totalWin / totalLoss : totalWin > 0 ? totalWin : 0;
   const averageGainPerShare = wins ? totalPositivePerShare / wins : 0;
   const averageLossPerShare = losses ? totalNegativePerShare / losses : 0;
-  const averageHoldMinutes = tradeCount
-    ? processedTrades.reduce((sum, item) => sum + item.holdMinutes, 0) / tradeCount
-    : 0;
+  const averageHoldMinutes = getTrimmedAverage(allHoldMinutes);
+  const averageWinningHoldMinutes = getTrimmedAverage(winningHoldMinutes);
+  const averageLosingHoldMinutes = getTrimmedAverage(losingHoldMinutes);
 
   const latestTradeDate = processedTrades.length
     ? new Date(processedTrades[processedTrades.length - 1].entryDate)
@@ -422,8 +444,8 @@ export function buildAnalytics(trades, options = {}) {
       largestWin,
       largestLoss,
       averageHoldMinutes,
-      averageWinningHoldMinutes: winningHoldCount ? winningHoldMinutesTotal / winningHoldCount : 0,
-      averageLosingHoldMinutes: losingHoldCount ? losingHoldMinutesTotal / losingHoldCount : 0,
+      averageWinningHoldMinutes,
+      averageLosingHoldMinutes,
       averageGainPerShare,
       averageLossPerShare,
       maxDrawdown,

@@ -317,6 +317,29 @@ function calculateStandardDeviation(values) {
   return Math.sqrt(variance);
 }
 
+function calculateTrimmedAverage(values) {
+  const numericValues = values
+    .map((value) => asNumber(value))
+    .filter((value) => Number.isFinite(value));
+
+  if (numericValues.length === 0) {
+    return 0;
+  }
+
+  if (numericValues.length < 3) {
+    return numericValues.reduce((sum, value) => sum + value, 0) / numericValues.length;
+  }
+
+  const sortedValues = [...numericValues].sort((a, b) => a - b);
+  const trimmedValues = sortedValues.slice(1, -1);
+
+  if (trimmedValues.length === 0) {
+    return numericValues.reduce((sum, value) => sum + value, 0) / numericValues.length;
+  }
+
+  return trimmedValues.reduce((sum, value) => sum + value, 0) / trimmedValues.length;
+}
+
 function combination(n, k) {
   if (k < 0 || k > n) {
     return 0;
@@ -499,9 +522,9 @@ function summarizeTrades(trades, dayCountOverride, options = {}) {
   let totalScratch = 0;
   let totalWinningPnl = 0;
   let totalLosingPnl = 0;
-  let totalWinningHold = 0;
-  let totalLosingHold = 0;
-  let totalScratchHold = 0;
+  const winningHoldValues = [];
+  const losingHoldValues = [];
+  const scratchHoldValues = [];
   let winningTrades = 0;
   let losingTrades = 0;
   let scratchTrades = 0;
@@ -539,7 +562,7 @@ function summarizeTrades(trades, dayCountOverride, options = {}) {
     if (pnl > 0) {
       totalWins += pnl;
       totalWinningPnl += pnl;
-      totalWinningHold += holdMinutes;
+      winningHoldValues.push(holdMinutes);
       winningTrades += 1;
       currentWinStreak += 1;
       currentLossStreak = 0;
@@ -547,14 +570,14 @@ function summarizeTrades(trades, dayCountOverride, options = {}) {
     } else if (pnl < 0) {
       totalLosses += Math.abs(pnl);
       totalLosingPnl += pnl;
-      totalLosingHold += holdMinutes;
+      losingHoldValues.push(holdMinutes);
       losingTrades += 1;
       currentLossStreak += 1;
       currentWinStreak = 0;
       maxLossStreak = Math.max(maxLossStreak, currentLossStreak);
     } else {
       totalScratch += 1;
-      totalScratchHold += holdMinutes;
+      scratchHoldValues.push(holdMinutes);
       scratchTrades += 1;
       currentWinStreak = 0;
       currentLossStreak = 0;
@@ -583,9 +606,9 @@ function summarizeTrades(trades, dayCountOverride, options = {}) {
     averagePerShareGainLoss: totalTrades ? totalPerShare / totalTrades : 0,
     averageWinningTrade: winningTrades ? totalWinningPnl / winningTrades : 0,
     averageLosingTrade: losingTrades ? totalLosingPnl / losingTrades : 0,
-    averageScratchHold: scratchTrades ? totalScratchHold / scratchTrades : 0,
-    averageWinningHold: winningTrades ? totalWinningHold / winningTrades : 0,
-    averageLosingHold: losingTrades ? totalLosingHold / losingTrades : 0,
+    averageScratchHold: calculateTrimmedAverage(scratchHoldValues),
+    averageWinningHold: calculateTrimmedAverage(winningHoldValues),
+    averageLosingHold: calculateTrimmedAverage(losingHoldValues),
     tradePnlStdDev: calculateStandardDeviation(pnlSeries),
     profitFactor: totalLosses ? totalWins / totalLosses : 0,
     largestGain: largestGain === Number.NEGATIVE_INFINITY ? 0 : largestGain,
