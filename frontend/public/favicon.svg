@@ -1,27 +1,11 @@
 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="64" height="64" rx="18" fill="#0D1320"/>
-  <rect x="5" y="5" width="54" height="54" rx="13" stroke="url(#frame)" stroke-opacity="0.5" stroke-width="2"/>
-  <path d="M16 45.5H48" stroke="#2B3447" stroke-width="3" stroke-linecap="round"/>
-  <path d="M20 39V27" stroke="url(#bars)" stroke-width="5" stroke-linecap="round"/>
-  <path d="M30 39V20" stroke="url(#bars)" stroke-width="5" stroke-linecap="round"/>
-  <path d="M40 39V31" stroke="url(#bars)" stroke-width="5" stroke-linecap="round"/>
-  <path d="M18 22.5L26.5 28L35 23L46 17.5" stroke="url(#line)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="18" cy="22.5" r="3" fill="#67A8FF"/>
-  <circle cx="26.5" cy="28" r="3" fill="#89BDFF"/>
-  <circle cx="35" cy="23" r="3" fill="#38D996"/>
-  <circle cx="46" cy="17.5" r="3" fill="#7EF3C2"/>
-  <defs>
-    <linearGradient id="bars" x1="20" y1="20" x2="40" y2="39" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#89BDFF"/>
-      <stop offset="1" stop-color="#38D996"/>
-    </linearGradient>
-    <linearGradient id="line" x1="18" y1="17.5" x2="46" y2="28" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#67A8FF"/>
-      <stop offset="1" stop-color="#38D996"/>
-    </linearGradient>
-    <linearGradient id="frame" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#67A8FF"/>
-      <stop offset="1" stop-color="#38D996"/>
-    </linearGradient>
-  </defs>
+  <rect width="64" height="64" rx="14" fill="#000000"/>
+  <rect x="4.5" y="4.5" width="55" height="55" rx="9.5" stroke="#1F1F1F"/>
+  <path d="M20 17H44" stroke="#EDEDED" stroke-width="4.5" stroke-linecap="round"/>
+  <path d="M32 17V47" stroke="#EDEDED" stroke-width="4.5" stroke-linecap="round"/>
+  <path d="M18 26.5H46" stroke="rgba(255,255,255,0.16)" stroke-width="2" stroke-linecap="round"/>
+  <path d="M19 39.5C22.2 39.5 23.8 34.2 27.2 34.2C30.1 34.2 31 37.5 33.8 37.5C37.4 37.5 39.2 24.5 43.6 24.5H45" stroke="#67A8FF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="27.2" cy="34.2" r="2.4" fill="#000000" stroke="#67A8FF" stroke-width="1.8"/>
+  <circle cx="33.8" cy="37.5" r="2.4" fill="#000000" stroke="#67A8FF" stroke-width="1.8"/>
+  <circle cx="43.6" cy="24.5" r="2.4" fill="#000000" stroke="#67A8FF" stroke-width="1.8"/>
 </svg>
