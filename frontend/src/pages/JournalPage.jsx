@@ -258,7 +258,7 @@ function JournalDayCard({
   isSaving,
   onOpenTrade
 }) {
-  const positive = day.totalPnl > 0;
+  const positive = day.totalPnl >= 0;
   const negative = day.totalPnl < 0;
   const winRateClass =
     day.winRate < 50 ? "text-coral" : day.winRate <= 65 ? "text-gold" : "text-mint";

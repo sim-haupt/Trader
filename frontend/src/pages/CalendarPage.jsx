@@ -135,7 +135,7 @@ function MonthCard({ month, onOpen }) {
         </button>
       }
     >
-      <div className="grid grid-cols-7 gap-3 text-center">
+      <div className="grid grid-cols-7 gap-1 text-center">
         {weekdayLabels.map((label) => (
           <div key={label} className="ui-title pb-2 text-xs text-mist">
             {label}

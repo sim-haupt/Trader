@@ -137,7 +137,7 @@ function MiniMetric({ label, value, tone = "text-white" }) {
 }
 
 function toneForValue(value) {
-  if (value > 0) {
+  if (value >= 0) {
     return "text-mint";
   }
 
@@ -196,7 +196,7 @@ function getLastSevenDayTone(day) {
     };
   }
 
-  if (day.pnl > 0) {
+  if (day.pnl >= 0) {
     return {
       className:
         "ui-metric-tile rounded-[6px] bg-[linear-gradient(180deg,rgba(61,255,154,0.16),rgba(61,255,154,0.05))] px-4 py-4",
