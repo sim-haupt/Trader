@@ -1759,6 +1759,7 @@ function DrawdownSection({ summary }) {
                 stroke={REPORT_RED}
                 strokeWidth={2.5}
                 fill="url(#reportsDrawdownGradient)"
+                isAnimationActive={false}
               />
             </AreaChart>
           </ResponsiveContainer>

@@ -38,10 +38,30 @@ function getDayKey(value) {
   return formatted ? formatted.slice(0, 10) : "";
 }
 
+function parseDayKey(dayKey) {
+  const match = String(dayKey || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) {
+    return null;
+  }
+
+  const [, year, month, day] = match;
+  return {
+    year: Number(year),
+    month: Number(month),
+    day: Number(day)
+  };
+}
+
 function addDays(dayKey, amount) {
-  const date = new Date(`${dayKey}T00:00:00`);
-  date.setDate(date.getDate() + amount);
-  return formatDateTimeLocal(date)?.slice(0, 10) || dayKey;
+  const parts = parseDayKey(dayKey);
+  if (!parts) {
+    return dayKey;
+  }
+
+  // Use UTC math so "YYYY-MM-DD" always moves forward regardless of local / market timezone.
+  const utc = Date.UTC(parts.year, parts.month - 1, parts.day);
+  const next = new Date(utc + (Number(amount) || 0) * 24 * 60 * 60 * 1000);
+  return next.toISOString().slice(0, 10);
 }
 
 function enumerateDayKeys(startKey, endKey) {
@@ -51,10 +71,19 @@ function enumerateDayKeys(startKey, endKey) {
 
   const keys = [];
   let cursor = startKey;
+  let safety = 0;
 
   while (cursor <= endKey) {
     keys.push(cursor);
-    cursor = addDays(cursor, 1);
+    const next = addDays(cursor, 1);
+    if (next === cursor) {
+      break;
+    }
+    cursor = next;
+    safety += 1;
+    if (safety > 5000) {
+      break;
+    }
   }
 
   return keys;
@@ -836,37 +865,43 @@ function JournalPage() {
     [tradesResource.data, filters]
   );
 
-  const journalDays = useMemo(() => {
-    const notesByDay = new Map(journalDaysResource.data.map((day) => [day.dayKey, day]));
+  const journalDayKeys = useMemo(() => {
     const todayKey = getDayKey(new Date());
     const hasTradeSpecificFilters = Boolean(
       filters.symbol || filters.tag || filters.strategy || filters.side
     );
-    const relevantTradeDayKeys = [...new Set(filteredTrades.map((trade) => getDayKey(trade.entryDate)).filter(Boolean))].sort();
-    const noteDayKeys = journalDaysResource.data
-      .map((day) => day.dayKey)
-      .filter((dayKey) => matchesJournalDayRange(dayKey, filters));
-    const rangeSourceKeys = hasTradeSpecificFilters
-      ? relevantTradeDayKeys
-      : [...new Set([...relevantTradeDayKeys, ...noteDayKeys])];
-    const startKey = filters.from || rangeSourceKeys[0] || todayKey;
-    const endKey = filters.to || [...rangeSourceKeys, todayKey].sort().at(-1) || todayKey;
-    const includeDayKeys = filters.hideNoTradeDays
-      ? relevantTradeDayKeys
-      : enumerateDayKeys(startKey, endKey);
 
-    return buildDailyJournal(
-      filteredTrades,
-      notesByDay,
-      user?.defaultCommission ?? 0,
-      user?.defaultFees ?? 0,
-      [...includeDayKeys]
-    );
+    // If you filter by ticker/tag/strategy/side, default to hiding empty days (matches your request).
+    const hideNoTradeDays = Boolean(filters.hideNoTradeDays || hasTradeSpecificFilters);
+
+    const allTradeDayKeys = tradesResource.data.map((trade) => getDayKey(trade.entryDate)).filter(Boolean);
+    allTradeDayKeys.sort();
+    const earliestTradeDayKey = allTradeDayKeys[0] || todayKey;
+    const latestTradeDayKey = allTradeDayKeys[allTradeDayKeys.length - 1] || todayKey;
+
+    const noteDayKeys = journalDaysResource.data.map((day) => day.dayKey).filter(Boolean);
+    noteDayKeys.sort();
+    const earliestNoteDayKey = noteDayKeys[0] || earliestTradeDayKey;
+    const latestNoteDayKey = noteDayKeys[noteDayKeys.length - 1] || latestTradeDayKey;
+
+    // Default range is: first trade day (or first note day) -> today.
+    const defaultStart = earliestTradeDayKey < earliestNoteDayKey ? earliestTradeDayKey : earliestNoteDayKey;
+    const defaultEnd = latestTradeDayKey > latestNoteDayKey ? latestTradeDayKey : latestNoteDayKey;
+    const startKey = filters.from || defaultStart || todayKey;
+    const endKey = filters.to || (defaultEnd > todayKey ? defaultEnd : todayKey);
+
+    if (hideNoTradeDays) {
+      const tradeKeysInRange = [...new Set(filteredTrades.map((trade) => getDayKey(trade.entryDate)).filter(Boolean))]
+        .filter((dayKey) => matchesJournalDayRange(dayKey, { from: startKey, to: endKey }))
+        .sort((left, right) => right.localeCompare(left));
+      return tradeKeysInRange;
+    }
+
+    return enumerateDayKeys(startKey, endKey).sort((left, right) => right.localeCompare(left));
   }, [
+    tradesResource.data,
     filteredTrades,
     journalDaysResource.data,
-    user?.defaultCommission,
-    user?.defaultFees,
     filters.symbol,
     filters.tag,
     filters.strategy,
@@ -876,13 +911,36 @@ function JournalPage() {
     filters.hideNoTradeDays
   ]);
 
-  const totalPages = Math.max(1, Math.ceil(journalDays.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(journalDayKeys.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
-  const pagedDays = journalDays.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const pagedDayKeys = useMemo(
+    () => journalDayKeys.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [journalDayKeys, currentPage]
+  );
+
+  const pagedDays = useMemo(() => {
+    const notesByDay = new Map(journalDaysResource.data.map((day) => [day.dayKey, day]));
+    const pagedSet = new Set(pagedDayKeys);
+    const tradesForPage = filteredTrades.filter((trade) => pagedSet.has(getDayKey(trade.entryDate)));
+
+    return buildDailyJournal(
+      tradesForPage,
+      notesByDay,
+      user?.defaultCommission ?? 0,
+      user?.defaultFees ?? 0,
+      pagedDayKeys
+    );
+  }, [
+    filteredTrades,
+    journalDaysResource.data,
+    user?.defaultCommission,
+    user?.defaultFees,
+    pagedDayKeys
+  ]);
 
   useEffect(() => {
-    setPage((current) => Math.min(current, Math.max(1, Math.ceil(journalDays.length / PAGE_SIZE))));
-  }, [journalDays.length]);
+    setPage((current) => Math.min(current, Math.max(1, Math.ceil(journalDayKeys.length / PAGE_SIZE))));
+  }, [journalDayKeys.length]);
 
   function updateFilter(key, value) {
     setFilters((current) => ({ ...current, [key]: value }));
@@ -1019,8 +1077,8 @@ function JournalPage() {
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="text-sm text-white/56">
                 Showing {(currentPage - 1) * PAGE_SIZE + 1}-
-                {Math.min(currentPage * PAGE_SIZE, journalDays.length)} of {journalDays.length} trading day
-                {journalDays.length === 1 ? "" : "s"}
+                {Math.min(currentPage * PAGE_SIZE, journalDayKeys.length)} of {journalDayKeys.length} trading day
+                {journalDayKeys.length === 1 ? "" : "s"}
               </div>
               <div className="flex items-center gap-3">
                 <button
