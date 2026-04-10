@@ -38,6 +38,28 @@ function getDayKey(value) {
   return formatted ? formatted.slice(0, 10) : "";
 }
 
+function addDays(dayKey, amount) {
+  const date = new Date(`${dayKey}T00:00:00`);
+  date.setDate(date.getDate() + amount);
+  return formatDateTimeLocal(date)?.slice(0, 10) || dayKey;
+}
+
+function enumerateDayKeys(startKey, endKey) {
+  if (!startKey || !endKey || startKey > endKey) {
+    return [];
+  }
+
+  const keys = [];
+  let cursor = startKey;
+
+  while (cursor <= endKey) {
+    keys.push(cursor);
+    cursor = addDays(cursor, 1);
+  }
+
+  return keys;
+}
+
 function formatDayLabel(dayKey) {
   const date = new Date(`${dayKey}T00:00:00`);
   return new Intl.DateTimeFormat("en-US", {
@@ -747,7 +769,8 @@ function JournalPage() {
     strategy: "",
     side: "",
     from: selectedDay,
-    to: selectedDay
+    to: selectedDay,
+    hideNoTradeDays: false
   });
   const [page, setPage] = useState(1);
   const [draftNotes, setDraftNotes] = useState({});
@@ -815,24 +838,22 @@ function JournalPage() {
 
   const journalDays = useMemo(() => {
     const notesByDay = new Map(journalDaysResource.data.map((day) => [day.dayKey, day]));
-    const includeDayKeys = new Set();
+    const todayKey = getDayKey(new Date());
     const hasTradeSpecificFilters = Boolean(
       filters.symbol || filters.tag || filters.strategy || filters.side
     );
-
-    if (!hasTradeSpecificFilters) {
-      for (const day of journalDaysResource.data) {
-        if (matchesJournalDayRange(day.dayKey, filters)) {
-          includeDayKeys.add(day.dayKey);
-        }
-      }
-
-      const todayKey = getDayKey(new Date());
-
-      if (matchesJournalDayRange(todayKey, filters)) {
-        includeDayKeys.add(todayKey);
-      }
-    }
+    const relevantTradeDayKeys = [...new Set(filteredTrades.map((trade) => getDayKey(trade.entryDate)).filter(Boolean))].sort();
+    const noteDayKeys = journalDaysResource.data
+      .map((day) => day.dayKey)
+      .filter((dayKey) => matchesJournalDayRange(dayKey, filters));
+    const rangeSourceKeys = hasTradeSpecificFilters
+      ? relevantTradeDayKeys
+      : [...new Set([...relevantTradeDayKeys, ...noteDayKeys])];
+    const startKey = filters.from || rangeSourceKeys[0] || todayKey;
+    const endKey = filters.to || [...rangeSourceKeys, todayKey].sort().at(-1) || todayKey;
+    const includeDayKeys = filters.hideNoTradeDays
+      ? relevantTradeDayKeys
+      : enumerateDayKeys(startKey, endKey);
 
     return buildDailyJournal(
       filteredTrades,
@@ -851,7 +872,8 @@ function JournalPage() {
     filters.strategy,
     filters.side,
     filters.from,
-    filters.to
+    filters.to,
+    filters.hideNoTradeDays
   ]);
 
   const totalPages = Math.max(1, Math.ceil(journalDays.length / PAGE_SIZE));
@@ -874,7 +896,8 @@ function JournalPage() {
       strategy: "",
       side: "",
       from: "",
-      to: ""
+      to: "",
+      hideNoTradeDays: false
     });
     setSearchParams({});
     setPage(1);
@@ -954,6 +977,17 @@ function JournalPage() {
           onReset={handleResetFilters}
           strategies={strategiesResource.data || []}
           tags={tagsResource.data || []}
+          actionContent={
+            <button
+              type="button"
+              onClick={() => updateFilter("hideNoTradeDays", !filters.hideNoTradeDays)}
+              className={`ui-button min-h-[46px] px-4 py-3 text-sm ${
+                filters.hideNoTradeDays ? "border-white/20 bg-[#1f1f1f] text-white" : "text-white/62"
+              }`}
+            >
+              Hide no-trade days
+            </button>
+          }
         />
       </Card>
 

@@ -1,7 +1,7 @@
 import CustomSelect from "./ui/CustomSelect";
 import DateRangePicker from "./ui/DateRangePicker";
 
-function Filters({ filters, onChange, onReset, strategies = [], tags = [] }) {
+function Filters({ filters, onChange, onReset, strategies = [], tags = [], actionContent = null }) {
   return (
     <div className="relative z-20 overflow-visible">
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[180px_160px_160px_160px_180px_auto] xl:items-end xl:justify-start">
@@ -78,7 +78,8 @@ function Filters({ filters, onChange, onReset, strategies = [], tags = [] }) {
           />
         </div>
 
-        <div className="flex items-end justify-end gap-2 self-end">
+        <div className="flex flex-wrap items-end justify-end gap-2 self-end">
+          {actionContent}
           <button type="button" onClick={onReset} className="ui-button min-h-[46px] px-5 py-3 text-sm">
             Reset
           </button>
