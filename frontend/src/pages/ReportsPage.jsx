@@ -1683,17 +1683,31 @@ function WinVsLossDaysSection({
 }
 
 function DrawdownSection({ summary }) {
+  const averageDrawdown = asNumber(summary?.averageDrawdown);
+  const biggestDrawdown = asNumber(summary?.biggestDrawdown);
+  const averageDaysInDrawdown = asNumber(summary?.averageDaysInDrawdown);
+  const daysInDrawdown = asNumber(summary?.daysInDrawdown);
+  const averageTradesInDrawdown = asNumber(summary?.averageTradesInDrawdown);
+  const drawdownCurve = Array.isArray(summary?.drawdownCurve)
+    ? summary.drawdownCurve
+        .map((point) => ({
+          date: point?.date ?? "",
+          drawdown: asNumber(point?.drawdown)
+        }))
+        .filter((point) => point.date)
+    : [];
+
   const rows = [
     [
-      { label: "Average drawdown", value: formatCurrency(-Math.abs(summary.averageDrawdown)), tone: "text-coral" },
-      { label: "Biggest Drawdown", value: formatCurrency(-Math.abs(summary.biggestDrawdown)), tone: "text-coral" }
+      { label: "Average drawdown", value: formatCurrency(-Math.abs(averageDrawdown)), tone: "text-coral" },
+      { label: "Biggest Drawdown", value: formatCurrency(-Math.abs(biggestDrawdown)), tone: "text-coral" }
     ],
     [
-      { label: "Average number of days in Drawdown", value: summary.averageDaysInDrawdown.toFixed(1), tone: "text-white" },
-      { label: "Number of days in Drawdown", value: formatCompactNumber(summary.daysInDrawdown), tone: "text-white" }
+      { label: "Average number of days in Drawdown", value: averageDaysInDrawdown.toFixed(1), tone: "text-white" },
+      { label: "Number of days in Drawdown", value: formatCompactNumber(daysInDrawdown), tone: "text-white" }
     ],
     [
-      { label: "Average trades in Drawdown", value: summary.averageTradesInDrawdown.toFixed(1), tone: "text-white" },
+      { label: "Average trades in Drawdown", value: averageTradesInDrawdown.toFixed(1), tone: "text-white" },
       null
     ]
   ];
@@ -1732,7 +1746,7 @@ function DrawdownSection({ summary }) {
       <Card title="DRAWDOWN CURVE">
         <div className="h-[280px] pb-4">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={summary.drawdownCurve || []} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
+            <AreaChart data={drawdownCurve} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
               <defs>
                 <linearGradient id="reportsDrawdownGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={REPORT_RED} stopOpacity={0.22} />
