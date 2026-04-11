@@ -31,6 +31,44 @@ function getLocalDayKey(date) {
   return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
+function parseDayKey(dayKey) {
+  const match = String(dayKey || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    year: Number(match[1]),
+    month: Number(match[2]),
+    day: Number(match[3])
+  };
+}
+
+function shiftDayKey(dayKey, offset) {
+  const parts = parseDayKey(dayKey);
+
+  if (!parts) {
+    return dayKey;
+  }
+
+  const date = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + offset));
+  return date.toISOString().slice(0, 10);
+}
+
+function formatDayKeyLabel(dayKey, options) {
+  const parts = parseDayKey(dayKey);
+
+  if (!parts) {
+    return dayKey;
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "UTC",
+    ...options
+  }).format(new Date(Date.UTC(parts.year, parts.month - 1, parts.day, 12)));
+}
+
 function startOfDay(date) {
   const next = new Date(date);
   next.setHours(0, 0, 0, 0);
@@ -131,7 +169,7 @@ function buildHourlyPerformance(processedTrades) {
   return Array.from(hourlyMap.values());
 }
 
-function buildLastThirtyDayPnl(processedTrades, latestDayStart) {
+function buildLastThirtyDayPnl(processedTrades, endDayKey) {
   const dailyMap = new Map();
 
   for (const item of processedTrades) {
@@ -140,13 +178,11 @@ function buildLastThirtyDayPnl(processedTrades, latestDayStart) {
   }
 
   return Array.from({ length: 30 }, (_, index) => {
-    const day = new Date(latestDayStart);
-    day.setDate(latestDayStart.getDate() - (29 - index));
-    const dayKey = getLocalDayKey(day);
+    const dayKey = shiftDayKey(endDayKey, index - 29);
 
     return {
       date: dayKey,
-      label: day.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      label: formatDayKeyLabel(dayKey, { month: "short", day: "numeric" }),
       grossPnl: Number((dailyMap.get(dayKey) || 0).toFixed(2))
     };
   });
@@ -344,23 +380,20 @@ export function buildAnalytics(trades, options = {}) {
   const averageWinningHoldMinutes = getTrimmedAverage(winningHoldMinutes);
   const averageLosingHoldMinutes = getTrimmedAverage(losingHoldMinutes);
 
-  const latestTradeDate = processedTrades.length
-    ? new Date(processedTrades[processedTrades.length - 1].entryDate)
-    : new Date();
   const currentMarketDayKey = getLocalDayKey(new Date());
-  const latestDayStart = startOfDay(latestTradeDate);
-  const latestDayEnd = endOfDay(latestTradeDate);
-  const latestWeekStart = startOfWeek(latestTradeDate);
-  const latestMonthStart = startOfMonth(latestTradeDate);
+  const currentDayStart = startOfDay(new Date());
+  const currentDayEnd = endOfDay(new Date());
+  const currentWeekStart = startOfWeek(new Date());
+  const currentMonthStart = startOfMonth(new Date());
 
   const totalMonthPnl = processedTrades.reduce(
     (sum, item) =>
-      item.entryDate >= latestMonthStart && item.entryDate <= latestDayEnd ? sum + item.pnl : sum,
+      item.entryDate >= currentMonthStart && item.entryDate <= currentDayEnd ? sum + item.pnl : sum,
     0
   );
   const totalWeekPnl = processedTrades.reduce(
     (sum, item) =>
-      item.entryDate >= latestWeekStart && item.entryDate <= latestDayEnd ? sum + item.pnl : sum,
+      item.entryDate >= currentWeekStart && item.entryDate <= currentDayEnd ? sum + item.pnl : sum,
     0
   );
   const totalTodayPnl = processedTrades.reduce(
@@ -370,15 +403,13 @@ export function buildAnalytics(trades, options = {}) {
   );
 
   const lastSevenDays = Array.from({ length: 7 }, (_, index) => {
-    const day = new Date(latestDayStart);
-    day.setDate(latestDayStart.getDate() - (6 - index));
-    const dayKey = getLocalDayKey(day);
+    const dayKey = shiftDayKey(currentMarketDayKey, index - 6);
     const stats = dailyMap.get(dayKey);
 
     return {
       date: dayKey,
-      label: day.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-      weekday: day.toLocaleDateString("en-US", { weekday: "short" }),
+      label: formatDayKeyLabel(dayKey, { month: "short", day: "numeric" }),
+      weekday: formatDayKeyLabel(dayKey, { weekday: "short" }),
       pnl: Number((stats?.pnl || 0).toFixed(2)),
       trades: stats?.trades || 0
     };
@@ -395,29 +426,25 @@ export function buildAnalytics(trades, options = {}) {
   }));
 
   const winRateThirtyDays = Array.from({ length: 30 }, (_, index) => {
-    const day = new Date(latestDayStart);
-    day.setDate(latestDayStart.getDate() - (29 - index));
-    const dayKey = getLocalDayKey(day);
+    const dayKey = shiftDayKey(currentMarketDayKey, index - 29);
     const stats = dailyMap.get(dayKey);
     const trades = stats?.trades || 0;
     const winsForDay = stats?.wins || 0;
 
     return {
       date: dayKey,
-      label: day.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      label: formatDayKeyLabel(dayKey, { month: "short", day: "numeric" }),
       winRate: trades ? Number(((winsForDay / trades) * 100).toFixed(2)) : 0
     };
   });
 
   const dailyVolumeThirtyDays = Array.from({ length: 30 }, (_, index) => {
-    const day = new Date(latestDayStart);
-    day.setDate(latestDayStart.getDate() - (29 - index));
-    const dayKey = getLocalDayKey(day);
+    const dayKey = shiftDayKey(currentMarketDayKey, index - 29);
     const stats = dailyMap.get(dayKey);
 
     return {
       date: dayKey,
-      label: day.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      label: formatDayKeyLabel(dayKey, { month: "short", day: "numeric" }),
       volume: stats?.volume || 0
     };
   });
@@ -462,11 +489,11 @@ export function buildAnalytics(trades, options = {}) {
     performanceByTimeOfDaySummary: buildTimeOfDaySummary(Array.from(timeBucketMap.values())),
     hourlyPerformance: buildHourlyPerformance(processedTrades),
     performanceByPrice: buildPriceBuckets(processedTrades),
-    grossDailyThirtyDays: buildLastThirtyDayPnl(processedTrades, latestDayStart),
+    grossDailyThirtyDays: buildLastThirtyDayPnl(processedTrades, currentMarketDayKey),
     winRateThirtyDays,
     dailyVolumeThirtyDays,
     pnlType,
-    latestDateLabel: latestTradeDate.toLocaleDateString("en-US", {
+    latestDateLabel: currentDayStart.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric"

@@ -23,12 +23,7 @@ function filterTradesByRange(trades, days) {
     return trades;
   }
 
-  const latestTradeDate = trades.reduce((latest, trade) => {
-    const tradeDate = new Date(trade.entryDate);
-    return tradeDate > latest ? tradeDate : latest;
-  }, new Date(trades[0].entryDate));
-
-  const rangeStart = new Date(latestTradeDate);
+  const rangeStart = new Date();
   rangeStart.setHours(0, 0, 0, 0);
   rangeStart.setDate(rangeStart.getDate() - (days - 1));
 
