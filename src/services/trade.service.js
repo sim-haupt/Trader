@@ -93,6 +93,26 @@ function formatLastSevenDayLabel(dayKey) {
   };
 }
 
+function isWeekday(dayKey) {
+  const dayOfWeek = dayKeyToDate(dayKey).getUTCDay();
+  return dayOfWeek >= 1 && dayOfWeek <= 5;
+}
+
+function getLastWeekdayKeys(endDayKey, count) {
+  const keys = [];
+  let cursor = endDayKey;
+
+  while (keys.length < count) {
+    if (isWeekday(cursor)) {
+      keys.push(cursor);
+    }
+
+    cursor = shiftDayKey(cursor, -1);
+  }
+
+  return keys.reverse();
+}
+
 function getEffectiveTradeCosts(trade, actor) {
   const explicitFees = asNumber(trade?.fees, 0);
 
@@ -268,8 +288,7 @@ async function getWidgetSummaryForActor(actor, filters = {}) {
     }
   }
 
-  const lastSevenDays = Array.from({ length: 7 }, (_, index) => {
-    const dayKey = shiftDayKey(currentDayKey, index - 6);
+  const lastSevenDays = getLastWeekdayKeys(currentDayKey, 7).map((dayKey) => {
     const stats = dailyMap.get(dayKey);
     const { label, weekday } = formatLastSevenDayLabel(dayKey);
 

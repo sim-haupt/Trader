@@ -641,7 +641,7 @@ function AnalyticsCharts({
               <p className="ui-title text-[10px] uppercase text-white/45">{day.weekday}</p>
               <p className="mt-2 text-sm text-white/62">{day.label}</p>
               <p className={`mt-4 text-2xl font-bold tracking-[-0.04em] ${tone.valueTone}`}>
-                {formatCurrency(day.pnl)}
+                {day.trades > 0 ? formatCurrency(day.pnl) : "No trades"}
               </p>
               <p className="mt-2 text-xs text-white/56">
                 {day.trades} trade{day.trades === 1 ? "" : "s"}

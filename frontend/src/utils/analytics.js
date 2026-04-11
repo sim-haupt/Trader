@@ -69,6 +69,32 @@ function formatDayKeyLabel(dayKey, options) {
   }).format(new Date(Date.UTC(parts.year, parts.month - 1, parts.day, 12)));
 }
 
+function isWeekday(dayKey) {
+  const parts = parseDayKey(dayKey);
+
+  if (!parts) {
+    return false;
+  }
+
+  const day = new Date(Date.UTC(parts.year, parts.month - 1, parts.day, 12)).getUTCDay();
+  return day >= 1 && day <= 5;
+}
+
+function getLastWeekdayKeys(endDayKey, count) {
+  const keys = [];
+  let cursor = endDayKey;
+
+  while (keys.length < count) {
+    if (isWeekday(cursor)) {
+      keys.push(cursor);
+    }
+
+    cursor = shiftDayKey(cursor, -1);
+  }
+
+  return keys.reverse();
+}
+
 function startOfDay(date) {
   const next = new Date(date);
   next.setHours(0, 0, 0, 0);
@@ -402,8 +428,7 @@ export function buildAnalytics(trades, options = {}) {
     0
   );
 
-  const lastSevenDays = Array.from({ length: 7 }, (_, index) => {
-    const dayKey = shiftDayKey(currentMarketDayKey, index - 6);
+  const lastSevenDays = getLastWeekdayKeys(currentMarketDayKey, 7).map((dayKey) => {
     const stats = dailyMap.get(dayKey);
 
     return {
