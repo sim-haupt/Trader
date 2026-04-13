@@ -360,7 +360,7 @@ function TradeHeatmap({ trades, onOpenTrade }) {
   const slots = Array.from({ length: 30 }, (_, index) => trades[index] || null);
 
   return (
-    <div className="grid grid-cols-6 gap-2">
+    <div className="grid grid-cols-10 gap-1.5 sm:gap-2">
       {slots.map((trade, index) => {
         const style = getHeatmapTileStyle(trade, maxWin, maxLoss);
 
@@ -719,7 +719,7 @@ function AnalyticsCharts({
         id: "lastThirtyTrades",
         title: `${pnlLabel} LAST 30 TRADES`,
         defaultSpan: 2,
-        className: "min-h-[300px]",
+        className: "min-h-[220px]",
         body: (
           <TradeHeatmap
             trades={lastThirtyTrades}
