@@ -32,8 +32,8 @@ function filterTradesByRange(trades, days) {
 
 function DashboardPage() {
   const { user } = useAuth();
-  const [rangeKey, setRangeKey] = useState("30");
-  const [pnlType, setPnlType] = useState("NET");
+  const [rangeKey, setRangeKey] = useState("ALL");
+  const [pnlType, setPnlType] = useState("GROSS");
   const {
     data: trades,
     error,

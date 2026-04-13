@@ -2130,7 +2130,7 @@ function applyCompareGroupFilters(trades, filters, options = {}) {
 function ReportsPage() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("Overview");
-  const [rangeKey, setRangeKey] = useState("30");
+  const [rangeKey, setRangeKey] = useState("ALL");
   const [filters, setFilters] = useState(REPORT_FILTERS);
   const [groupAFilters, setGroupAFilters] = useState(COMPARE_GROUP_FILTERS);
   const [groupBFilters, setGroupBFilters] = useState(COMPARE_GROUP_FILTERS);
