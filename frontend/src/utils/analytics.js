@@ -250,6 +250,27 @@ function buildPriceBuckets(processedTrades) {
   }));
 }
 
+function buildLastThirtyTrades(processedTrades) {
+  return processedTrades.slice(-30).map((item) => {
+    const parts = getMarketDateParts(item.entryDate);
+
+    return {
+      id: item.trade.id,
+      symbol: String(item.trade.symbol || "").toUpperCase(),
+      side: item.trade.side || "",
+      quantity: item.quantity,
+      entryPrice: asNumber(item.trade.entryPrice),
+      exitPrice: asNumber(item.trade.exitPrice),
+      pnl: Number(item.pnl.toFixed(2)),
+      date: formatDayKeyLabel(getLocalDayKey(item.entryDate), {
+        month: "short",
+        day: "numeric"
+      }),
+      time: `${parts.hour}:${parts.minute}`
+    };
+  });
+}
+
 function buildTimeOfDaySummary(performanceByTimeOfDay) {
   const totalAbsolute = performanceByTimeOfDay.reduce(
     (sum, entry) => sum + Math.abs(entry.pnl),
@@ -514,6 +535,7 @@ export function buildAnalytics(trades, options = {}) {
     performanceByTimeOfDaySummary: buildTimeOfDaySummary(Array.from(timeBucketMap.values())),
     hourlyPerformance: buildHourlyPerformance(processedTrades),
     performanceByPrice: buildPriceBuckets(processedTrades),
+    lastThirtyTrades: buildLastThirtyTrades(processedTrades),
     grossDailyThirtyDays: buildLastThirtyDayPnl(processedTrades, currentMarketDayKey),
     winRateThirtyDays,
     dailyVolumeThirtyDays,

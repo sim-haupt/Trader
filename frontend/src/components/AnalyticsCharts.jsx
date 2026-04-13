@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Area,
   AreaChart,
@@ -30,7 +31,8 @@ export const DEFAULT_DASHBOARD_LAYOUT = [
   { id: "dailyVolume", span: 2 },
   { id: "performanceWeekday", span: 1 },
   { id: "performanceHourSummary", span: 1 },
-  { id: "performancePrice", span: 2 }
+  { id: "performancePrice", span: 2 },
+  { id: "lastThirtyTrades", span: 2 }
 ];
 
 function tooltipStyle() {
@@ -296,9 +298,121 @@ function getLastSevenDayTone(day) {
   };
 }
 
+function getHeatmapTileStyle(trade, maxWin, maxLoss) {
+  if (!trade) {
+    return {
+      background: "rgba(255,255,255,0.03)",
+      borderColor: "rgb(31,31,31)"
+    };
+  }
+
+  const pnl = Number(trade.pnl || 0);
+
+  if (pnl > 0) {
+    const intensity = maxWin ? pnl / maxWin : 0;
+    const level = intensity > 0.66 ? 2 : intensity > 0.33 ? 1 : 0;
+    const backgrounds = [
+      "rgba(61,255,154,0.14)",
+      "rgba(61,255,154,0.28)",
+      "rgba(61,255,154,0.48)"
+    ];
+    const borders = [
+      "rgba(61,255,154,0.32)",
+      "rgba(61,255,154,0.48)",
+      "rgba(61,255,154,0.72)"
+    ];
+
+    return {
+      background: backgrounds[level],
+      borderColor: borders[level]
+    };
+  }
+
+  if (pnl < 0) {
+    const intensity = maxLoss ? Math.abs(pnl) / maxLoss : 0;
+    const level = intensity > 0.66 ? 2 : intensity > 0.33 ? 1 : 0;
+    const backgrounds = [
+      "rgba(255,95,122,0.14)",
+      "rgba(255,95,122,0.28)",
+      "rgba(255,95,122,0.48)"
+    ];
+    const borders = [
+      "rgba(255,95,122,0.32)",
+      "rgba(255,95,122,0.48)",
+      "rgba(255,95,122,0.72)"
+    ];
+
+    return {
+      background: backgrounds[level],
+      borderColor: borders[level]
+    };
+  }
+
+  return {
+    background: "rgba(255,255,255,0.08)",
+    borderColor: "rgba(229,231,235,0.22)"
+  };
+}
+
+function TradeHeatmap({ trades, onOpenTrade }) {
+  const maxWin = Math.max(0, ...trades.map((trade) => Math.max(0, Number(trade.pnl || 0))));
+  const maxLoss = Math.max(0, ...trades.map((trade) => Math.max(0, Math.abs(Math.min(0, Number(trade.pnl || 0))))));
+  const slots = Array.from({ length: 30 }, (_, index) => trades[index] || null);
+
+  return (
+    <div className="grid grid-cols-6 gap-2">
+      {slots.map((trade, index) => {
+        const style = getHeatmapTileStyle(trade, maxWin, maxLoss);
+
+        if (!trade) {
+          return (
+            <div
+              key={`empty-${index}`}
+              className="aspect-square rounded-[6px] border opacity-45"
+              style={style}
+            />
+          );
+        }
+
+        return (
+          <button
+            key={trade.id}
+            type="button"
+            onClick={() => onOpenTrade(trade.id)}
+            className="group relative aspect-square rounded-[6px] border transition duration-150 hover:scale-[1.03] focus:outline-none focus:ring-1 focus:ring-white/55"
+            style={style}
+            aria-label={`${trade.symbol} ${formatCurrency(trade.pnl)} trade`}
+          >
+            <span className="sr-only">{trade.symbol}</span>
+            <span className="pointer-events-none absolute bottom-[calc(100%+8px)] left-1/2 z-20 w-44 -translate-x-1/2 rounded-[6px] border border-[var(--line)] bg-black px-3 py-2 text-left opacity-0 shadow-none transition-opacity duration-150 group-hover:opacity-100 group-focus:opacity-100">
+              <span className="flex items-center justify-between gap-3">
+                <span className="text-xs font-medium text-white">{trade.symbol}</span>
+                <span className={`text-xs font-medium ${trade.pnl >= 0 ? "text-mint" : "text-coral"}`}>
+                  {formatCurrency(trade.pnl)}
+                </span>
+              </span>
+              <span className="mt-1 block text-[11px] text-white/54">
+                {trade.date} · {trade.time}
+              </span>
+              <span className="mt-1 block text-[11px] text-white/54">
+                {trade.side || "Trade"} · {trade.quantity.toLocaleString("en-US")} sh
+              </span>
+              <span className="mt-1 block text-[11px] text-white/54">
+                {formatCurrency(trade.entryPrice)}
+                {trade.exitPrice ? ` → ${formatCurrency(trade.exitPrice)}` : ""}
+              </span>
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function AnalyticsCharts({
   analytics
 }) {
+  const navigate = useNavigate();
   const {
     summary,
     equityCurve,
@@ -311,6 +425,7 @@ function AnalyticsCharts({
     grossDailyThirtyDays,
     winRateThirtyDays,
     dailyVolumeThirtyDays,
+    lastThirtyTrades = [],
     pnlType
   } = analytics;
   const pnlLabel = pnlType === "GROSS" ? "GROSS" : "NET";
@@ -599,6 +714,18 @@ function AnalyticsCharts({
         defaultSpan: 1,
         className: "min-h-[300px]",
         body: <BreakdownRows entries={performanceByTimeOfDaySummary} />
+      },
+      {
+        id: "lastThirtyTrades",
+        title: `${pnlLabel} LAST 30 TRADES`,
+        defaultSpan: 2,
+        className: "min-h-[300px]",
+        body: (
+          <TradeHeatmap
+            trades={lastThirtyTrades}
+            onOpenTrade={(tradeId) => navigate(`/trades/${tradeId}`)}
+          />
+        )
       }
     ],
     [
@@ -612,6 +739,8 @@ function AnalyticsCharts({
       grossDailyThirtyDays,
       winRateThirtyDays,
       dailyVolumeThirtyDays,
+      lastThirtyTrades,
+      navigate,
       pnlLabel
     ]
   );
