@@ -154,6 +154,12 @@ function buildVolumeData(bars) {
   }));
 }
 
+function padSeriesToTimeline(series, timelineBars) {
+  const seriesMap = new Map(series.map((point) => [point.time, point]));
+
+  return timelineBars.map((bar) => seriesMap.get(bar.time) ?? { time: bar.time });
+}
+
 function nearestBarTime(bars, rawTime) {
   let match = bars[0]?.time ?? null;
 
@@ -413,11 +419,15 @@ function PremiumChart({
       }
     });
 
+    const paddedMacdHistogram = padSeriesToTimeline(macdData.histogram, candleBars);
+    const paddedMacdLine = padSeriesToTimeline(macdData.macdLine, candleBars);
+    const paddedSignalLine = padSeriesToTimeline(macdData.signalLine, candleBars);
+
     const macdHistogramSeries = macdChart.addSeries(HistogramSeries, {
       priceLineVisible: false,
       lastValueVisible: true
     });
-    macdHistogramSeries.setData(macdData.histogram);
+    macdHistogramSeries.setData(paddedMacdHistogram);
 
     const macdLineSeries = macdChart.addSeries(LineSeries, {
       color: "#60a5fa",
@@ -425,7 +435,7 @@ function PremiumChart({
       priceLineVisible: false,
       lastValueVisible: true
     });
-    macdLineSeries.setData(macdData.macdLine);
+    macdLineSeries.setData(paddedMacdLine);
 
     const signalLineSeries = macdChart.addSeries(LineSeries, {
       color: "#fb923c",
@@ -433,7 +443,7 @@ function PremiumChart({
       priceLineVisible: false,
       lastValueVisible: true
     });
-    signalLineSeries.setData(macdData.signalLine);
+    signalLineSeries.setData(paddedSignalLine);
     const refreshOverlay = () =>
       renderOverlay({
         overlayEl: overlayRef.current,
@@ -444,21 +454,27 @@ function PremiumChart({
         dayStamp
       });
 
+    let isSyncingRange = false;
+
     const syncMacdRange = (range) => {
-      if (range) {
-        macdChart.timeScale().setVisibleLogicalRange(range);
+      if (range && !isSyncingRange) {
+        isSyncingRange = true;
+        macdChart.timeScale().setVisibleRange(range);
+        isSyncingRange = false;
       }
     };
 
     const syncMainRange = (range) => {
-      if (range) {
-        mainChart.timeScale().setVisibleLogicalRange(range);
+      if (range && !isSyncingRange) {
+        isSyncingRange = true;
+        mainChart.timeScale().setVisibleRange(range);
+        isSyncingRange = false;
       }
     };
 
     mainChart.timeScale().subscribeVisibleLogicalRangeChange(refreshOverlay);
-    mainChart.timeScale().subscribeVisibleLogicalRangeChange(syncMacdRange);
-    macdChart.timeScale().subscribeVisibleLogicalRangeChange(syncMainRange);
+    mainChart.timeScale().subscribeVisibleTimeRangeChange(syncMacdRange);
+    macdChart.timeScale().subscribeVisibleTimeRangeChange(syncMainRange);
 
     const first = sessionStart ?? candleBars[0]?.time;
     const last = sessionEnd ?? candleBars[candleBars.length - 1]?.time;
@@ -490,8 +506,8 @@ function PremiumChart({
       cancelAnimationFrame(rafId);
       resizeObserver.disconnect();
       mainChart.timeScale().unsubscribeVisibleLogicalRangeChange(refreshOverlay);
-      mainChart.timeScale().unsubscribeVisibleLogicalRangeChange(syncMacdRange);
-      macdChart.timeScale().unsubscribeVisibleLogicalRangeChange(syncMainRange);
+      mainChart.timeScale().unsubscribeVisibleTimeRangeChange(syncMacdRange);
+      macdChart.timeScale().unsubscribeVisibleTimeRangeChange(syncMainRange);
       mainChart.remove();
       macdChart.remove();
     };
