@@ -15,9 +15,9 @@ import {
 import Card from "./ui/Card";
 import { formatCurrency, formatPercent } from "../utils/formatters";
 
-const CHART_GREEN = "#3dff9a";
-const CHART_RED = "#ff5f7a";
-const CHART_YELLOW = "#ffd84d";
+const CHART_GREEN = "#8bd8a8";
+const CHART_RED = "#f08a94";
+const CHART_YELLOW = "#f4d37d";
 const STANDARD_CHART_MARGIN = { top: 8, right: 8, left: 0, bottom: 16 };
 const VERTICAL_CHART_MARGIN = { top: 8, right: 18, left: 6, bottom: 16 };
 
@@ -74,11 +74,11 @@ function ChartTooltipContent({ active, payload, label }) {
 function metricBorderColor(tone) {
   switch (tone) {
     case "text-mint":
-      return "rgba(45, 212, 143, 0.34)";
+      return "rgba(139, 216, 168, 0.34)";
     case "text-coral":
-      return "rgba(255, 107, 107, 0.34)";
+      return "rgba(240, 138, 148, 0.34)";
     case "text-gold":
-      return "rgba(255, 216, 77, 0.34)";
+      return "rgba(244, 211, 125, 0.34)";
     case "text-mist":
     case "text-phosphor":
       return "rgba(229, 231, 235, 0.18)";
@@ -272,10 +272,10 @@ function getLastSevenDayTone(day) {
   if (day.pnl >= 0) {
     return {
       className:
-        "ui-metric-tile rounded-[6px] bg-[linear-gradient(180deg,rgba(61,255,154,0.16),rgba(61,255,154,0.05))] px-4 py-4",
+        "ui-metric-tile rounded-[6px] bg-[linear-gradient(180deg,rgba(139,216,168,0.16),rgba(139,216,168,0.05))] px-4 py-4",
       valueTone: "text-mint",
       style: {
-        borderColor: "rgba(45, 212, 143, 0.34)"
+        borderColor: "rgba(139, 216, 168, 0.34)"
       }
     };
   }
@@ -283,10 +283,10 @@ function getLastSevenDayTone(day) {
   if (day.pnl < 0) {
     return {
       className:
-        "ui-metric-tile rounded-[6px] bg-[linear-gradient(180deg,rgba(255,95,122,0.16),rgba(255,95,122,0.05))] px-4 py-4",
+        "ui-metric-tile rounded-[6px] bg-[linear-gradient(180deg,rgba(240,138,148,0.16),rgba(240,138,148,0.05))] px-4 py-4",
       valueTone: "text-coral",
       style: {
-        borderColor: "rgba(255, 107, 107, 0.34)"
+        borderColor: "rgba(240, 138, 148, 0.34)"
       }
     };
   }
@@ -312,14 +312,14 @@ function getHeatmapTileStyle(trade, maxWin, maxLoss) {
     const intensity = maxWin ? pnl / maxWin : 0;
     const level = intensity > 0.66 ? 2 : intensity > 0.33 ? 1 : 0;
     const backgrounds = [
-      "rgba(61,255,154,0.14)",
-      "rgba(61,255,154,0.28)",
-      "rgba(61,255,154,0.48)"
+      "rgba(139,216,168,0.14)",
+      "rgba(139,216,168,0.28)",
+      "rgba(139,216,168,0.48)"
     ];
     const borders = [
-      "rgba(61,255,154,0.32)",
-      "rgba(61,255,154,0.48)",
-      "rgba(61,255,154,0.72)"
+      "rgba(139,216,168,0.32)",
+      "rgba(139,216,168,0.48)",
+      "rgba(139,216,168,0.72)"
     ];
 
     return {
@@ -332,14 +332,14 @@ function getHeatmapTileStyle(trade, maxWin, maxLoss) {
     const intensity = maxLoss ? Math.abs(pnl) / maxLoss : 0;
     const level = intensity > 0.66 ? 2 : intensity > 0.33 ? 1 : 0;
     const backgrounds = [
-      "rgba(255,95,122,0.14)",
-      "rgba(255,95,122,0.28)",
-      "rgba(255,95,122,0.48)"
+      "rgba(240,138,148,0.14)",
+      "rgba(240,138,148,0.28)",
+      "rgba(240,138,148,0.48)"
     ];
     const borders = [
-      "rgba(255,95,122,0.32)",
-      "rgba(255,95,122,0.48)",
-      "rgba(255,95,122,0.72)"
+      "rgba(240,138,148,0.32)",
+      "rgba(240,138,148,0.48)",
+      "rgba(240,138,148,0.72)"
     ];
 
     return {
@@ -450,16 +450,16 @@ function AnalyticsCharts({
                 <AreaChart data={equityCurve} margin={STANDARD_CHART_MARGIN}>
                   <defs>
                     <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#2be28c" stopOpacity={0.22} />
-                      <stop offset="55%" stopColor="#2be28c" stopOpacity={0.08} />
-                      <stop offset="100%" stopColor="#2be28c" stopOpacity={0.01} />
+                      <stop offset="0%" stopColor="#8bd8a8" stopOpacity={0.22} />
+                      <stop offset="55%" stopColor="#8bd8a8" stopOpacity={0.08} />
+                      <stop offset="100%" stopColor="#8bd8a8" stopOpacity={0.01} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
                   <Tooltip contentStyle={tooltipStyle()} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
-                  <Area type="monotone" dataKey="equity" stroke="#18c87a" strokeWidth={3} fill="url(#equityGradient)" />
+                  <Area type="monotone" dataKey="equity" stroke="#8bd8a8" strokeWidth={3} fill="url(#equityGradient)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -591,15 +591,15 @@ function AnalyticsCharts({
                 <AreaChart data={drawdownCurve} margin={STANDARD_CHART_MARGIN}>
                   <defs>
                     <linearGradient id="drawdownGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#ff6b6b" stopOpacity={0.22} />
-                      <stop offset="100%" stopColor="#ff6b6b" stopOpacity={0.02} />
+                      <stop offset="0%" stopColor="#f08a94" stopOpacity={0.22} />
+                      <stop offset="100%" stopColor="#f08a94" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
                   <Tooltip contentStyle={tooltipStyle()} />
-                  <Area type="monotone" dataKey="drawdown" stroke="#ff6b6b" strokeWidth={2.5} fill="url(#drawdownGradient)" />
+                  <Area type="monotone" dataKey="drawdown" stroke="#f08a94" strokeWidth={2.5} fill="url(#drawdownGradient)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
