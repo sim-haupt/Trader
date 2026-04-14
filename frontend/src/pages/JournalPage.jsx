@@ -246,7 +246,7 @@ function buildJournalVisualization(dayKey, trades) {
       chartSegments: [
         {
           key: `${dayKey}-empty`,
-          color: "#8bd8a8",
+          color: "#3dff9a",
           data: [
             {
               timeValue: timelineStart,
@@ -318,8 +318,8 @@ function buildJournalVisualization(dayKey, trades) {
   for (let index = 1; index < chartSeries.length; index += 1) {
     const previousPoint = chartSeries[index - 1];
     const currentPoint = chartSeries[index];
-    const previousColor = previousPoint.cumulative < 0 ? "#f08a94" : "#8bd8a8";
-    const currentColor = currentPoint.cumulative < 0 ? "#f08a94" : "#8bd8a8";
+    const previousColor = previousPoint.cumulative < 0 ? "#ff5f7a" : "#3dff9a";
+    const currentColor = currentPoint.cumulative < 0 ? "#ff5f7a" : "#3dff9a";
 
     chartSegments.push({
       key: `${dayKey}-horizontal-${index}`,
@@ -548,12 +548,12 @@ function JournalDayCard({
               >
                 <defs>
                   <linearGradient id={`journal-${day.dayKey}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#8bd8a8" stopOpacity={0.28} />
-                    <stop offset="100%" stopColor="#8bd8a8" stopOpacity={0.03} />
+                    <stop offset="0%" stopColor="#3dff9a" stopOpacity={0.28} />
+                    <stop offset="100%" stopColor="#3dff9a" stopOpacity={0.03} />
                   </linearGradient>
                   <linearGradient id={`journal-negative-${day.dayKey}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#f08a94" stopOpacity={0.24} />
-                    <stop offset="100%" stopColor="#f08a94" stopOpacity={0.03} />
+                    <stop offset="0%" stopColor="#ff5f7a" stopOpacity={0.24} />
+                    <stop offset="100%" stopColor="#ff5f7a" stopOpacity={0.03} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid stroke="rgba(255,255,255,0.07)" vertical={false} />
@@ -616,7 +616,7 @@ function JournalDayCard({
                         cx={props.cx}
                         cy={props.cy}
                         r={3}
-                        fill={props.payload.cumulative < 0 ? "#f08a94" : "#8bd8a8"}
+                        fill={props.payload.cumulative < 0 ? "#ff5f7a" : "#3dff9a"}
                         stroke="#000000"
                         strokeWidth={1.5}
                       />
@@ -632,7 +632,7 @@ function JournalDayCard({
                         cx={props.cx}
                         cy={props.cy}
                         r={4}
-                        fill={props.payload.cumulative < 0 ? "#f08a94" : "#8bd8a8"}
+                        fill={props.payload.cumulative < 0 ? "#ff5f7a" : "#3dff9a"}
                         stroke="#000000"
                         strokeWidth={1.5}
                       />

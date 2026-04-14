@@ -150,9 +150,9 @@ const CurrencyTooltip = buildChartTooltip("currency");
 const PercentTooltip = buildChartTooltip("percent");
 const VolumeTooltip = buildChartTooltip("volume");
 const CountTooltip = buildChartTooltip("count");
-const REPORT_GREEN = "#8bd8a8";
-const REPORT_RED = "#f08a94";
-const REPORT_YELLOW = "#f4d37d";
+const REPORT_GREEN = "#3dff9a";
+const REPORT_RED = "#ff5f7a";
+const REPORT_YELLOW = "#ffd84d";
 
 function WinLossDaysPieTooltip({ active, payload }) {
   if (!active || !payload?.length) {

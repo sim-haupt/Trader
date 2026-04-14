@@ -98,11 +98,11 @@ function getDayTone(stats, isCurrentMonth) {
   }
 
   if (stats.pnl > 0) {
-    return "bg-[linear-gradient(180deg,rgba(139,216,168,0.16),rgba(139,216,168,0.05))] text-mint";
+    return "bg-[linear-gradient(180deg,rgba(61,255,154,0.16),rgba(61,255,154,0.05))] text-mint";
   }
 
   if (stats.pnl < 0) {
-    return "bg-[linear-gradient(180deg,rgba(240,138,148,0.16),rgba(240,138,148,0.05))] text-coral";
+    return "bg-[linear-gradient(180deg,rgba(255,95,122,0.16),rgba(255,95,122,0.05))] text-coral";
   }
 
   return "bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04))] text-mist";

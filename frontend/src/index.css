@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -24,14 +24,14 @@ body[data-theme="dark"] {
   --accent-strong: oklch(71.7% 0.1648 250.794);
   --accent-deep: oklch(25.45% 0.0811 255.8);
   --accent-soft: oklch(25.45% 0.0811 255.8 / 0.45);
-  --success: #8bd8a8;
-  --success-soft: rgba(139, 216, 168, 0.14);
-  --danger: #f08a94;
-  --danger-soft: rgba(240, 138, 148, 0.14);
-  --warning: #f4d37d;
-  --warning-soft: rgba(244, 211, 125, 0.16);
-  --info: #a7bee8;
-  --info-soft: rgba(167, 190, 232, 0.12);
+  --success: #3dff9a;
+  --success-soft: rgba(61, 255, 154, 0.14);
+  --danger: #ff5f7a;
+  --danger-soft: rgba(255, 95, 122, 0.14);
+  --warning: #ffd84d;
+  --warning-soft: rgba(255, 216, 77, 0.16);
+  --info: #84b7ff;
+  --info-soft: rgba(132, 183, 255, 0.12);
   --popover: #050505;
   --shadow-lg: none;
   --shadow-md: none;
@@ -61,7 +61,7 @@ body {
 }
 
 body {
-  font-family: "Press Start 2P", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: "Geist", sans-serif;
   background: var(--bg-canvas);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
@@ -199,7 +199,7 @@ strong {
   }
 
   .ui-title {
-    font-family: "Press Start 2P", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-family: "Geist", sans-serif;
     font-weight: 500;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -295,8 +295,8 @@ strong {
   }
 
   .ui-button-danger {
-    background: rgba(240, 138, 148, 0.08);
-    border-color: rgba(240, 138, 148, 0.35);
+    background: rgba(255, 95, 122, 0.08);
+    border-color: rgba(255, 95, 122, 0.35);
     color: var(--danger);
     padding: 9px 13px;
     font-size: 0.86rem;
@@ -304,8 +304,8 @@ strong {
   }
 
   .ui-button-danger:hover {
-    background: rgba(240, 138, 148, 0.12);
-    border-color: rgba(240, 138, 148, 0.45);
+    background: rgba(255, 95, 122, 0.12);
+    border-color: rgba(255, 95, 122, 0.45);
   }
 
   .ui-chip {

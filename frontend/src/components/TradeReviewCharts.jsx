@@ -349,11 +349,11 @@ function PremiumChart({
     });
 
     const candleSeries = mainChart.addSeries(CandlestickSeries, {
-      upColor: "#8bd8a8",
-      downColor: "#f08a94",
+      upColor: "#3dff9a",
+      downColor: "#ff5f7a",
       borderVisible: false,
-      wickUpColor: "#8bd8a8",
-      wickDownColor: "#f08a94",
+      wickUpColor: "#3dff9a",
+      wickDownColor: "#ff5f7a",
       priceLineVisible: false,
       lastValueVisible: true
     });
@@ -385,7 +385,7 @@ function PremiumChart({
     ema20Series.setData(ema20Data);
 
     const vwapSeries = mainChart.addSeries(LineSeries, {
-      color: "#f4d37d",
+      color: "#ffd84d",
       lineWidth: 2,
       lineStyle: LineStyle.Dotted,
       priceLineVisible: false,
