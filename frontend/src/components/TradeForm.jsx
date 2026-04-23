@@ -19,6 +19,14 @@ const initialState = {
   notes: ""
 };
 
+function RemoveIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className="ui-chip-remove-icon h-3.5 w-3.5">
+      <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function mapTradeToForm(trade) {
   if (!trade) {
     return initialState;
@@ -278,10 +286,10 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
                 <button
                   type="button"
                   onClick={handleRemoveStrategy}
-                  className="inline-flex items-center gap-2 rounded-[6px] border border-[var(--line)] bg-black px-3 py-1.5 text-xs text-white/82"
+                  className="ui-chip-removable"
                 >
                   <span>{selectedStrategy}</span>
-                  <span className="text-white/48">x</span>
+                  <RemoveIcon />
                 </button>
               </div>
             ) : (
@@ -324,10 +332,10 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
                     key={tag}
                     type="button"
                     onClick={() => handleRemoveTag(tag)}
-                    className="inline-flex items-center gap-2 rounded-[6px] border border-[var(--line)] bg-black px-3 py-1.5 text-xs text-white/82"
+                    className="ui-chip-removable"
                   >
                     <span>{tag}</span>
-                    <span className="text-white/48">x</span>
+                    <RemoveIcon />
                   </button>
                 ))}
               </div>

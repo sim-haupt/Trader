@@ -122,7 +122,7 @@ function TradeTable({
                     </td>
                     <td className="px-4 py-4 text-white/84">
                       {trade.strategy ? (
-                        <span className="text-sm font-medium text-white/80">{trade.strategy}</span>
+                        <span className="ui-chip">{trade.strategy}</span>
                       ) : (
                         <span className="text-sm text-white/36">-</span>
                       )}
@@ -135,10 +135,7 @@ function TradeTable({
                             .map((tag) => tag.trim())
                             .filter(Boolean)
                             .map((tag) => (
-                              <span
-                                key={`${trade.id}-${tag}`}
-                                className="inline-flex items-center rounded-[6px] border border-[var(--line)] bg-black px-2.5 py-1 text-[11px] font-medium text-[var(--text-muted)]"
-                              >
+                              <span key={`${trade.id}-${tag}`} className="ui-chip">
                                 {tag}
                               </span>
                             ))}

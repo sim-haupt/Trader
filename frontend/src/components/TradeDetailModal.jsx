@@ -40,6 +40,14 @@ function mergeTags(existingTags, nextTag) {
   return [...new Set([...parseTags(existingTags), nextTag])].join(", ");
 }
 
+function RemoveIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className="ui-chip-remove-icon h-3.5 w-3.5">
+      <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function SummaryMetric({ label, value, accent = "text-white" }) {
   return (
     <div className="ui-inset-box p-4">
@@ -432,10 +440,10 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                     <button
                       type="button"
                       onClick={handleRemoveStrategy}
-                      className="inline-flex items-center gap-2 rounded-[6px] border border-mint/35 bg-mint/12 px-3 py-1.5 text-[11px] font-medium text-white"
+                      className="ui-chip-removable"
                     >
-                      <span className="text-mint">{activeStrategy}</span>
-                      <span className="text-white/52">x</span>
+                      <span>{activeStrategy}</span>
+                      <RemoveIcon />
                     </button>
                   </div>
                 ) : (
@@ -484,10 +492,10 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                         key={tag}
                         type="button"
                         onClick={() => handleRemoveTag(tag)}
-                        className="inline-flex items-center gap-2 rounded-[6px] border border-white/16 bg-white/[0.08] px-3 py-1.5 text-[11px] font-medium text-white"
+                        className="ui-chip-removable"
                       >
                         <span>{tag}</span>
-                        <span className="text-white/52">x</span>
+                        <RemoveIcon />
                       </button>
                     ))}
                   </div>

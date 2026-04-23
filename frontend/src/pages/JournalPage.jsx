@@ -745,7 +745,7 @@ function JournalDayCard({
                       <td className="px-4 py-3 whitespace-nowrap">{trade.entryTimeLabel}</td>
                       <td className="px-4 py-3">
                         <div className="font-medium text-white">{trade.symbol}</div>
-                        {trade.strategy ? <div className="mt-1 text-xs text-white/50">{trade.strategy}</div> : null}
+                        {trade.strategy ? <div className="mt-1"><span className="ui-chip">{trade.strategy}</span></div> : null}
                       </td>
                       <td className="px-4 py-3">{Math.round(Number(trade.quantity || 0)).toLocaleString()}</td>
                       <td className="px-4 py-3">{trade.execCount}</td>
@@ -753,7 +753,7 @@ function JournalDayCard({
                         {formatCurrency(trade.dayPnl)}
                       </td>
                       <td className="px-4 py-3 text-white/54">
-                        {trade.strategy ? trade.strategy : <span className="text-white/26">—</span>}
+                        {trade.strategy ? <span className="ui-chip">{trade.strategy}</span> : <span className="text-white/26">—</span>}
                       </td>
                       <td className="px-4 py-3">
                         {trade.parsedTags.length > 0 ? (
