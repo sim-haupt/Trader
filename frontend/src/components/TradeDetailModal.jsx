@@ -36,6 +36,10 @@ function parseTags(value) {
     .filter(Boolean);
 }
 
+function mergeTags(existingTags, nextTag) {
+  return [...new Set([...parseTags(existingTags), nextTag])].join(", ");
+}
+
 function SummaryMetric({ label, value, accent = "text-white" }) {
   return (
     <div className="ui-inset-box p-4">
@@ -225,7 +229,11 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
     });
   }, [activeTags, availableTags]);
   const strategySuggestions = useMemo(
-    () => availableStrategies.filter((strategy) => strategy.name !== activeStrategy),
+    () =>
+      availableStrategies.filter(
+        (strategy) =>
+          String(strategy.name || "").trim().toLowerCase() !== activeStrategy.toLowerCase()
+      ),
     [availableStrategies, activeStrategy]
   );
 
@@ -242,10 +250,16 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
   async function handleAddTag(tagValue) {
     const nextTag = tagValue.trim();
 
-    if (!nextTag) {
+    if (!nextTag || activeTags.some((tag) => tag.toLowerCase() === nextTag.toLowerCase())) {
       return;
     }
 
+    const optimisticTrade = {
+      ...activeTrade,
+      tags: mergeTags(activeTrade.tags, nextTag)
+    };
+
+    setEditableTrade(optimisticTrade);
     setIsSavingMeta(true);
 
     try {
@@ -256,6 +270,9 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
 
       setEditableTrade(updatedTrade);
       await refreshAvailableTags();
+    } catch (error) {
+      setEditableTrade(activeTrade);
+      throw error;
     } finally {
       setIsSavingMeta(false);
     }
@@ -279,15 +296,29 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
   }
 
   async function handleSetStrategy(strategyValue) {
+    const nextStrategy = String(strategyValue || "").trim();
+
+    if (!nextStrategy || nextStrategy.toLowerCase() === activeStrategy.toLowerCase()) {
+      return;
+    }
+
+    setEditableTrade({
+      ...activeTrade,
+      strategy: nextStrategy
+    });
+    setIsStrategyEditorOpen(false);
     setIsSavingMeta(true);
 
     try {
       const updatedTrade = await tradeService.updateTradeMeta(activeTrade.id, {
-        strategy: strategyValue
+        strategy: nextStrategy
       });
 
       setEditableTrade(updatedTrade);
       await refreshAvailableStrategies();
+    } catch (error) {
+      setEditableTrade(activeTrade);
+      throw error;
     } finally {
       setIsSavingMeta(false);
     }
@@ -401,10 +432,10 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                     <button
                       type="button"
                       onClick={handleRemoveStrategy}
-                      className="inline-flex items-center gap-2 rounded-[6px] border border-[var(--line)] bg-black px-3 py-1 text-xs text-white/78"
+                      className="inline-flex items-center gap-2 rounded-[6px] border border-mint/35 bg-mint/12 px-3 py-1.5 text-[11px] font-medium text-white"
                     >
-                      <span>{activeStrategy}</span>
-                      <span className="text-white/45">x</span>
+                      <span className="text-mint">{activeStrategy}</span>
+                      <span className="text-white/52">x</span>
                     </button>
                   </div>
                 ) : (
@@ -453,10 +484,10 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                         key={tag}
                         type="button"
                         onClick={() => handleRemoveTag(tag)}
-                        className="inline-flex items-center gap-2 rounded-[6px] border border-[var(--line)] bg-black px-3 py-1 text-xs text-white/78"
+                        className="inline-flex items-center gap-2 rounded-[6px] border border-white/16 bg-white/[0.08] px-3 py-1.5 text-[11px] font-medium text-white"
                       >
                         <span>{tag}</span>
-                        <span className="text-white/45">x</span>
+                        <span className="text-white/52">x</span>
                       </button>
                     ))}
                   </div>
