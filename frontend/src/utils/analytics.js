@@ -1,4 +1,10 @@
 import { getTradeGrossPnl, getTradePnlByType } from "./tradePnl";
+import {
+  getLastMarketDayKeys,
+  isUsMarketDay,
+  parseDayKey,
+  shiftDayKey
+} from "./marketCalendar";
 
 const MARKET_TIME_ZONE = "America/New_York";
 
@@ -31,31 +37,6 @@ function getLocalDayKey(date) {
   return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
-function parseDayKey(dayKey) {
-  const match = String(dayKey || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
-
-  if (!match) {
-    return null;
-  }
-
-  return {
-    year: Number(match[1]),
-    month: Number(match[2]),
-    day: Number(match[3])
-  };
-}
-
-function shiftDayKey(dayKey, offset) {
-  const parts = parseDayKey(dayKey);
-
-  if (!parts) {
-    return dayKey;
-  }
-
-  const date = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + offset));
-  return date.toISOString().slice(0, 10);
-}
-
 function formatDayKeyLabel(dayKey, options) {
   const parts = parseDayKey(dayKey);
 
@@ -67,32 +48,6 @@ function formatDayKeyLabel(dayKey, options) {
     timeZone: "UTC",
     ...options
   }).format(new Date(Date.UTC(parts.year, parts.month - 1, parts.day, 12)));
-}
-
-function isWeekday(dayKey) {
-  const parts = parseDayKey(dayKey);
-
-  if (!parts) {
-    return false;
-  }
-
-  const day = new Date(Date.UTC(parts.year, parts.month - 1, parts.day, 12)).getUTCDay();
-  return day >= 1 && day <= 5;
-}
-
-function getLastWeekdayKeys(endDayKey, count) {
-  const keys = [];
-  let cursor = endDayKey;
-
-  while (keys.length < count) {
-    if (isWeekday(cursor)) {
-      keys.push(cursor);
-    }
-
-    cursor = shiftDayKey(cursor, -1);
-  }
-
-  return keys.reverse();
 }
 
 function startOfDay(date) {
@@ -203,15 +158,11 @@ function buildLastThirtyDayPnl(processedTrades, endDayKey) {
     dailyMap.set(dayKey, Number(((dailyMap.get(dayKey) || 0) + item.pnl).toFixed(2)));
   }
 
-  return Array.from({ length: 30 }, (_, index) => {
-    const dayKey = shiftDayKey(endDayKey, index - 29);
-
-    return {
-      date: dayKey,
-      label: formatDayKeyLabel(dayKey, { month: "short", day: "numeric" }),
-      grossPnl: Number((dailyMap.get(dayKey) || 0).toFixed(2))
-    };
-  });
+  return getLastMarketDayKeys(endDayKey, 30).map((dayKey) => ({
+    date: dayKey,
+    label: formatDayKeyLabel(dayKey, { month: "short", day: "numeric" }),
+    grossPnl: Number((dailyMap.get(dayKey) || 0).toFixed(2))
+  }));
 }
 
 function buildPriceBuckets(processedTrades) {
@@ -449,7 +400,7 @@ export function buildAnalytics(trades, options = {}) {
     0
   );
 
-  const lastSevenDays = getLastWeekdayKeys(currentMarketDayKey, 7).map((dayKey) => {
+  const lastSevenDays = getLastMarketDayKeys(currentMarketDayKey, 7).map((dayKey) => {
     const stats = dailyMap.get(dayKey);
 
     return {
@@ -471,8 +422,7 @@ export function buildAnalytics(trades, options = {}) {
     drawdown: item.drawdown
   }));
 
-  const winRateThirtyDays = Array.from({ length: 30 }, (_, index) => {
-    const dayKey = shiftDayKey(currentMarketDayKey, index - 29);
+  const winRateThirtyDays = getLastMarketDayKeys(currentMarketDayKey, 30).map((dayKey) => {
     const stats = dailyMap.get(dayKey);
     const trades = stats?.trades || 0;
     const winsForDay = stats?.wins || 0;
@@ -484,8 +434,7 @@ export function buildAnalytics(trades, options = {}) {
     };
   });
 
-  const dailyVolumeThirtyDays = Array.from({ length: 30 }, (_, index) => {
-    const dayKey = shiftDayKey(currentMarketDayKey, index - 29);
+  const dailyVolumeThirtyDays = getLastMarketDayKeys(currentMarketDayKey, 30).map((dayKey) => {
     const stats = dailyMap.get(dayKey);
 
     return {

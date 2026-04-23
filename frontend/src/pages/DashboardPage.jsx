@@ -8,6 +8,8 @@ import { buildAnalytics } from "../utils/analytics";
 import { useAuth } from "../context/AuthContext";
 
 const RANGE_OPTIONS = [
+  { key: "7", label: "7D", days: 7 },
+  { key: "14", label: "14D", days: 14 },
   { key: "30", label: "30D", days: 30 },
   { key: "60", label: "60D", days: 60 },
   { key: "90", label: "90D", days: 90 },
