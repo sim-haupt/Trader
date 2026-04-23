@@ -84,6 +84,7 @@ function AdminTradeTable({
               <th className="px-4 py-4">Quantity</th>
               <th className="px-4 py-4">Fees</th>
               <th className="px-4 py-4">P&amp;L</th>
+              <th className="px-4 py-4">P&amp;L / Share</th>
               <th className="px-4 py-4">Strategy</th>
               <th className="px-4 py-4">Entry Date</th>
               <th className="px-4 py-4">Actions</th>
@@ -93,6 +94,10 @@ function AdminTradeTable({
             {trades.map((trade) => {
               const isEditing = editingId === trade.id;
               const pnl = Number(trade.netPnl ?? trade.grossPnl ?? 0);
+              const quantity = isEditing
+                ? Math.abs(Number(draft?.quantity ?? trade.quantity ?? 0))
+                : Math.abs(Number(trade.quantity ?? 0));
+              const perSharePnl = quantity > 0 ? pnl / quantity : 0;
 
               return (
                 <tr key={trade.id} className="align-top transition hover:bg-white/5">
@@ -171,6 +176,7 @@ function AdminTradeTable({
                         />
                       </td>
                       <td className="px-4 py-4 text-slate-300">{formatCurrency(pnl)}</td>
+                      <td className="px-4 py-4 text-slate-300">{formatCurrency(perSharePnl)}</td>
                       <td className="px-4 py-4">
                         <input
                           name="strategy"
@@ -233,6 +239,13 @@ function AdminTradeTable({
                         }`}
                       >
                         {formatCurrency(pnl)}
+                      </td>
+                      <td
+                        className={`px-4 py-4 font-semibold ${
+                          perSharePnl >= 0 ? "text-mint" : "text-coral"
+                        }`}
+                      >
+                        {formatCurrency(perSharePnl)}
                       </td>
                       <td className="px-4 py-4 text-mist">{trade.strategy || "-"}</td>
                       <td className="px-4 py-4 text-mist">{formatDate(trade.entryDate)}</td>

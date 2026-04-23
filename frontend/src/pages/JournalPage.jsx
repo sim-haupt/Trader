@@ -730,6 +730,7 @@ function JournalDayCard({
                   <th className="px-4 py-3 font-medium">Volume</th>
                   <th className="px-4 py-3 font-medium">Execs</th>
                   <th className="px-4 py-3 font-medium">P&amp;L</th>
+                  <th className="px-4 py-3 font-medium">P&amp;L / Share</th>
                   <th className="px-4 py-3 font-medium">Strategy</th>
                   <th className="px-4 py-3 font-medium">Tags</th>
                 </tr>
@@ -752,6 +753,23 @@ function JournalDayCard({
                       <td className={`px-4 py-3 font-medium ${trade.dayPnl > 0 ? "text-mint" : trade.dayPnl < 0 ? "text-coral" : "text-white/70"}`}>
                         {formatCurrency(trade.dayPnl)}
                       </td>
+                      <td
+                        className={`px-4 py-3 font-medium ${
+                          Number(trade.quantity || 0) === 0
+                            ? "text-white/70"
+                            : trade.dayPnl / Math.abs(Number(trade.quantity || 0)) > 0
+                              ? "text-mint"
+                              : trade.dayPnl / Math.abs(Number(trade.quantity || 0)) < 0
+                                ? "text-coral"
+                                : "text-white/70"
+                        }`}
+                      >
+                        {formatCurrency(
+                          Number(trade.quantity || 0) === 0
+                            ? 0
+                            : trade.dayPnl / Math.abs(Number(trade.quantity || 0))
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-white/54">
                         {trade.strategy ? <span className="ui-chip">{trade.strategy}</span> : <span className="text-white/26">—</span>}
                       </td>
@@ -772,7 +790,7 @@ function JournalDayCard({
                   ))
                 ) : (
                   <tr className="border-t border-[var(--line)] bg-[rgba(255,255,255,0.05)]">
-                    <td colSpan={7} className="px-4 py-5 text-sm text-white/40">
+                    <td colSpan={8} className="px-4 py-5 text-sm text-white/40">
                       No trades logged for this day.
                     </td>
                   </tr>

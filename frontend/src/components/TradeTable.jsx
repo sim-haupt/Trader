@@ -39,7 +39,7 @@ function TradeTable({
   onToggleAll
 }) {
   const allSelected = trades.length > 0 && trades.every((trade) => selectedIds.includes(trade.id));
-  const columnCount = (onToggleSelection ? 1 : 0) + 7 + (showActions ? 1 : 0);
+  const columnCount = (onToggleSelection ? 1 : 0) + 8 + (showActions ? 1 : 0);
 
   return (
     <div className="ui-table-shell">
@@ -64,12 +64,15 @@ function TradeTable({
               <th className="px-4 py-4">QUANTITY</th>
               <th className="px-4 py-4">EXECUTIONS</th>
               <th className="px-4 py-4">P&amp;L</th>
+              <th className="px-4 py-4">P&amp;L / SHARE</th>
               {showActions && <th className="px-4 py-4">ACTIONS</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--line)] bg-transparent">
             {trades.map((trade, index) => {
               const pnl = Number(trade.netPnl ?? trade.grossPnl ?? 0);
+              const quantity = Math.abs(Number(trade.quantity ?? 0));
+              const perSharePnl = quantity > 0 ? pnl / quantity : 0;
               const executionCount =
                 Number(trade.reportedExecutionCount ?? trade.executions?.length ?? 0) || 0;
               const currentDate = formatDate(trade.entryDate);
@@ -152,6 +155,13 @@ function TradeTable({
                       }`}
                     >
                       {formatCurrency(pnl)}
+                    </td>
+                    <td
+                      className={`px-4 py-4 font-semibold ${
+                        perSharePnl >= 0 ? "text-mint" : "text-coral"
+                      }`}
+                    >
+                      {formatCurrency(perSharePnl)}
                     </td>
                     {showActions && (
                       <td className="px-4 py-4">
