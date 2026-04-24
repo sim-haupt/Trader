@@ -405,14 +405,14 @@ function JournalDayCard({
                     dot={false}
                   />
                   {day.chartData
-                    .filter((point) => point.isSelected)
+                    .filter((point) => point.symbol)
                     .map((point) => (
                       <ReferenceDot
                         key={point.id}
                         x={point.label}
                         y={point.pnl}
-                        r={6}
-                        fill={day.totalPnl > 0 ? "#6ef0c3" : day.totalPnl < 0 ? "#ff7e6b" : "#ededed"}
+                        r={point.isSelected ? 6 : 5}
+                        fill={point.pnl > 0 ? "#6ef0c3" : point.pnl < 0 ? "#ff7e6b" : "#ededed"}
                         stroke="transparent"
                       />
                     ))}
