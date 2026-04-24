@@ -27,6 +27,7 @@ import { getTradeFeeDisplayValue, getTradeNetPnl } from "../utils/tradePnl";
 import { normalizeRichTextHtml } from "../utils/richText";
 
 const PAGE_SIZE = 5;
+const JOURNAL_CHART_EDGE_PADDING_MS = 60 * 60 * 1000;
 
 function getDayKey(value) {
   const formatted = formatDateTimeLocal(value);
@@ -168,8 +169,8 @@ function buildJournalVisualization(dayKey, trades) {
   );
 
   if (sortedTrades.length === 0) {
-    const fallbackStart = `${dayKey}T09:30:00-04:00`;
-    const fallbackEnd = `${dayKey}T16:00:00-04:00`;
+    const fallbackStart = `${dayKey}T08:30:00-04:00`;
+    const fallbackEnd = `${dayKey}T17:00:00-04:00`;
 
     return {
       trades: sortedTrades,
@@ -193,21 +194,44 @@ function buildJournalVisualization(dayKey, trades) {
   }
 
   let cumulative = 0;
+  const firstTradeTimestamp = new Date(sortedTrades[0].exitDate || sortedTrades[0].entryDate).getTime();
+  const lastTradeTimestamp = new Date(
+    sortedTrades[sortedTrades.length - 1].exitDate || sortedTrades[sortedTrades.length - 1].entryDate
+  ).getTime();
+  const leadingPoint = {
+    id: `${dayKey}-leading`,
+    label: formatTimeLabel(new Date(firstTradeTimestamp - JOURNAL_CHART_EDGE_PADDING_MS).toISOString()),
+    timestamp: new Date(firstTradeTimestamp - JOURNAL_CHART_EDGE_PADDING_MS).toISOString(),
+    pnl: 0,
+    isSelected: false
+  };
+  const chartPoints = [leadingPoint];
+
+  for (let index = 0; index < sortedTrades.length; index += 1) {
+    const trade = sortedTrades[index];
+    cumulative += trade.dayPnl;
+
+    chartPoints.push({
+      id: trade.id,
+      label: formatTimeLabel(trade.exitDate || trade.entryDate),
+      timestamp: trade.exitDate || trade.entryDate,
+      pnl: Number(cumulative.toFixed(2)),
+      isSelected: index === sortedTrades.length - 1,
+      symbol: trade.symbol
+    });
+  }
+
+  chartPoints.push({
+    id: `${dayKey}-trailing`,
+    label: formatTimeLabel(new Date(lastTradeTimestamp + JOURNAL_CHART_EDGE_PADDING_MS).toISOString()),
+    timestamp: new Date(lastTradeTimestamp + JOURNAL_CHART_EDGE_PADDING_MS).toISOString(),
+    pnl: Number(cumulative.toFixed(2)),
+    isSelected: false
+  });
 
   return {
     trades: sortedTrades,
-    chartData: sortedTrades.map((trade, index) => {
-      cumulative += trade.dayPnl;
-
-      return {
-        id: trade.id,
-        label: formatTimeLabel(trade.exitDate || trade.entryDate),
-        timestamp: trade.exitDate || trade.entryDate,
-        pnl: Number(cumulative.toFixed(2)),
-        isSelected: index === sortedTrades.length - 1,
-        symbol: trade.symbol
-      };
-    })
+    chartData: chartPoints
   };
 }
 
@@ -388,7 +412,7 @@ function JournalDayCard({
                         x={point.label}
                         y={point.pnl}
                         r={6}
-                        fill="#d7f06e"
+                        fill={day.totalPnl > 0 ? "#6ef0c3" : day.totalPnl < 0 ? "#ff7e6b" : "#ededed"}
                         stroke="transparent"
                       />
                     ))}
