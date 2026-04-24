@@ -313,9 +313,90 @@ function buildJournalVisualization(dayKey, trades) {
     negativeCumulative: point.cumulative < 0 ? point.cumulative : null
   }));
 
+  const chartSegments = [];
+
+  for (let index = 1; index < chartSeries.length; index += 1) {
+    const previousPoint = chartSeries[index - 1];
+    const currentPoint = chartSeries[index];
+    const previousColor = previousPoint.cumulative < 0 ? "#ff5f7a" : "#3dff9a";
+    const currentColor = currentPoint.cumulative < 0 ? "#ff5f7a" : "#3dff9a";
+
+    chartSegments.push({
+      key: `${dayKey}-horizontal-${index}`,
+      color: previousColor,
+      data: [
+        {
+          timeValue: previousPoint.timeValue,
+          segmentValue: previousPoint.cumulative
+        },
+        {
+          timeValue: currentPoint.timeValue,
+          segmentValue: previousPoint.cumulative
+        }
+      ]
+    });
+
+    if (previousPoint.cumulative === currentPoint.cumulative) {
+      continue;
+    }
+
+    const crossedZero =
+      (previousPoint.cumulative < 0 && currentPoint.cumulative >= 0) ||
+      (previousPoint.cumulative >= 0 && currentPoint.cumulative < 0);
+
+    if (crossedZero) {
+      chartSegments.push({
+        key: `${dayKey}-vertical-${index}-from`,
+        color: previousColor,
+        data: [
+          {
+            timeValue: currentPoint.timeValue,
+            segmentValue: previousPoint.cumulative
+          },
+          {
+            timeValue: currentPoint.timeValue,
+            segmentValue: 0
+          }
+        ]
+      });
+
+      chartSegments.push({
+        key: `${dayKey}-vertical-${index}-to`,
+        color: currentColor,
+        data: [
+          {
+            timeValue: currentPoint.timeValue,
+            segmentValue: 0
+          },
+          {
+            timeValue: currentPoint.timeValue,
+            segmentValue: currentPoint.cumulative
+          }
+        ]
+      });
+      continue;
+    }
+
+    chartSegments.push({
+      key: `${dayKey}-vertical-${index}`,
+      color: currentColor,
+      data: [
+        {
+          timeValue: currentPoint.timeValue,
+          segmentValue: previousPoint.cumulative
+        },
+        {
+          timeValue: currentPoint.timeValue,
+          segmentValue: currentPoint.cumulative
+        }
+      ]
+    });
+  }
+
   return {
     trades: sortedTrades,
     chartData: chartSeries,
+    chartSegments,
     timelineStart,
     timelineEnd,
     timeTicks
@@ -394,6 +475,7 @@ function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees, inc
         ...day,
         trades: visualization.trades,
         chartData: visualization.chartData,
+        chartSegments: visualization.chartSegments,
         timelineStart: visualization.timelineStart,
         timelineEnd: visualization.timelineEnd,
         timeTicks: visualization.timeTicks,
@@ -483,26 +565,21 @@ function JournalDayCard({
                   width={52}
                 />
                 <Tooltip content={<JournalChartTooltip />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
-                <Line
-                  type="linear"
-                  dataKey="positiveCumulative"
-                  stroke="#3dff9a"
-                  strokeWidth={3}
-                  dot={false}
-                  connectNulls
-                  isAnimationActive={false}
-                  activeDot={false}
-                />
-                <Line
-                  type="linear"
-                  dataKey="negativeCumulative"
-                  stroke="#ff5f7a"
-                  strokeWidth={3}
-                  dot={false}
-                  connectNulls
-                  isAnimationActive={false}
-                  activeDot={false}
-                />
+                {day.chartSegments.map((segment) => (
+                  <Line
+                    key={segment.key}
+                    type="linear"
+                    data={segment.data}
+                    dataKey="segmentValue"
+                    stroke={segment.color}
+                    strokeWidth={3}
+                    dot={false}
+                    isAnimationActive={false}
+                    activeDot={false}
+                    legendType="none"
+                    connectNulls
+                  />
+                ))}
                 {day.chartData
                   .filter((point) => point.isTrade)
                   .map((point) => (
