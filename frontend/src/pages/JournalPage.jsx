@@ -28,11 +28,6 @@ import { getTradeFeeDisplayValue, getTradeNetPnl } from "../utils/tradePnl";
 import { normalizeRichTextHtml } from "../utils/richText";
 
 const PAGE_SIZE = 5;
-const JOURNAL_TIMELINE_PADDING_SECONDS = 2 * 60 * 60;
-const DAY_START_SECONDS = 0;
-const DAY_END_SECONDS = 24 * 60 * 60 - 1;
-const EMPTY_DAY_TIMELINE_START_SECONDS = 4 * 60 * 60;
-const EMPTY_DAY_TIMELINE_END_SECONDS = 20 * 60 * 60;
 
 function getDayKey(value) {
   const formatted = formatDateTimeLocal(value);
@@ -105,50 +100,6 @@ function formatDayLabel(dayKey) {
 function formatTimeLabel(value) {
   const formatted = formatDateTimeLocal(value);
   return formatted ? formatted.slice(11, 19) : "--:--:--";
-}
-
-function getSessionSeconds(value) {
-  const timeLabel = formatTimeLabel(value);
-
-  if (!timeLabel || timeLabel === "--:--:--") {
-    return DAY_START_SECONDS;
-  }
-
-  const [hours = 0, minutes = 0, seconds = 0] = timeLabel.split(":").map((part) => Number(part) || 0);
-  const totalSeconds = hours * 60 * 60 + minutes * 60 + seconds;
-
-  return Math.max(DAY_START_SECONDS, Math.min(DAY_END_SECONDS, totalSeconds));
-}
-
-function formatSessionAxisTime(totalSeconds) {
-  const normalized = Math.max(0, Number(totalSeconds) || 0);
-  const hours = Math.floor(normalized / 3600);
-  const minutes = Math.floor((normalized % 3600) / 60);
-
-  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
-}
-
-function buildJournalTimeTicks(startSeconds, endSeconds) {
-  const safeStart = Math.max(DAY_START_SECONDS, Math.min(DAY_END_SECONDS, Number(startSeconds) || 0));
-  const safeEnd = Math.max(safeStart, Math.min(DAY_END_SECONDS, Number(endSeconds) || safeStart));
-  const range = safeEnd - safeStart;
-  const step = range <= 6 * 60 * 60 ? 30 * 60 : 60 * 60;
-  const ticks = [safeStart];
-  let nextTick = Math.ceil(safeStart / step) * step;
-
-  while (nextTick < safeEnd) {
-    if (nextTick > safeStart) {
-      ticks.push(nextTick);
-    }
-
-    nextTick += step;
-  }
-
-  if (ticks[ticks.length - 1] !== safeEnd) {
-    ticks.push(safeEnd);
-  }
-
-  return [...new Set(ticks)];
 }
 
 function getTradeTags(trade) {
