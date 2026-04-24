@@ -21,7 +21,6 @@ import journalService from "../services/journalService";
 import tagService from "../services/tagService";
 import strategyService from "../services/strategyService";
 import { formatCurrency, formatDateTimeLocal } from "../utils/formatters";
-import { formatMinuteLabel } from "../utils/tradeDetail";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
 import { getTradeFeeDisplayValue, getTradeNetPnl } from "../utils/tradePnl";
@@ -177,14 +176,14 @@ function buildJournalVisualization(dayKey, trades) {
       chartData: [
         {
           id: `${dayKey}-empty-start`,
-          label: formatMinuteLabel(fallbackStart),
+          label: formatTimeLabel(fallbackStart),
           timestamp: fallbackStart,
           pnl: 0,
           isSelected: false
         },
         {
           id: `${dayKey}-empty-end`,
-          label: formatMinuteLabel(fallbackEnd),
+          label: formatTimeLabel(fallbackEnd),
           timestamp: fallbackEnd,
           pnl: 0,
           isSelected: false
@@ -202,7 +201,7 @@ function buildJournalVisualization(dayKey, trades) {
 
       return {
         id: trade.id,
-        label: formatMinuteLabel(trade.exitDate || trade.entryDate),
+        label: formatTimeLabel(trade.exitDate || trade.entryDate),
         timestamp: trade.exitDate || trade.entryDate,
         pnl: Number(cumulative.toFixed(2)),
         isSelected: index === sortedTrades.length - 1,
@@ -345,7 +344,7 @@ function JournalDayCard({
     >
       <div className="space-y-5">
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)]">
-          <div className="overflow-hidden rounded-[6px] border border-[var(--line)] bg-black">
+          <div className="rounded-[6px] border border-[var(--line)] bg-black">
             <div className="border-b border-[var(--line)] px-4 py-4">
               <div className="ui-title text-[10px] text-white/72">Day Running P&amp;L</div>
               <div className="mt-3 text-sm text-white/54">
@@ -368,7 +367,12 @@ function JournalDayCard({
                     axisLine={false}
                     tickLine={false}
                   />
-                  <Tooltip content={<JournalChartTooltip />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
+                  <Tooltip
+                    content={<JournalChartTooltip />}
+                    offset={14}
+                    allowEscapeViewBox={{ x: true, y: true }}
+                    wrapperStyle={{ zIndex: 20 }}
+                  />
                   <Line
                     type="monotone"
                     dataKey="pnl"
