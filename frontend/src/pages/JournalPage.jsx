@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
-  Area,
   CartesianGrid,
-  ComposedChart,
   Line,
+  LineChart,
+  ReferenceDot,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -313,90 +313,9 @@ function buildJournalVisualization(dayKey, trades) {
     negativeCumulative: point.cumulative < 0 ? point.cumulative : null
   }));
 
-  const chartSegments = [];
-
-  for (let index = 1; index < chartSeries.length; index += 1) {
-    const previousPoint = chartSeries[index - 1];
-    const currentPoint = chartSeries[index];
-    const previousColor = previousPoint.cumulative < 0 ? "#ff5f7a" : "#3dff9a";
-    const currentColor = currentPoint.cumulative < 0 ? "#ff5f7a" : "#3dff9a";
-
-    chartSegments.push({
-      key: `${dayKey}-horizontal-${index}`,
-      color: previousColor,
-      data: [
-        {
-          timeValue: previousPoint.timeValue,
-          segmentValue: previousPoint.cumulative
-        },
-        {
-          timeValue: currentPoint.timeValue,
-          segmentValue: previousPoint.cumulative
-        }
-      ]
-    });
-
-    if (previousPoint.cumulative === currentPoint.cumulative) {
-      continue;
-    }
-
-    const crossedZero =
-      (previousPoint.cumulative < 0 && currentPoint.cumulative >= 0) ||
-      (previousPoint.cumulative >= 0 && currentPoint.cumulative < 0);
-
-    if (crossedZero) {
-      chartSegments.push({
-        key: `${dayKey}-vertical-${index}-from`,
-        color: previousColor,
-        data: [
-          {
-            timeValue: currentPoint.timeValue,
-            segmentValue: previousPoint.cumulative
-          },
-          {
-            timeValue: currentPoint.timeValue,
-            segmentValue: 0
-          }
-        ]
-      });
-
-      chartSegments.push({
-        key: `${dayKey}-vertical-${index}-to`,
-        color: currentColor,
-        data: [
-          {
-            timeValue: currentPoint.timeValue,
-            segmentValue: 0
-          },
-          {
-            timeValue: currentPoint.timeValue,
-            segmentValue: currentPoint.cumulative
-          }
-        ]
-      });
-      continue;
-    }
-
-    chartSegments.push({
-      key: `${dayKey}-vertical-${index}`,
-      color: currentColor,
-      data: [
-        {
-          timeValue: currentPoint.timeValue,
-          segmentValue: previousPoint.cumulative
-        },
-        {
-          timeValue: currentPoint.timeValue,
-          segmentValue: currentPoint.cumulative
-        }
-      ]
-    });
-  }
-
   return {
     trades: sortedTrades,
     chartData: chartSeries,
-    chartSegments,
     timelineStart,
     timelineEnd,
     timeTicks
@@ -475,7 +394,6 @@ function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees, inc
         ...day,
         trades: visualization.trades,
         chartData: visualization.chartData,
-        chartSegments: visualization.chartSegments,
         timelineStart: visualization.timelineStart,
         timelineEnd: visualization.timelineEnd,
         timeTicks: visualization.timeTicks,
@@ -543,103 +461,64 @@ function JournalDayCard({
           <div className="h-[180px] rounded-[6px] border border-[var(--line)] bg-black p-3 pb-4">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart
+              <LineChart
                 data={day.chartData}
                 margin={{ top: 8, right: 8, left: 0, bottom: 16 }}
               >
-                <defs>
-                  <linearGradient id={`journal-${day.dayKey}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#3dff9a" stopOpacity={0.28} />
-                    <stop offset="100%" stopColor="#3dff9a" stopOpacity={0.03} />
-                  </linearGradient>
-                  <linearGradient id={`journal-negative-${day.dayKey}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#ff5f7a" stopOpacity={0.24} />
-                    <stop offset="100%" stopColor="#ff5f7a" stopOpacity={0.03} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke="rgba(255,255,255,0.07)" vertical={false} />
+                <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
                 <XAxis
                   type="number"
                   dataKey="timeValue"
                   domain={[day.timelineStart, day.timelineEnd]}
                   ticks={day.timeTicks}
                   tickFormatter={formatSessionAxisTime}
-                  tick={{ fill: "#9aa4b7", fontSize: 11 }}
+                  tick={{ fill: "#bcc4d4", fontSize: 12 }}
                   axisLine={false}
                   tickLine={false}
                 />
-                <YAxis tickFormatter={(value) => `$${value}`} tick={{ fill: "#9aa4b7", fontSize: 11 }} axisLine={false} tickLine={false} width={52} />
-                <Tooltip content={<JournalChartTooltip />} />
-                <Area
-                  type="stepAfter"
+                <YAxis
+                  tickFormatter={(value) => `$${value}`}
+                  tick={{ fill: "#bcc4d4", fontSize: 12 }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={52}
+                />
+                <Tooltip content={<JournalChartTooltip />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
+                <Line
+                  type="linear"
                   dataKey="positiveCumulative"
-                  stroke="none"
-                  fill={`url(#journal-${day.dayKey})`}
+                  stroke="#3dff9a"
+                  strokeWidth={3}
+                  dot={false}
+                  connectNulls
                   isAnimationActive={false}
                   activeDot={false}
                 />
-                <Area
-                  type="stepAfter"
+                <Line
+                  type="linear"
                   dataKey="negativeCumulative"
-                  stroke="none"
-                  fill={`url(#journal-negative-${day.dayKey})`}
+                  stroke="#ff5f7a"
+                  strokeWidth={3}
+                  dot={false}
+                  connectNulls
                   isAnimationActive={false}
                   activeDot={false}
                 />
-                {day.chartSegments.map((segment) => (
-                  <Line
-                    key={segment.key}
-                    data={segment.data}
-                    type="linear"
-                    dataKey="segmentValue"
-                    stroke={segment.color}
-                    strokeWidth={2.3}
-                    dot={false}
-                    activeDot={false}
-                    isAnimationActive={false}
-                  />
-                ))}
-                <Area
-                  type="stepAfter"
-                  dataKey="cumulative"
-                  stroke="transparent"
-                  strokeWidth={0}
-                  fill={`url(#journal-${day.dayKey})`}
-                  fillOpacity={0}
-                  isAnimationActive={false}
-                  dot={(props) => {
-                    if (!props.payload?.isTrade) {
-                      return null;
-                    }
-
-                    return (
-                      <circle
-                        cx={props.cx}
-                        cy={props.cy}
-                        r={3}
-                        fill={props.payload.cumulative < 0 ? "#ff5f7a" : "#3dff9a"}
-                        stroke="#000000"
-                        strokeWidth={1.5}
-                      />
-                    );
-                  }}
-                  activeDot={(props) => {
-                    if (!props.payload?.isTrade) {
-                      return null;
-                    }
-
-                    return (
-                      <circle
-                        cx={props.cx}
-                        cy={props.cy}
-                        r={4}
-                        fill={props.payload.cumulative < 0 ? "#ff5f7a" : "#3dff9a"}
-                        stroke="#000000"
-                        strokeWidth={1.5}
-                      />
-                    );
-                  }}
-                />
-              </ComposedChart>
+                {day.chartData
+                  .filter((point) => point.isTrade)
+                  .map((point) => (
+                    <ReferenceDot
+                      key={`${day.dayKey}-${point.timeValue}`}
+                      x={point.timeValue}
+                      y={point.cumulative}
+                      r={4}
+                      fill={point.cumulative < 0 ? "#ff5f7a" : "#3dff9a"}
+                      stroke="#000000"
+                      strokeWidth={1.5}
+                      isFront
+                    />
+                  ))}
+              </LineChart>
             </ResponsiveContainer>
           </div>
 
@@ -746,7 +625,6 @@ function JournalDayCard({
                       <td className="px-4 py-3 whitespace-nowrap">{trade.entryTimeLabel}</td>
                       <td className="px-4 py-3">
                         <div className="font-medium text-white">{trade.symbol}</div>
-                        {trade.strategy ? <div className="mt-1"><span className="ui-chip">{trade.strategy}</span></div> : null}
                       </td>
                       <td className="px-4 py-3">{Math.round(Number(trade.quantity || 0)).toLocaleString()}</td>
                       <td className="px-4 py-3">{trade.execCount}</td>

@@ -311,7 +311,7 @@ strong {
   .ui-chip {
     background: #0f0f0f;
     color: #ededed;
-    border-color: rgba(255, 255, 255, 0.72);
+    border-color: rgba(255, 255, 255, 0.52);
     padding: 6px 10px;
     font-size: 0.74rem;
     font-weight: 500;
@@ -323,7 +323,7 @@ strong {
     justify-content: center;
     gap: 8px;
     border-radius: var(--radius-sm);
-    border: 1px solid rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.52);
     background: #0f0f0f;
     color: #ededed;
     padding: 6px 10px;
@@ -338,7 +338,7 @@ strong {
   }
 
   .ui-chip-removable:hover {
-    border-color: rgba(255, 255, 255, 0.86);
+    border-color: rgba(255, 255, 255, 0.68);
     background: #151515;
   }
 
