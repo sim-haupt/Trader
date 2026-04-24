@@ -21,6 +21,7 @@ import journalService from "../services/journalService";
 import tagService from "../services/tagService";
 import strategyService from "../services/strategyService";
 import { formatCurrency, formatDateTimeLocal } from "../utils/formatters";
+import { formatMinuteLabel } from "../utils/tradeDetail";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
 import { getTradeFeeDisplayValue, getTradeNetPnl } from "../utils/tradePnl";
@@ -213,193 +214,50 @@ function matchesJournalDayRange(dayKey, filters) {
 
 function buildJournalVisualization(dayKey, trades) {
   const sortedTrades = [...trades].sort(
-    (left, right) => new Date(left.entryDate).getTime() - new Date(right.entryDate).getTime()
+    (left, right) => new Date(left.exitDate || left.entryDate).getTime() - new Date(right.exitDate || right.entryDate).getTime()
   );
 
   if (sortedTrades.length === 0) {
-    const timelineStart = EMPTY_DAY_TIMELINE_START_SECONDS;
-    const timelineEnd = EMPTY_DAY_TIMELINE_END_SECONDS;
+    const fallbackStart = `${dayKey}T09:30:00-04:00`;
+    const fallbackEnd = `${dayKey}T16:00:00-04:00`;
 
     return {
       trades: sortedTrades,
-      timelineStart,
-      timelineEnd,
-      timeTicks: buildJournalTimeTicks(timelineStart, timelineEnd),
       chartData: [
         {
-          timeValue: timelineStart,
-          timeLabel: formatSessionAxisTime(timelineStart),
-          cumulative: 0,
-          positiveCumulative: 0,
-          negativeCumulative: null,
-          isTrade: false
+          id: `${dayKey}-empty-start`,
+          label: formatMinuteLabel(fallbackStart),
+          timestamp: fallbackStart,
+          pnl: 0,
+          isSelected: false
         },
         {
-          timeValue: timelineEnd,
-          timeLabel: formatSessionAxisTime(timelineEnd),
-          cumulative: 0,
-          positiveCumulative: 0,
-          negativeCumulative: null,
-          isTrade: false
-        }
-      ],
-      chartSegments: [
-        {
-          key: `${dayKey}-empty`,
-          color: "#3dff9a",
-          data: [
-            {
-              timeValue: timelineStart,
-              segmentValue: 0
-            },
-            {
-              timeValue: timelineEnd,
-              segmentValue: 0
-            }
-          ]
+          id: `${dayKey}-empty-end`,
+          label: formatMinuteLabel(fallbackEnd),
+          timestamp: fallbackEnd,
+          pnl: 0,
+          isSelected: false
         }
       ]
     };
   }
 
   let cumulative = 0;
-  const tradeTimeValues = sortedTrades.map((trade) => getSessionSeconds(trade.entryDate));
-  const firstTradeTime = tradeTimeValues[0];
-  const lastTradeTime = tradeTimeValues[tradeTimeValues.length - 1];
-  const timelineStart = Math.max(DAY_START_SECONDS, firstTradeTime - JOURNAL_TIMELINE_PADDING_SECONDS);
-  const timelineEnd = Math.min(DAY_END_SECONDS, lastTradeTime + JOURNAL_TIMELINE_PADDING_SECONDS);
-  const timeTicks = buildJournalTimeTicks(timelineStart, timelineEnd);
-
-  const chartData = [
-    {
-      timeValue: timelineStart,
-      timeLabel: formatSessionAxisTime(timelineStart),
-      cumulative: 0,
-      isTrade: false
-    }
-  ];
-
-  for (let tradeIndex = 0; tradeIndex < sortedTrades.length; tradeIndex += 1) {
-    const trade = sortedTrades[tradeIndex];
-    const tradeTimeSeconds = tradeTimeValues[tradeIndex];
-
-    chartData.push({
-      timeValue: tradeTimeSeconds,
-      timeLabel: trade.entryTimeLabel,
-      cumulative: Number(cumulative.toFixed(2)),
-      isTrade: false
-    });
-
-    cumulative += trade.dayPnl;
-
-    chartData.push({
-      timeValue: Math.min(tradeTimeSeconds + 1, timelineEnd),
-      timeLabel: trade.entryTimeLabel,
-      cumulative: Number(cumulative.toFixed(2)),
-      isTrade: true
-    });
-  }
-
-  chartData.push({
-    timeValue: timelineEnd,
-    timeLabel: formatSessionAxisTime(timelineEnd),
-    cumulative: Number(cumulative.toFixed(2)),
-    isTrade: false
-  });
-
-  const chartSeries = chartData.map((point) => ({
-    ...point,
-    positiveCumulative: point.cumulative >= 0 ? point.cumulative : null,
-    negativeCumulative: point.cumulative < 0 ? point.cumulative : null
-  }));
-
-  const chartSegments = [];
-
-  for (let index = 1; index < chartSeries.length; index += 1) {
-    const previousPoint = chartSeries[index - 1];
-    const currentPoint = chartSeries[index];
-    const previousColor = previousPoint.cumulative < 0 ? "#ff5f7a" : "#3dff9a";
-    const currentColor = currentPoint.cumulative < 0 ? "#ff5f7a" : "#3dff9a";
-
-    chartSegments.push({
-      key: `${dayKey}-horizontal-${index}`,
-      color: previousColor,
-      data: [
-        {
-          timeValue: previousPoint.timeValue,
-          segmentValue: previousPoint.cumulative
-        },
-        {
-          timeValue: currentPoint.timeValue,
-          segmentValue: previousPoint.cumulative
-        }
-      ]
-    });
-
-    if (previousPoint.cumulative === currentPoint.cumulative) {
-      continue;
-    }
-
-    const crossedZero =
-      (previousPoint.cumulative < 0 && currentPoint.cumulative >= 0) ||
-      (previousPoint.cumulative >= 0 && currentPoint.cumulative < 0);
-
-    if (crossedZero) {
-      chartSegments.push({
-        key: `${dayKey}-vertical-${index}-from`,
-        color: previousColor,
-        data: [
-          {
-            timeValue: currentPoint.timeValue,
-            segmentValue: previousPoint.cumulative
-          },
-          {
-            timeValue: currentPoint.timeValue,
-            segmentValue: 0
-          }
-        ]
-      });
-
-      chartSegments.push({
-        key: `${dayKey}-vertical-${index}-to`,
-        color: currentColor,
-        data: [
-          {
-            timeValue: currentPoint.timeValue,
-            segmentValue: 0
-          },
-          {
-            timeValue: currentPoint.timeValue,
-            segmentValue: currentPoint.cumulative
-          }
-        ]
-      });
-      continue;
-    }
-
-    chartSegments.push({
-      key: `${dayKey}-vertical-${index}`,
-      color: currentColor,
-      data: [
-        {
-          timeValue: currentPoint.timeValue,
-          segmentValue: previousPoint.cumulative
-        },
-        {
-          timeValue: currentPoint.timeValue,
-          segmentValue: currentPoint.cumulative
-        }
-      ]
-    });
-  }
 
   return {
     trades: sortedTrades,
-    chartData: chartSeries,
-    chartSegments,
-    timelineStart,
-    timelineEnd,
-    timeTicks
+    chartData: sortedTrades.map((trade, index) => {
+      cumulative += trade.dayPnl;
+
+      return {
+        id: trade.id,
+        label: formatMinuteLabel(trade.exitDate || trade.entryDate),
+        timestamp: trade.exitDate || trade.entryDate,
+        pnl: Number(cumulative.toFixed(2)),
+        isSelected: index === sortedTrades.length - 1,
+        symbol: trade.symbol
+      };
+    })
   };
 }
 
@@ -475,10 +333,6 @@ function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees, inc
         ...day,
         trades: visualization.trades,
         chartData: visualization.chartData,
-        chartSegments: visualization.chartSegments,
-        timelineStart: visualization.timelineStart,
-        timelineEnd: visualization.timelineEnd,
-        timeTicks: visualization.timeTicks,
         totalPnl: Number(day.totalPnl.toFixed(2)),
         totalFees: Number(day.totalFees.toFixed(2)),
         winRate: day.totalTrades ? (day.wins / day.totalTrades) * 100 : 0,
@@ -493,13 +347,13 @@ function JournalChartTooltip({ active, payload, label }) {
     return null;
   }
 
-  const point = payload[0]?.payload;
-  const timeLabel = point?.timeLabel || formatSessionAxisTime(label);
+  const value = payload[0]?.value;
+  const valueClass = value < 0 ? "text-coral" : value > 0 ? "text-mint" : "text-white";
 
   return (
-    <div className="rounded-[6px] border border-[var(--line)] bg-black px-3 py-2 text-xs text-white">
-      <div className="text-white/52">{timeLabel}</div>
-      <div className="mt-1 font-medium text-white">{formatCurrency(payload[0].value)}</div>
+    <div className="rounded-[6px] border border-[var(--line)] bg-black px-3 py-2 text-xs text-phosphor">
+      <div className="font-medium text-white">{label}</div>
+      <div className={`mt-1 ${valueClass}`}>{formatCurrency(value)}</div>
     </div>
   );
 }
@@ -540,62 +394,52 @@ function JournalDayCard({
     >
       <div className="space-y-5">
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)]">
-          <div className="h-[180px] rounded-[6px] border border-[var(--line)] bg-black p-3 pb-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={day.chartData}
-                margin={{ top: 8, right: 8, left: 0, bottom: 16 }}
-              >
-                <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
-                <XAxis
-                  type="number"
-                  dataKey="timeValue"
-                  domain={[day.timelineStart, day.timelineEnd]}
-                  ticks={day.timeTicks}
-                  tickFormatter={formatSessionAxisTime}
-                  tick={{ fill: "#bcc4d4", fontSize: 12 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tickFormatter={(value) => `$${value}`}
-                  tick={{ fill: "#bcc4d4", fontSize: 12 }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={52}
-                />
-                <Tooltip content={<JournalChartTooltip />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
-                {day.chartSegments.map((segment) => (
+          <div className="overflow-hidden rounded-[6px] border border-[var(--line)] bg-black">
+            <div className="border-b border-[var(--line)] px-4 py-4">
+              <div className="ui-title text-[10px] text-white/72">Day Running P&amp;L</div>
+              <div className="mt-3 text-sm text-white/54">
+                All trades from the same day, accumulated in close order.
+              </div>
+            </div>
+            <div className="h-[290px] pb-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={day.chartData} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
+                  <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fill: "#bcc4d4", fontSize: 12 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tickFormatter={(value) => `$${value}`}
+                    tick={{ fill: "#bcc4d4", fontSize: 12 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip content={<JournalChartTooltip />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
                   <Line
-                    key={segment.key}
-                    type="linear"
-                    data={segment.data}
-                    dataKey="segmentValue"
-                    stroke={segment.color}
+                    type="monotone"
+                    dataKey="pnl"
+                    stroke={day.totalPnl >= 0 ? "#6ef0c3" : "#ff7e6b"}
                     strokeWidth={3}
                     dot={false}
-                    isAnimationActive={false}
-                    activeDot={false}
-                    legendType="none"
-                    connectNulls
                   />
-                ))}
-                {day.chartData
-                  .filter((point) => point.isTrade)
-                  .map((point) => (
-                    <ReferenceDot
-                      key={`${day.dayKey}-${point.timeValue}`}
-                      x={point.timeValue}
-                      y={point.cumulative}
-                      r={4}
-                      fill={point.cumulative < 0 ? "#ff5f7a" : "#3dff9a"}
-                      stroke="#000000"
-                      strokeWidth={1.5}
-                      isFront
-                    />
-                  ))}
-              </LineChart>
-            </ResponsiveContainer>
+                  {day.chartData
+                    .filter((point) => point.isSelected)
+                    .map((point) => (
+                      <ReferenceDot
+                        key={point.id}
+                        x={point.label}
+                        y={point.pnl}
+                        r={6}
+                        fill="#d7f06e"
+                        stroke="transparent"
+                      />
+                    ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
