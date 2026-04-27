@@ -221,6 +221,71 @@ function buildTradePnl(trade, defaultCommission, defaultFees) {
   return getTradeNetPnl(trade, defaultCommission, defaultFees);
 }
 
+function buildSignedChartSeries(points) {
+  const data = points.map((point) => ({
+    ...point,
+    positivePnl: point.pnl > 0 ? point.pnl : 0,
+    negativePnl: point.pnl < 0 ? point.pnl : 0
+  }));
+
+  const segments = [];
+
+  for (let index = 1; index < points.length; index += 1) {
+    const previousPoint = points[index - 1];
+    const currentPoint = points[index];
+    const previousColor = previousPoint.pnl < 0 ? "#ff5f7a" : "#3dff9a";
+    const currentColor = currentPoint.pnl < 0 ? "#ff5f7a" : "#3dff9a";
+
+    segments.push({
+      key: `horizontal-${index}`,
+      color: previousColor,
+      data: [
+        { label: previousPoint.label, pnl: previousPoint.pnl },
+        { label: currentPoint.label, pnl: previousPoint.pnl }
+      ]
+    });
+
+    if (previousPoint.pnl === currentPoint.pnl) {
+      continue;
+    }
+
+    const crossedZero =
+      (previousPoint.pnl < 0 && currentPoint.pnl >= 0) ||
+      (previousPoint.pnl >= 0 && currentPoint.pnl < 0);
+
+    if (crossedZero) {
+      segments.push({
+        key: `vertical-${index}-from`,
+        color: previousColor,
+        data: [
+          { label: currentPoint.label, pnl: previousPoint.pnl },
+          { label: currentPoint.label, pnl: 0 }
+        ]
+      });
+      segments.push({
+        key: `vertical-${index}-to`,
+        color: currentColor,
+        data: [
+          { label: currentPoint.label, pnl: 0 },
+          { label: currentPoint.label, pnl: currentPoint.pnl }
+        ]
+      });
+      continue;
+    }
+
+    segments.push({
+      key: `vertical-${index}`,
+      color: currentColor,
+      data: [
+        { label: currentPoint.label, pnl: previousPoint.pnl },
+        { label: currentPoint.label, pnl: currentPoint.pnl }
+      ]
+    });
+  }
+
+  return { data, segments };
+}
+
 function matchesTradeFilters(trade, filters) {
   const symbol = String(trade.symbol || "").toUpperCase();
   const strategy = String(trade.strategy || "").trim();
@@ -456,6 +521,7 @@ function JournalDayCard({
   const hasTrades = day.totalTrades > 0;
   const winRateClass =
     day.winRate < 50 ? "text-coral" : day.winRate <= 65 ? "text-gold" : "text-mint";
+  const signedChartData = useMemo(() => buildSignedChartSeries(day.chartData), [day.chartData]);
 
   return (
     <Card
@@ -485,12 +551,17 @@ function JournalDayCard({
             </div>
             <div className="h-[290px] pb-4">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={day.chartData} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
+                <LineChart data={signedChartData.data} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
                   <defs>
-                    <linearGradient id={`journal-day-pnl-fill-${day.dayKey}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="rgba(110, 240, 195, 0.34)" />
-                      <stop offset="65%" stopColor="rgba(110, 240, 195, 0.12)" />
-                      <stop offset="100%" stopColor="rgba(110, 240, 195, 0.02)" />
+                    <linearGradient id={`journal-day-pnl-fill-positive-${day.dayKey}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="rgba(61, 255, 154, 0.34)" />
+                      <stop offset="65%" stopColor="rgba(61, 255, 154, 0.12)" />
+                      <stop offset="100%" stopColor="rgba(61, 255, 154, 0.02)" />
+                    </linearGradient>
+                    <linearGradient id={`journal-day-pnl-fill-negative-${day.dayKey}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="rgba(255, 95, 122, 0.28)" />
+                      <stop offset="65%" stopColor="rgba(255, 95, 122, 0.12)" />
+                      <stop offset="100%" stopColor="rgba(255, 95, 122, 0.02)" />
                     </linearGradient>
                   </defs>
                   <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
@@ -512,23 +583,45 @@ function JournalDayCard({
                     allowEscapeViewBox={{ x: true, y: true }}
                     wrapperStyle={{ zIndex: 20 }}
                   />
-                  <ReferenceLine y={0} stroke="#ff6f61" strokeWidth={2} ifOverflow="extendDomain" />
+                  <ReferenceLine
+                    y={0}
+                    stroke="#ffffff"
+                    strokeOpacity={0.72}
+                    strokeWidth={1.5}
+                    strokeDasharray="6 6"
+                    ifOverflow="extendDomain"
+                  />
                   <Area
                     type="monotone"
-                    dataKey="pnl"
+                    dataKey="positivePnl"
                     stroke="none"
-                    fill={`url(#journal-day-pnl-fill-${day.dayKey})`}
+                    fill={`url(#journal-day-pnl-fill-positive-${day.dayKey})`}
                     fillOpacity={1}
                     isAnimationActive={false}
                   />
-                  <Line
+                  <Area
                     type="monotone"
-                    dataKey="pnl"
-                    stroke={day.totalPnl >= 0 ? "#6ef0c3" : "#ff7e6b"}
-                    strokeWidth={3}
-                    dot={false}
+                    dataKey="negativePnl"
+                    stroke="none"
+                    fill={`url(#journal-day-pnl-fill-negative-${day.dayKey})`}
+                    fillOpacity={1}
                     isAnimationActive={false}
                   />
+                  {signedChartData.segments.map((segment) => (
+                    <Line
+                      key={segment.key}
+                      type="linear"
+                      data={segment.data}
+                      dataKey="pnl"
+                      stroke={segment.color}
+                      strokeWidth={3}
+                      dot={false}
+                      isAnimationActive={false}
+                      activeDot={false}
+                      legendType="none"
+                      connectNulls
+                    />
+                  ))}
                   {day.chartData
                     .filter((point) => point.symbol)
                     .map((point) => (
@@ -537,7 +630,7 @@ function JournalDayCard({
                         x={point.label}
                         y={point.pnl}
                         r={point.isSelected ? 6 : 5}
-                        fill={point.pnl > 0 ? "#6ef0c3" : point.pnl < 0 ? "#ff7e6b" : "#ededed"}
+                        fill={point.pnl > 0 ? "#3dff9a" : point.pnl < 0 ? "#ff5f7a" : "#ededed"}
                         stroke="transparent"
                       />
                     ))}

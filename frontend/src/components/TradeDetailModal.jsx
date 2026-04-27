@@ -64,12 +64,80 @@ function ChartTooltip({ active, payload, label }) {
     return null;
   }
 
+  const value = Number(payload[0].value || 0);
+  const valueClass = value < 0 ? "text-coral" : value > 0 ? "text-mint" : "text-white";
+
   return (
     <div className="rounded-[6px] border border-[var(--line)] bg-black px-3 py-2 text-xs text-phosphor">
       <div className="font-medium text-white">{label}</div>
-      <div className="mt-1 text-mint">{formatCurrency(payload[0].value)}</div>
+      <div className={`mt-1 ${valueClass}`}>{formatCurrency(value)}</div>
     </div>
   );
+}
+
+function buildSignedChartSeries(points) {
+  const data = points.map((point) => ({
+    ...point,
+    positivePnl: point.pnl > 0 ? point.pnl : 0,
+    negativePnl: point.pnl < 0 ? point.pnl : 0
+  }));
+
+  const segments = [];
+
+  for (let index = 1; index < points.length; index += 1) {
+    const previousPoint = points[index - 1];
+    const currentPoint = points[index];
+    const previousColor = previousPoint.pnl < 0 ? "#ff5f7a" : "#3dff9a";
+    const currentColor = currentPoint.pnl < 0 ? "#ff5f7a" : "#3dff9a";
+
+    segments.push({
+      key: `horizontal-${index}`,
+      color: previousColor,
+      data: [
+        { label: previousPoint.label, pnl: previousPoint.pnl },
+        { label: currentPoint.label, pnl: previousPoint.pnl }
+      ]
+    });
+
+    if (previousPoint.pnl === currentPoint.pnl) {
+      continue;
+    }
+
+    const crossedZero =
+      (previousPoint.pnl < 0 && currentPoint.pnl >= 0) ||
+      (previousPoint.pnl >= 0 && currentPoint.pnl < 0);
+
+    if (crossedZero) {
+      segments.push({
+        key: `vertical-${index}-from`,
+        color: previousColor,
+        data: [
+          { label: currentPoint.label, pnl: previousPoint.pnl },
+          { label: currentPoint.label, pnl: 0 }
+        ]
+      });
+      segments.push({
+        key: `vertical-${index}-to`,
+        color: currentColor,
+        data: [
+          { label: currentPoint.label, pnl: 0 },
+          { label: currentPoint.label, pnl: currentPoint.pnl }
+        ]
+      });
+      continue;
+    }
+
+    segments.push({
+      key: `vertical-${index}`,
+      color: currentColor,
+      data: [
+        { label: currentPoint.label, pnl: previousPoint.pnl },
+        { label: currentPoint.label, pnl: currentPoint.pnl }
+      ]
+    });
+  }
+
+  return { data, segments };
 }
 
 function TimelineTable({ rows }) {
@@ -223,6 +291,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
     () => buildDayRunningPnl(activeTrade, dayTrades),
     [activeTrade, dayTrades]
   );
+  const signedDayRunningPnl = useMemo(() => buildSignedChartSeries(dayRunningPnl), [dayRunningPnl]);
   const activeTags = useMemo(() => parseTags(activeTrade.tags), [activeTrade.tags]);
   const activeStrategy = useMemo(() => String(activeTrade.strategy || "").trim(), [activeTrade.strategy]);
   const tagSuggestions = useMemo(() => {
@@ -652,12 +721,17 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
               ) : (
                 <div className="h-[290px] pb-4">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={dayRunningPnl} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
+                    <LineChart data={signedDayRunningPnl.data} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
                       <defs>
-                        <linearGradient id="trade-day-pnl-fill" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="rgba(110, 240, 195, 0.34)" />
-                          <stop offset="65%" stopColor="rgba(110, 240, 195, 0.12)" />
-                          <stop offset="100%" stopColor="rgba(110, 240, 195, 0.02)" />
+                        <linearGradient id="trade-day-pnl-fill-positive" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="rgba(61, 255, 154, 0.34)" />
+                          <stop offset="65%" stopColor="rgba(61, 255, 154, 0.12)" />
+                          <stop offset="100%" stopColor="rgba(61, 255, 154, 0.02)" />
+                        </linearGradient>
+                        <linearGradient id="trade-day-pnl-fill-negative" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="rgba(255, 95, 122, 0.28)" />
+                          <stop offset="65%" stopColor="rgba(255, 95, 122, 0.12)" />
+                          <stop offset="100%" stopColor="rgba(255, 95, 122, 0.02)" />
                         </linearGradient>
                       </defs>
                       <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
@@ -674,23 +748,45 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                         tickLine={false}
                       />
                       <Tooltip content={<ChartTooltip />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
-                      <ReferenceLine y={0} stroke="#ff6f61" strokeWidth={2} ifOverflow="extendDomain" />
+                      <ReferenceLine
+                        y={0}
+                        stroke="#ffffff"
+                        strokeOpacity={0.72}
+                        strokeWidth={1.5}
+                        strokeDasharray="6 6"
+                        ifOverflow="extendDomain"
+                      />
                       <Area
                         type="monotone"
-                        dataKey="pnl"
+                        dataKey="positivePnl"
                         stroke="none"
-                        fill="url(#trade-day-pnl-fill)"
+                        fill="url(#trade-day-pnl-fill-positive)"
                         fillOpacity={1}
                         isAnimationActive={false}
                       />
-                      <Line
+                      <Area
                         type="monotone"
-                        dataKey="pnl"
-                        stroke={dayRunningPnl.at(-1)?.pnl >= 0 ? "#6ef0c3" : "#ff7e6b"}
-                        strokeWidth={3}
-                        dot={false}
+                        dataKey="negativePnl"
+                        stroke="none"
+                        fill="url(#trade-day-pnl-fill-negative)"
+                        fillOpacity={1}
                         isAnimationActive={false}
                       />
+                      {signedDayRunningPnl.segments.map((segment) => (
+                        <Line
+                          key={segment.key}
+                          type="linear"
+                          data={segment.data}
+                          dataKey="pnl"
+                          stroke={segment.color}
+                          strokeWidth={3}
+                          dot={false}
+                          isAnimationActive={false}
+                          activeDot={false}
+                          legendType="none"
+                          connectNulls
+                        />
+                      ))}
                       {dayRunningPnl
                         .filter((point) => point.isSelected)
                         .map((point) => (
@@ -699,7 +795,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                             x={point.label}
                             y={point.pnl}
                             r={6}
-                            fill={point.pnl >= 0 ? "#6ef0c3" : "#ff7e6b"}
+                            fill={point.pnl >= 0 ? "#3dff9a" : "#ff5f7a"}
                             stroke="transparent"
                           />
                         ))}
