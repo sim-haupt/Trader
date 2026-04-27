@@ -23,6 +23,8 @@ async function authenticate(req, res, next) {
         email: true,
         name: true,
         role: true,
+        activeAccountScope: true,
+        liveDataStartDate: true,
         defaultCommission: true,
         defaultFees: true
       }

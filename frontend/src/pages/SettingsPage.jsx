@@ -18,18 +18,21 @@ function SettingsPage() {
   const { user, updateSettings, refreshSettings } = useAuth();
   const { notify, confirm } = useNotifications();
   const [backendMeta, setBackendMeta] = useState(null);
-  const [activeSection, setActiveSection] = useState("library");
+  const [activeSection, setActiveSection] = useState("account");
   const [tags, setTags] = useState(() => tagService.peekTags() || []);
   const [strategies, setStrategies] = useState(() => strategyService.peekStrategies() || []);
   const [newTag, setNewTag] = useState("");
   const [newStrategy, setNewStrategy] = useState("");
   const [selectedTagIds, setSelectedTagIds] = useState([]);
   const [selectedStrategyIds, setSelectedStrategyIds] = useState([]);
+  const [activeAccountScope, setActiveAccountScope] = useState(user?.activeAccountScope ?? "SIMULATOR");
+  const [liveDataStartDate, setLiveDataStartDate] = useState(user?.liveDataStartDate ?? "");
   const [defaultCommission, setDefaultCommission] = useState(String(user?.defaultCommission ?? 0));
   const [defaultFees, setDefaultFees] = useState(String(user?.defaultFees ?? 0));
   const [loading, setLoading] = useState(() => !tagService.peekTags() || !strategyService.peekStrategies());
   const [savingTag, setSavingTag] = useState(false);
   const [savingStrategy, setSavingStrategy] = useState(false);
+  const [savingAccount, setSavingAccount] = useState(false);
   const [savingCommission, setSavingCommission] = useState(false);
   const [deletingAllTrades, setDeletingAllTrades] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
@@ -87,6 +90,38 @@ function SettingsPage() {
     setDefaultCommission(String(user?.defaultCommission ?? 0));
     setDefaultFees(String(user?.defaultFees ?? 0));
   }, [user?.defaultCommission, user?.defaultFees]);
+
+  useEffect(() => {
+    setActiveAccountScope(user?.activeAccountScope ?? "SIMULATOR");
+    setLiveDataStartDate(user?.liveDataStartDate ?? "");
+  }, [user?.activeAccountScope, user?.liveDataStartDate]);
+
+  async function handleSaveAccountSettings() {
+    if (activeAccountScope === "LIVE" && !liveDataStartDate) {
+      setError("Choose a live account start date before switching to Live.");
+      return;
+    }
+
+    setSavingAccount(true);
+    setError("");
+
+    try {
+      await updateSettings({
+        activeAccountScope,
+        liveDataStartDate: liveDataStartDate || null
+      });
+      notify({
+        title: "Account updated",
+        description: `${activeAccountScope === "LIVE" ? "Live" : "Simulator"} is now active.`,
+        tone: "success"
+      });
+    } catch (err) {
+      setError(err.message);
+      notify({ title: "Could not update account", description: err.message, tone: "error" });
+    } finally {
+      setSavingAccount(false);
+    }
+  }
 
   async function handleCreateTag() {
     const name = newTag.trim();
@@ -369,6 +404,18 @@ function SettingsPage() {
               <div className="ui-title text-[11px] text-white/48">Navigation</div>
               <button
                 type="button"
+                onClick={() => setActiveSection("account")}
+                className={`flex w-full items-center justify-between rounded-[6px] px-4 py-3 text-left text-sm transition ${
+                  activeSection === "account"
+                    ? "border border-[var(--line)] bg-[#1f1f1f] text-white"
+                    : "border border-transparent text-white/64 hover:bg-white/[0.03] hover:text-white"
+                }`}
+              >
+                <span>Account</span>
+                <span className="text-white/40">{activeAccountScope === "LIVE" ? "Live" : "Sim"}</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => setActiveSection("library")}
                 className={`flex w-full items-center justify-between rounded-[6px] px-4 py-3 text-left text-sm transition ${
                   activeSection === "library"
@@ -408,7 +455,81 @@ function SettingsPage() {
             </div>
           </aside>
 
-          {activeSection === "library" ? (
+          {activeSection === "account" ? (
+            <Card title="ACCOUNT MODE">
+              <div className="space-y-6">
+                <p className="text-sm text-white/58">
+                  Switch between fully separated Simulator and Live workspaces. New imports and manual trades are always added to the currently active account.
+                </p>
+
+                <div className="grid max-w-[720px] gap-4 md:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveAccountScope("SIMULATOR")}
+                    className={`rounded-[6px] border px-4 py-4 text-left transition ${
+                      activeAccountScope === "SIMULATOR"
+                        ? "border-white/18 bg-[#1f1f1f] text-white"
+                        : "border-[var(--line)] bg-black text-white/68 hover:bg-white/[0.03] hover:text-white"
+                    }`}
+                  >
+                    <div className="text-sm font-medium text-white">Simulator</div>
+                    <div className="mt-2 text-sm text-white/52">
+                      Existing trades stay here by default. Use this space for replay, journaling, and paper trading.
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveAccountScope("LIVE")}
+                    className={`rounded-[6px] border px-4 py-4 text-left transition ${
+                      activeAccountScope === "LIVE"
+                        ? "border-white/18 bg-[#1f1f1f] text-white"
+                        : "border-[var(--line)] bg-black text-white/68 hover:bg-white/[0.03] hover:text-white"
+                    }`}
+                  >
+                    <div className="text-sm font-medium text-white">Live</div>
+                    <div className="mt-2 text-sm text-white/52">
+                      Keeps live trades completely separate. New live imports only appear here and start with an empty history.
+                    </div>
+                  </button>
+                </div>
+
+                <div className="grid max-w-[720px] gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-xs font-medium text-white/72">Active account</label>
+                    <div className="ui-panel flex min-h-[46px] items-center px-4 text-sm text-white">
+                      {activeAccountScope === "LIVE" ? "Live" : "Simulator"}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-xs font-medium text-white/72">Live data start date</label>
+                    <input
+                      type="date"
+                      value={liveDataStartDate}
+                      onChange={(event) => setLiveDataStartDate(event.target.value)}
+                      className="ui-input"
+                      disabled={activeAccountScope !== "LIVE"}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleSaveAccountSettings}
+                    disabled={savingAccount}
+                    className="ui-button-solid px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {savingAccount ? "Saving..." : "Save"}
+                  </button>
+                  <span className="rounded-[6px] border border-[var(--line)] bg-black px-3 py-2 text-sm text-white/50">
+                    Current mode: {user?.activeAccountScope === "LIVE" ? "Live" : "Simulator"}
+                  </span>
+                </div>
+              </div>
+            </Card>
+          ) : activeSection === "library" ? (
             <Card title="TRADE LIBRARY">
               <div className="space-y-8">
                 <div className="space-y-5">

@@ -19,7 +19,7 @@ function AdminPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
-  const loadTrades = useCallback(async () => tradeService.getAllTrades(), []);
+  const loadTrades = useCallback(async () => tradeService.getAllTrades(), [user?.activeAccountScope]);
   const {
     data: trades,
     setData: setTrades,

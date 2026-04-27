@@ -44,7 +44,7 @@ function DashboardPage() {
     peek: () => tradeService.peekTrades(),
     load: () => tradeService.getTrades(),
     initialValue: [],
-    deps: []
+    deps: [user?.activeAccountScope]
   });
 
   const activeRange = RANGE_OPTIONS.find((option) => option.key === rangeKey) || RANGE_OPTIONS[0];

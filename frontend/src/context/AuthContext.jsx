@@ -2,9 +2,30 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { useNavigate } from "react-router-dom";
 import authService from "../services/authService";
 import api from "../services/api";
+import { clearJournalDayCache } from "../services/journalService";
+import { clearTradeCaches } from "../services/tradeService";
 import { clearStoredAuth, readStoredAuth, writeStoredAuth } from "../utils/authStorage";
 
 const AuthContext = createContext(null);
+
+function syncUserState(current, user) {
+  if (!current) {
+    return current;
+  }
+
+  if (current?.user?.activeAccountScope !== user?.activeAccountScope) {
+    clearTradeCaches();
+    clearJournalDayCache();
+  }
+
+  const next = {
+    ...current,
+    user
+  };
+
+  writeStoredAuth(next);
+  return next;
+}
 
 export function AuthProvider({ children }) {
   const navigate = useNavigate();
@@ -39,19 +60,7 @@ export function AuthProvider({ children }) {
     authService
       .getSettings()
       .then((user) => {
-        setAuth((current) => {
-          if (!current?.token) {
-            return current;
-          }
-
-          const next = {
-            ...current,
-            user
-          };
-
-          writeStoredAuth(next);
-          return next;
-        });
+        setAuth((current) => (!current?.token ? current : syncUserState(current, user)));
       })
       .catch(() => {
         // Unauthorized responses are already handled centrally by the API interceptor.
@@ -76,27 +85,13 @@ export function AuthProvider({ children }) {
 
   const refreshSettings = useCallback(async () => {
     const user = await authService.getSettings();
-    setAuth((current) => {
-      const next = {
-        ...(current || {}),
-        user
-      };
-      writeStoredAuth(next);
-      return next;
-    });
+    setAuth((current) => syncUserState(current, user));
     return user;
   }, []);
 
   const updateSettings = useCallback(async (payload) => {
     const user = await authService.updateSettings(payload);
-    setAuth((current) => {
-      const next = {
-        ...(current || {}),
-        user
-      };
-      writeStoredAuth(next);
-      return next;
-    });
+    setAuth((current) => syncUserState(current, user));
     return user;
   }, []);
 

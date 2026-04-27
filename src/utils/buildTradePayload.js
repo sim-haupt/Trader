@@ -10,7 +10,7 @@ function toNumber(value) {
   return Number.isNaN(numericValue) ? null : numericValue;
 }
 
-function buildTradePayload(data, userId) {
+function buildTradePayload(data, userId, accountScope = "SIMULATOR") {
   const metrics = calculateTradeMetrics(data);
   const fees = toNumber(data.fees) ?? 0;
   const providedGrossPnl = toNumber(data.grossPnl);
@@ -33,6 +33,7 @@ function buildTradePayload(data, userId) {
 
   const payload = {
     userId,
+    accountScope,
     symbol: data.symbol.toUpperCase(),
     side: data.side,
     quantity: data.quantity,

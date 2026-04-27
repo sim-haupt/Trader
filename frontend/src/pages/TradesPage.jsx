@@ -12,6 +12,7 @@ import LoadingState from "../components/ui/LoadingState";
 import tagService from "../services/tagService";
 import strategyService from "../services/strategyService";
 import tradeService from "../services/tradeService";
+import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
 
 const initialFilters = {
@@ -31,6 +32,7 @@ const pageSizeOptions = [
 ];
 
 function TradesPage() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { notify, confirm } = useNotifications();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -149,7 +151,7 @@ function TradesPage() {
 
   useEffect(() => {
     loadTrades(filters);
-  }, [filters]);
+  }, [filters, user?.activeAccountScope]);
 
   useEffect(() => {
     if (currentPage > totalPages) {

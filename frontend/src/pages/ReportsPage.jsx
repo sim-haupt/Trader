@@ -2156,7 +2156,7 @@ function ReportsPage() {
     peek: () => tradeService.peekTrades(),
     load: () => tradeService.getTrades(),
     initialValue: [],
-    deps: []
+    deps: [user?.activeAccountScope]
   });
   const { data: tags = [] } = useCachedAsyncResource({
     peek: () => tagService.peekTags(),

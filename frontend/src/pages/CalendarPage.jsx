@@ -5,6 +5,7 @@ import EmptyState from "../components/ui/EmptyState";
 import LoadingState from "../components/ui/LoadingState";
 import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 import tradeService from "../services/tradeService";
+import { useAuth } from "../context/AuthContext";
 import { formatCurrency, formatDateTimeLocal } from "../utils/formatters";
 
 const weekdayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -291,6 +292,7 @@ function MonthDetailSection({ month, onClose, onSelectDay }) {
 
 function CalendarPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [selectedMonthIndex, setSelectedMonthIndex] = useState(null);
   const {
     data: trades,
@@ -300,7 +302,7 @@ function CalendarPage() {
     peek: () => tradeService.peekTrades(),
     load: () => tradeService.getTrades(),
     initialValue: [],
-    deps: []
+    deps: [user?.activeAccountScope]
   });
 
   const calendarData = useMemo(() => {

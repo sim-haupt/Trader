@@ -828,14 +828,14 @@ function JournalPage() {
     peek: () => tradeService.peekAllTrades(),
     load: () => tradeService.getAllTrades(),
     initialValue: [],
-    deps: []
+    deps: [user?.activeAccountScope]
   });
 
   const journalDaysResource = useCachedAsyncResource({
     peek: () => journalService.peekJournalDays(),
     load: () => journalService.getJournalDays(),
     initialValue: [],
-    deps: []
+    deps: [user?.activeAccountScope]
   });
 
   const tagsResource = useCachedAsyncResource({
@@ -885,6 +885,8 @@ function JournalPage() {
 
   const journalDayKeys = useMemo(() => {
     const todayKey = getDayKey(new Date());
+    const accountStartKey =
+      user?.activeAccountScope === "LIVE" && user?.liveDataStartDate ? user.liveDataStartDate : null;
     const hasTradeSpecificFilters = Boolean(
       filters.symbol || filters.tag || filters.strategy || filters.side
     );
@@ -903,7 +905,13 @@ function JournalPage() {
     const latestNoteDayKey = noteDayKeys[noteDayKeys.length - 1] || latestTradeDayKey;
 
     // Default range is: first trade day (or first note day) -> today.
-    const defaultStart = earliestTradeDayKey < earliestNoteDayKey ? earliestTradeDayKey : earliestNoteDayKey;
+    const defaultStartCandidate =
+      earliestTradeDayKey < earliestNoteDayKey ? earliestTradeDayKey : earliestNoteDayKey;
+    const defaultStart = accountStartKey
+      ? accountStartKey < defaultStartCandidate
+        ? accountStartKey
+        : defaultStartCandidate
+      : defaultStartCandidate;
     const defaultEnd = latestTradeDayKey > latestNoteDayKey ? latestTradeDayKey : latestNoteDayKey;
     const startKey = filters.from || defaultStart || todayKey;
     const endKey = filters.to || (defaultEnd > todayKey ? defaultEnd : todayKey);
@@ -928,7 +936,9 @@ function JournalPage() {
     filters.side,
     filters.from,
     filters.to,
-    filters.hideNoTradeDays
+    filters.hideNoTradeDays,
+    user?.activeAccountScope,
+    user?.liveDataStartDate
   ]);
 
   const totalPages = Math.max(1, Math.ceil(journalDayKeys.length / PAGE_SIZE));

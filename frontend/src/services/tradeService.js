@@ -44,7 +44,7 @@ function writeCache(cache, key, data) {
   return data;
 }
 
-function clearTradeCaches() {
+export function clearTradeCaches() {
   tradeListCache.clear();
   tradeDetailCache.clear();
   tradeTagsCache = null;

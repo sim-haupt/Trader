@@ -87,7 +87,7 @@ async function enrichImportedTrades(validTrades) {
   return enrichedTrades;
 }
 
-async function importTradesFromCsv(userId, file) {
+async function importTradesFromCsv(actor, file) {
   let records;
 
   try {
@@ -115,7 +115,7 @@ async function importTradesFromCsv(userId, file) {
   });
 
   return persistImportedTrades(
-    userId,
+    actor,
     file.originalname,
     validTrades,
     invalidRows,
@@ -123,7 +123,9 @@ async function importTradesFromCsv(userId, file) {
   );
 }
 
-async function persistImportedTrades(userId, sourceName, validTrades, invalidRows, totalRows) {
+async function persistImportedTrades(actor, sourceName, validTrades, invalidRows, totalRows) {
+  const userId = actor.id;
+  const accountScope = actor.activeAccountScope || "SIMULATOR";
   const enrichedTrades = await enrichImportedTrades(validTrades);
   const importId = randomUUID();
   const savedTags = [...new Set(
@@ -146,7 +148,7 @@ async function persistImportedTrades(userId, sourceName, validTrades, invalidRow
       id: tradeId,
       payload: {
         id: tradeId,
-        ...buildTradePayload(trade, userId)
+        ...buildTradePayload(trade, userId, accountScope)
       },
       executions: (Array.isArray(trade.executions) ? trade.executions : []).map((execution) => ({
         id: randomUUID(),
@@ -162,6 +164,7 @@ async function persistImportedTrades(userId, sourceName, validTrades, invalidRow
       data: {
         id: importId,
         userId,
+        accountScope,
         fileName: sourceName,
         status: invalidRows.length > 0 ? (validTrades.length > 0 ? "PARTIAL" : "FAILED") : "SUCCESS",
         totalRows,
@@ -243,7 +246,7 @@ async function persistImportedTrades(userId, sourceName, validTrades, invalidRow
   };
 }
 
-async function importTradesFromText(userId, text) {
+async function importTradesFromText(actor, text) {
   const parsed = parseTradesFromText(text);
 
   if (parsed.totalRows === 0) {
@@ -251,7 +254,7 @@ async function importTradesFromText(userId, text) {
   }
 
   return persistImportedTrades(
-    userId,
+    actor,
     "manual-text-import",
     parsed.trades,
     parsed.invalidRows,

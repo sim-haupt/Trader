@@ -2,7 +2,10 @@ const prisma = require("../config/prisma");
 
 async function listJournalDays(actor) {
   return prisma.journalDay.findMany({
-    where: actor.role === "ADMIN" ? undefined : { userId: actor.id },
+    where: {
+      ...(actor.role === "ADMIN" ? {} : { userId: actor.id }),
+      accountScope: actor.activeAccountScope || "SIMULATOR"
+    },
     orderBy: { dayKey: "desc" }
   });
 }
@@ -17,13 +20,15 @@ async function updateJournalDay(actor, dayKey, payload) {
 
   return prisma.journalDay.upsert({
     where: {
-      userId_dayKey: {
+      userId_accountScope_dayKey: {
         userId: actor.id,
+        accountScope: actor.activeAccountScope || "SIMULATOR",
         dayKey
       }
     },
     create: {
       userId: actor.id,
+      accountScope: actor.activeAccountScope || "SIMULATOR",
       dayKey,
       notes
     },

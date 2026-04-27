@@ -26,9 +26,23 @@ function serializeUser(user) {
     name: user.name,
     email: user.email,
     role: user.role,
+    activeAccountScope: user.activeAccountScope || "SIMULATOR",
+    liveDataStartDate: user.liveDataStartDate ? user.liveDataStartDate.toISOString().slice(0, 10) : null,
     defaultCommission: Number(user.defaultCommission || 0),
     defaultFees: Number(user.defaultFees || 0)
   };
+}
+
+function parseDayKeyToDate(dayKey) {
+  if (!dayKey) {
+    return null;
+  }
+
+  const [year, month, day] = String(dayKey)
+    .split("-")
+    .map((value) => Number(value));
+
+  return new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
 }
 
 function getRuntimeGitSha() {
@@ -110,6 +124,8 @@ async function getSettings(actor) {
       name: true,
       email: true,
       role: true,
+      activeAccountScope: true,
+      liveDataStartDate: true,
       defaultCommission: true,
       defaultFees: true
     }
@@ -126,6 +142,13 @@ async function updateSettings(actor, data) {
   const user = await prisma.user.update({
     where: { id: actor.id },
     data: {
+      activeAccountScope: data.activeAccountScope,
+      liveDataStartDate:
+        data.liveDataStartDate === undefined
+          ? undefined
+          : data.liveDataStartDate
+            ? parseDayKeyToDate(data.liveDataStartDate)
+            : null,
       defaultCommission: data.defaultCommission,
       defaultFees: data.defaultFees
     },
@@ -134,6 +157,8 @@ async function updateSettings(actor, data) {
       name: true,
       email: true,
       role: true,
+      activeAccountScope: true,
+      liveDataStartDate: true,
       defaultCommission: true,
       defaultFees: true
     }

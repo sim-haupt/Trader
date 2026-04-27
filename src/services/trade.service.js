@@ -32,6 +32,10 @@ const tradeDetailInclude = {
   }
 };
 
+function getActorAccountScope(actor) {
+  return actor?.activeAccountScope || "SIMULATOR";
+}
+
 function hasGlobalTradeScope(actor, filters = {}) {
   return actor.role === "ADMIN" && filters.scope === "all";
 }
@@ -145,6 +149,8 @@ function getTradeNetPnl(trade, actor) {
 function buildTradeWhere(actor, filters = {}) {
   const where = {};
 
+  where.accountScope = getActorAccountScope(actor);
+
   if (!hasGlobalTradeScope(actor, filters)) {
     where.userId = actor.id;
   }
@@ -187,6 +193,7 @@ async function findAccessibleTrade(actor, tradeId) {
   const trade = await prisma.trade.findFirst({
     where: {
       id: tradeId,
+      accountScope: getActorAccountScope(actor),
       ...(actor.role === "ADMIN" ? {} : { userId: actor.id })
     }
   });
@@ -198,17 +205,17 @@ async function findAccessibleTrade(actor, tradeId) {
   return trade;
 }
 
-async function createTrade(userId, data) {
+async function createTrade(actor, data) {
   const trade = await prisma.trade.create({
-    data: buildTradePayload(data, userId)
+    data: buildTradePayload(data, actor.id, getActorAccountScope(actor))
   });
 
   if (data.tags) {
-    await tagService.ensureTags(userId, data.tags);
+    await tagService.ensureTags(actor.id, data.tags);
   }
 
   if (data.strategy) {
-    await strategyService.ensureStrategies(userId, data.strategy);
+    await strategyService.ensureStrategies(actor.id, data.strategy);
   }
 
   return trade;
@@ -323,6 +330,7 @@ async function getPublicWidgetSummary(userId, filters = {}) {
     where: { id: userId },
     select: {
       id: true,
+      activeAccountScope: true,
       defaultCommission: true,
       defaultFees: true
     }
@@ -336,6 +344,7 @@ async function getPublicWidgetSummary(userId, filters = {}) {
     {
       id: user.id,
       role: "USER",
+      activeAccountScope: user.activeAccountScope,
       defaultCommission: user.defaultCommission,
       defaultFees: user.defaultFees
     },
@@ -352,6 +361,7 @@ async function getTradeById(actor, tradeId) {
   let trade = await prisma.trade.findFirst({
     where: {
       id: tradeId,
+      accountScope: getActorAccountScope(actor),
       ...(actor.role === "ADMIN" ? {} : { userId: actor.id })
     },
     include: tradeDetailInclude
@@ -367,6 +377,7 @@ async function getTradeById(actor, tradeId) {
       trade = await prisma.trade.findFirst({
         where: {
           id: tradeId,
+          accountScope: getActorAccountScope(actor),
           ...(actor.role === "ADMIN" ? {} : { userId: actor.id })
         },
         include: tradeDetailInclude
@@ -384,7 +395,7 @@ async function updateTrade(actor, tradeId, data) {
 
   const trade = await prisma.trade.update({
     where: { id: tradeId },
-    data: buildTradePayload(data, existingTrade.userId)
+    data: buildTradePayload(data, existingTrade.userId, existingTrade.accountScope)
   });
 
   if (data.tags) {
@@ -477,6 +488,7 @@ async function bulkDeleteTrades(actor, tradeIds) {
   if (actor.role !== "ADMIN") {
     where.userId = actor.id;
   }
+  where.accountScope = getActorAccountScope(actor);
 
   const result = await prisma.trade.deleteMany({ where });
 
@@ -514,6 +526,7 @@ async function bulkUpdateTrades(actor, payload) {
   if (actor.role !== "ADMIN") {
     where.userId = actor.id;
   }
+  where.accountScope = getActorAccountScope(actor);
 
   const trades = await prisma.trade.findMany({
     where,
@@ -606,6 +619,7 @@ async function deleteAllTrades(actor, options = {}) {
   if (!(actor.role === "ADMIN" && options.scope === "all")) {
     where.userId = actor.id;
   }
+  where.accountScope = getActorAccountScope(actor);
 
   const result = await prisma.trade.deleteMany({ where });
 
@@ -614,13 +628,13 @@ async function deleteAllTrades(actor, options = {}) {
   };
 }
 
-async function createManyTrades(userId, trades) {
+async function createManyTrades(userId, trades, accountScope = "SIMULATOR") {
   if (trades.length === 0) {
     return { count: 0 };
   }
 
   const result = await prisma.trade.createMany({
-    data: trades.map((trade) => buildTradePayload(trade, userId))
+    data: trades.map((trade) => buildTradePayload(trade, userId, accountScope))
   });
 
   const tagValues = [...new Set(

@@ -2,7 +2,7 @@ import api from "./api";
 
 let journalDayCache = null;
 
-function clearJournalDayCache() {
+export function clearJournalDayCache() {
   journalDayCache = null;
 }
 

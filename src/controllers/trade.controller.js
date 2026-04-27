@@ -4,7 +4,7 @@ const importService = require("../services/import.service");
 const ApiError = require("../utils/ApiError");
 
 const createTrade = asyncHandler(async (req, res) => {
-  const trade = await tradeService.createTrade(req.user.id, req.validatedBody);
+  const trade = await tradeService.createTrade(req.user, req.validatedBody);
 
   res.status(201).json({
     success: true,
@@ -127,7 +127,7 @@ const importTrades = asyncHandler(async (req, res) => {
     throw new ApiError(400, "CSV file is required");
   }
 
-  const result = await importService.importTradesFromCsv(req.user.id, req.file);
+  const result = await importService.importTradesFromCsv(req.user, req.file);
 
   res.status(200).json({
     success: true,
@@ -136,7 +136,7 @@ const importTrades = asyncHandler(async (req, res) => {
 });
 
 const importTradesFromText = asyncHandler(async (req, res) => {
-  const result = await importService.importTradesFromText(req.user.id, req.validatedBody.text);
+  const result = await importService.importTradesFromText(req.user, req.validatedBody.text);
 
   res.status(200).json({
     success: true,
