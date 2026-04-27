@@ -60,6 +60,110 @@ function addDays(dayKey, amount) {
   return next.toISOString().slice(0, 10);
 }
 
+function getUtcDateParts(dayKey) {
+  const parts = parseDayKey(dayKey);
+
+  if (!parts) {
+    return null;
+  }
+
+  const date = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
+  return {
+    date,
+    year: parts.year,
+    month: parts.month,
+    day: parts.day
+  };
+}
+
+function nthWeekdayOfMonth(year, monthIndex, weekday, occurrence) {
+  const firstDay = new Date(Date.UTC(year, monthIndex, 1));
+  const offset = (weekday - firstDay.getUTCDay() + 7) % 7;
+  return 1 + offset + (occurrence - 1) * 7;
+}
+
+function lastWeekdayOfMonth(year, monthIndex, weekday) {
+  const lastDay = new Date(Date.UTC(year, monthIndex + 1, 0));
+  const offset = (lastDay.getUTCDay() - weekday + 7) % 7;
+  return lastDay.getUTCDate() - offset;
+}
+
+function buildDayKey(year, month, day) {
+  return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function getObservedHolidayKey(year, month, day) {
+  const holiday = new Date(Date.UTC(year, month - 1, day));
+  const weekday = holiday.getUTCDay();
+
+  if (weekday === 6) {
+    holiday.setUTCDate(holiday.getUTCDate() - 1);
+  } else if (weekday === 0) {
+    holiday.setUTCDate(holiday.getUTCDate() + 1);
+  }
+
+  return holiday.toISOString().slice(0, 10);
+}
+
+function getEasterSundayUtc(year) {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+function isUsMarketHoliday(dayKey) {
+  const parts = getUtcDateParts(dayKey);
+
+  if (!parts) {
+    return false;
+  }
+
+  const { year, month, day } = parts;
+  const holidayKeys = new Set([
+    getObservedHolidayKey(year, 1, 1),
+    buildDayKey(year, 1, nthWeekdayOfMonth(year, 0, 1, 3)),
+    buildDayKey(year, 2, nthWeekdayOfMonth(year, 1, 1, 3)),
+    (() => {
+      const easter = getEasterSundayUtc(year);
+      easter.setUTCDate(easter.getUTCDate() - 2);
+      return easter.toISOString().slice(0, 10);
+    })(),
+    buildDayKey(year, 5, lastWeekdayOfMonth(year, 4, 1)),
+    getObservedHolidayKey(year, 6, 19),
+    getObservedHolidayKey(year, 7, 4),
+    buildDayKey(year, 9, nthWeekdayOfMonth(year, 8, 1, 1)),
+    buildDayKey(year, 11, nthWeekdayOfMonth(year, 10, 4, 4)),
+    getObservedHolidayKey(year, 12, 25)
+  ]);
+
+  return holidayKeys.has(buildDayKey(year, month, day));
+}
+
+function isTradingDay(dayKey) {
+  const parts = getUtcDateParts(dayKey);
+
+  if (!parts) {
+    return false;
+  }
+
+  const weekday = parts.date.getUTCDay();
+
+  return weekday !== 0 && weekday !== 6 && !isUsMarketHoliday(dayKey);
+}
+
 function enumerateDayKeys(startKey, endKey) {
   if (!startKey || !endKey || startKey > endKey) {
     return [];
@@ -70,7 +174,9 @@ function enumerateDayKeys(startKey, endKey) {
   let safety = 0;
 
   while (cursor <= endKey) {
-    keys.push(cursor);
+    if (isTradingDay(cursor)) {
+      keys.push(cursor);
+    }
     const next = addDays(cursor, 1);
     if (next === cursor) {
       break;
@@ -687,7 +793,9 @@ function JournalPage() {
 
     if (hideNoTradeDays) {
       const tradeKeysInRange = [...new Set(filteredTrades.map((trade) => getDayKey(trade.entryDate)).filter(Boolean))]
-        .filter((dayKey) => matchesJournalDayRange(dayKey, { from: startKey, to: endKey }))
+        .filter(
+          (dayKey) => isTradingDay(dayKey) && matchesJournalDayRange(dayKey, { from: startKey, to: endKey })
+        )
         .sort((left, right) => right.localeCompare(left));
       return tradeKeysInRange;
     }
