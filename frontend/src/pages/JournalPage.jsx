@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
+  Area,
   CartesianGrid,
   Line,
   LineChart,
   ReferenceDot,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -484,6 +486,13 @@ function JournalDayCard({
             <div className="h-[290px] pb-4">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={day.chartData} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
+                  <defs>
+                    <linearGradient id={`journal-day-pnl-fill-${day.dayKey}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="rgba(110, 240, 195, 0.34)" />
+                      <stop offset="65%" stopColor="rgba(110, 240, 195, 0.12)" />
+                      <stop offset="100%" stopColor="rgba(110, 240, 195, 0.02)" />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
                   <XAxis
                     dataKey="label"
@@ -503,12 +512,22 @@ function JournalDayCard({
                     allowEscapeViewBox={{ x: true, y: true }}
                     wrapperStyle={{ zIndex: 20 }}
                   />
+                  <ReferenceLine y={0} stroke="#ff6f61" strokeWidth={2} ifOverflow="extendDomain" />
+                  <Area
+                    type="monotone"
+                    dataKey="pnl"
+                    stroke="none"
+                    fill={`url(#journal-day-pnl-fill-${day.dayKey})`}
+                    fillOpacity={1}
+                    isAnimationActive={false}
+                  />
                   <Line
                     type="monotone"
                     dataKey="pnl"
                     stroke={day.totalPnl >= 0 ? "#6ef0c3" : "#ff7e6b"}
                     strokeWidth={3}
                     dot={false}
+                    isAnimationActive={false}
                   />
                   {day.chartData
                     .filter((point) => point.symbol)

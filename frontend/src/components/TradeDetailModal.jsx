@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  Area,
   CartesianGrid,
   Line,
   LineChart,
   ReferenceDot,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -651,6 +653,13 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                 <div className="h-[290px] pb-4">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={dayRunningPnl} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
+                      <defs>
+                        <linearGradient id="trade-day-pnl-fill" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="rgba(110, 240, 195, 0.34)" />
+                          <stop offset="65%" stopColor="rgba(110, 240, 195, 0.12)" />
+                          <stop offset="100%" stopColor="rgba(110, 240, 195, 0.02)" />
+                        </linearGradient>
+                      </defs>
                       <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
                       <XAxis
                         dataKey="label"
@@ -665,12 +674,22 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                         tickLine={false}
                       />
                       <Tooltip content={<ChartTooltip />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
+                      <ReferenceLine y={0} stroke="#ff6f61" strokeWidth={2} ifOverflow="extendDomain" />
+                      <Area
+                        type="monotone"
+                        dataKey="pnl"
+                        stroke="none"
+                        fill="url(#trade-day-pnl-fill)"
+                        fillOpacity={1}
+                        isAnimationActive={false}
+                      />
                       <Line
                         type="monotone"
                         dataKey="pnl"
-                        stroke="#ff5a4a"
+                        stroke={dayRunningPnl.at(-1)?.pnl >= 0 ? "#6ef0c3" : "#ff7e6b"}
                         strokeWidth={3}
                         dot={false}
+                        isAnimationActive={false}
                       />
                       {dayRunningPnl
                         .filter((point) => point.isSelected)
@@ -680,7 +699,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                             x={point.label}
                             y={point.pnl}
                             r={6}
-                            fill="#d7f06e"
+                            fill={point.pnl >= 0 ? "#6ef0c3" : "#ff7e6b"}
                             stroke="transparent"
                           />
                         ))}
