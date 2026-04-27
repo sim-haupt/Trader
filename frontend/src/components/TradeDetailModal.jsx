@@ -64,20 +64,32 @@ function ChartTooltip({ active, payload, label }) {
     return null;
   }
 
+  const point = payload[0]?.payload;
   const value = Number(payload[0].value || 0);
   const valueClass = value < 0 ? "text-coral" : value > 0 ? "text-mint" : "text-white";
 
   return (
     <div className="rounded-[6px] border border-[var(--line)] bg-black px-3 py-2 text-xs text-phosphor">
-      <div className="font-medium text-white">{label}</div>
+      <div className="font-medium text-white">{point?.label || label}</div>
       <div className={`mt-1 ${valueClass}`}>{formatCurrency(value)}</div>
     </div>
   );
 }
 
+function formatAxisTime(value) {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  }).format(new Date(value));
+}
+
 function buildSignedChartSeries(points) {
   const data = points.map((point) => ({
     ...point,
+    timeValue: new Date(point.timestamp).getTime(),
     positivePnl: point.pnl > 0 ? point.pnl : 0,
     negativePnl: point.pnl < 0 ? point.pnl : 0
   }));
@@ -94,8 +106,8 @@ function buildSignedChartSeries(points) {
       key: `horizontal-${index}`,
       color: previousColor,
       data: [
-        { label: previousPoint.label, pnl: previousPoint.pnl },
-        { label: currentPoint.label, pnl: previousPoint.pnl }
+        { label: previousPoint.label, timeValue: new Date(previousPoint.timestamp).getTime(), pnl: previousPoint.pnl },
+        { label: currentPoint.label, timeValue: new Date(currentPoint.timestamp).getTime(), pnl: previousPoint.pnl }
       ]
     });
 
@@ -112,16 +124,16 @@ function buildSignedChartSeries(points) {
         key: `vertical-${index}-from`,
         color: previousColor,
         data: [
-          { label: currentPoint.label, pnl: previousPoint.pnl },
-          { label: currentPoint.label, pnl: 0 }
+          { label: currentPoint.label, timeValue: new Date(currentPoint.timestamp).getTime(), pnl: previousPoint.pnl },
+          { label: currentPoint.label, timeValue: new Date(currentPoint.timestamp).getTime(), pnl: 0 }
         ]
       });
       segments.push({
         key: `vertical-${index}-to`,
         color: currentColor,
         data: [
-          { label: currentPoint.label, pnl: 0 },
-          { label: currentPoint.label, pnl: currentPoint.pnl }
+          { label: currentPoint.label, timeValue: new Date(currentPoint.timestamp).getTime(), pnl: 0 },
+          { label: currentPoint.label, timeValue: new Date(currentPoint.timestamp).getTime(), pnl: currentPoint.pnl }
         ]
       });
       continue;
@@ -131,8 +143,8 @@ function buildSignedChartSeries(points) {
       key: `vertical-${index}`,
       color: currentColor,
       data: [
-        { label: currentPoint.label, pnl: previousPoint.pnl },
-        { label: currentPoint.label, pnl: currentPoint.pnl }
+        { label: currentPoint.label, timeValue: new Date(currentPoint.timestamp).getTime(), pnl: previousPoint.pnl },
+        { label: currentPoint.label, timeValue: new Date(currentPoint.timestamp).getTime(), pnl: currentPoint.pnl }
       ]
     });
   }
@@ -683,7 +695,10 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                     <LineChart data={tradeRunningPnl} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
                       <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
                       <XAxis
-                        dataKey="label"
+                        type="number"
+                        dataKey="timeValue"
+                        domain={["dataMin", "dataMax"]}
+                        tickFormatter={formatAxisTime}
                         tick={{ fill: "#bcc4d4", fontSize: 12 }}
                         axisLine={false}
                         tickLine={false}
@@ -792,7 +807,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                         .map((point) => (
                           <ReferenceDot
                             key={point.id}
-                            x={point.label}
+                            x={new Date(point.timestamp).getTime()}
                             y={point.pnl}
                             r={6}
                             fill={point.pnl >= 0 ? "#3dff9a" : "#ff5f7a"}
