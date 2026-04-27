@@ -49,6 +49,8 @@ function AppShell() {
   const { user, logout } = useAuth();
   const pageMeta = getPageMeta(location.pathname);
   const accountLabel = user?.activeAccountScope === "LIVE" ? "Live" : "Simulator";
+  const accountLabelClass =
+    user?.activeAccountScope === "LIVE" ? "text-mint" : "text-[var(--text-muted)]";
 
   return (
     <div className="app-shell">
@@ -60,7 +62,7 @@ function AppShell() {
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold tracking-[-0.02em] text-white">tradingStats</p>
-              <p className="text-xs text-[var(--text-muted)]">{accountLabel}</p>
+              <p className={`text-xs ${accountLabelClass}`}>{accountLabel}</p>
             </div>
           </div>
 
