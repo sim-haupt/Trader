@@ -1,6 +1,5 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import brandMark from "../assets/tradingstats-mark.svg";
 
 const navigationItems = [
   { label: "Dashboard", path: "/dashboard", icon: "M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" },
@@ -56,7 +55,7 @@ function AppShell() {
         <aside className="ui-sidebar hidden min-h-screen px-4 py-4 xl:block">
           <div className="flex items-center gap-3 px-2 pb-5 pt-1">
             <div className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[var(--line)] bg-black">
-              <img src={brandMark} alt="tradingStats" className="h-6 w-6" />
+              <img src="/favicon.png" alt="tradingStats" className="h-6 w-6" />
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold tracking-[-0.02em] text-white">tradingStats</p>
