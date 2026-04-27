@@ -232,69 +232,54 @@ function formatAxisTime(value) {
 }
 
 function buildSignedChartSeries(points) {
-  const data = points.map((point) => ({
+  const withTime = points.map((point) => ({
     ...point,
-    timeValue: new Date(point.timestamp).getTime(),
-    positivePnl: point.pnl > 0 ? point.pnl : 0,
-    negativePnl: point.pnl < 0 ? point.pnl : 0
+    timeValue: new Date(point.timestamp).getTime()
   }));
 
-  const segments = [];
-
-  for (let index = 1; index < points.length; index += 1) {
-    const previousPoint = points[index - 1];
-    const currentPoint = points[index];
-    const previousColor = previousPoint.pnl < 0 ? "#ff5f7a" : "#3dff9a";
-    const currentColor = currentPoint.pnl < 0 ? "#ff5f7a" : "#3dff9a";
-
-    segments.push({
-      key: `horizontal-${index}`,
-      color: previousColor,
-      data: [
-        { label: previousPoint.label, timeValue: new Date(previousPoint.timestamp).getTime(), pnl: previousPoint.pnl },
-        { label: currentPoint.label, timeValue: new Date(currentPoint.timestamp).getTime(), pnl: previousPoint.pnl }
-      ]
-    });
-
-    if (previousPoint.pnl === currentPoint.pnl) {
-      continue;
-    }
-
-    const crossedZero =
-      (previousPoint.pnl < 0 && currentPoint.pnl >= 0) ||
-      (previousPoint.pnl >= 0 && currentPoint.pnl < 0);
-
-    if (crossedZero) {
-      segments.push({
-        key: `vertical-${index}-from`,
-        color: previousColor,
-        data: [
-          { label: currentPoint.label, timeValue: new Date(currentPoint.timestamp).getTime(), pnl: previousPoint.pnl },
-          { label: currentPoint.label, timeValue: new Date(currentPoint.timestamp).getTime(), pnl: 0 }
-        ]
-      });
-      segments.push({
-        key: `vertical-${index}-to`,
-        color: currentColor,
-        data: [
-          { label: currentPoint.label, timeValue: new Date(currentPoint.timestamp).getTime(), pnl: 0 },
-          { label: currentPoint.label, timeValue: new Date(currentPoint.timestamp).getTime(), pnl: currentPoint.pnl }
-        ]
-      });
-      continue;
-    }
-
-    segments.push({
-      key: `vertical-${index}`,
-      color: currentColor,
-      data: [
-        { label: currentPoint.label, timeValue: new Date(currentPoint.timestamp).getTime(), pnl: previousPoint.pnl },
-        { label: currentPoint.label, timeValue: new Date(currentPoint.timestamp).getTime(), pnl: currentPoint.pnl }
-      ]
-    });
+  if (withTime.length === 0) {
+    return { data: [] };
   }
 
-  return { data, segments };
+  const toSplitPoint = (point, forceZero = false) => ({
+    ...point,
+    positivePnl: forceZero || point.pnl === 0 ? 0 : point.pnl > 0 ? point.pnl : null,
+    negativePnl: forceZero || point.pnl === 0 ? 0 : point.pnl < 0 ? point.pnl : null
+  });
+
+  const data = [toSplitPoint(withTime[0])];
+
+  for (let index = 1; index < withTime.length; index += 1) {
+    const previousPoint = withTime[index - 1];
+    const currentPoint = withTime[index];
+    const crossedZero =
+      (previousPoint.pnl < 0 && currentPoint.pnl > 0) ||
+      (previousPoint.pnl > 0 && currentPoint.pnl < 0);
+
+    if (crossedZero) {
+      const span = currentPoint.timeValue - previousPoint.timeValue;
+      const ratio = Math.abs(previousPoint.pnl) / (Math.abs(previousPoint.pnl) + Math.abs(currentPoint.pnl));
+      const crossingTime = previousPoint.timeValue + span * ratio;
+
+      data.push(
+        toSplitPoint(
+          {
+            id: `${previousPoint.id}-${currentPoint.id}-zero`,
+            label: formatAxisTime(crossingTime),
+            timestamp: new Date(crossingTime).toISOString(),
+            timeValue: crossingTime,
+            pnl: 0,
+            isSelected: false
+          },
+          true
+        )
+      );
+    }
+
+    data.push(toSplitPoint(currentPoint));
+  }
+
+  return { data };
 }
 
 function matchesTradeFilters(trade, filters) {
@@ -505,9 +490,9 @@ function JournalChartTooltip({ active, payload, label }) {
     return null;
   }
 
-  const value = payload[0]?.value;
-  const valueClass = value < 0 ? "text-coral" : value > 0 ? "text-mint" : "text-white";
   const point = payload[0]?.payload;
+  const value = Number(point?.pnl ?? payload[0]?.value ?? 0);
+  const valueClass = value < 0 ? "text-coral" : value > 0 ? "text-mint" : "text-white";
 
   return (
     <div className="rounded-[6px] border border-[var(--line)] bg-black px-3 py-2 text-xs text-phosphor">
@@ -622,21 +607,26 @@ function JournalDayCard({
                     fillOpacity={1}
                     isAnimationActive={false}
                   />
-                  {signedChartData.segments.map((segment) => (
-                    <Line
-                      key={segment.key}
-                      type="linear"
-                      data={segment.data}
-                      dataKey="pnl"
-                      stroke={segment.color}
-                      strokeWidth={3}
-                      dot={false}
-                      isAnimationActive={false}
-                      activeDot={false}
-                      legendType="none"
-                      connectNulls
-                    />
-                  ))}
+                  <Line
+                    type="monotone"
+                    dataKey="positivePnl"
+                    stroke="#3dff9a"
+                    strokeWidth={3}
+                    dot={false}
+                    isAnimationActive={false}
+                    activeDot={false}
+                    connectNulls={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="negativePnl"
+                    stroke="#ff5f7a"
+                    strokeWidth={3}
+                    dot={false}
+                    isAnimationActive={false}
+                    activeDot={false}
+                    connectNulls={false}
+                  />
                   {day.chartData
                     .filter((point) => point.symbol)
                     .map((point) => (
