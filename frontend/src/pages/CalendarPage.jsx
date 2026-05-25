@@ -34,10 +34,12 @@ function buildDailyStats(trades) {
     const dayKey = getDayKey(date);
     const pnl = Number(trade.netPnl ?? trade.grossPnl ?? 0);
     const quantity = Math.abs(Number(trade.quantity || 0));
+    const perSharePnl = quantity > 0 ? pnl / quantity : 0;
     const existing = dailyMap.get(dayKey) || {
       date: dayKey,
       pnl: 0,
       volume: 0,
+      perShareTotal: 0,
       averagePerShare: 0,
       trades: 0,
       wins: 0,
@@ -46,6 +48,7 @@ function buildDailyStats(trades) {
 
     existing.pnl = Number((existing.pnl + pnl).toFixed(2));
     existing.volume = Number((existing.volume + quantity).toFixed(2));
+    existing.perShareTotal = Number((existing.perShareTotal + perSharePnl).toFixed(4));
     existing.trades += 1;
 
     if (pnl > 0) {
@@ -55,7 +58,7 @@ function buildDailyStats(trades) {
     }
 
     existing.averagePerShare = Number(
-      (existing.volume > 0 ? existing.pnl / existing.volume : 0).toFixed(4)
+      (existing.trades > 0 ? existing.perShareTotal / existing.trades : 0).toFixed(4)
     );
 
     dailyMap.set(dayKey, existing);
@@ -281,13 +284,14 @@ function MonthDetailSection({ month, displayMode, onDisplayModeChange, onClose, 
               return {
                 pnl: Number((sum.pnl + day.stats.pnl).toFixed(2)),
                 volume: Number((sum.volume + (day.stats.volume || 0)).toFixed(2)),
+                perShareTotal: Number((sum.perShareTotal + (day.stats.perShareTotal || 0)).toFixed(4)),
                 trades: sum.trades + day.stats.trades
               };
             },
-            { pnl: 0, volume: 0, trades: 0 }
+            { pnl: 0, volume: 0, perShareTotal: 0, trades: 0 }
           );
           const weekAveragePerShare = Number(
-            (weekStats.volume > 0 ? weekStats.pnl / weekStats.volume : 0).toFixed(4)
+            (weekStats.trades > 0 ? weekStats.perShareTotal / weekStats.trades : 0).toFixed(4)
           );
           const weekDisplayTone = getDisplayTone(weekAveragePerShare);
           const weekDollarTone = getDisplayTone(weekStats.pnl);
@@ -382,6 +386,10 @@ function CalendarPage() {
       const monthDays = weeks.flat().filter((day) => day.isCurrentMonth && day.stats);
       const monthPnl = monthDays.reduce((sum, day) => sum + day.stats.pnl, 0);
       const monthVolume = monthDays.reduce((sum, day) => sum + (day.stats.volume || 0), 0);
+      const monthPerShareTotal = monthDays.reduce(
+        (sum, day) => sum + (day.stats.perShareTotal || 0),
+        0
+      );
       const monthTrades = monthDays.reduce((sum, day) => sum + day.stats.trades, 0);
 
       return {
@@ -392,7 +400,9 @@ function CalendarPage() {
         }),
         weeks,
         monthPnl: Number(monthPnl.toFixed(2)),
-        monthAveragePerShare: Number((monthVolume > 0 ? monthPnl / monthVolume : 0).toFixed(4)),
+        monthAveragePerShare: Number(
+          (monthTrades > 0 ? monthPerShareTotal / monthTrades : 0).toFixed(4)
+        ),
         monthTrades
       };
     });

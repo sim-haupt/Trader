@@ -416,6 +416,7 @@ function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees, inc
 
     const pnl = buildTradePnl(trade, defaultCommission, defaultFees);
     const quantity = Number(trade.quantity || 0);
+    const perSharePnl = Math.abs(quantity) > 0 ? pnl / Math.abs(quantity) : 0;
     const fees = getTradeFeeDisplayValue(trade, defaultCommission, defaultFees);
     const existing = grouped.get(dayKey) || {
       dayKey,
@@ -425,6 +426,7 @@ function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees, inc
       totalVolume: 0,
       totalFees: 0,
       totalPnl: 0,
+      perShareTotal: 0,
       wins: 0,
       losses: 0
     };
@@ -440,6 +442,7 @@ function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees, inc
     existing.totalVolume += quantity;
     existing.totalFees += fees;
     existing.totalPnl += pnl;
+    existing.perShareTotal += perSharePnl;
 
     if (pnl > 0) {
       existing.wins += 1;
@@ -463,6 +466,7 @@ function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees, inc
       totalVolume: 0,
       totalFees: 0,
       totalPnl: 0,
+      perShareTotal: 0,
       wins: 0,
       losses: 0
     });
@@ -479,7 +483,7 @@ function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees, inc
         totalPnl: Number(day.totalPnl.toFixed(2)),
         totalFees: Number(day.totalFees.toFixed(2)),
         averagePerShare: Number(
-          (day.totalVolume > 0 ? day.totalPnl / day.totalVolume : 0).toFixed(4)
+          (day.totalTrades > 0 ? day.perShareTotal / day.totalTrades : 0).toFixed(4)
         ),
         winRate: day.totalTrades ? (day.wins / day.totalTrades) * 100 : 0,
         note: dayNotes.get(day.dayKey)?.notes || ""
