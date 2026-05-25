@@ -29,20 +29,29 @@ function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-10">
-      <div className="w-full max-w-xl rounded-[6px] border border-[var(--line)] bg-[var(--surface-2)] p-8 sm:p-10">
+    <div className="min-h-screen bg-black px-4 py-10">
+      <div className="mx-auto w-full max-w-xl rounded-[6px] border border-[var(--line)] bg-[#050505] p-8 sm:p-10">
         <div className="mb-8 flex items-center justify-between gap-4">
           <div>
-            <p className="ui-title text-xs text-[var(--text-muted)]">Start Journaling</p>
-            <h1 className="mt-4 text-4xl font-bold tracking-[-0.05em] text-white">Create your account</h1>
+            <div className="mb-5 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-[6px] border border-[var(--line)] bg-black">
+                <img src="/favicon.png" alt="tradingStats" className="h-7 w-7" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white">tradingStats</p>
+                <p className="text-xs text-white/44">Structured review workspace</p>
+              </div>
+            </div>
+            <p className="ui-title text-xs text-white/42">Start journaling</p>
+            <h1 className="mt-4 text-4xl font-medium tracking-[-0.05em] text-white">Create your account</h1>
           </div>
-          <div className="ui-chip">Beta</div>
+          <div className="ui-chip bg-white/[0.03] text-white/64">Beta</div>
         </div>
-        <p className="mt-3 max-w-lg text-base leading-7 text-[var(--text-muted)]">
+        <p className="mt-3 max-w-lg text-base leading-7 text-white/54">
           Set up your workspace and start building a repeatable review process around every trade.
         </p>
 
-        <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+        <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
           <input
             type="text"
             placeholder="Full name"
@@ -81,9 +90,9 @@ function RegisterPage() {
           </button>
         </form>
 
-        <p className="mt-6 text-base text-[var(--text-muted)]">
+          <p className="mt-6 text-base text-white/54">
           Already have an account?{" "}
-          <Link to="/login" className="ui-link font-semibold underline decoration-white/10 underline-offset-4">
+          <Link to="/login" className="ui-link font-medium underline decoration-white/10 underline-offset-4">
             Sign in
           </Link>
         </p>

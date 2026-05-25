@@ -11,7 +11,7 @@ import { formatCurrency, formatDateTimeLocal } from "../utils/formatters";
 const weekdayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const CALENDAR_VALUE_MODES = [
   { key: "DOLLARS", label: "$" },
-  { key: "PER_SHARE", label: "/SH" }
+  { key: "PER_SHARE", label: "/sh" }
 ];
 
 function getDayKey(date) {
@@ -206,36 +206,39 @@ function MonthCard({ month, onOpen }) {
 }
 
 function MonthDetailSection({ month, displayMode, onDisplayModeChange, onClose, onSelectDay }) {
+  const monthPerShareTone = getDisplayTone(month.monthAveragePerShare);
+  const monthDollarTone = getDisplayTone(month.monthPnl);
+
   return (
     <Card
       title={month.label.toUpperCase()}
       className="calendar-panel p-6 shadow-none"
       action={
         <div className="flex items-center gap-3">
-          <div className="ui-chip normal-case tracking-[0.08em] text-sm text-white">
-            {month.monthTrades} trade{month.monthTrades === 1 ? "" : "s"}
+          <div
+            className={`border px-4 py-2 text-sm font-semibold ${
+              monthPerShareTone === "text-mint"
+                ? "border-mint/35 bg-mint/10 text-mint"
+                : monthPerShareTone === "text-coral"
+                  ? "border-coral/35 bg-coral/10 text-coral"
+                  : "border-[#e5e7eb42] bg-white/5 text-mist"
+            }`}
+          >
+            /sh {formatCurrency(month.monthAveragePerShare)}
           </div>
           <div
             className={`border px-4 py-2 text-sm font-semibold ${
-              month.monthPnl > 0
+              monthDollarTone === "text-mint"
                 ? "border-mint/35 bg-mint/10 text-mint"
-                : month.monthPnl < 0
+                : monthDollarTone === "text-coral"
                   ? "border-coral/35 bg-coral/10 text-coral"
                   : "border-[#e5e7eb42] bg-white/5 text-mist"
             }`}
           >
             {formatCurrency(month.monthPnl)}
           </div>
-          <div
-            className={`border px-4 py-2 text-sm font-semibold ${
-              month.monthAveragePerShare > 0
-                ? "border-mint/35 bg-mint/10 text-mint"
-                : month.monthAveragePerShare < 0
-                  ? "border-coral/35 bg-coral/10 text-coral"
-                  : "border-[#e5e7eb42] bg-white/5 text-mist"
-            }`}
-          >
-            /SH {formatCurrency(month.monthAveragePerShare)}
+          <div className="ui-chip normal-case tracking-[0.08em] text-sm text-white">
+            {month.monthTrades} trade{month.monthTrades === 1 ? "" : "s"}
           </div>
           <div className="ui-segment">
             {CALENDAR_VALUE_MODES.map((option) => (
@@ -286,6 +289,8 @@ function MonthDetailSection({ month, displayMode, onDisplayModeChange, onClose, 
           const weekAveragePerShare = Number(
             (weekStats.volume > 0 ? weekStats.pnl / weekStats.volume : 0).toFixed(4)
           );
+          const weekDisplayTone = getDisplayTone(weekAveragePerShare);
+          const weekDollarTone = getDisplayTone(weekStats.pnl);
 
           return (
             <Fragment key={`${month.label}-week-${index}`}>
@@ -328,31 +333,16 @@ function MonthDetailSection({ month, displayMode, onDisplayModeChange, onClose, 
                 <div className="ui-title text-sm text-white">Week {index + 1}</div>
                 <div
                   className={`mt-4 text-base font-semibold ${
-                    getDisplayValue(
-                      { pnl: weekStats.pnl, averagePerShare: weekAveragePerShare },
-                      displayMode
-                    ) > 0
-                      ? "text-mint"
-                      : getDisplayValue(
-                            { pnl: weekStats.pnl, averagePerShare: weekAveragePerShare },
-                            displayMode
-                          ) < 0
-                        ? "text-coral"
-                        : "text-mist"
+                    weekDisplayTone
                   }`}
                 >
-                  {formatCurrency(
-                    getDisplayValue(
-                      { pnl: weekStats.pnl, averagePerShare: weekAveragePerShare },
-                      displayMode
-                    )
-                  )}
+                  /sh {formatCurrency(weekAveragePerShare)}
                 </div>
-                <div className="mt-1 text-xs text-mist">
+                <div className={`mt-2 text-xs font-medium ${weekDollarTone}`}>
+                  {formatCurrency(weekStats.pnl)}
+                </div>
+                <div className="mt-2 text-xs text-mist">
                   {weekStats.trades} trade{weekStats.trades === 1 ? "" : "s"}
-                </div>
-                <div className="mt-2 text-xs text-white/48">
-                  /SH {formatCurrency(weekAveragePerShare)}
                 </div>
               </div>
             </Fragment>
