@@ -213,6 +213,7 @@ function buildLastThirtyTrades(processedTrades) {
       entryPrice: asNumber(item.trade.entryPrice),
       exitPrice: asNumber(item.trade.exitPrice),
       pnl: Number(item.pnl.toFixed(2)),
+      perSharePnl: Number(item.perSharePnl.toFixed(4)),
       date: formatDayKeyLabel(getLocalDayKey(item.entryDate), {
         month: "short",
         day: "numeric"
@@ -245,6 +246,27 @@ function buildWeekdaySummary(weekdayMap) {
     ...entry,
     percentage: totalAbsolute ? (Math.abs(entry.pnl) / totalAbsolute) * 100 : 0
   }));
+}
+
+function buildDailyEquityAndDrawdownCurves(dailyMap) {
+  const orderedDays = Array.from(dailyMap.values()).sort((left, right) =>
+    left.date.localeCompare(right.date)
+  );
+
+  let runningEquity = 0;
+  let peakEquity = 0;
+
+  return orderedDays.map((day) => {
+    runningEquity += asNumber(day.pnl);
+    peakEquity = Math.max(peakEquity, runningEquity);
+
+    return {
+      date: day.label,
+      dayKey: day.date,
+      equity: Number(runningEquity.toFixed(2)),
+      drawdown: Number((runningEquity - peakEquity).toFixed(2))
+    };
+  });
 }
 
 export function buildAnalytics(trades, options = {}) {
@@ -412,13 +434,15 @@ export function buildAnalytics(trades, options = {}) {
     };
   });
 
-  const equityCurve = processedTrades.map((item) => ({
-    date: item.entryDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+  const dailyCurves = buildDailyEquityAndDrawdownCurves(dailyMap);
+  const equityCurve = dailyCurves.map((item) => ({
+    date: item.date,
+    dayKey: item.dayKey,
     equity: item.equity
   }));
-
-  const drawdownCurve = processedTrades.map((item) => ({
-    date: item.entryDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+  const drawdownCurve = dailyCurves.map((item) => ({
+    date: item.date,
+    dayKey: item.dayKey,
     drawdown: item.drawdown
   }));
 

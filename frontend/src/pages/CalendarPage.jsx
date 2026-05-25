@@ -9,6 +9,10 @@ import { useAuth } from "../context/AuthContext";
 import { formatCurrency, formatDateTimeLocal } from "../utils/formatters";
 
 const weekdayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const CALENDAR_VALUE_MODES = [
+  { key: "DOLLARS", label: "$" },
+  { key: "PER_SHARE", label: "/SH" }
+];
 
 function getDayKey(date) {
   const formatted = formatDateTimeLocal(date);
@@ -29,15 +33,19 @@ function buildDailyStats(trades) {
     const date = new Date(trade.entryDate);
     const dayKey = getDayKey(date);
     const pnl = Number(trade.netPnl ?? trade.grossPnl ?? 0);
+    const quantity = Math.abs(Number(trade.quantity || 0));
     const existing = dailyMap.get(dayKey) || {
       date: dayKey,
       pnl: 0,
+      volume: 0,
+      averagePerShare: 0,
       trades: 0,
       wins: 0,
       losses: 0
     };
 
     existing.pnl = Number((existing.pnl + pnl).toFixed(2));
+    existing.volume = Number((existing.volume + quantity).toFixed(2));
     existing.trades += 1;
 
     if (pnl > 0) {
@@ -46,10 +54,34 @@ function buildDailyStats(trades) {
       existing.losses += 1;
     }
 
+    existing.averagePerShare = Number(
+      (existing.volume > 0 ? existing.pnl / existing.volume : 0).toFixed(4)
+    );
+
     dailyMap.set(dayKey, existing);
   }
 
   return dailyMap;
+}
+
+function getDisplayValue(stats, mode) {
+  if (!stats) {
+    return 0;
+  }
+
+  return mode === "PER_SHARE" ? Number(stats.averagePerShare || 0) : Number(stats.pnl || 0);
+}
+
+function getDisplayTone(value) {
+  if (value > 0) {
+    return "text-mint";
+  }
+
+  if (value < 0) {
+    return "text-coral";
+  }
+
+  return "text-mist";
 }
 
 function createMonthGrid(year, monthIndex, dailyStats) {
@@ -173,7 +205,7 @@ function MonthCard({ month, onOpen }) {
   );
 }
 
-function MonthDetailSection({ month, onClose, onSelectDay }) {
+function MonthDetailSection({ month, displayMode, onDisplayModeChange, onClose, onSelectDay }) {
   return (
     <Card
       title={month.label.toUpperCase()}
@@ -193,6 +225,29 @@ function MonthDetailSection({ month, onClose, onSelectDay }) {
             }`}
           >
             {formatCurrency(month.monthPnl)}
+          </div>
+          <div
+            className={`border px-4 py-2 text-sm font-semibold ${
+              month.monthAveragePerShare > 0
+                ? "border-mint/35 bg-mint/10 text-mint"
+                : month.monthAveragePerShare < 0
+                  ? "border-coral/35 bg-coral/10 text-coral"
+                  : "border-[#e5e7eb42] bg-white/5 text-mist"
+            }`}
+          >
+            /SH {formatCurrency(month.monthAveragePerShare)}
+          </div>
+          <div className="ui-segment">
+            {CALENDAR_VALUE_MODES.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                data-active={displayMode === option.key}
+                onClick={() => onDisplayModeChange(option.key)}
+              >
+                {option.label}
+              </button>
+            ))}
           </div>
           <button type="button" onClick={onClose} className="ui-button text-sm">
             Close
@@ -222,10 +277,14 @@ function MonthDetailSection({ month, onClose, onSelectDay }) {
 
               return {
                 pnl: Number((sum.pnl + day.stats.pnl).toFixed(2)),
+                volume: Number((sum.volume + (day.stats.volume || 0)).toFixed(2)),
                 trades: sum.trades + day.stats.trades
               };
             },
-            { pnl: 0, trades: 0 }
+            { pnl: 0, volume: 0, trades: 0 }
+          );
+          const weekAveragePerShare = Number(
+            (weekStats.volume > 0 ? weekStats.pnl / weekStats.volume : 0).toFixed(4)
           );
 
           return (
@@ -250,19 +309,15 @@ function MonthDetailSection({ month, onClose, onSelectDay }) {
                     <>
                       <div
                         className={`mt-4 text-base font-semibold ${
-                          !day.stats
-                            ? "text-mist"
-                            : day.stats.pnl > 0
-                              ? "text-mint"
-                              : day.stats.pnl < 0
-                                ? "text-coral"
-                                : "text-mist"
+                          !day.stats ? "text-mist" : getDisplayTone(getDisplayValue(day.stats, displayMode))
                         }`}
                       >
-                        {formatCurrency(day.stats?.pnl ?? 0)}
+                        {formatCurrency(getDisplayValue(day.stats, displayMode))}
                       </div>
                       <div className="mt-1 text-xs opacity-80">
-                        {day.stats?.trades ?? 0} trade{day.stats?.trades === 1 ? "" : "s"}
+                        {displayMode === "PER_SHARE"
+                          ? `${day.stats?.trades ?? 0} trade${day.stats?.trades === 1 ? "" : "s"}`
+                          : `${day.stats?.trades ?? 0} trade${day.stats?.trades === 1 ? "" : "s"}`}
                       </div>
                     </>
                   )}
@@ -273,13 +328,31 @@ function MonthDetailSection({ month, onClose, onSelectDay }) {
                 <div className="ui-title text-sm text-white">Week {index + 1}</div>
                 <div
                   className={`mt-4 text-base font-semibold ${
-                    weekStats.pnl > 0 ? "text-mint" : weekStats.pnl < 0 ? "text-coral" : "text-mist"
+                    getDisplayValue(
+                      { pnl: weekStats.pnl, averagePerShare: weekAveragePerShare },
+                      displayMode
+                    ) > 0
+                      ? "text-mint"
+                      : getDisplayValue(
+                            { pnl: weekStats.pnl, averagePerShare: weekAveragePerShare },
+                            displayMode
+                          ) < 0
+                        ? "text-coral"
+                        : "text-mist"
                   }`}
                 >
-                  {formatCurrency(weekStats.pnl)}
+                  {formatCurrency(
+                    getDisplayValue(
+                      { pnl: weekStats.pnl, averagePerShare: weekAveragePerShare },
+                      displayMode
+                    )
+                  )}
                 </div>
                 <div className="mt-1 text-xs text-mist">
                   {weekStats.trades} trade{weekStats.trades === 1 ? "" : "s"}
+                </div>
+                <div className="mt-2 text-xs text-white/48">
+                  /SH {formatCurrency(weekAveragePerShare)}
                 </div>
               </div>
             </Fragment>
@@ -294,6 +367,7 @@ function CalendarPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [selectedMonthIndex, setSelectedMonthIndex] = useState(null);
+  const [calendarDisplayMode, setCalendarDisplayMode] = useState("DOLLARS");
   const {
     data: trades,
     loading,
@@ -317,6 +391,7 @@ function CalendarPage() {
       const weeks = createMonthGrid(targetYear, monthIndex, dailyStats);
       const monthDays = weeks.flat().filter((day) => day.isCurrentMonth && day.stats);
       const monthPnl = monthDays.reduce((sum, day) => sum + day.stats.pnl, 0);
+      const monthVolume = monthDays.reduce((sum, day) => sum + (day.stats.volume || 0), 0);
       const monthTrades = monthDays.reduce((sum, day) => sum + day.stats.trades, 0);
 
       return {
@@ -327,6 +402,7 @@ function CalendarPage() {
         }),
         weeks,
         monthPnl: Number(monthPnl.toFixed(2)),
+        monthAveragePerShare: Number((monthVolume > 0 ? monthPnl / monthVolume : 0).toFixed(4)),
         monthTrades
       };
     });
@@ -362,6 +438,8 @@ function CalendarPage() {
       {selectedMonth && (
         <MonthDetailSection
           month={selectedMonth}
+          displayMode={calendarDisplayMode}
+          onDisplayModeChange={setCalendarDisplayMode}
           onClose={() => setSelectedMonthIndex(null)}
           onSelectDay={(dayKey) => navigate(`/journal?day=${dayKey}`)}
         />

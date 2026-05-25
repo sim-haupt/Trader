@@ -478,6 +478,9 @@ function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees, inc
         chartData: visualization.chartData,
         totalPnl: Number(day.totalPnl.toFixed(2)),
         totalFees: Number(day.totalFees.toFixed(2)),
+        averagePerShare: Number(
+          (day.totalVolume > 0 ? day.totalPnl / day.totalVolume : 0).toFixed(4)
+        ),
         winRate: day.totalTrades ? (day.wins / day.totalTrades) * 100 : 0,
         note: dayNotes.get(day.dayKey)?.notes || ""
       };
@@ -516,6 +519,8 @@ function JournalDayCard({
   const positive = day.totalPnl >= 0;
   const negative = day.totalPnl < 0;
   const hasTrades = day.totalTrades > 0;
+  const averagePerSharePositive = day.averagePerShare >= 0;
+  const averagePerShareNegative = day.averagePerShare < 0;
   const winRateClass =
     day.winRate < 50 ? "text-coral" : day.winRate <= 65 ? "text-gold" : "text-mint";
   const signedChartData = useMemo(() => buildSignedChartSeries(day.chartData), [day.chartData]);
@@ -524,16 +529,29 @@ function JournalDayCard({
     <Card
       title={<span className="text-[14px] text-white/72">{day.label}</span>}
       action={
-        <div
-          className={`rounded-[6px] border px-3 py-2 text-sm font-semibold ${
-            positive
-              ? "border-mint bg-mint/10 text-mint"
-              : negative
-                ? "border-coral bg-[#1b1012] text-coral"
-                : "border-[#e5e7eb42] bg-white/[0.05] text-mist"
-          }`}
-        >
-          P&amp;L: {formatCurrency(day.totalPnl)}
+        <div className="flex items-center gap-2">
+          <div
+            className={`rounded-[6px] border px-3 py-2 text-sm font-semibold ${
+              positive
+                ? "border-mint bg-mint/10 text-mint"
+                : negative
+                  ? "border-coral bg-[#1b1012] text-coral"
+                  : "border-[#e5e7eb42] bg-white/[0.05] text-mist"
+            }`}
+          >
+            P&amp;L: {formatCurrency(day.totalPnl)}
+          </div>
+          <div
+            className={`rounded-[6px] border px-3 py-2 text-sm font-semibold ${
+              averagePerSharePositive
+                ? "border-mint bg-mint/10 text-mint"
+                : averagePerShareNegative
+                  ? "border-coral bg-[#1b1012] text-coral"
+                  : "border-[#e5e7eb42] bg-white/[0.05] text-mist"
+            }`}
+          >
+            /SH: {formatCurrency(day.averagePerShare)}
+          </div>
         </div>
       }
     >

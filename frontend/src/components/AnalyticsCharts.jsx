@@ -384,6 +384,13 @@ function TradeHeatmap({ trades, onOpenTrade }) {
             aria-label={`${trade.symbol} ${formatCurrency(trade.pnl)} trade`}
           >
             <span className="sr-only">{trade.symbol}</span>
+            <span
+              className={`pointer-events-none absolute inset-0 flex items-center justify-center px-1 text-center text-[11px] font-medium ${
+                trade.perSharePnl >= 0 ? "text-mint" : "text-coral"
+              }`}
+            >
+              {formatCurrency(trade.perSharePnl)}
+            </span>
             <span className="pointer-events-none absolute bottom-[calc(100%+8px)] left-1/2 z-20 w-44 -translate-x-1/2 rounded-[6px] border border-[var(--line)] bg-black px-3 py-2 text-left opacity-0 shadow-none transition-opacity duration-150 group-hover:opacity-100 group-focus:opacity-100">
               <span className="flex items-center justify-between gap-3">
                 <span className="text-xs font-medium text-white">{trade.symbol}</span>
