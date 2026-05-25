@@ -468,8 +468,8 @@ export function buildAnalytics(trades, options = {}) {
     };
   });
 
-  const currentDrawdown = processedTrades.length
-    ? processedTrades[processedTrades.length - 1].drawdown
+  const currentDrawdown = dailyCurves.length
+    ? dailyCurves[dailyCurves.length - 1].drawdown
     : 0;
 
   return {
