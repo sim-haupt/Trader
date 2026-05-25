@@ -149,20 +149,51 @@ function buildTradeTimeline(trade) {
   const executions = Array.isArray(trade.executions) ? trade.executions : [];
 
   if (executions.length > 0) {
-    return executions.map((execution, index) => ({
-      id: execution.id || `${trade.id}-${index + 1}`,
-      label: execution.action === "BUY" ? "Buy" : "Sell",
-      time: execution.occurredAt,
-      symbol: trade.symbol,
-      quantity:
-        execution.action === "BUY" ? asNumber(execution.quantity) : -asNumber(execution.quantity),
-      price: asNumber(execution.price),
-      position:
-        execution.positionAfter === null || execution.positionAfter === undefined
-          ? "-"
-          : asNumber(execution.positionAfter),
-      source: execution.source || "IMPORTED"
-    }));
+    const direction = trade.side === "SHORT" ? -1 : 1;
+    let openQuantity = 0;
+    let averageEntryPrice = 0;
+
+    return executions.map((execution, index) => {
+      const quantity = asNumber(execution.quantity);
+      const price = asNumber(execution.price);
+      const signedQuantity = execution.action === "BUY" ? quantity : -quantity;
+      const isOpeningAction =
+        (trade.side === "LONG" && execution.action === "BUY") ||
+        (trade.side === "SHORT" && execution.action === "SELL");
+
+      let realizedPnl = 0;
+      let realizedPerShare = 0;
+
+      if (isOpeningAction) {
+        const nextOpenQuantity = openQuantity + quantity;
+        averageEntryPrice =
+          nextOpenQuantity > 0
+            ? (averageEntryPrice * openQuantity + price * quantity) / nextOpenQuantity
+            : averageEntryPrice;
+        openQuantity = nextOpenQuantity;
+      } else {
+        const closingQuantity = Math.min(quantity, openQuantity || quantity);
+        realizedPerShare = (price - averageEntryPrice) * direction;
+        realizedPnl = realizedPerShare * closingQuantity;
+        openQuantity = Math.max(0, openQuantity - closingQuantity);
+      }
+
+      return {
+        id: execution.id || `${trade.id}-${index + 1}`,
+        label: execution.action === "BUY" ? "Buy" : "Sell",
+        time: execution.occurredAt,
+        symbol: trade.symbol,
+        quantity: signedQuantity,
+        price,
+        pnl: Number(realizedPnl.toFixed(2)),
+        perSharePnl: Number(realizedPerShare.toFixed(4)),
+        position:
+          execution.positionAfter === null || execution.positionAfter === undefined
+            ? "-"
+            : asNumber(execution.positionAfter),
+        source: execution.source || "IMPORTED"
+      };
+    });
   }
 
   const timeline = [
@@ -173,6 +204,8 @@ function buildTradeTimeline(trade) {
       symbol: trade.symbol,
       quantity: Math.abs(asNumber(trade.quantity)),
       price: asNumber(trade.entryPrice),
+      pnl: 0,
+      perSharePnl: 0,
       position: trade.side === "SHORT" ? -Math.abs(asNumber(trade.quantity)) : asNumber(trade.quantity),
       source: "SYNTHETIC"
     }
@@ -186,6 +219,11 @@ function buildTradeTimeline(trade) {
       symbol: trade.symbol,
       quantity: Math.abs(asNumber(trade.quantity)),
       price: asNumber(trade.exitPrice),
+      pnl: getTradePnl(trade),
+      perSharePnl:
+        Math.abs(asNumber(trade.quantity)) > 0
+          ? Number((getTradePnl(trade) / Math.abs(asNumber(trade.quantity))).toFixed(4))
+          : 0,
       position: 0,
       source: "SYNTHETIC"
     });

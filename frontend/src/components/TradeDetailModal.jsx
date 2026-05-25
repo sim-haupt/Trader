@@ -149,6 +149,8 @@ function TimelineTable({ rows }) {
               <th className="px-4 py-3">Symbol</th>
               <th className="px-4 py-3">Qty</th>
               <th className="px-4 py-3">Price</th>
+              <th className="px-4 py-3">P&amp;L</th>
+              <th className="px-4 py-3">P&amp;L / Share</th>
               <th className="px-4 py-3">Position</th>
             </tr>
           </thead>
@@ -162,6 +164,24 @@ function TimelineTable({ rows }) {
                   {row.quantity}
                 </td>
                 <td className="px-4 py-4 text-mist">{formatCurrency(row.price)}</td>
+                <td
+                  className={`px-4 py-4 ${
+                    Number(row.pnl) > 0 ? "text-mint" : Number(row.pnl) < 0 ? "text-coral" : "text-mist"
+                  }`}
+                >
+                  {formatCurrency(row.pnl)}
+                </td>
+                <td
+                  className={`px-4 py-4 ${
+                    Number(row.perSharePnl) > 0
+                      ? "text-mint"
+                      : Number(row.perSharePnl) < 0
+                        ? "text-coral"
+                        : "text-mist"
+                  }`}
+                >
+                  {formatCurrency(row.perSharePnl)}
+                </td>
                 <td className="px-4 py-4 text-mist">{row.position}</td>
               </tr>
             ))}
