@@ -335,15 +335,15 @@ function MonthDetailSection({ month, displayMode, onDisplayModeChange, onClose, 
 
               <div className="min-h-[118px] border-b border-[var(--line)] px-3 py-3 bg-white/[0.02]">
                 <div className="ui-title text-sm text-white">Week {index + 1}</div>
+                <div className={`mt-4 text-base font-semibold ${weekDollarTone}`}>
+                  {formatCurrency(weekStats.pnl)}
+                </div>
                 <div
-                  className={`mt-4 text-base font-semibold ${
+                  className={`mt-2 text-xs font-medium ${
                     weekDisplayTone
                   }`}
                 >
                   /sh {formatCurrency(weekAveragePerShare)}
-                </div>
-                <div className={`mt-2 text-xs font-medium ${weekDollarTone}`}>
-                  {formatCurrency(weekStats.pnl)}
                 </div>
                 <div className="mt-2 text-xs text-mist">
                   {weekStats.trades} trade{weekStats.trades === 1 ? "" : "s"}
