@@ -657,7 +657,7 @@ function JournalDayCard({
     <Card
       title={<span className="text-[14px] text-white/72">{day.label}</span>}
       action={
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <div
             className={`rounded-[6px] border px-3 py-2 text-sm font-semibold ${
               positive
@@ -833,6 +833,20 @@ function JournalDayCard({
                 {day.fxRate ? formatEuroCurrency(day.totalFeesEur) : "EUR unavailable"}
               </div>
             </div>
+            <div className="ui-metric-tile">
+              <div className="ui-title text-[10px] text-white/52">Net P&amp;L EUR</div>
+              <div
+                className={`mt-2 text-2xl font-semibold ${
+                  !day.fxRate
+                    ? "text-white/54"
+                    : Number(day.totalPnlEur || 0) >= 0
+                      ? "text-mint"
+                      : "text-coral"
+                }`}
+              >
+                {day.fxRate ? formatEuroCurrency(day.totalPnlEur) : "No FX"}
+              </div>
+            </div>
             <div className="ui-metric-tile sm:col-span-2">
               <div className="ui-title text-[10px] text-white/52">USD to EUR FX Rate</div>
               <div className="mt-2 text-2xl font-semibold text-white">{formatFxRate(day.fxRate)}</div>
@@ -899,6 +913,22 @@ function JournalDayCard({
         </div>
 
         <div className="ui-table-shell overflow-hidden">
+          <div className="flex flex-col gap-3 border-b border-[var(--line)] bg-white/[0.03] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="ui-title text-[10px] text-white/56">Trades CSV</div>
+              <div className="mt-1 text-xs text-white/42">
+                Includes net P&amp;L, fees/commissions, daily USD/EUR FX, and EUR totals.
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => onExportTrades(day)}
+              disabled={!hasTrades}
+              className="ui-button min-h-[38px] px-4 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Export CSV
+            </button>
+          </div>
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead className="bg-white/[0.03] text-left text-white/56">
