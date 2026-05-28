@@ -109,6 +109,16 @@ export function formatCurrency(value) {
   }).format(amount);
 }
 
+export function formatEuroCurrency(value) {
+  const amount = Number(value || 0);
+
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "EUR",
+    maximumFractionDigits: 2
+  }).format(amount);
+}
+
 export function formatPercent(value) {
   return `${Number(value || 0).toFixed(1)}%`;
 }

@@ -13,6 +13,14 @@ function buildBarsKey({ symbol, resolution, from, to, includeExtended }) {
   });
 }
 
+function buildFxRatesKey({ from, to }) {
+  return JSON.stringify({
+    kind: "fx-rates",
+    from,
+    to
+  });
+}
+
 function readCache(key) {
   const entry = marketDataCache.get(key);
 
@@ -51,6 +59,10 @@ const marketDataService = {
     return readCache(buildBarsKey(params));
   },
 
+  peekFxRates(params) {
+    return readCache(buildFxRatesKey(params));
+  },
+
   async getBars({ symbol, resolution, from, to, includeExtended = true }, options = {}) {
     const key = buildBarsKey({ symbol, resolution, from, to, includeExtended });
     const cached = readCache(key);
@@ -79,6 +91,29 @@ const marketDataService = {
     } catch (error) {
       throw normalizeMarketDataError(error);
     }
+  },
+
+  async getFxRates({ from, to }, options = {}) {
+    const key = buildFxRatesKey({ from, to });
+    const cached = readCache(key);
+
+    if (cached && !options.forceRefresh) {
+      return cached;
+    }
+
+    const response = await api.get("/market-data/fx-rates", {
+      params: {
+        from,
+        to
+      }
+    });
+
+    const data = response.data.data;
+    marketDataCache.set(key, {
+      data,
+      createdAt: Date.now()
+    });
+    return data;
   }
 };
 

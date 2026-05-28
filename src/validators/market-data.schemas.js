@@ -15,6 +15,19 @@ const marketBarsQuerySchema = z.object({
     .transform((value) => value !== "false")
 });
 
+const dayKeySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "must be a valid day key");
+
+const fxRatesQuerySchema = z
+  .object({
+    from: dayKeySchema,
+    to: dayKeySchema
+  })
+  .refine((value) => value.from <= value.to, {
+    message: "from must be before or equal to to",
+    path: ["to"]
+  });
+
 module.exports = {
-  marketBarsQuerySchema
+  marketBarsQuerySchema,
+  fxRatesQuerySchema
 };

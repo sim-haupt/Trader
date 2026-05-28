@@ -10,6 +10,15 @@ const listJournalDays = asyncHandler(async (req, res) => {
   });
 });
 
+const getUsdEurRates = asyncHandler(async (req, res) => {
+  const rates = await journalService.getUsdEurRates(req.validatedQuery.days);
+
+  res.status(200).json({
+    success: true,
+    data: rates
+  });
+});
+
 const updateJournalDay = asyncHandler(async (req, res) => {
   const day = await journalService.updateJournalDay(
     req.user,
@@ -25,5 +34,6 @@ const updateJournalDay = asyncHandler(async (req, res) => {
 
 module.exports = {
   listJournalDays,
+  getUsdEurRates,
   updateJournalDay
 };

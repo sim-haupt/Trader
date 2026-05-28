@@ -10,7 +10,24 @@ const journalDayNoteSchema = z.object({
   notes: z.string().max(20000).nullable().optional()
 });
 
+const journalFxRatesQuerySchema = z.object({
+  days: z
+    .string()
+    .min(1)
+    .transform((value) =>
+      value
+        .split(",")
+        .map((dayKey) => dayKey.trim())
+        .filter(Boolean)
+    )
+    .refine(
+      (dayKeys) => dayKeys.length > 0 && dayKeys.every((dayKey) => dayKeyPattern.test(dayKey)),
+      "Invalid day keys"
+    )
+});
+
 module.exports = {
   journalDayParamsSchema,
-  journalDayNoteSchema
+  journalDayNoteSchema,
+  journalFxRatesQuerySchema
 };

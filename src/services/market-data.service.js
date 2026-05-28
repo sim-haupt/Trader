@@ -3,8 +3,10 @@ const ApiError = require("../utils/ApiError");
 const prisma = require("../config/prisma");
 
 const ALPACA_BASE_URL = String(env.alpacaDataUrl || "https://data.alpaca.markets").replace(/\/$/, "");
+const FRANKFURTER_BASE_URL = "https://api.frankfurter.dev/v1";
 const minuteBarsCache = new Map();
 const dailyBarsCache = new Map();
+const fxRatesCache = new Map();
 const SIP_DELAY_MS = 15 * 60 * 1000;
 const backfillTimers = new Map();
 
@@ -69,6 +71,26 @@ async function alpacaFetch(path, params = {}) {
     throw new ApiError(
       response.status,
       `Market data request failed${text ? `: ${text.slice(0, 160)}` : ""}`
+    );
+  }
+
+  return response.json();
+}
+
+async function frankfurterFetch(path, params = {}) {
+  const searchParams = new URLSearchParams(
+    Object.entries(params)
+      .filter(([, value]) => value !== undefined && value !== null && value !== "")
+      .map(([key, value]) => [key, String(value)])
+  );
+  const url = `${FRANKFURTER_BASE_URL}${path}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new ApiError(
+      response.status,
+      `FX data request failed${text ? `: ${text.slice(0, 160)}` : ""}`
     );
   }
 
@@ -227,6 +249,35 @@ async function fetchMinuteBars(symbol, from, to) {
 
 async function fetchDailyBars(symbol, from, to) {
   return (await fetchDailyBarsWithMeta(symbol, from, to)).bars;
+}
+
+async function getUsdEurFxRates({ from, to }) {
+  const cacheKey = `${from}:${to}:USD:EUR`;
+
+  if (fxRatesCache.has(cacheKey)) {
+    return fxRatesCache.get(cacheKey);
+  }
+
+  const payload = await frankfurterFetch(`/${from}..${to}`, {
+    base: "USD",
+    symbols: "EUR"
+  });
+
+  const result = {
+    base: "USD",
+    quote: "EUR",
+    from,
+    to,
+    rates: Object.fromEntries(
+      Object.entries(payload?.rates || {}).map(([date, rateSet]) => [
+        date,
+        Number(Number(rateSet?.EUR || 0).toFixed(6))
+      ])
+    )
+  };
+
+  fxRatesCache.set(cacheKey, result);
+  return result;
 }
 
 function calculateEntryVolume(minuteBars, entryDate) {
@@ -436,6 +487,7 @@ async function getBars({ symbol, resolution, from, to, includeExtended }) {
 
 module.exports = {
   getBars,
+  getUsdEurFxRates,
   getTradeImportContext,
   refreshTradeImportContext,
   scheduleTradeImportContextBackfill

@@ -22,7 +22,7 @@ import tradeService from "../services/tradeService";
 import journalService from "../services/journalService";
 import tagService from "../services/tagService";
 import strategyService from "../services/strategyService";
-import { formatCurrency, formatDateTimeLocal } from "../utils/formatters";
+import { formatCurrency, formatDateTimeLocal, formatEuroCurrency } from "../utils/formatters";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
 import { getTradeFeeDisplayValue, getTradeNetPnl } from "../utils/tradePnl";
@@ -404,7 +404,109 @@ function buildJournalVisualization(dayKey, trades) {
   };
 }
 
-function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees, includeDayKeys = []) {
+function formatFxRate(rate) {
+  return Number.isFinite(Number(rate)) ? Number(rate).toFixed(6) : "Unavailable";
+}
+
+function csvValue(value) {
+  const stringValue = value === undefined || value === null ? "" : String(value);
+
+  if (/["\n,]/.test(stringValue)) {
+    return `"${stringValue.replace(/"/g, '""')}"`;
+  }
+
+  return stringValue;
+}
+
+function downloadCsv(filename, rows) {
+  const csv = rows.map((row) => row.map(csvValue).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function exportJournalDayTrades(day) {
+  const header = [
+    "Day",
+    "Symbol",
+    "Side",
+    "Quantity",
+    "Entry Price",
+    "Exit Price",
+    "Entry Date",
+    "Exit Date",
+    "Executions",
+    "Strategy",
+    "Tags",
+    "Gross P&L USD",
+    "Fees/Commissions USD",
+    "Net P&L USD",
+    "USD/EUR FX Rate",
+    "FX Rate Date",
+    "Fees/Commissions EUR",
+    "Net P&L EUR",
+    "Day Total Net P&L USD",
+    "Day Total Net P&L EUR",
+    "Notes"
+  ];
+  const rows = day.trades.map((trade) => [
+    day.dayKey,
+    trade.symbol,
+    trade.side,
+    trade.quantity,
+    trade.entryPrice,
+    trade.exitPrice ?? "",
+    trade.entryDate,
+    trade.exitDate ?? "",
+    trade.execCount,
+    trade.strategy ?? "",
+    trade.parsedTags.join("; "),
+    Number(trade.grossPnl ?? 0).toFixed(2),
+    Number(trade.dayFees ?? 0).toFixed(2),
+    Number(trade.dayPnl ?? 0).toFixed(2),
+    day.fxRate ?? "",
+    day.fxRateDate ?? "",
+    day.fxRate ? Number(trade.dayFeesEur ?? 0).toFixed(2) : "",
+    day.fxRate ? Number(trade.dayPnlEur ?? 0).toFixed(2) : "",
+    Number(day.totalPnl ?? 0).toFixed(2),
+    day.fxRate ? Number(day.totalPnlEur ?? 0).toFixed(2) : "",
+    trade.notes ?? ""
+  ]);
+
+  rows.push([
+    day.dayKey,
+    "TOTAL",
+    "",
+    day.totalVolume,
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    Number(day.totalFees ?? 0).toFixed(2),
+    Number(day.totalPnl ?? 0).toFixed(2),
+    day.fxRate ?? "",
+    day.fxRateDate ?? "",
+    day.fxRate ? Number(day.totalFeesEur ?? 0).toFixed(2) : "",
+    day.fxRate ? Number(day.totalPnlEur ?? 0).toFixed(2) : "",
+    Number(day.totalPnl ?? 0).toFixed(2),
+    day.fxRate ? Number(day.totalPnlEur ?? 0).toFixed(2) : "",
+    ""
+  ]);
+
+  downloadCsv(`journal-${day.dayKey}-trades.csv`, [header, ...rows]);
+}
+
+function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees, fxRatesByDay = {}, includeDayKeys = []) {
   const grouped = new Map();
 
   for (const trade of trades) {
@@ -418,6 +520,8 @@ function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees, inc
     const quantity = Number(trade.quantity || 0);
     const perSharePnl = Math.abs(quantity) > 0 ? pnl / Math.abs(quantity) : 0;
     const fees = getTradeFeeDisplayValue(trade, defaultCommission, defaultFees);
+    const fxRate = Number(fxRatesByDay[dayKey]?.rate);
+    const hasFxRate = Number.isFinite(fxRate);
     const existing = grouped.get(dayKey) || {
       dayKey,
       label: formatDayLabel(dayKey),
@@ -425,15 +529,23 @@ function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees, inc
       totalTrades: 0,
       totalVolume: 0,
       totalFees: 0,
+      totalFeesEur: 0,
       totalPnl: 0,
+      totalPnlEur: 0,
       perShareTotal: 0,
       wins: 0,
-      losses: 0
+      losses: 0,
+      fxRate: hasFxRate ? fxRate : null,
+      fxRateDate: fxRatesByDay[dayKey]?.rateDate || "",
+      fxRateError: fxRatesByDay[dayKey]?.error || ""
     };
 
     existing.trades.push({
       ...trade,
       dayPnl: pnl,
+      dayPnlEur: hasFxRate ? Number((pnl * fxRate).toFixed(4)) : null,
+      dayFees: fees,
+      dayFeesEur: hasFxRate ? Number((fees * fxRate).toFixed(4)) : null,
       entryTimeLabel: formatTimeLabel(trade.entryDate),
       execCount: trade.reportedExecutionCount ?? trade.executions?.length ?? 0,
       parsedTags: getTradeTags(trade)
@@ -441,7 +553,9 @@ function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees, inc
     existing.totalTrades += 1;
     existing.totalVolume += quantity;
     existing.totalFees += fees;
+    existing.totalFeesEur += hasFxRate ? fees * fxRate : 0;
     existing.totalPnl += pnl;
+    existing.totalPnlEur += hasFxRate ? pnl * fxRate : 0;
     existing.perShareTotal += perSharePnl;
 
     if (pnl > 0) {
@@ -465,10 +579,15 @@ function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees, inc
       totalTrades: 0,
       totalVolume: 0,
       totalFees: 0,
+      totalFeesEur: 0,
       totalPnl: 0,
+      totalPnlEur: 0,
       perShareTotal: 0,
       wins: 0,
-      losses: 0
+      losses: 0,
+      fxRate: Number.isFinite(Number(fxRatesByDay[dayKey]?.rate)) ? Number(fxRatesByDay[dayKey].rate) : null,
+      fxRateDate: fxRatesByDay[dayKey]?.rateDate || "",
+      fxRateError: fxRatesByDay[dayKey]?.error || ""
     });
   }
 
@@ -481,7 +600,9 @@ function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees, inc
         trades: visualization.trades,
         chartData: visualization.chartData,
         totalPnl: Number(day.totalPnl.toFixed(2)),
+        totalPnlEur: day.fxRate ? Number(day.totalPnlEur.toFixed(2)) : null,
         totalFees: Number(day.totalFees.toFixed(2)),
+        totalFeesEur: day.fxRate ? Number(day.totalFeesEur.toFixed(2)) : null,
         averagePerShare: Number(
           (day.totalTrades > 0 ? day.perShareTotal / day.totalTrades : 0).toFixed(4)
         ),
@@ -518,10 +639,13 @@ function JournalDayCard({
   onCancelEditingNote,
   isEditingNote,
   isSaving,
-  onOpenTrade
+  onOpenTrade,
+  onExportTrades
 }) {
   const positive = day.totalPnl >= 0;
   const negative = day.totalPnl < 0;
+  const eurPositive = Number(day.totalPnlEur || 0) >= 0;
+  const eurNegative = Number(day.totalPnlEur || 0) < 0;
   const hasTrades = day.totalTrades > 0;
   const averagePerSharePositive = day.averagePerShare >= 0;
   const averagePerShareNegative = day.averagePerShare < 0;
@@ -547,6 +671,19 @@ function JournalDayCard({
           </div>
           <div
             className={`rounded-[6px] border px-3 py-2 text-sm font-semibold ${
+              !day.fxRate
+                ? "border-[#e5e7eb42] bg-white/[0.05] text-mist"
+                : eurPositive
+                  ? "border-mint bg-mint/10 text-mint"
+                  : eurNegative
+                    ? "border-coral bg-[#1b1012] text-coral"
+                    : "border-[#e5e7eb42] bg-white/[0.05] text-mist"
+            }`}
+          >
+            EUR: {day.fxRate ? formatEuroCurrency(day.totalPnlEur) : "No FX"}
+          </div>
+          <div
+            className={`rounded-[6px] border px-3 py-2 text-sm font-semibold ${
               averagePerSharePositive
                 ? "border-mint bg-mint/10 text-mint"
                 : averagePerShareNegative
@@ -556,6 +693,14 @@ function JournalDayCard({
           >
             /SH: {formatCurrency(day.averagePerShare)}
           </div>
+          <button
+            type="button"
+            onClick={() => onExportTrades(day)}
+            disabled={!hasTrades}
+            className="ui-button px-4 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Export CSV
+          </button>
         </div>
       }
     >
@@ -684,6 +829,16 @@ function JournalDayCard({
             <div className="ui-metric-tile">
               <div className="ui-title text-[10px] text-white/52">Commissions/Fees</div>
               <div className="mt-2 text-2xl font-semibold text-white">{formatCurrency(day.totalFees)}</div>
+              <div className="mt-1 text-xs text-white/42">
+                {day.fxRate ? formatEuroCurrency(day.totalFeesEur) : "EUR unavailable"}
+              </div>
+            </div>
+            <div className="ui-metric-tile sm:col-span-2">
+              <div className="ui-title text-[10px] text-white/52">USD to EUR FX Rate</div>
+              <div className="mt-2 text-2xl font-semibold text-white">{formatFxRate(day.fxRate)}</div>
+              <div className="mt-1 text-xs text-white/42">
+                {day.fxRateDate ? `Rate date ${day.fxRateDate}` : day.fxRateError || "Rate loading"}
+              </div>
             </div>
           </div>
         </div>
@@ -753,6 +908,8 @@ function JournalDayCard({
                   <th className="px-4 py-3 font-medium">Volume</th>
                   <th className="px-4 py-3 font-medium">Execs</th>
                   <th className="px-4 py-3 font-medium">P&amp;L</th>
+                  <th className="px-4 py-3 font-medium">P&amp;L EUR</th>
+                  <th className="px-4 py-3 font-medium">Fees</th>
                   <th className="px-4 py-3 font-medium">P&amp;L / Share</th>
                   <th className="px-4 py-3 font-medium">Strategy</th>
                   <th className="px-4 py-3 font-medium">Tags</th>
@@ -775,6 +932,10 @@ function JournalDayCard({
                       <td className={`px-4 py-3 font-medium ${trade.dayPnl > 0 ? "text-mint" : trade.dayPnl < 0 ? "text-coral" : "text-white/70"}`}>
                         {formatCurrency(trade.dayPnl)}
                       </td>
+                      <td className={`px-4 py-3 font-medium ${Number(trade.dayPnlEur || 0) > 0 ? "text-mint" : Number(trade.dayPnlEur || 0) < 0 ? "text-coral" : "text-white/70"}`}>
+                        {day.fxRate ? formatEuroCurrency(trade.dayPnlEur) : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-white/70">{formatCurrency(trade.dayFees)}</td>
                       <td
                         className={`px-4 py-3 font-medium ${
                           Number(trade.quantity || 0) === 0
@@ -812,7 +973,7 @@ function JournalDayCard({
                   ))
                 ) : (
                   <tr className="border-t border-[var(--line)] bg-[rgba(255,255,255,0.05)]">
-                    <td colSpan={8} className="px-4 py-5 text-sm text-white/40">
+                    <td colSpan={10} className="px-4 py-5 text-sm text-white/40">
                       No trades logged for this day.
                     </td>
                   </tr>
@@ -845,6 +1006,9 @@ function JournalPage() {
   const [draftNotes, setDraftNotes] = useState({});
   const [editingNotesByDay, setEditingNotesByDay] = useState({});
   const [savingDayKey, setSavingDayKey] = useState("");
+  const [fxRatesByDay, setFxRatesByDay] = useState({});
+  const [loadingFxRates, setLoadingFxRates] = useState(false);
+  const [fxRateError, setFxRateError] = useState("");
 
   const tradesResource = useCachedAsyncResource({
     peek: () => tradeService.peekAllTrades(),
@@ -970,6 +1134,43 @@ function JournalPage() {
     [journalDayKeys, currentPage]
   );
 
+  useEffect(() => {
+    if (pagedDayKeys.length === 0) {
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingFxRates(true);
+    setFxRateError("");
+
+    journalService
+      .getUsdEurRates(pagedDayKeys)
+      .then((rates) => {
+        if (cancelled) {
+          return;
+        }
+
+        setFxRatesByDay((current) => ({
+          ...current,
+          ...rates
+        }));
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setFxRateError(err.message);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoadingFxRates(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pagedDayKeys]);
+
   const pagedDays = useMemo(() => {
     const notesByDay = new Map(journalDaysResource.data.map((day) => [day.dayKey, day]));
     const pagedSet = new Set(pagedDayKeys);
@@ -980,6 +1181,7 @@ function JournalPage() {
       notesByDay,
       user?.defaultCommission ?? 0,
       user?.defaultFees ?? 0,
+      fxRatesByDay,
       pagedDayKeys
     );
   }, [
@@ -987,6 +1189,7 @@ function JournalPage() {
     journalDaysResource.data,
     user?.defaultCommission,
     user?.defaultFees,
+    fxRatesByDay,
     pagedDayKeys
   ]);
 
@@ -1081,6 +1284,11 @@ function JournalPage() {
   return (
     <div className="space-y-6">
       <Card title="TRADING JOURNAL">
+        {fxRateError ? (
+          <div className="mb-4 ui-notice border-gold/20 bg-gold/10 text-gold">
+            EUR totals are temporarily unavailable: {fxRateError}
+          </div>
+        ) : null}
         <Filters
           filters={filters}
           onChange={updateFilter}
@@ -1121,6 +1329,7 @@ function JournalPage() {
               isEditingNote={Boolean(editingNotesByDay[day.dayKey])}
               isSaving={savingDayKey === day.dayKey}
               onOpenTrade={(tradeId) => navigate(`/trades/${tradeId}`)}
+              onExportTrades={exportJournalDayTrades}
             />
             ))}
           </div>
@@ -1131,6 +1340,7 @@ function JournalPage() {
                 Showing {(currentPage - 1) * PAGE_SIZE + 1}-
                 {Math.min(currentPage * PAGE_SIZE, journalDayKeys.length)} of {journalDayKeys.length} trading day
                 {journalDayKeys.length === 1 ? "" : "s"}
+                {loadingFxRates ? " · loading FX rates" : ""}
               </div>
               <div className="flex items-center gap-3">
                 <button
