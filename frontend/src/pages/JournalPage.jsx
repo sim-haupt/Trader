@@ -217,8 +217,10 @@ function getTradeTags(trade) {
     .filter(Boolean);
 }
 
-function buildTradePnl(trade, defaultCommission, defaultFees) {
-  return getTradeGrossPnl(trade);
+function buildTradePnl(trade, pnlType, defaultCommission, defaultFees) {
+  return pnlType === "NET"
+    ? getTradeNetPnl(trade, defaultCommission, defaultFees)
+    : getTradeGrossPnl(trade);
 }
 
 function formatAxisTime(value) {
@@ -506,7 +508,15 @@ function exportJournalDayTrades(day) {
   downloadCsv(`journal-${day.dayKey}-trades.csv`, [header, ...rows]);
 }
 
-function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees, fxRatesByDay = {}, includeDayKeys = []) {
+function buildDailyJournal(
+  trades,
+  dayNotes,
+  defaultCommission,
+  defaultFees,
+  fxRatesByDay = {},
+  includeDayKeys = [],
+  pnlType = "GROSS"
+) {
   const grouped = new Map();
 
   for (const trade of trades) {
@@ -516,7 +526,7 @@ function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees, fxR
       continue;
     }
 
-    const pnl = buildTradePnl(trade, defaultCommission, defaultFees);
+    const pnl = buildTradePnl(trade, pnlType, defaultCommission, defaultFees);
     const netPnl = getTradeNetPnl(trade, defaultCommission, defaultFees);
     const quantity = Number(trade.quantity || 0);
     const perSharePnl = Math.abs(quantity) > 0 ? pnl / Math.abs(quantity) : 0;
@@ -828,15 +838,18 @@ function JournalDayCard({
             </div>
             <div className="ui-metric-tile sm:col-span-2">
               <div className="ui-title text-[10px] text-white/52">USD to EUR FX Rate</div>
-              <div className="mt-2 text-2xl font-semibold text-white">{formatFxRate(day.fxRate)}</div>
-              <div className="mt-2 grid gap-2 text-xs text-white/54 sm:grid-cols-2">
-                <span>
+              <div className="mt-3 grid gap-3 text-xs text-white/54 sm:grid-cols-3">
+                <span className="min-w-0">
+                  Rate:{" "}
+                  <span className="font-medium text-white">{formatFxRate(day.fxRate)}</span>
+                </span>
+                <span className="min-w-0">
                   Fees EUR:{" "}
                   <span className="font-medium text-white">
                     {day.fxRate ? formatEuroCurrency(day.totalFeesEur) : "Unavailable"}
                   </span>
                 </span>
-                <span>
+                <span className="min-w-0">
                   P&amp;L EUR:{" "}
                   <span
                     className={`font-medium ${
@@ -850,9 +863,6 @@ function JournalDayCard({
                     {day.fxRate ? formatEuroCurrency(day.totalPnlEur) : "Unavailable"}
                   </span>
                 </span>
-              </div>
-              <div className="mt-2 text-xs text-white/42">
-                {day.fxRateDate ? `Rate date ${day.fxRateDate}` : day.fxRateError || "Rate loading"}
               </div>
             </div>
           </div>
@@ -1020,6 +1030,7 @@ function JournalPage() {
   const [fxRatesByDay, setFxRatesByDay] = useState({});
   const [loadingFxRates, setLoadingFxRates] = useState(false);
   const [fxRateError, setFxRateError] = useState("");
+  const [pnlType, setPnlType] = useState("GROSS");
 
   const tradesResource = useCachedAsyncResource({
     peek: () => tradeService.peekAllTrades(),
@@ -1193,7 +1204,8 @@ function JournalPage() {
       user?.defaultCommission ?? 0,
       user?.defaultFees ?? 0,
       fxRatesByDay,
-      pagedDayKeys
+      pagedDayKeys,
+      pnlType
     );
   }, [
     filteredTrades,
@@ -1201,7 +1213,8 @@ function JournalPage() {
     user?.defaultCommission,
     user?.defaultFees,
     fxRatesByDay,
-    pagedDayKeys
+    pagedDayKeys,
+    pnlType
   ]);
 
   useEffect(() => {
@@ -1300,6 +1313,23 @@ function JournalPage() {
             EUR totals are temporarily unavailable: {fxRateError}
           </div>
         ) : null}
+        <div className="mb-4 flex justify-end">
+          <div className="ui-segment">
+            {[
+              { key: "GROSS", label: "Gross" },
+              { key: "NET", label: "Net" }
+            ].map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                data-active={option.key === pnlType}
+                onClick={() => setPnlType(option.key)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
         <Filters
           filters={filters}
           onChange={updateFilter}
