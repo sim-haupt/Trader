@@ -644,8 +644,6 @@ function JournalDayCard({
 }) {
   const positive = day.totalPnl >= 0;
   const negative = day.totalPnl < 0;
-  const eurPositive = Number(day.totalPnlEur || 0) >= 0;
-  const eurNegative = Number(day.totalPnlEur || 0) < 0;
   const hasTrades = day.totalTrades > 0;
   const averagePerSharePositive = day.averagePerShare >= 0;
   const averagePerShareNegative = day.averagePerShare < 0;
@@ -668,19 +666,6 @@ function JournalDayCard({
             }`}
           >
             P&amp;L: {formatCurrency(day.totalPnl)}
-          </div>
-          <div
-            className={`rounded-[6px] border px-3 py-2 text-sm font-semibold ${
-              !day.fxRate
-                ? "border-[#e5e7eb42] bg-white/[0.05] text-mist"
-                : eurPositive
-                  ? "border-mint bg-mint/10 text-mint"
-                  : eurNegative
-                    ? "border-coral bg-[#1b1012] text-coral"
-                    : "border-[#e5e7eb42] bg-white/[0.05] text-mist"
-            }`}
-          >
-            EUR: {day.fxRate ? formatEuroCurrency(day.totalPnlEur) : "No FX"}
           </div>
           <div
             className={`rounded-[6px] border px-3 py-2 text-sm font-semibold ${
@@ -829,28 +814,33 @@ function JournalDayCard({
             <div className="ui-metric-tile">
               <div className="ui-title text-[10px] text-white/52">Commissions/Fees</div>
               <div className="mt-2 text-2xl font-semibold text-white">{formatCurrency(day.totalFees)}</div>
-              <div className="mt-1 text-xs text-white/42">
-                {day.fxRate ? formatEuroCurrency(day.totalFeesEur) : "EUR unavailable"}
-              </div>
-            </div>
-            <div className="ui-metric-tile">
-              <div className="ui-title text-[10px] text-white/52">Net P&amp;L EUR</div>
-              <div
-                className={`mt-2 text-2xl font-semibold ${
-                  !day.fxRate
-                    ? "text-white/54"
-                    : Number(day.totalPnlEur || 0) >= 0
-                      ? "text-mint"
-                      : "text-coral"
-                }`}
-              >
-                {day.fxRate ? formatEuroCurrency(day.totalPnlEur) : "No FX"}
-              </div>
             </div>
             <div className="ui-metric-tile sm:col-span-2">
               <div className="ui-title text-[10px] text-white/52">USD to EUR FX Rate</div>
               <div className="mt-2 text-2xl font-semibold text-white">{formatFxRate(day.fxRate)}</div>
-              <div className="mt-1 text-xs text-white/42">
+              <div className="mt-2 grid gap-2 text-xs text-white/54 sm:grid-cols-2">
+                <span>
+                  Fees EUR:{" "}
+                  <span className="font-medium text-white">
+                    {day.fxRate ? formatEuroCurrency(day.totalFeesEur) : "Unavailable"}
+                  </span>
+                </span>
+                <span>
+                  P&amp;L EUR:{" "}
+                  <span
+                    className={`font-medium ${
+                      day.fxRate
+                        ? Number(day.totalPnlEur || 0) >= 0
+                          ? "text-mint"
+                          : "text-coral"
+                        : "text-white/54"
+                    }`}
+                  >
+                    {day.fxRate ? formatEuroCurrency(day.totalPnlEur) : "Unavailable"}
+                  </span>
+                </span>
+              </div>
+              <div className="mt-2 text-xs text-white/42">
                 {day.fxRateDate ? `Rate date ${day.fxRateDate}` : day.fxRateError || "Rate loading"}
               </div>
             </div>
@@ -913,22 +903,6 @@ function JournalDayCard({
         </div>
 
         <div className="ui-table-shell overflow-hidden">
-          <div className="flex flex-col gap-3 border-b border-[var(--line)] bg-white/[0.03] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="ui-title text-[10px] text-white/56">Trades CSV</div>
-              <div className="mt-1 text-xs text-white/42">
-                Includes net P&amp;L, fees/commissions, daily USD/EUR FX, and EUR totals.
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => onExportTrades(day)}
-              disabled={!hasTrades}
-              className="ui-button-solid min-h-[38px] px-4 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Export CSV
-            </button>
-          </div>
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead className="bg-white/[0.03] text-left text-white/56">
@@ -938,7 +912,6 @@ function JournalDayCard({
                   <th className="px-4 py-3 font-medium">Volume</th>
                   <th className="px-4 py-3 font-medium">Execs</th>
                   <th className="px-4 py-3 font-medium">P&amp;L</th>
-                  <th className="px-4 py-3 font-medium">P&amp;L EUR</th>
                   <th className="px-4 py-3 font-medium">Fees</th>
                   <th className="px-4 py-3 font-medium">P&amp;L / Share</th>
                   <th className="px-4 py-3 font-medium">Strategy</th>
@@ -961,9 +934,6 @@ function JournalDayCard({
                       <td className="px-4 py-3">{trade.execCount}</td>
                       <td className={`px-4 py-3 font-medium ${trade.dayPnl > 0 ? "text-mint" : trade.dayPnl < 0 ? "text-coral" : "text-white/70"}`}>
                         {formatCurrency(trade.dayPnl)}
-                      </td>
-                      <td className={`px-4 py-3 font-medium ${Number(trade.dayPnlEur || 0) > 0 ? "text-mint" : Number(trade.dayPnlEur || 0) < 0 ? "text-coral" : "text-white/70"}`}>
-                        {day.fxRate ? formatEuroCurrency(trade.dayPnlEur) : "—"}
                       </td>
                       <td className="px-4 py-3 text-white/70">{formatCurrency(trade.dayFees)}</td>
                       <td
@@ -1003,7 +973,7 @@ function JournalDayCard({
                   ))
                 ) : (
                   <tr className="border-t border-[var(--line)] bg-[rgba(255,255,255,0.05)]">
-                    <td colSpan={10} className="px-4 py-5 text-sm text-white/40">
+                    <td colSpan={9} className="px-4 py-5 text-sm text-white/40">
                       No trades logged for this day.
                     </td>
                   </tr>
