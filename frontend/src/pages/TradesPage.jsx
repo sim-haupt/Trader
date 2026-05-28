@@ -12,8 +12,11 @@ import LoadingState from "../components/ui/LoadingState";
 import tagService from "../services/tagService";
 import strategyService from "../services/strategyService";
 import tradeService from "../services/tradeService";
+import journalService from "../services/journalService";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
+import { formatDateTimeLocal } from "../utils/formatters";
+import { getTradeFeeDisplayValue, getTradeNetPnl } from "../utils/tradePnl";
 
 const initialFilters = {
   symbol: "",
@@ -30,6 +33,11 @@ const pageSizeOptions = [
   { label: "100", value: 100 },
   { label: "All", value: "all" }
 ];
+
+function getDayKey(value) {
+  const formatted = formatDateTimeLocal(value);
+  return formatted ? formatted.slice(0, 10) : "";
+}
 
 function TradesPage() {
   const { user } = useAuth();
@@ -51,6 +59,7 @@ function TradesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [isBulkSaving, setIsBulkSaving] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [error, setError] = useState("");
@@ -474,20 +483,54 @@ function TradesPage() {
     }
   }
 
-  function handleExportTrades() {
+  async function handleExportTrades() {
     if (trades.length === 0) {
       return;
     }
 
+    setIsExporting(true);
+
+    try {
+      const dayKeys = [...new Set(trades.map((trade) => getDayKey(trade.entryDate)).filter(Boolean))];
+      const fxRatesByDay = await journalService.getUsdEurRates(dayKeys);
+      const dailyTotals = new Map();
+
+      for (const trade of trades) {
+        const dayKey = getDayKey(trade.entryDate);
+        const netPnl = getTradeNetPnl(trade, user?.defaultCommission ?? 0, user?.defaultFees ?? 0);
+        const fees = getTradeFeeDisplayValue(trade, user?.defaultCommission ?? 0, user?.defaultFees ?? 0);
+        const rate = Number(fxRatesByDay[dayKey]?.rate);
+        const hasRate = Number.isFinite(rate);
+        const current = dailyTotals.get(dayKey) || {
+          netPnlUsd: 0,
+          feesUsd: 0,
+          netPnlEur: 0,
+          feesEur: 0
+        };
+
+        current.netPnlUsd += netPnl;
+        current.feesUsd += fees;
+        current.netPnlEur += hasRate ? netPnl * rate : 0;
+        current.feesEur += hasRate ? fees * rate : 0;
+        dailyTotals.set(dayKey, current);
+      }
+
     const headers = [
       "date",
       "symbol",
+      "side",
       "entry_price",
       "exit_price",
       "quantity",
-      "gross_pnl",
-      "net_pnl",
-      "fees",
+      "gross_pnl_usd",
+      "fees_commissions_usd",
+      "net_pnl_usd",
+      "usd_eur_fx_rate",
+      "fx_rate_date",
+      "fees_commissions_eur",
+      "net_pnl_eur",
+      "day_total_net_pnl_usd",
+      "day_total_net_pnl_eur",
       "strategy",
       "tags",
       "notes"
@@ -506,19 +549,66 @@ function TradesPage() {
       return stringValue;
     };
 
-    const rows = trades.map((trade) => [
-      trade.entryDate,
-      trade.symbol,
-      trade.entryPrice,
-      trade.exitPrice ?? "",
-      trade.quantity,
-      trade.grossPnl ?? "",
-      trade.netPnl ?? "",
-      trade.fees ?? "",
-      trade.strategy ?? "",
-      trade.tags ?? "",
-      trade.notes ?? ""
-    ]);
+      const rows = trades.map((trade) => {
+        const dayKey = getDayKey(trade.entryDate);
+        const fxRate = Number(fxRatesByDay[dayKey]?.rate);
+        const hasRate = Number.isFinite(fxRate);
+        const netPnl = getTradeNetPnl(trade, user?.defaultCommission ?? 0, user?.defaultFees ?? 0);
+        const fees = getTradeFeeDisplayValue(trade, user?.defaultCommission ?? 0, user?.defaultFees ?? 0);
+        const totals = dailyTotals.get(dayKey);
+
+        return [
+          trade.entryDate,
+          trade.symbol,
+          trade.side,
+          trade.entryPrice,
+          trade.exitPrice ?? "",
+          trade.quantity,
+          trade.grossPnl ?? "",
+          fees.toFixed(2),
+          netPnl.toFixed(2),
+          hasRate ? fxRate.toFixed(6) : "",
+          fxRatesByDay[dayKey]?.rateDate ?? "",
+          hasRate ? (fees * fxRate).toFixed(2) : "",
+          hasRate ? (netPnl * fxRate).toFixed(2) : "",
+          totals ? totals.netPnlUsd.toFixed(2) : "",
+          hasRate && totals ? totals.netPnlEur.toFixed(2) : "",
+          trade.strategy ?? "",
+          trade.tags ?? "",
+          trade.notes ?? ""
+        ];
+      });
+
+      const exportTotals = [...dailyTotals.values()].reduce(
+        (totals, day) => ({
+          netPnlUsd: totals.netPnlUsd + day.netPnlUsd,
+          feesUsd: totals.feesUsd + day.feesUsd,
+          netPnlEur: totals.netPnlEur + day.netPnlEur,
+          feesEur: totals.feesEur + day.feesEur
+        }),
+        { netPnlUsd: 0, feesUsd: 0, netPnlEur: 0, feesEur: 0 }
+      );
+
+      rows.push([
+        "TOTAL",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        exportTotals.feesUsd.toFixed(2),
+        exportTotals.netPnlUsd.toFixed(2),
+        "",
+        "",
+        exportTotals.feesEur.toFixed(2),
+        exportTotals.netPnlEur.toFixed(2),
+        exportTotals.netPnlUsd.toFixed(2),
+        exportTotals.netPnlEur.toFixed(2),
+        "",
+        "",
+        ""
+      ]);
 
     const csvContent = [headers, ...rows]
       .map((row) => row.map(escapeCsvValue).join(","))
@@ -531,6 +621,11 @@ function TradesPage() {
     link.download = `trades-export-${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
     URL.revokeObjectURL(url);
+    } catch (err) {
+      notify({ title: "Could not export trades", description: err.message, tone: "error" });
+    } finally {
+      setIsExporting(false);
+    }
   }
 
   return (
@@ -580,10 +675,10 @@ function TradesPage() {
               <button
                 type="button"
                 onClick={handleExportTrades}
-                disabled={trades.length === 0}
-                className="ui-button text-sm"
+                disabled={trades.length === 0 || isExporting}
+                className="ui-button-solid text-sm disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Export CSV
+                {isExporting ? "Exporting..." : "Export CSV"}
               </button>
             </div>
           }
