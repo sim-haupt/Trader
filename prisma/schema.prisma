@@ -47,7 +47,7 @@ model User {
   role         UserRole      @default(USER)
   activeAccountScope AccountScope @default(SIMULATOR)
   liveDataStartDate DateTime?
-  defaultCommission Decimal   @default(0) @db.Decimal(18, 4)
+  defaultCommission Decimal   @default(0.0006) @db.Decimal(18, 4)
   defaultFees  Decimal        @default(0) @db.Decimal(18, 4)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt

@@ -14,8 +14,8 @@ function formatMinuteLabel(value) {
   }).format(new Date(value));
 }
 
-function getTradePnl(trade) {
-  return asNumber(trade.netPnl ?? trade.grossPnl);
+function getTradePnl(trade, defaultCommission = 0, defaultFees = 0) {
+  return getTradeNetPnl(trade, defaultCommission, defaultFees);
 }
 
 function getTradeHoldMinutes(trade) {
@@ -46,11 +46,11 @@ function getExecutionSignedQuantity(execution) {
   return execution.action === "BUY" ? asNumber(execution.quantity) : -asNumber(execution.quantity);
 }
 
-function buildTradeRunningPnl(trade) {
+function buildTradeRunningPnl(trade, defaultCommission = 0, defaultFees = 0) {
   const executions = Array.isArray(trade.executions) ? trade.executions : [];
 
   if (executions.length === 0) {
-    const pnl = getTradePnl(trade);
+    const pnl = getTradePnl(trade, defaultCommission, defaultFees);
     const entryTime = trade.entryDate;
     const exitTime = trade.exitDate || trade.entryDate;
 
@@ -115,7 +115,7 @@ function buildTradeRunningPnl(trade) {
   });
 }
 
-function buildDayRunningPnl(selectedTrade, trades) {
+function buildDayRunningPnl(selectedTrade, trades, defaultCommission = 0, defaultFees = 0) {
   if (!selectedTrade?.entryDate) {
     return [];
   }
@@ -132,7 +132,7 @@ function buildDayRunningPnl(selectedTrade, trades) {
   let cumulativePnl = 0;
 
   return dayTrades.map((trade) => {
-    cumulativePnl += getTradePnl(trade);
+    cumulativePnl += getTradePnl(trade, defaultCommission, defaultFees);
 
     return {
       id: trade.id,
@@ -145,7 +145,7 @@ function buildDayRunningPnl(selectedTrade, trades) {
   });
 }
 
-function buildTradeTimeline(trade) {
+function buildTradeTimeline(trade, defaultCommission = 0, defaultFees = 0) {
   const executions = Array.isArray(trade.executions) ? trade.executions : [];
 
   if (executions.length > 0) {
@@ -219,10 +219,15 @@ function buildTradeTimeline(trade) {
       symbol: trade.symbol,
       quantity: Math.abs(asNumber(trade.quantity)),
       price: asNumber(trade.exitPrice),
-      pnl: getTradePnl(trade),
+      pnl: getTradePnl(trade, defaultCommission, defaultFees),
       perSharePnl:
         Math.abs(asNumber(trade.quantity)) > 0
-          ? Number((getTradePnl(trade) / Math.abs(asNumber(trade.quantity))).toFixed(4))
+          ? Number(
+              (
+                getTradePnl(trade, defaultCommission, defaultFees) /
+                Math.abs(asNumber(trade.quantity))
+              ).toFixed(4)
+            )
           : 0,
       position: 0,
       source: "SYNTHETIC"
@@ -247,3 +252,4 @@ export {
   getTradeHoldMinutes,
   getTradePnl
 };
+import { getTradeNetPnl } from "./tradePnl";

@@ -30,6 +30,7 @@ import {
   getTradePnl
 } from "../utils/tradeDetail";
 import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
+import { useAuth } from "../context/AuthContext";
 
 function parseTags(value) {
   return String(value || "")
@@ -193,6 +194,7 @@ function TimelineTable({ rows }) {
 }
 
 function TradeDetailModal({ trade, onClose, pageMode = false }) {
+  const { user } = useAuth();
   const initialDayStart = new Date(trade.entryDate);
   initialDayStart.setHours(0, 0, 0, 0);
   const initialDayEnd = new Date(trade.entryDate);
@@ -299,14 +301,22 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
   }, [onClose]);
 
   const activeTrade = editableTrade || tradeDetail || trade;
-  const tradePnl = getTradePnl(activeTrade);
+  const defaultCommission = user?.defaultCommission ?? 0;
+  const defaultFees = user?.defaultFees ?? 0;
+  const tradePnl = getTradePnl(activeTrade, defaultCommission, defaultFees);
   const holdMinutes = getTradeHoldMinutes(activeTrade);
   const executionCount = getDisplayedExecutionCount(activeTrade);
-  const tradeRunningPnl = useMemo(() => buildTradeRunningPnl(activeTrade), [activeTrade]);
-  const tradeTimeline = useMemo(() => buildTradeTimeline(activeTrade), [activeTrade]);
+  const tradeRunningPnl = useMemo(
+    () => buildTradeRunningPnl(activeTrade, defaultCommission, defaultFees),
+    [activeTrade, defaultCommission, defaultFees]
+  );
+  const tradeTimeline = useMemo(
+    () => buildTradeTimeline(activeTrade, defaultCommission, defaultFees),
+    [activeTrade, defaultCommission, defaultFees]
+  );
   const dayRunningPnl = useMemo(
-    () => buildDayRunningPnl(activeTrade, dayTrades),
-    [activeTrade, dayTrades]
+    () => buildDayRunningPnl(activeTrade, dayTrades, defaultCommission, defaultFees),
+    [activeTrade, dayTrades, defaultCommission, defaultFees]
   );
   const signedDayRunningPnl = useMemo(() => buildSignedChartSeries(dayRunningPnl), [dayRunningPnl]);
   const activeTags = useMemo(() => parseTags(activeTrade.tags), [activeTrade.tags]);

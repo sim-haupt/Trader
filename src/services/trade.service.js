@@ -12,7 +12,9 @@ const adminTradeInclude = {
     select: {
       id: true,
       name: true,
-      email: true
+      email: true,
+      defaultCommission: true,
+      defaultFees: true
     }
   }
 };
@@ -124,8 +126,10 @@ function getEffectiveTradeCosts(trade, actor) {
     return explicitFees;
   }
 
+  const quantity = Math.abs(asNumber(trade?.quantity, 0));
+
   return Number(
-    (asNumber(actor?.defaultCommission, 0) + asNumber(actor?.defaultFees, 0)).toFixed(4)
+    (asNumber(actor?.defaultCommission, 0) * quantity + asNumber(actor?.defaultFees, 0)).toFixed(4)
   );
 }
 
@@ -244,6 +248,7 @@ async function getWidgetSummaryForActor(actor, filters = {}) {
     select: {
       id: true,
       entryDate: true,
+      quantity: true,
       grossPnl: true,
       netPnl: true,
       fees: true

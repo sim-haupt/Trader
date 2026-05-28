@@ -10,6 +10,8 @@ import tradeService from "../services/tradeService";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
 
+const DEFAULT_COMMISSION_PER_SHARE = 0.0006;
+
 const appVersion = typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : frontendPackage.version;
 const buildSha = typeof __APP_BUILD_SHA__ !== "undefined" ? __APP_BUILD_SHA__ : "unknown";
 const buildTime = typeof __APP_BUILD_TIME__ !== "undefined" ? __APP_BUILD_TIME__ : null;
@@ -27,7 +29,9 @@ function SettingsPage() {
   const [selectedStrategyIds, setSelectedStrategyIds] = useState([]);
   const [activeAccountScope, setActiveAccountScope] = useState(user?.activeAccountScope ?? "SIMULATOR");
   const [liveDataStartDate, setLiveDataStartDate] = useState(user?.liveDataStartDate ?? "");
-  const [defaultCommission, setDefaultCommission] = useState(String(user?.defaultCommission ?? 0));
+  const [defaultCommission, setDefaultCommission] = useState(
+    String(user?.defaultCommission ?? DEFAULT_COMMISSION_PER_SHARE)
+  );
   const [defaultFees, setDefaultFees] = useState(String(user?.defaultFees ?? 0));
   const [loading, setLoading] = useState(() => !tagService.peekTags() || !strategyService.peekStrategies());
   const [savingTag, setSavingTag] = useState(false);
@@ -87,7 +91,7 @@ function SettingsPage() {
   }, []);
 
   useEffect(() => {
-    setDefaultCommission(String(user?.defaultCommission ?? 0));
+    setDefaultCommission(String(user?.defaultCommission ?? DEFAULT_COMMISSION_PER_SHARE));
     setDefaultFees(String(user?.defaultFees ?? 0));
   }, [user?.defaultCommission, user?.defaultFees]);
 
@@ -437,7 +441,7 @@ function SettingsPage() {
               >
                 <span>Trade Costs</span>
                 <span className="text-white/40">
-                  {(Number(user?.defaultCommission ?? 0) + Number(user?.defaultFees ?? 0)).toFixed(2)}
+                  ${Number(user?.defaultCommission ?? DEFAULT_COMMISSION_PER_SHARE).toFixed(4)}/sh
                 </span>
               </button>
               <button
@@ -736,11 +740,11 @@ function SettingsPage() {
 
                   <div className="grid max-w-[720px] gap-4 md:grid-cols-2">
                     <div>
-                      <label className="mb-2 block text-xs font-medium text-white/72">Default commission per trade</label>
+                      <label className="mb-2 block text-xs font-medium text-white/72">Default commission per share</label>
                       <input
                         type="number"
                         min="0"
-                        step="0.01"
+                        step="0.0001"
                         value={defaultCommission}
                         onChange={(event) => setDefaultCommission(event.target.value)}
                         className="ui-input"
@@ -770,10 +774,10 @@ function SettingsPage() {
                       {savingCommission ? "Saving..." : "Save"}
                     </button>
                     <span className="rounded-[6px] border border-[var(--line)] bg-black px-3 py-2 text-sm text-white/50">
-                      Current total: $
-                      {(
-                        Number(user?.defaultCommission ?? 0) + Number(user?.defaultFees ?? 0)
-                      ).toFixed(2)}
+                      Current: ${Number(user?.defaultCommission ?? DEFAULT_COMMISSION_PER_SHARE).toFixed(4)}/sh
+                      {Number(user?.defaultFees ?? 0) > 0
+                        ? ` + $${Number(user?.defaultFees ?? 0).toFixed(2)} fee`
+                        : ""}
                     </span>
                   </div>
                 </div>

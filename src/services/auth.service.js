@@ -6,6 +6,8 @@ const env = require("../config/env");
 const ApiError = require("../utils/ApiError");
 const packageJson = require("../../package.json");
 
+const DEFAULT_COMMISSION_PER_SHARE = 0.0006;
+
 function generateToken(user) {
   return jwt.sign(
     {
@@ -81,7 +83,8 @@ async function register(data) {
     data: {
       name: data.name,
       email: data.email,
-      passwordHash
+      passwordHash,
+      defaultCommission: DEFAULT_COMMISSION_PER_SHARE
     }
   });
 

@@ -7,6 +7,7 @@ import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 import tradeService from "../services/tradeService";
 import { useAuth } from "../context/AuthContext";
 import { formatCurrency, formatDateTimeLocal } from "../utils/formatters";
+import { getTradeNetPnl } from "../utils/tradePnl";
 
 const weekdayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const CALENDAR_VALUE_MODES = [
@@ -26,13 +27,13 @@ function getCalendarGridKey(date) {
   return `${year}-${month}-${day}`;
 }
 
-function buildDailyStats(trades) {
+function buildDailyStats(trades, defaultCommission = 0, defaultFees = 0) {
   const dailyMap = new Map();
 
   for (const trade of trades) {
     const date = new Date(trade.entryDate);
     const dayKey = getDayKey(date);
-    const pnl = Number(trade.netPnl ?? trade.grossPnl ?? 0);
+    const pnl = getTradeNetPnl(trade, defaultCommission, defaultFees);
     const quantity = Math.abs(Number(trade.quantity || 0));
     const perSharePnl = quantity > 0 ? pnl / quantity : 0;
     const existing = dailyMap.get(dayKey) || {
@@ -374,7 +375,11 @@ function CalendarPage() {
   });
 
   const calendarData = useMemo(() => {
-    const dailyStats = buildDailyStats(trades);
+    const dailyStats = buildDailyStats(
+      trades,
+      user?.defaultCommission ?? 0,
+      user?.defaultFees ?? 0
+    );
     const tradeDates = trades.map((trade) => new Date(trade.entryDate));
     const targetYear = tradeDates.length > 0
       ? Math.max(...tradeDates.map((date) => date.getFullYear()))
@@ -411,7 +416,7 @@ function CalendarPage() {
       year: targetYear,
       months
     };
-  }, [trades]);
+  }, [trades, user?.defaultCommission, user?.defaultFees]);
 
   const selectedMonth =
     selectedMonthIndex === null ? null : calendarData.months[selectedMonthIndex] ?? null;

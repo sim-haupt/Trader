@@ -12,14 +12,22 @@ export function getDefaultFeeValue(defaultFees) {
 }
 
 export function getDefaultTradeCosts(defaultCommission = 0, defaultFees = 0) {
+  return getDefaultTradeCostsForQuantity(1, defaultCommission, defaultFees);
+}
+
+export function getDefaultTradeCostsForQuantity(quantity = 0, defaultCommission = 0, defaultFees = 0) {
+  const shareQuantity = Math.abs(asNumber(quantity));
+
   return Number(
-    (getDefaultCommissionValue(defaultCommission) + getDefaultFeeValue(defaultFees)).toFixed(4)
+    (getDefaultCommissionValue(defaultCommission) * shareQuantity + getDefaultFeeValue(defaultFees)).toFixed(4)
   );
 }
 
 export function getEffectiveTradeCosts(trade, defaultCommission = 0, defaultFees = 0) {
   const fees = asNumber(trade?.fees);
-  return fees > 0 ? fees : getDefaultTradeCosts(defaultCommission, defaultFees);
+  return fees > 0
+    ? fees
+    : getDefaultTradeCostsForQuantity(trade?.quantity, defaultCommission, defaultFees);
 }
 
 export function getEffectiveTradeCommission(trade, defaultCommission = 0, defaultFees = 0) {

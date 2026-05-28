@@ -1,4 +1,5 @@
 import { formatCurrency, formatDate } from "../utils/formatters";
+import { getTradeNetPnl } from "../utils/tradePnl";
 
 function EditIcon() {
   return (
@@ -36,7 +37,9 @@ function TradeTable({
   showActions = true,
   selectedIds = [],
   onToggleSelection,
-  onToggleAll
+  onToggleAll,
+  defaultCommission = 0,
+  defaultFees = 0
 }) {
   const allSelected = trades.length > 0 && trades.every((trade) => selectedIds.includes(trade.id));
   const columnCount = (onToggleSelection ? 1 : 0) + 8 + (showActions ? 1 : 0);
@@ -70,7 +73,7 @@ function TradeTable({
           </thead>
           <tbody className="divide-y divide-[var(--line)] bg-transparent">
             {trades.map((trade, index) => {
-              const pnl = Number(trade.netPnl ?? trade.grossPnl ?? 0);
+              const pnl = getTradeNetPnl(trade, defaultCommission, defaultFees);
               const quantity = Math.abs(Number(trade.quantity ?? 0));
               const perSharePnl = quantity > 0 ? pnl / quantity : 0;
               const executionCount =
