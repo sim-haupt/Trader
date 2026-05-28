@@ -867,8 +867,6 @@ function TradesPage() {
                 selectedIds={selectedIds}
                 onToggleSelection={handleToggleSelection}
                 onToggleAll={handleToggleAll}
-                defaultCommission={user?.defaultCommission ?? 0}
-                defaultFees={user?.defaultFees ?? 0}
               />
 
               <div className="ui-surface-subtle flex flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between">

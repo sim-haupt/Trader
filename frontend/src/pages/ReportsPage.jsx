@@ -519,7 +519,7 @@ function calculateDrawdownStats(sortedTrades, defaultCommission, defaultFees, pn
 function summarizeTrades(trades, dayCountOverride, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
   const defaultFees = options.defaultFees || 0;
-  const pnlType = options.pnlType || "NET";
+  const pnlType = options.pnlType || "GROSS";
   const sortedTrades = [...trades].sort(
     (a, b) => new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime()
   );
@@ -704,7 +704,7 @@ function buildDetailedStats(trades, options = {}) {
 function buildDetailedBreakdownStats(trades, timeframeMinutes, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
   const defaultFees = options.defaultFees || 0;
-  const pnlType = options.pnlType || "NET";
+  const pnlType = options.pnlType || "GROSS";
 
   const weekdayMap = new Map(
     WEEKDAY_ORDER.map((day) => [day, { label: day, count: 0, pnl: 0 }])
@@ -766,7 +766,7 @@ function buildDetailedBreakdownStats(trades, timeframeMinutes, options = {}) {
 function buildBucketStats(trades, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
   const defaultFees = options.defaultFees || 0;
-  const pnlType = options.pnlType || "NET";
+  const pnlType = options.pnlType || "GROSS";
 
   const makeBuckets = (labels) =>
     new Map(labels.map((label) => [label, { label, count: 0, pnl: 0 }]));
@@ -855,7 +855,7 @@ function buildBucketStats(trades, options = {}) {
 function buildInstrumentStats(trades, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
   const defaultFees = options.defaultFees || 0;
-  const pnlType = options.pnlType || "NET";
+  const pnlType = options.pnlType || "GROSS";
 
   const symbolMap = new Map();
   const volumeBuckets = new Map(
@@ -1035,7 +1035,7 @@ function buildWinLossDayRows(summary) {
 function buildWinVsLossDaysStats(trades, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
   const defaultFees = options.defaultFees || 0;
-  const pnlType = options.pnlType || "NET";
+  const pnlType = options.pnlType || "GROSS";
   const dayMap = new Map();
 
   for (const trade of trades) {
@@ -2083,7 +2083,7 @@ function applyReportFilters(trades, filters, rangeDays) {
 function applyCompareGroupFilters(trades, filters, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
   const defaultFees = options.defaultFees || 0;
-  const pnlType = options.pnlType || "NET";
+  const pnlType = options.pnlType || "GROSS";
   let nextTrades = [...trades];
 
   if (filters.symbol) {

@@ -1,3 +1,5 @@
+import { getTradeGrossPnl } from "./tradePnl";
+
 function asNumber(value) {
   const numericValue = Number(value ?? 0);
   return Number.isFinite(numericValue) ? numericValue : 0;
@@ -15,7 +17,7 @@ function formatMinuteLabel(value) {
 }
 
 function getTradePnl(trade, defaultCommission = 0, defaultFees = 0) {
-  return getTradeNetPnl(trade, defaultCommission, defaultFees);
+  return getTradeGrossPnl(trade);
 }
 
 function getTradeHoldMinutes(trade) {
@@ -252,4 +254,3 @@ export {
   getTradeHoldMinutes,
   getTradePnl
 };
-import { getTradeNetPnl } from "./tradePnl";

@@ -25,7 +25,7 @@ import strategyService from "../services/strategyService";
 import { formatCurrency, formatDateTimeLocal, formatEuroCurrency } from "../utils/formatters";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
-import { getTradeFeeDisplayValue, getTradeNetPnl } from "../utils/tradePnl";
+import { getTradeFeeDisplayValue, getTradeGrossPnl, getTradeNetPnl } from "../utils/tradePnl";
 import { normalizeRichTextHtml } from "../utils/richText";
 
 const PAGE_SIZE = 5;
@@ -218,7 +218,7 @@ function getTradeTags(trade) {
 }
 
 function buildTradePnl(trade, defaultCommission, defaultFees) {
-  return getTradeNetPnl(trade, defaultCommission, defaultFees);
+  return getTradeGrossPnl(trade);
 }
 
 function formatAxisTime(value) {
@@ -467,15 +467,15 @@ function exportJournalDayTrades(day) {
     trade.execCount,
     trade.strategy ?? "",
     trade.parsedTags.join("; "),
-    Number(trade.grossPnl ?? 0).toFixed(2),
-    Number(trade.dayFees ?? 0).toFixed(2),
     Number(trade.dayPnl ?? 0).toFixed(2),
+    Number(trade.dayFees ?? 0).toFixed(2),
+    Number(trade.dayNetPnl ?? 0).toFixed(2),
     day.fxRate ?? "",
     day.fxRateDate ?? "",
     day.fxRate ? Number(trade.dayFeesEur ?? 0).toFixed(2) : "",
-    day.fxRate ? Number(trade.dayPnlEur ?? 0).toFixed(2) : "",
-    Number(day.totalPnl ?? 0).toFixed(2),
-    day.fxRate ? Number(day.totalPnlEur ?? 0).toFixed(2) : "",
+    day.fxRate ? Number(trade.dayNetPnlEur ?? 0).toFixed(2) : "",
+    Number(day.totalNetPnl ?? 0).toFixed(2),
+    day.fxRate ? Number(day.totalNetPnlEur ?? 0).toFixed(2) : "",
     trade.notes ?? ""
   ]);
 
@@ -493,13 +493,13 @@ function exportJournalDayTrades(day) {
     "",
     "",
     Number(day.totalFees ?? 0).toFixed(2),
-    Number(day.totalPnl ?? 0).toFixed(2),
+    Number(day.totalNetPnl ?? 0).toFixed(2),
     day.fxRate ?? "",
     day.fxRateDate ?? "",
     day.fxRate ? Number(day.totalFeesEur ?? 0).toFixed(2) : "",
-    day.fxRate ? Number(day.totalPnlEur ?? 0).toFixed(2) : "",
-    Number(day.totalPnl ?? 0).toFixed(2),
-    day.fxRate ? Number(day.totalPnlEur ?? 0).toFixed(2) : "",
+    day.fxRate ? Number(day.totalNetPnlEur ?? 0).toFixed(2) : "",
+    Number(day.totalNetPnl ?? 0).toFixed(2),
+    day.fxRate ? Number(day.totalNetPnlEur ?? 0).toFixed(2) : "",
     ""
   ]);
 
@@ -517,6 +517,7 @@ function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees, fxR
     }
 
     const pnl = buildTradePnl(trade, defaultCommission, defaultFees);
+    const netPnl = getTradeNetPnl(trade, defaultCommission, defaultFees);
     const quantity = Number(trade.quantity || 0);
     const perSharePnl = Math.abs(quantity) > 0 ? pnl / Math.abs(quantity) : 0;
     const fees = getTradeFeeDisplayValue(trade, defaultCommission, defaultFees);
@@ -532,6 +533,8 @@ function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees, fxR
       totalFeesEur: 0,
       totalPnl: 0,
       totalPnlEur: 0,
+      totalNetPnl: 0,
+      totalNetPnlEur: 0,
       perShareTotal: 0,
       wins: 0,
       losses: 0,
@@ -544,6 +547,8 @@ function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees, fxR
       ...trade,
       dayPnl: pnl,
       dayPnlEur: hasFxRate ? Number((pnl * fxRate).toFixed(4)) : null,
+      dayNetPnl: netPnl,
+      dayNetPnlEur: hasFxRate ? Number((netPnl * fxRate).toFixed(4)) : null,
       dayFees: fees,
       dayFeesEur: hasFxRate ? Number((fees * fxRate).toFixed(4)) : null,
       entryTimeLabel: formatTimeLabel(trade.entryDate),
@@ -556,6 +561,8 @@ function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees, fxR
     existing.totalFeesEur += hasFxRate ? fees * fxRate : 0;
     existing.totalPnl += pnl;
     existing.totalPnlEur += hasFxRate ? pnl * fxRate : 0;
+    existing.totalNetPnl += netPnl;
+    existing.totalNetPnlEur += hasFxRate ? netPnl * fxRate : 0;
     existing.perShareTotal += perSharePnl;
 
     if (pnl > 0) {
@@ -582,6 +589,8 @@ function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees, fxR
       totalFeesEur: 0,
       totalPnl: 0,
       totalPnlEur: 0,
+      totalNetPnl: 0,
+      totalNetPnlEur: 0,
       perShareTotal: 0,
       wins: 0,
       losses: 0,
@@ -601,6 +610,8 @@ function buildDailyJournal(trades, dayNotes, defaultCommission, defaultFees, fxR
         chartData: visualization.chartData,
         totalPnl: Number(day.totalPnl.toFixed(2)),
         totalPnlEur: day.fxRate ? Number(day.totalPnlEur.toFixed(2)) : null,
+        totalNetPnl: Number(day.totalNetPnl.toFixed(2)),
+        totalNetPnlEur: day.fxRate ? Number(day.totalNetPnlEur.toFixed(2)) : null,
         totalFees: Number(day.totalFees.toFixed(2)),
         totalFeesEur: day.fxRate ? Number(day.totalFeesEur.toFixed(2)) : null,
         averagePerShare: Number(

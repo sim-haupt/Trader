@@ -150,6 +150,18 @@ function getTradeNetPnl(trade, actor) {
   return Number((0 - effectiveCosts).toFixed(4));
 }
 
+function getTradeGrossPnl(trade) {
+  if (trade?.grossPnl !== undefined && trade?.grossPnl !== null && trade.grossPnl !== "") {
+    return asNumber(trade.grossPnl, 0);
+  }
+
+  if (trade?.netPnl !== undefined && trade?.netPnl !== null && trade.netPnl !== "") {
+    return asNumber(trade.netPnl, 0);
+  }
+
+  return 0;
+}
+
 function buildTradeWhere(actor, filters = {}) {
   const where = {};
 
@@ -271,7 +283,7 @@ async function getWidgetSummaryForActor(actor, filters = {}) {
   let wins = 0;
 
   for (const trade of trades) {
-    const pnl = getTradeNetPnl(trade, actor);
+    const pnl = getTradeGrossPnl(trade);
     const entryDate = new Date(trade.entryDate);
     const dayKey = getMarketDayKey(entryDate);
     const currentDayStats = dailyMap.get(dayKey) || { pnl: 0, trades: 0 };
@@ -314,7 +326,7 @@ async function getWidgetSummaryForActor(actor, filters = {}) {
   });
 
   return {
-    pnlType: "NET",
+    pnlType: "GROSS",
     asOf: currentDayKey,
     cumulative: {
       total: Number(total.toFixed(2)),

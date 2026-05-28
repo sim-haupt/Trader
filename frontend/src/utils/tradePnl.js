@@ -62,7 +62,7 @@ export function getTradeNetPnl(trade, defaultCommission = 0, defaultFees = 0) {
   return Number((0 - effectiveCosts).toFixed(4));
 }
 
-export function getTradePnlByType(trade, pnlType = "NET", defaultCommission = 0, defaultFees = 0) {
+export function getTradePnlByType(trade, pnlType = "GROSS", defaultCommission = 0, defaultFees = 0) {
   return pnlType === "GROSS"
     ? getTradeGrossPnl(trade)
     : getTradeNetPnl(trade, defaultCommission, defaultFees);
