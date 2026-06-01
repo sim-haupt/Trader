@@ -98,6 +98,24 @@ function normalizeCsvFormat(value) {
   return "das";
 }
 
+function hasAnyHeader(record, headers) {
+  return headers.some((header) => Object.prototype.hasOwnProperty.call(record, header));
+}
+
+function detectCsvFormat(records, requestedFormat) {
+  const firstRecord = records[0] || {};
+
+  if (hasAnyHeader(firstRecord, ["B/S"]) && hasAnyHeader(firstRecord, ["symb", "qty", "price", "time"])) {
+    return "das";
+  }
+
+  if (hasAnyHeader(firstRecord, ["Open Datetime"]) && hasAnyHeader(firstRecord, ["Entry Price", "Exit Price"])) {
+    return "warrior";
+  }
+
+  return normalizeCsvFormat(requestedFormat);
+}
+
 function parseWarriorCsvImport(records) {
   const validTrades = [];
   const invalidRows = [];
@@ -160,7 +178,7 @@ async function importTradesFromCsv(actor, file, options = {}) {
     throw new ApiError(400, "Unable to parse CSV file");
   }
 
-  const csvFormat = normalizeCsvFormat(options.csvFormat);
+  const csvFormat = detectCsvFormat(records, options.csvFormat);
   const parsed =
     csvFormat === "warrior" ? parseWarriorCsvImport(records) : parseDasCsvImport(records);
 
