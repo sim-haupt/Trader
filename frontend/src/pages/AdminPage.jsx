@@ -164,12 +164,12 @@ function AdminPage() {
     }
   }
 
-  async function handleUpload(file) {
+  async function handleUpload(file, csvFormat) {
     setIsUploading(true);
     setError("");
 
     try {
-      const result = await tradeService.importTrades(file);
+      const result = await tradeService.importTrades(file, csvFormat);
       notify({
         title: "CSV import complete",
         description: `Imported ${result.insertedCount} trades${

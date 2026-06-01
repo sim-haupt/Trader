@@ -263,7 +263,7 @@ function sameDirectionAction(side) {
   return side === "LONG" ? "B" : "S";
 }
 
-function buildClosedTrade(state) {
+function buildClosedTrade(state, notes = "Imported from trade text") {
   return {
     symbol: state.symbol,
     side: state.side,
@@ -274,13 +274,14 @@ function buildClosedTrade(state) {
     exitDate: state.exitDate,
     fees: 0,
     strategy: null,
-    notes: "Imported from trade text",
+    notes,
     reportedExecutionCount: state.reportedExecutionCount,
     executions: state.executions
   };
 }
 
-function convertFillsToTrades(fills) {
+function convertFillsToTrades(fills, options = {}) {
+  const notes = options.notes || "Imported from trade text";
   const states = new Map();
   const trades = [];
 
@@ -335,7 +336,7 @@ function convertFillsToTrades(fills) {
       remainingQuantity -= closeQuantity;
 
       if (state.openQuantity === 0) {
-        trades.push(buildClosedTrade(state));
+        trades.push(buildClosedTrade(state, notes));
         states.delete(fill.symbol);
         state = null;
 
@@ -357,6 +358,93 @@ function convertFillsToTrades(fills) {
   return {
     trades,
     openPositions
+  };
+}
+
+function normalizeDasAction(value) {
+  const normalizedValue = String(value || "").trim().toUpperCase();
+
+  if (normalizedValue === "B" || normalizedValue === "BUY") {
+    return "B";
+  }
+
+  if (normalizedValue === "S" || normalizedValue === "SELL") {
+    return "S";
+  }
+
+  return normalizedValue;
+}
+
+function parseTradesFromDasCsvRows(rows) {
+  const invalidRows = [];
+  const validFills = [];
+
+  rows.forEach((row, index) => {
+    const symbol = String(row.symb || row.Symbol || row.symbol || "").trim().toUpperCase();
+    const quantity = toNumber(row.qty || row.Quantity || row.quantity);
+    const price = toNumber(row.price || row.Price);
+    const datetime = normalizeDateTime(row.time || row.Time || row.datetime);
+    const action = normalizeDasAction(row["B/S"] || row.Action || row.action);
+    const errors = [];
+
+    if (!symbol) {
+      errors.push("symbol is required");
+    }
+
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      errors.push("quantity must be a positive number");
+    }
+
+    if (!Number.isFinite(price) || price <= 0) {
+      errors.push("price must be a positive number");
+    }
+
+    if (!datetime) {
+      errors.push("time is required");
+    } else if (Number.isNaN(new Date(datetime).getTime())) {
+      errors.push("time must be valid");
+    }
+
+    if (!["B", "S"].includes(action)) {
+      errors.push("B/S must be B or S");
+    }
+
+    if (errors.length > 0) {
+      invalidRows.push({
+        rowNumber: index + 2,
+        rawData: row,
+        errors
+      });
+      return;
+    }
+
+    validFills.push({
+      symbol,
+      quantity,
+      price,
+      datetime,
+      action
+    });
+  });
+
+  const { trades, openPositions } = convertFillsToTrades(validFills, {
+    notes: "Imported from DAS Trader CSV"
+  });
+
+  openPositions.forEach((position) => {
+    invalidRows.push({
+      rowNumber: null,
+      rawData: position,
+      errors: [
+        `Open ${position.side.toLowerCase()} position for ${position.symbol} was not fully closed`
+      ]
+    });
+  });
+
+  return {
+    totalRows: rows.length,
+    trades,
+    invalidRows
   };
 }
 
@@ -431,5 +519,6 @@ function parseTradesFromText(text) {
 
 module.exports = {
   normalizeImportedCsvRow,
+  parseTradesFromDasCsvRows,
   parseTradesFromText
 };

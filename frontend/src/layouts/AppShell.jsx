@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useNotifications } from "../context/NotificationContext";
 
 const navigationItems = [
   { label: "Dashboard", path: "/dashboard", icon: "M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" },
@@ -46,11 +48,33 @@ function getPageMeta(pathname) {
 function AppShell() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, updateSettings } = useAuth();
+  const { notify } = useNotifications();
+  const [isSwitchingAccount, setIsSwitchingAccount] = useState(false);
   const pageMeta = getPageMeta(location.pathname);
+  const isLiveAccount = user?.activeAccountScope === "LIVE";
   const accountLabel = user?.activeAccountScope === "LIVE" ? "Live" : "Simulator";
   const accountLabelClass =
     user?.activeAccountScope === "LIVE" ? "text-mint" : "text-[var(--text-muted)]";
+
+  async function handleAccountScopeToggle() {
+    const nextScope = isLiveAccount ? "SIMULATOR" : "LIVE";
+
+    setIsSwitchingAccount(true);
+
+    try {
+      await updateSettings({ activeAccountScope: nextScope });
+      notify({
+        title: "Account switched",
+        description: `${nextScope === "LIVE" ? "Live" : "Simulator"} is now active.`,
+        tone: "success"
+      });
+    } catch (err) {
+      notify({ title: "Could not switch account", description: err.message, tone: "error" });
+    } finally {
+      setIsSwitchingAccount(false);
+    }
+  }
 
   return (
     <div className="app-shell">
@@ -105,6 +129,33 @@ function AppShell() {
             <div className="rounded-[6px] border border-[var(--line)] bg-black px-4 py-3">
               <p className="text-sm font-medium text-white">{user?.name}</p>
               <p className="mt-1 truncate text-xs text-[var(--text-muted)]">{user?.email}</p>
+              <div className="mt-3 flex items-center justify-between gap-3 border-t border-[var(--line)] pt-3">
+                <span className={`text-xs font-semibold ${isLiveAccount ? "text-white/45" : "text-white"}`}>
+                  Simulator
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={isLiveAccount}
+                  aria-label="Switch active account"
+                  disabled={isSwitchingAccount}
+                  onClick={handleAccountScopeToggle}
+                  className={`relative h-6 w-11 shrink-0 rounded-full border transition disabled:cursor-wait disabled:opacity-60 ${
+                    isLiveAccount
+                      ? "border-mint/60 bg-mint/18"
+                      : "border-white/24 bg-white/10"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-1 h-4 w-4 rounded-full bg-white transition ${
+                      isLiveAccount ? "left-6" : "left-1"
+                    }`}
+                  />
+                </button>
+                <span className={`text-xs font-semibold ${isLiveAccount ? "text-mint" : "text-white/45"}`}>
+                  Live
+                </span>
+              </div>
             </div>
             <button
               type="button"

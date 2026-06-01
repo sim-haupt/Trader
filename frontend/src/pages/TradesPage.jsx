@@ -407,12 +407,12 @@ function TradesPage() {
     }
   }
 
-  async function handleUpload(file) {
+  async function handleUpload(file, csvFormat) {
     setIsUploading(true);
     setError("");
 
     try {
-      const result = await tradeService.importTrades(file);
+      const result = await tradeService.importTrades(file, csvFormat);
       notify({
         title: "CSV import complete",
         description: `Imported ${result.insertedCount} trades${
@@ -637,7 +637,7 @@ function TradesPage() {
               <Card title="CSV IMPORT" className="flex-1" bodyClassName="flex h-full flex-col">
                 <UploadCSV onUpload={handleUpload} isUploading={isUploading} />
                 <div className="ui-notice mt-4 border-dashed border-[#e5e7eb42] text-white/72">
-                  Supported CSVs: <span className="text-phosphor">app format and broker exports with Open Datetime / Entry Price / Exit Price columns</span>
+                  Supported CSVs: <span className="text-phosphor">DAS Trader executions and Warrior Trading exports with Open Datetime / Entry Price / Exit Price columns</span>
                   <br />
                   Normalized format: <span className="text-phosphor">symbol, side, quantity, entryPrice, entryDate, exitPrice, exitDate, fees, strategy, notes</span>
                 </div>

@@ -174,9 +174,10 @@ const tradeService = {
     return response.data.data;
   },
 
-  async importTrades(file) {
+  async importTrades(file, csvFormat = "das") {
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("csvFormat", csvFormat);
 
     const response = await api.post("/trades/import", formData, {
       headers: {

@@ -127,7 +127,9 @@ const importTrades = asyncHandler(async (req, res) => {
     throw new ApiError(400, "CSV file is required");
   }
 
-  const result = await importService.importTradesFromCsv(req.user, req.file);
+  const result = await importService.importTradesFromCsv(req.user, req.file, {
+    csvFormat: req.body?.csvFormat
+  });
 
   res.status(200).json({
     success: true,

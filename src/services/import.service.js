@@ -11,6 +11,7 @@ const {
 const parseNewYorkLocalDateTime = require("../utils/parseMarketDateTime");
 const {
   normalizeImportedCsvRow,
+  parseTradesFromDasCsvRows,
   parseTradesFromText
 } = require("../utils/tradeImportParsers");
 
@@ -87,15 +88,17 @@ async function enrichImportedTrades(validTrades) {
   return enrichedTrades;
 }
 
-async function importTradesFromCsv(actor, file) {
-  let records;
+function normalizeCsvFormat(value) {
+  const normalizedValue = String(value || "das").trim().toLowerCase();
 
-  try {
-    records = parseCsv(file.buffer);
-  } catch (error) {
-    throw new ApiError(400, "Unable to parse CSV file");
+  if (normalizedValue === "warrior" || normalizedValue === "warrior-trading") {
+    return "warrior";
   }
 
+  return "das";
+}
+
+function parseWarriorCsvImport(records) {
   const validTrades = [];
   const invalidRows = [];
 
@@ -114,12 +117,59 @@ async function importTradesFromCsv(actor, file) {
     validTrades.push(validation.data);
   });
 
+  return {
+    validTrades,
+    invalidRows,
+    totalRows: records.length
+  };
+}
+
+function parseDasCsvImport(records) {
+  const parsed = parseTradesFromDasCsvRows(records);
+  const validTrades = [];
+  const invalidRows = [...parsed.invalidRows];
+
+  parsed.trades.forEach((trade, index) => {
+    const validation = validateImportTradeRow(trade);
+
+    if (!validation.success) {
+      invalidRows.push({
+        rowNumber: index + 1,
+        rawData: trade,
+        errors: validation.error.issues.map((issue) => issue.message)
+      });
+      return;
+    }
+
+    validTrades.push(validation.data);
+  });
+
+  return {
+    validTrades,
+    invalidRows,
+    totalRows: parsed.totalRows
+  };
+}
+
+async function importTradesFromCsv(actor, file, options = {}) {
+  let records;
+
+  try {
+    records = parseCsv(file.buffer);
+  } catch (error) {
+    throw new ApiError(400, "Unable to parse CSV file");
+  }
+
+  const csvFormat = normalizeCsvFormat(options.csvFormat);
+  const parsed =
+    csvFormat === "warrior" ? parseWarriorCsvImport(records) : parseDasCsvImport(records);
+
   return persistImportedTrades(
     actor,
     file.originalname,
-    validTrades,
-    invalidRows,
-    records.length
+    parsed.validTrades,
+    parsed.invalidRows,
+    parsed.totalRows
   );
 }
 
