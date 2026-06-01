@@ -151,7 +151,7 @@ function calculateMacdSeries(bars) {
     return {
       time: point.time,
       value,
-      color: value >= 0 ? "rgba(110, 240, 195, 0.55)" : "rgba(255, 126, 107, 0.6)"
+      color: value >= 0 ? "rgba(15, 191, 62, 0.55)" : "rgba(255, 126, 107, 0.6)"
     };
   });
 

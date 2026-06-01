@@ -135,7 +135,7 @@ function getDayTone(stats, isCurrentMonth) {
   }
 
   if (stats.pnl > 0) {
-    return "bg-[linear-gradient(180deg,rgba(15,191,62,0.16),rgba(15,191,62,0.05))] text-mint";
+    return "bg-[linear-gradient(180deg,rgba(15,191,62,0.18),rgba(15,191,62,0.06))] text-mint";
   }
 
   if (stats.pnl < 0) {
@@ -155,7 +155,7 @@ function getDayBorderStyle(stats, isCurrentMonth) {
   }
 
   if (stats.pnl > 0) {
-    return { borderColor: "rgba(74, 222, 128, 0.28)" };
+    return { borderColor: "rgba(15, 191, 62, 0.34)" };
   }
 
   if (stats.pnl < 0) {

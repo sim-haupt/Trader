@@ -272,7 +272,7 @@ function getLastSevenDayTone(day) {
   if (day.pnl >= 0) {
     return {
       className:
-        "ui-metric-tile rounded-[6px] bg-[linear-gradient(180deg,rgba(15,191,62,0.16),rgba(15,191,62,0.05))] px-4 py-4",
+        "ui-metric-tile rounded-[6px] bg-[linear-gradient(180deg,rgba(15,191,62,0.18),rgba(15,191,62,0.06))] px-4 py-4",
       valueTone: "text-mint",
       style: {
         borderColor: "rgba(15, 191, 62, 0.34)"
@@ -457,16 +457,16 @@ function AnalyticsCharts({
                 <AreaChart data={equityCurve} margin={STANDARD_CHART_MARGIN}>
                   <defs>
                     <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#2be28c" stopOpacity={0.22} />
-                      <stop offset="55%" stopColor="#2be28c" stopOpacity={0.08} />
-                      <stop offset="100%" stopColor="#2be28c" stopOpacity={0.01} />
+                      <stop offset="0%" stopColor={CHART_GREEN} stopOpacity={0.22} />
+                      <stop offset="55%" stopColor={CHART_GREEN} stopOpacity={0.08} />
+                      <stop offset="100%" stopColor={CHART_GREEN} stopOpacity={0.01} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
                   <Tooltip contentStyle={tooltipStyle()} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
-                  <Area type="monotone" dataKey="equity" stroke="#18c87a" strokeWidth={3} fill="url(#equityGradient)" />
+                  <Area type="monotone" dataKey="equity" stroke={CHART_GREEN} strokeWidth={3} fill="url(#equityGradient)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>

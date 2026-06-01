@@ -150,7 +150,7 @@ function buildVolumeData(bars) {
   return bars.map((bar) => ({
     time: bar.time,
     value: Number(bar.volume || 0),
-    color: bar.close >= bar.open ? "rgba(34,197,94,0.42)" : "rgba(239,68,68,0.38)"
+    color: bar.close >= bar.open ? "rgba(15,191,62,0.42)" : "rgba(239,68,68,0.38)"
   }));
 }
 
