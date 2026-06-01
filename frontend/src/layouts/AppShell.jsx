@@ -129,10 +129,15 @@ function AppShell() {
             <div className="rounded-[6px] border border-[var(--line)] bg-black px-4 py-3">
               <p className="text-sm font-medium text-white">{user?.name}</p>
               <p className="mt-1 truncate text-xs text-[var(--text-muted)]">{user?.email}</p>
-              <div className="mt-3 flex items-center justify-between gap-3 border-t border-[var(--line)] pt-3">
-                <span className={`text-xs font-semibold ${isLiveAccount ? "text-white/45" : "text-white"}`}>
-                  Simulator
-                </span>
+              <div className="mt-3 border-t border-[var(--line)] pt-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40">
+                    Account
+                  </span>
+                  <span className={`text-[10px] font-semibold ${isLiveAccount ? "text-mint" : "text-white/60"}`}>
+                    {accountLabel}
+                  </span>
+                </div>
                 <button
                   type="button"
                   role="switch"
@@ -140,21 +145,22 @@ function AppShell() {
                   aria-label="Switch active account"
                   disabled={isSwitchingAccount}
                   onClick={handleAccountScopeToggle}
-                  className={`relative h-6 w-11 shrink-0 rounded-full border transition disabled:cursor-wait disabled:opacity-60 ${
-                    isLiveAccount
-                      ? "border-mint/60 bg-mint/18"
-                      : "border-white/24 bg-white/10"
-                  }`}
+                  className="relative grid h-9 w-full grid-cols-2 overflow-hidden rounded-[6px] border border-[var(--line)] bg-white/[0.04] p-1 text-xs font-semibold transition disabled:cursor-wait disabled:opacity-60"
                 >
                   <span
-                    className={`absolute top-1 h-4 w-4 rounded-full bg-white transition ${
-                      isLiveAccount ? "left-6" : "left-1"
+                    className={`absolute bottom-1 top-1 w-[calc(50%-4px)] rounded-[5px] border transition-all duration-200 ${
+                      isLiveAccount
+                        ? "left-[calc(50%+0px)] border-mint/40 bg-mint/18"
+                        : "left-1 border-white/14 bg-white"
                     }`}
                   />
+                  <span className={`relative z-10 flex items-center justify-center transition ${isLiveAccount ? "text-white/45" : "text-black"}`}>
+                    Simulator
+                  </span>
+                  <span className={`relative z-10 flex items-center justify-center transition ${isLiveAccount ? "text-mint" : "text-white/45"}`}>
+                    Live
+                  </span>
                 </button>
-                <span className={`text-xs font-semibold ${isLiveAccount ? "text-mint" : "text-white/45"}`}>
-                  Live
-                </span>
               </div>
             </div>
             <button
