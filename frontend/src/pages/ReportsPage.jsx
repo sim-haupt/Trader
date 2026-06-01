@@ -153,7 +153,7 @@ const CurrencyTooltip = buildChartTooltip("currency");
 const PercentTooltip = buildChartTooltip("percent");
 const VolumeTooltip = buildChartTooltip("volume");
 const CountTooltip = buildChartTooltip("count");
-const REPORT_GREEN = "#3dff9a";
+const REPORT_GREEN = "#0FBF3E";
 const REPORT_RED = "#ff5f7a";
 const REPORT_YELLOW = "#ffd84d";
 

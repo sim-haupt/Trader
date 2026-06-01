@@ -24,8 +24,8 @@ body[data-theme="dark"] {
   --accent-strong: oklch(71.7% 0.1648 250.794);
   --accent-deep: oklch(25.45% 0.0811 255.8);
   --accent-soft: oklch(25.45% 0.0811 255.8 / 0.45);
-  --success: #3dff9a;
-  --success-soft: rgba(61, 255, 154, 0.14);
+  --success: #0FBF3E;
+  --success-soft: rgba(15, 191, 62, 0.14);
   --danger: #ff5f7a;
   --danger-soft: rgba(255, 95, 122, 0.14);
   --warning: #ffd84d;

@@ -15,7 +15,7 @@ import {
 import Card from "./ui/Card";
 import { formatCurrency, formatPercent } from "../utils/formatters";
 
-const CHART_GREEN = "#3dff9a";
+const CHART_GREEN = "#0FBF3E";
 const CHART_RED = "#ff5f7a";
 const CHART_YELLOW = "#ffd84d";
 const STANDARD_CHART_MARGIN = { top: 8, right: 8, left: 0, bottom: 16 };
@@ -74,7 +74,7 @@ function ChartTooltipContent({ active, payload, label }) {
 function metricBorderColor(tone) {
   switch (tone) {
     case "text-mint":
-      return "rgba(45, 212, 143, 0.34)";
+      return "rgba(15, 191, 62, 0.34)";
     case "text-coral":
       return "rgba(255, 107, 107, 0.34)";
     case "text-gold":
@@ -272,10 +272,10 @@ function getLastSevenDayTone(day) {
   if (day.pnl >= 0) {
     return {
       className:
-        "ui-metric-tile rounded-[6px] bg-[linear-gradient(180deg,rgba(61,255,154,0.16),rgba(61,255,154,0.05))] px-4 py-4",
+        "ui-metric-tile rounded-[6px] bg-[linear-gradient(180deg,rgba(15,191,62,0.16),rgba(15,191,62,0.05))] px-4 py-4",
       valueTone: "text-mint",
       style: {
-        borderColor: "rgba(45, 212, 143, 0.34)"
+        borderColor: "rgba(15, 191, 62, 0.34)"
       }
     };
   }
@@ -312,14 +312,14 @@ function getHeatmapTileStyle(trade, maxWin, maxLoss) {
     const intensity = maxWin ? pnl / maxWin : 0;
     const level = intensity > 0.66 ? 2 : intensity > 0.33 ? 1 : 0;
     const backgrounds = [
-      "rgba(61,255,154,0.14)",
-      "rgba(61,255,154,0.28)",
-      "rgba(61,255,154,0.48)"
+      "rgba(15,191,62,0.14)",
+      "rgba(15,191,62,0.28)",
+      "rgba(15,191,62,0.48)"
     ];
     const borders = [
-      "rgba(61,255,154,0.32)",
-      "rgba(61,255,154,0.48)",
-      "rgba(61,255,154,0.72)"
+      "rgba(15,191,62,0.32)",
+      "rgba(15,191,62,0.48)",
+      "rgba(15,191,62,0.72)"
     ];
 
     return {

@@ -724,9 +724,9 @@ function JournalDayCard({
                 <LineChart data={signedChartData.data} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
                   <defs>
                     <linearGradient id={`journal-day-pnl-fill-positive-${day.dayKey}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="rgba(61, 255, 154, 0.34)" />
-                      <stop offset="65%" stopColor="rgba(61, 255, 154, 0.12)" />
-                      <stop offset="100%" stopColor="rgba(61, 255, 154, 0.02)" />
+                      <stop offset="0%" stopColor="rgba(15, 191, 62, 0.34)" />
+                      <stop offset="65%" stopColor="rgba(15, 191, 62, 0.12)" />
+                      <stop offset="100%" stopColor="rgba(15, 191, 62, 0.02)" />
                     </linearGradient>
                     <linearGradient id={`journal-day-pnl-fill-negative-${day.dayKey}`} x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="rgba(255, 95, 122, 0.28)" />
@@ -783,7 +783,7 @@ function JournalDayCard({
                   <Line
                     type="monotone"
                     dataKey="positivePnl"
-                    stroke="#3dff9a"
+                    stroke="#0FBF3E"
                     strokeWidth={3}
                     dot={false}
                     isAnimationActive={false}
@@ -808,7 +808,7 @@ function JournalDayCard({
                         x={new Date(point.timestamp).getTime()}
                         y={point.pnl}
                         r={point.isSelected ? 6 : 5}
-                        fill={point.pnl > 0 ? "#3dff9a" : point.pnl < 0 ? "#ff5f7a" : "#ededed"}
+                        fill={point.pnl > 0 ? "#0FBF3E" : point.pnl < 0 ? "#ff5f7a" : "#ededed"}
                         stroke="transparent"
                       />
                     ))}

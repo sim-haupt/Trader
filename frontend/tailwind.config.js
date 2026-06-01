@@ -8,7 +8,7 @@ export default {
         panel: "#000000",
         line: "rgb(31,31,31)",
         mist: "#ffffff9c",
-        mint: "#3dff9a",
+        mint: "#0FBF3E",
         coral: "#ff5f7a",
         gold: "#ffd84d",
         phosphor: "#ffffff",

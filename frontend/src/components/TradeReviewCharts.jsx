@@ -355,10 +355,10 @@ function PremiumChart({
     });
 
     const candleSeries = mainChart.addSeries(CandlestickSeries, {
-      upColor: "#3dff9a",
+      upColor: "#0FBF3E",
       downColor: "#ff5f7a",
       borderVisible: false,
-      wickUpColor: "#3dff9a",
+      wickUpColor: "#0FBF3E",
       wickDownColor: "#ff5f7a",
       priceLineVisible: false,
       lastValueVisible: true
