@@ -12,13 +12,15 @@ function toNumber(value) {
 
 function buildTradePayload(data, userId, accountScope = "SIMULATOR") {
   const metrics = calculateTradeMetrics(data);
+  const commissions = toNumber(data.commissions) ?? 0;
   const fees = toNumber(data.fees) ?? 0;
+  const costs = commissions + fees;
   const providedGrossPnl = toNumber(data.grossPnl);
   const providedNetPnl = toNumber(data.netPnl);
   const grossPnl = providedGrossPnl ?? metrics.grossPnl;
   const netPnl =
     providedNetPnl ??
-    (grossPnl !== null ? Number((grossPnl - fees).toFixed(4)) : metrics.netPnl);
+    (grossPnl !== null ? Number((grossPnl - costs).toFixed(4)) : metrics.netPnl);
   const reportedExecutionCount = toNumber(data.reportedExecutionCount);
   const entryVolume = toNumber(data.entryVolume);
   const entryRelativeVolume = toNumber(data.entryRelativeVolume);
@@ -41,6 +43,7 @@ function buildTradePayload(data, userId, accountScope = "SIMULATOR") {
     exitPrice: data.exitPrice ?? null,
     entryDate: parseNewYorkLocalDateTime(data.entryDate),
     exitDate: data.exitDate ? parseNewYorkLocalDateTime(data.exitDate) : null,
+    commissions,
     fees,
     strategy: typeof data.strategy === "string" ? data.strategy.trim() || null : data.strategy ?? null,
     tags: data.tags ?? null,

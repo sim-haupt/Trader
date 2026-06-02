@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { formatCurrency, formatDate, formatDateTimeLocal, toMarketISOString } from "../utils/formatters";
-import { getTradeGrossPnl } from "../utils/tradePnl";
+import { getTradeNetPnl } from "../utils/tradePnl";
 
 function createFormState(trade) {
   return {
@@ -11,6 +11,7 @@ function createFormState(trade) {
     exitPrice: trade.exitPrice ?? "",
     entryDate: formatDateTimeLocal(trade.entryDate),
     exitDate: formatDateTimeLocal(trade.exitDate),
+    commissions: trade.commissions ?? "",
     fees: trade.fees ?? "",
     strategy: trade.strategy ?? "",
     notes: trade.notes ?? ""
@@ -56,6 +57,7 @@ function AdminTradeTable({
       quantity: Number(draft.quantity),
       entryPrice: Number(draft.entryPrice),
       exitPrice: draft.exitPrice ? Number(draft.exitPrice) : null,
+      commissions: draft.commissions ? Number(draft.commissions) : 0,
       fees: draft.fees ? Number(draft.fees) : 0,
       entryDate: toMarketISOString(draft.entryDate),
       exitDate: draft.exitDate ? toMarketISOString(draft.exitDate) : null
@@ -83,6 +85,7 @@ function AdminTradeTable({
               <th className="px-4 py-4">Entry</th>
               <th className="px-4 py-4">Exit</th>
               <th className="px-4 py-4">Quantity</th>
+              <th className="px-4 py-4">Commissions</th>
               <th className="px-4 py-4">Fees</th>
               <th className="px-4 py-4">P&amp;L</th>
               <th className="px-4 py-4">P&amp;L / Share</th>
@@ -94,7 +97,7 @@ function AdminTradeTable({
           <tbody className="divide-y divide-white/10 bg-black/20">
             {trades.map((trade) => {
               const isEditing = editingId === trade.id;
-              const pnl = getTradeGrossPnl(trade);
+              const pnl = getTradeNetPnl(trade);
               const quantity = isEditing
                 ? Math.abs(Number(draft?.quantity ?? trade.quantity ?? 0))
                 : Math.abs(Number(trade.quantity ?? 0));
@@ -168,6 +171,16 @@ function AdminTradeTable({
                       </td>
                       <td className="px-4 py-4">
                         <input
+                          name="commissions"
+                          type="number"
+                          step="0.0001"
+                          value={draft.commissions}
+                          onChange={handleChange}
+                          className="ui-input w-24 px-3 py-2"
+                        />
+                      </td>
+                      <td className="px-4 py-4">
+                        <input
                           name="fees"
                           type="number"
                           step="0.0001"
@@ -233,7 +246,8 @@ function AdminTradeTable({
                       <td className="px-4 py-4 text-mist">{trade.entryPrice}</td>
                       <td className="px-4 py-4 text-mist">{trade.exitPrice ?? "-"}</td>
                       <td className="px-4 py-4 text-mist">{trade.quantity}</td>
-                      <td className="px-4 py-4 text-mist">{trade.fees ?? 0}</td>
+                      <td className="px-4 py-4 text-mist">{formatCurrency(Number(trade.commissions ?? 0))}</td>
+                      <td className="px-4 py-4 text-mist">{formatCurrency(Number(trade.fees ?? 0))}</td>
                       <td
                         className={`px-4 py-4 font-semibold ${
                           pnl >= 0 ? "text-mint" : "text-coral"

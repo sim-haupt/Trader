@@ -69,6 +69,7 @@ model Trade {
   exitPrice            Decimal?         @db.Decimal(18, 4)
   entryDate            DateTime
   exitDate             DateTime?
+  commissions          Decimal          @default(0) @db.Decimal(18, 4)
   fees                 Decimal          @default(0) @db.Decimal(18, 4)
   strategy             String?
   tags                 String?

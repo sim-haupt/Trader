@@ -16,7 +16,12 @@ import journalService from "../services/journalService";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
 import { formatDateTimeLocal } from "../utils/formatters";
-import { getTradeFeeDisplayValue, getTradeNetPnl } from "../utils/tradePnl";
+import {
+  getEffectiveTradeCommission,
+  getTradeFeeDisplayValue,
+  getTradeNetPnl,
+  getTradeTotalCostDisplayValue
+} from "../utils/tradePnl";
 
 const initialFilters = {
   symbol: "",
@@ -497,21 +502,31 @@ function TradesPage() {
 
       for (const trade of trades) {
         const dayKey = getDayKey(trade.entryDate);
-        const netPnl = getTradeNetPnl(trade, user?.defaultCommission ?? 0, user?.defaultFees ?? 0);
-        const fees = getTradeFeeDisplayValue(trade, user?.defaultCommission ?? 0, user?.defaultFees ?? 0);
+        const netPnl = getTradeNetPnl(trade);
+        const commissions = getEffectiveTradeCommission(trade);
+        const fees = getTradeFeeDisplayValue(trade);
+        const costs = getTradeTotalCostDisplayValue(trade);
         const rate = Number(fxRatesByDay[dayKey]?.rate);
         const hasRate = Number.isFinite(rate);
         const current = dailyTotals.get(dayKey) || {
           netPnlUsd: 0,
+          commissionsUsd: 0,
           feesUsd: 0,
+          costsUsd: 0,
           netPnlEur: 0,
-          feesEur: 0
+          commissionsEur: 0,
+          feesEur: 0,
+          costsEur: 0
         };
 
         current.netPnlUsd += netPnl;
+        current.commissionsUsd += commissions;
         current.feesUsd += fees;
+        current.costsUsd += costs;
         current.netPnlEur += hasRate ? netPnl * rate : 0;
+        current.commissionsEur += hasRate ? commissions * rate : 0;
         current.feesEur += hasRate ? fees * rate : 0;
+        current.costsEur += hasRate ? costs * rate : 0;
         dailyTotals.set(dayKey, current);
       }
 
@@ -523,11 +538,15 @@ function TradesPage() {
       "exit_price",
       "quantity",
       "gross_pnl_usd",
-      "fees_commissions_usd",
+      "commissions_usd",
+      "fees_usd",
+      "total_costs_usd",
       "net_pnl_usd",
       "usd_eur_fx_rate",
       "fx_rate_date",
-      "fees_commissions_eur",
+      "commissions_eur",
+      "fees_eur",
+      "total_costs_eur",
       "net_pnl_eur",
       "day_total_net_pnl_usd",
       "day_total_net_pnl_eur",
@@ -553,8 +572,10 @@ function TradesPage() {
         const dayKey = getDayKey(trade.entryDate);
         const fxRate = Number(fxRatesByDay[dayKey]?.rate);
         const hasRate = Number.isFinite(fxRate);
-        const netPnl = getTradeNetPnl(trade, user?.defaultCommission ?? 0, user?.defaultFees ?? 0);
-        const fees = getTradeFeeDisplayValue(trade, user?.defaultCommission ?? 0, user?.defaultFees ?? 0);
+        const netPnl = getTradeNetPnl(trade);
+        const commissions = getEffectiveTradeCommission(trade);
+        const fees = getTradeFeeDisplayValue(trade);
+        const costs = getTradeTotalCostDisplayValue(trade);
         const totals = dailyTotals.get(dayKey);
 
         return [
@@ -565,11 +586,15 @@ function TradesPage() {
           trade.exitPrice ?? "",
           trade.quantity,
           trade.grossPnl ?? "",
+          commissions.toFixed(2),
           fees.toFixed(2),
+          costs.toFixed(2),
           netPnl.toFixed(2),
           hasRate ? fxRate.toFixed(6) : "",
           fxRatesByDay[dayKey]?.rateDate ?? "",
+          hasRate ? (commissions * fxRate).toFixed(2) : "",
           hasRate ? (fees * fxRate).toFixed(2) : "",
+          hasRate ? (costs * fxRate).toFixed(2) : "",
           hasRate ? (netPnl * fxRate).toFixed(2) : "",
           totals ? totals.netPnlUsd.toFixed(2) : "",
           hasRate && totals ? totals.netPnlEur.toFixed(2) : "",
@@ -582,11 +607,24 @@ function TradesPage() {
       const exportTotals = [...dailyTotals.values()].reduce(
         (totals, day) => ({
           netPnlUsd: totals.netPnlUsd + day.netPnlUsd,
+          commissionsUsd: totals.commissionsUsd + day.commissionsUsd,
           feesUsd: totals.feesUsd + day.feesUsd,
+          costsUsd: totals.costsUsd + day.costsUsd,
           netPnlEur: totals.netPnlEur + day.netPnlEur,
-          feesEur: totals.feesEur + day.feesEur
+          commissionsEur: totals.commissionsEur + day.commissionsEur,
+          feesEur: totals.feesEur + day.feesEur,
+          costsEur: totals.costsEur + day.costsEur
         }),
-        { netPnlUsd: 0, feesUsd: 0, netPnlEur: 0, feesEur: 0 }
+        {
+          netPnlUsd: 0,
+          commissionsUsd: 0,
+          feesUsd: 0,
+          costsUsd: 0,
+          netPnlEur: 0,
+          commissionsEur: 0,
+          feesEur: 0,
+          costsEur: 0
+        }
       );
 
       rows.push([
@@ -597,11 +635,15 @@ function TradesPage() {
         "",
         "",
         "",
+        exportTotals.commissionsUsd.toFixed(2),
         exportTotals.feesUsd.toFixed(2),
+        exportTotals.costsUsd.toFixed(2),
         exportTotals.netPnlUsd.toFixed(2),
         "",
         "",
+        exportTotals.commissionsEur.toFixed(2),
         exportTotals.feesEur.toFixed(2),
+        exportTotals.costsEur.toFixed(2),
         exportTotals.netPnlEur.toFixed(2),
         exportTotals.netPnlUsd.toFixed(2),
         exportTotals.netPnlEur.toFixed(2),
@@ -639,7 +681,7 @@ function TradesPage() {
                 <div className="ui-notice mt-4 border-dashed border-[#e5e7eb42] text-white/72">
                   Supported CSVs: <span className="text-phosphor">DAS Trader executions and Warrior Trading exports with Open Datetime / Entry Price / Exit Price columns</span>
                   <br />
-                  Normalized format: <span className="text-phosphor">symbol, side, quantity, entryPrice, entryDate, exitPrice, exitDate, fees, strategy, notes</span>
+                  Normalized format: <span className="text-phosphor">symbol, side, quantity, entryPrice, entryDate, exitPrice, exitDate, commissions, fees, strategy, notes</span>
                 </div>
               </Card>
 

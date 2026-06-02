@@ -30,7 +30,6 @@ import {
   getTradePnl
 } from "../utils/tradeDetail";
 import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
-import { useAuth } from "../context/AuthContext";
 
 function parseTags(value) {
   return String(value || "")
@@ -194,7 +193,6 @@ function TimelineTable({ rows }) {
 }
 
 function TradeDetailModal({ trade, onClose, pageMode = false }) {
-  const { user } = useAuth();
   const initialDayStart = new Date(trade.entryDate);
   initialDayStart.setHours(0, 0, 0, 0);
   const initialDayEnd = new Date(trade.entryDate);
@@ -301,22 +299,22 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
   }, [onClose]);
 
   const activeTrade = editableTrade || tradeDetail || trade;
-  const defaultCommission = user?.defaultCommission ?? 0;
-  const defaultFees = user?.defaultFees ?? 0;
-  const tradePnl = getTradePnl(activeTrade, defaultCommission, defaultFees);
+  const tradePnl = getTradePnl(activeTrade);
+  const tradeCommissions = Number(activeTrade?.commissions ?? 0);
+  const tradeFees = Number(activeTrade?.fees ?? 0);
   const holdMinutes = getTradeHoldMinutes(activeTrade);
   const executionCount = getDisplayedExecutionCount(activeTrade);
   const tradeRunningPnl = useMemo(
-    () => buildTradeRunningPnl(activeTrade, defaultCommission, defaultFees),
-    [activeTrade, defaultCommission, defaultFees]
+    () => buildTradeRunningPnl(activeTrade),
+    [activeTrade]
   );
   const tradeTimeline = useMemo(
-    () => buildTradeTimeline(activeTrade, defaultCommission, defaultFees),
-    [activeTrade, defaultCommission, defaultFees]
+    () => buildTradeTimeline(activeTrade),
+    [activeTrade]
   );
   const dayRunningPnl = useMemo(
-    () => buildDayRunningPnl(activeTrade, dayTrades, defaultCommission, defaultFees),
-    [activeTrade, dayTrades, defaultCommission, defaultFees]
+    () => buildDayRunningPnl(activeTrade, dayTrades),
+    [activeTrade, dayTrades]
   );
   const signedDayRunningPnl = useMemo(() => buildSignedChartSeries(dayRunningPnl), [dayRunningPnl]);
   const activeTags = useMemo(() => parseTags(activeTrade.tags), [activeTrade.tags]);
@@ -508,13 +506,15 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
             </div>
           )}
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
             <SummaryMetric
               label="Trade P&L"
               value={formatCurrency(tradePnl)}
               accent={tradePnl >= 0 ? "text-mint" : "text-coral"}
             />
             <SummaryMetric label="Quantity" value={String(activeTrade.quantity)} />
+            <SummaryMetric label="Commissions" value={formatCurrency(tradeCommissions)} />
+            <SummaryMetric label="Fees" value={formatCurrency(tradeFees)} />
             <SummaryMetric label="Hold Time" value={formatHoldTime(holdMinutes)} />
             <SummaryMetric label="Executions" value={String(executionCount)} />
           </div>

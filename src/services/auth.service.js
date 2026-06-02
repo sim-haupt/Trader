@@ -6,8 +6,6 @@ const env = require("../config/env");
 const ApiError = require("../utils/ApiError");
 const packageJson = require("../../package.json");
 
-const DEFAULT_COMMISSION_PER_SHARE = 0.0006;
-
 function generateToken(user) {
   return jwt.sign(
     {
@@ -29,9 +27,7 @@ function serializeUser(user) {
     email: user.email,
     role: user.role,
     activeAccountScope: user.activeAccountScope || "SIMULATOR",
-    liveDataStartDate: user.liveDataStartDate ? user.liveDataStartDate.toISOString().slice(0, 10) : null,
-    defaultCommission: Number(user.defaultCommission || 0),
-    defaultFees: Number(user.defaultFees || 0)
+    liveDataStartDate: user.liveDataStartDate ? user.liveDataStartDate.toISOString().slice(0, 10) : null
   };
 }
 
@@ -83,8 +79,7 @@ async function register(data) {
     data: {
       name: data.name,
       email: data.email,
-      passwordHash,
-      defaultCommission: DEFAULT_COMMISSION_PER_SHARE
+      passwordHash
     }
   });
 
@@ -128,9 +123,7 @@ async function getSettings(actor) {
       email: true,
       role: true,
       activeAccountScope: true,
-      liveDataStartDate: true,
-      defaultCommission: true,
-      defaultFees: true
+      liveDataStartDate: true
     }
   });
 
@@ -151,9 +144,7 @@ async function updateSettings(actor, data) {
           ? undefined
           : data.liveDataStartDate
             ? parseDayKeyToDate(data.liveDataStartDate)
-            : null,
-      defaultCommission: data.defaultCommission,
-      defaultFees: data.defaultFees
+            : null
     },
     select: {
       id: true,
@@ -161,9 +152,7 @@ async function updateSettings(actor, data) {
       email: true,
       role: true,
       activeAccountScope: true,
-      liveDataStartDate: true,
-      defaultCommission: true,
-      defaultFees: true
+      liveDataStartDate: true
     }
   });
 

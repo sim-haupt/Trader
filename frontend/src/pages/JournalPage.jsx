@@ -25,7 +25,13 @@ import strategyService from "../services/strategyService";
 import { formatCurrency, formatDateTimeLocal, formatEuroCurrency } from "../utils/formatters";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
-import { getTradeFeeDisplayValue, getTradeGrossPnl, getTradeNetPnl } from "../utils/tradePnl";
+import {
+  getEffectiveTradeCommission,
+  getTradeFeeDisplayValue,
+  getTradeGrossPnl,
+  getTradeNetPnl,
+  getTradeTotalCostDisplayValue
+} from "../utils/tradePnl";
 import { normalizeRichTextHtml } from "../utils/richText";
 
 const PAGE_SIZE = 5;
@@ -447,11 +453,15 @@ function exportJournalDayTrades(day) {
     "Strategy",
     "Tags",
     "Gross P&L USD",
-    "Fees/Commissions USD",
+    "Commissions USD",
+    "Fees USD",
+    "Total Costs USD",
     "Net P&L USD",
     "USD/EUR FX Rate",
     "FX Rate Date",
-    "Fees/Commissions EUR",
+    "Commissions EUR",
+    "Fees EUR",
+    "Total Costs EUR",
     "Net P&L EUR",
     "Day Total Net P&L USD",
     "Day Total Net P&L EUR",
@@ -470,11 +480,15 @@ function exportJournalDayTrades(day) {
     trade.strategy ?? "",
     trade.parsedTags.join("; "),
     Number(trade.dayPnl ?? 0).toFixed(2),
+    Number(trade.dayCommissions ?? 0).toFixed(2),
     Number(trade.dayFees ?? 0).toFixed(2),
+    Number(trade.dayCosts ?? 0).toFixed(2),
     Number(trade.dayNetPnl ?? 0).toFixed(2),
     day.fxRate ?? "",
     day.fxRateDate ?? "",
+    day.fxRate ? Number(trade.dayCommissionsEur ?? 0).toFixed(2) : "",
     day.fxRate ? Number(trade.dayFeesEur ?? 0).toFixed(2) : "",
+    day.fxRate ? Number(trade.dayCostsEur ?? 0).toFixed(2) : "",
     day.fxRate ? Number(trade.dayNetPnlEur ?? 0).toFixed(2) : "",
     Number(day.totalNetPnl ?? 0).toFixed(2),
     day.fxRate ? Number(day.totalNetPnlEur ?? 0).toFixed(2) : "",
@@ -494,11 +508,15 @@ function exportJournalDayTrades(day) {
     "",
     "",
     "",
+    Number(day.totalCommissions ?? 0).toFixed(2),
     Number(day.totalFees ?? 0).toFixed(2),
+    Number(day.totalCosts ?? 0).toFixed(2),
     Number(day.totalNetPnl ?? 0).toFixed(2),
     day.fxRate ?? "",
     day.fxRateDate ?? "",
+    day.fxRate ? Number(day.totalCommissionsEur ?? 0).toFixed(2) : "",
     day.fxRate ? Number(day.totalFeesEur ?? 0).toFixed(2) : "",
+    day.fxRate ? Number(day.totalCostsEur ?? 0).toFixed(2) : "",
     day.fxRate ? Number(day.totalNetPnlEur ?? 0).toFixed(2) : "",
     Number(day.totalNetPnl ?? 0).toFixed(2),
     day.fxRate ? Number(day.totalNetPnlEur ?? 0).toFixed(2) : "",
@@ -530,7 +548,9 @@ function buildDailyJournal(
     const netPnl = getTradeNetPnl(trade, defaultCommission, defaultFees);
     const quantity = Number(trade.quantity || 0);
     const perSharePnl = Math.abs(quantity) > 0 ? pnl / Math.abs(quantity) : 0;
-    const fees = getTradeFeeDisplayValue(trade, defaultCommission, defaultFees);
+    const commissions = getEffectiveTradeCommission(trade);
+    const fees = getTradeFeeDisplayValue(trade);
+    const costs = getTradeTotalCostDisplayValue(trade);
     const fxRate = Number(fxRatesByDay[dayKey]?.rate);
     const hasFxRate = Number.isFinite(fxRate);
     const existing = grouped.get(dayKey) || {
@@ -539,8 +559,12 @@ function buildDailyJournal(
       trades: [],
       totalTrades: 0,
       totalVolume: 0,
+      totalCommissions: 0,
+      totalCommissionsEur: 0,
       totalFees: 0,
       totalFeesEur: 0,
+      totalCosts: 0,
+      totalCostsEur: 0,
       totalPnl: 0,
       totalPnlEur: 0,
       totalNetPnl: 0,
@@ -559,16 +583,24 @@ function buildDailyJournal(
       dayPnlEur: hasFxRate ? Number((pnl * fxRate).toFixed(4)) : null,
       dayNetPnl: netPnl,
       dayNetPnlEur: hasFxRate ? Number((netPnl * fxRate).toFixed(4)) : null,
+      dayCommissions: commissions,
+      dayCommissionsEur: hasFxRate ? Number((commissions * fxRate).toFixed(4)) : null,
       dayFees: fees,
       dayFeesEur: hasFxRate ? Number((fees * fxRate).toFixed(4)) : null,
+      dayCosts: costs,
+      dayCostsEur: hasFxRate ? Number((costs * fxRate).toFixed(4)) : null,
       entryTimeLabel: formatTimeLabel(trade.entryDate),
       execCount: trade.reportedExecutionCount ?? trade.executions?.length ?? 0,
       parsedTags: getTradeTags(trade)
     });
     existing.totalTrades += 1;
     existing.totalVolume += quantity;
+    existing.totalCommissions += commissions;
+    existing.totalCommissionsEur += hasFxRate ? commissions * fxRate : 0;
     existing.totalFees += fees;
     existing.totalFeesEur += hasFxRate ? fees * fxRate : 0;
+    existing.totalCosts += costs;
+    existing.totalCostsEur += hasFxRate ? costs * fxRate : 0;
     existing.totalPnl += pnl;
     existing.totalPnlEur += hasFxRate ? pnl * fxRate : 0;
     existing.totalNetPnl += netPnl;
@@ -833,8 +865,8 @@ function JournalDayCard({
               <div className="mt-2 text-2xl font-semibold text-white">{Math.round(day.totalVolume).toLocaleString()}</div>
             </div>
             <div className="ui-metric-tile">
-              <div className="ui-title text-[10px] text-white/52">Commissions/Fees</div>
-              <div className="mt-2 text-2xl font-semibold text-white">{formatCurrency(day.totalFees)}</div>
+              <div className="ui-title text-[10px] text-white/52">Total Costs</div>
+              <div className="mt-2 text-2xl font-semibold text-white">{formatCurrency(day.totalCosts)}</div>
             </div>
             <div className="ui-metric-tile sm:col-span-2">
               <div className="ui-title text-[10px] text-white/52">USD to EUR FX Rate</div>
@@ -844,9 +876,9 @@ function JournalDayCard({
                   <span className="font-medium text-white">{formatFxRate(day.fxRate)}</span>
                 </span>
                 <span className="min-w-0">
-                  Fees EUR:{" "}
+                  Costs EUR:{" "}
                   <span className="font-medium text-white">
-                    {day.fxRate ? formatEuroCurrency(day.totalFeesEur) : "Unavailable"}
+                    {day.fxRate ? formatEuroCurrency(day.totalCostsEur) : "Unavailable"}
                   </span>
                 </span>
                 <span className="min-w-0">

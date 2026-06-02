@@ -18,6 +18,7 @@ const tradeSchema = z
       .refine(isValidDateString, "exitDate must be a valid date")
       .nullable()
       .optional(),
+    commissions: z.coerce.number().min(0).optional(),
     fees: z.coerce.number().min(0).optional(),
     strategy: z.string().trim().max(100).nullable().optional(),
     tags: z.string().trim().max(500).nullable().optional(),
@@ -132,6 +133,7 @@ function mapImportRowToPayload(row) {
     exitPrice: row.exitPrice === "" || row.exitPrice === undefined ? null : row.exitPrice,
     entryDate: row.entryDate,
     exitDate: row.exitDate === "" || row.exitDate === undefined ? null : row.exitDate,
+    commissions: row.commissions === "" || row.commissions === undefined ? 0 : row.commissions,
     fees: row.fees === "" || row.fees === undefined ? 0 : row.fees,
     grossPnl: row.grossPnl === "" || row.grossPnl === undefined ? null : row.grossPnl,
     netPnl: row.netPnl === "" || row.netPnl === undefined ? null : row.netPnl,

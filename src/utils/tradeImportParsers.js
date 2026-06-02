@@ -46,8 +46,17 @@ function toNumber(value) {
     return null;
   }
 
-  const numericValue = Number(value);
+  const normalizedValue =
+    typeof value === "string" ? value.replace(/[$,]/g, "").trim() : value;
+  const numericValue = Number(normalizedValue);
   return Number.isFinite(numericValue) ? numericValue : null;
+}
+
+function sumNumericFields(row, fieldNames) {
+  return fieldNames.reduce((total, fieldName) => {
+    const value = toNumber(row[fieldName]);
+    return total + (Number.isFinite(value) ? value : 0);
+  }, 0);
 }
 
 function mapCsvSide(side) {
@@ -167,6 +176,7 @@ function normalizeImportedCsvRow(row) {
     exitPrice,
     entryDate,
     exitDate,
+    commissions: 0,
     fees: 0,
     grossPnl: row["Gross P&L"],
     netPnl: row["Gross P&L"],
@@ -243,6 +253,7 @@ function makeExecutionFromFill(fill, sequence, quantity, positionAfter) {
 function createTradeState(fill, quantityOverride = fill.quantity) {
   const side = fill.action === "B" ? "LONG" : "SHORT";
   const signedOpenQuantity = getSignedPosition(side, quantityOverride);
+  const quantityRatio = fill.quantity > 0 ? quantityOverride / fill.quantity : 1;
 
   return {
     symbol: fill.symbol,
@@ -250,6 +261,8 @@ function createTradeState(fill, quantityOverride = fill.quantity) {
     entryDate: fill.datetime,
     entryQuantity: quantityOverride,
     entryValue: quantityOverride * fill.price,
+    commissions: (fill.commissions || 0) * quantityRatio,
+    fees: (fill.fees || 0) * quantityRatio,
     openQuantity: quantityOverride,
     closedQuantity: 0,
     exitValue: 0,
@@ -272,7 +285,8 @@ function buildClosedTrade(state, notes = "Imported from trade text") {
     exitPrice: Number((state.exitValue / state.closedQuantity).toFixed(4)),
     entryDate: state.entryDate,
     exitDate: state.exitDate,
-    fees: 0,
+    commissions: Number(state.commissions.toFixed(4)),
+    fees: Number(state.fees.toFixed(4)),
     strategy: null,
     notes,
     reportedExecutionCount: state.reportedExecutionCount,
@@ -302,6 +316,8 @@ function convertFillsToTrades(fills, options = {}) {
     if (fill.action === openAction) {
       state.entryQuantity += fill.quantity;
       state.entryValue += fill.quantity * fill.price;
+      state.commissions += fill.commissions || 0;
+      state.fees += fill.fees || 0;
       state.openQuantity += fill.quantity;
       state.reportedExecutionCount += 1;
       state.executions.push(
@@ -316,12 +332,19 @@ function convertFillsToTrades(fills, options = {}) {
     }
 
     let remainingQuantity = fill.quantity;
+    let remainingCommissions = fill.commissions || 0;
+    let remainingFees = fill.fees || 0;
 
     while (remainingQuantity > 0 && state) {
       const closeQuantity = Math.min(remainingQuantity, state.openQuantity);
+      const feeRatio = remainingQuantity > 0 ? closeQuantity / remainingQuantity : 1;
+      const closeCommissions = remainingCommissions * feeRatio;
+      const closeFees = remainingFees * feeRatio;
 
       state.closedQuantity += closeQuantity;
       state.exitValue += closeQuantity * fill.price;
+      state.commissions += closeCommissions;
+      state.fees += closeFees;
       state.openQuantity -= closeQuantity;
       state.exitDate = fill.datetime;
       state.reportedExecutionCount += 1;
@@ -334,6 +357,8 @@ function convertFillsToTrades(fills, options = {}) {
         )
       );
       remainingQuantity -= closeQuantity;
+      remainingCommissions -= closeCommissions;
+      remainingFees -= closeFees;
 
       if (state.openQuantity === 0) {
         trades.push(buildClosedTrade(state, notes));
@@ -341,7 +366,15 @@ function convertFillsToTrades(fills, options = {}) {
         state = null;
 
         if (remainingQuantity > 0) {
-          const nextState = createTradeState(fill, remainingQuantity);
+          const nextState = createTradeState(
+            {
+              ...fill,
+              quantity: remainingQuantity,
+              commissions: remainingCommissions,
+              fees: remainingFees
+            },
+            remainingQuantity
+          );
           states.set(fill.symbol, nextState);
           remainingQuantity = 0;
         }
@@ -385,6 +418,21 @@ function parseTradesFromDasCsvRows(rows) {
     const price = toNumber(row.price || row.Price);
     const datetime = normalizeDateTime(row.time || row.Time || row.datetime);
     const action = normalizeDasAction(row["B/S"] || row.Action || row.action);
+    const commissions = sumNumericFields(row, [
+      "commission",
+      "Commission",
+      "commissions",
+      "Commissions"
+    ]);
+    const fees = sumNumericFields(row, [
+      "RouteFee",
+      "routeFee",
+      "route_fee",
+      "fee",
+      "Fee",
+      "fees",
+      "Fees"
+    ]);
     const errors = [];
 
     if (!symbol) {
@@ -423,7 +471,9 @@ function parseTradesFromDasCsvRows(rows) {
       quantity,
       price,
       datetime,
-      action
+      action,
+      commissions,
+      fees
     });
   });
 

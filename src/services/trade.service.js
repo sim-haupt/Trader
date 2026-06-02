@@ -12,9 +12,7 @@ const adminTradeInclude = {
     select: {
       id: true,
       name: true,
-      email: true,
-      defaultCommission: true,
-      defaultFees: true
+      email: true
     }
   }
 };
@@ -119,35 +117,24 @@ function getLastWeekdayKeys(endDayKey, count) {
   return keys.reverse();
 }
 
-function getEffectiveTradeCosts(trade, actor) {
-  const explicitFees = asNumber(trade?.fees, 0);
-
-  if (explicitFees > 0) {
-    return explicitFees;
-  }
-
-  const quantity = Math.abs(asNumber(trade?.quantity, 0));
-
-  return Number(
-    (asNumber(actor?.defaultCommission, 0) * quantity + asNumber(actor?.defaultFees, 0)).toFixed(4)
-  );
+function getTradeCosts(trade) {
+  return Number((asNumber(trade?.commissions, 0) + asNumber(trade?.fees, 0)).toFixed(4));
 }
 
-function getTradeNetPnl(trade, actor) {
+function getTradeNetPnl(trade) {
   const grossPnl = trade?.grossPnl;
   const storedNetPnl = trade?.netPnl;
-  const effectiveCosts = getEffectiveTradeCosts(trade, actor);
+  const costs = getTradeCosts(trade);
 
   if (grossPnl !== undefined && grossPnl !== null && grossPnl !== "") {
-    return Number((asNumber(grossPnl, 0) - effectiveCosts).toFixed(4));
+    return Number((asNumber(grossPnl, 0) - costs).toFixed(4));
   }
 
   if (storedNetPnl !== undefined && storedNetPnl !== null && storedNetPnl !== "") {
-    const baseNetPnl = asNumber(storedNetPnl, 0);
-    return Number((baseNetPnl - (asNumber(trade?.fees, 0) > 0 ? 0 : effectiveCosts)).toFixed(4));
+    return asNumber(storedNetPnl, 0);
   }
 
-  return Number((0 - effectiveCosts).toFixed(4));
+  return Number((0 - costs).toFixed(4));
 }
 
 function getTradeGrossPnl(trade) {
@@ -263,6 +250,7 @@ async function getWidgetSummaryForActor(actor, filters = {}) {
       quantity: true,
       grossPnl: true,
       netPnl: true,
+      commissions: true,
       fees: true
     },
     orderBy: {
@@ -347,9 +335,7 @@ async function getPublicWidgetSummary(userId, filters = {}) {
     where: { id: userId },
     select: {
       id: true,
-      activeAccountScope: true,
-      defaultCommission: true,
-      defaultFees: true
+      activeAccountScope: true
     }
   });
 
@@ -361,9 +347,7 @@ async function getPublicWidgetSummary(userId, filters = {}) {
     {
       id: user.id,
       role: "USER",
-      activeAccountScope: user.activeAccountScope,
-      defaultCommission: user.defaultCommission,
-      defaultFees: user.defaultFees
+      activeAccountScope: user.activeAccountScope
     },
     filters
   );

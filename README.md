@@ -109,13 +109,13 @@ symbol,side,quantity,entryPrice,entryDate
 Optional headers:
 
 ```text
-exitPrice,exitDate,fees,strategy,notes
+exitPrice,exitDate,commissions,fees,strategy,notes
 ```
 
 Example row:
 
 ```text
-AAPL,LONG,10,175.50,2026-04-01T09:30:00.000Z,182.25,2026-04-02T15:30:00.000Z,1.25,Breakout,Strong follow-through
+AAPL,LONG,10,175.50,2026-04-01T09:30:00.000Z,182.25,2026-04-02T15:30:00.000Z,0.75,0.50,Breakout,Strong follow-through
 ```
 
 ## Authentication

@@ -10,8 +10,6 @@ import tradeService from "../services/tradeService";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
 
-const DEFAULT_COMMISSION_PER_SHARE = 0.0006;
-
 const appVersion = typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : frontendPackage.version;
 const buildSha = typeof __APP_BUILD_SHA__ !== "undefined" ? __APP_BUILD_SHA__ : "unknown";
 const buildTime = typeof __APP_BUILD_TIME__ !== "undefined" ? __APP_BUILD_TIME__ : null;
@@ -29,15 +27,10 @@ function SettingsPage() {
   const [selectedStrategyIds, setSelectedStrategyIds] = useState([]);
   const [activeAccountScope, setActiveAccountScope] = useState(user?.activeAccountScope ?? "SIMULATOR");
   const [liveDataStartDate, setLiveDataStartDate] = useState(user?.liveDataStartDate ?? "");
-  const [defaultCommission, setDefaultCommission] = useState(
-    String(user?.defaultCommission ?? DEFAULT_COMMISSION_PER_SHARE)
-  );
-  const [defaultFees, setDefaultFees] = useState(String(user?.defaultFees ?? 0));
   const [loading, setLoading] = useState(() => !tagService.peekTags() || !strategyService.peekStrategies());
   const [savingTag, setSavingTag] = useState(false);
   const [savingStrategy, setSavingStrategy] = useState(false);
   const [savingAccount, setSavingAccount] = useState(false);
-  const [savingCommission, setSavingCommission] = useState(false);
   const [deletingAllTrades, setDeletingAllTrades] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [deletingStrategyId, setDeletingStrategyId] = useState(null);
@@ -89,11 +82,6 @@ function SettingsPage() {
     refreshSettings().catch(() => {});
     authService.getMeta().then(setBackendMeta).catch(() => {});
   }, []);
-
-  useEffect(() => {
-    setDefaultCommission(String(user?.defaultCommission ?? DEFAULT_COMMISSION_PER_SHARE));
-    setDefaultFees(String(user?.defaultFees ?? 0));
-  }, [user?.defaultCommission, user?.defaultFees]);
 
   useEffect(() => {
     setActiveAccountScope(user?.activeAccountScope ?? "SIMULATOR");
@@ -329,40 +317,6 @@ function SettingsPage() {
     );
   }
 
-  async function handleSaveCommission() {
-    const commissionValue = Number(defaultCommission);
-    const feeValue = Number(defaultFees);
-
-    if (Number.isNaN(commissionValue) || commissionValue < 0) {
-      setError("Default commission must be 0 or greater.");
-      return;
-    }
-
-    if (Number.isNaN(feeValue) || feeValue < 0) {
-      setError("Default fees must be 0 or greater.");
-      return;
-    }
-
-    setSavingCommission(true);
-    setError("");
-
-    try {
-      await updateSettings({
-        defaultCommission: commissionValue,
-        defaultFees: feeValue
-      });
-      notify({
-        title: "Trade costs updated",
-        description: "Default commission and fees were saved.",
-        tone: "success"
-      });
-    } catch (err) {
-      setError(err.message);
-      notify({ title: "Could not save trade costs", description: err.message, tone: "error" });
-    } finally {
-      setSavingCommission(false);
-    }
-  }
 
   async function handleDeleteAllTrades() {
     const confirmed = await confirm({
@@ -429,20 +383,6 @@ function SettingsPage() {
               >
                 <span>Trade Library</span>
                 <span className="text-white/40">{tags.length + strategies.length}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveSection("costs")}
-                className={`flex w-full items-center justify-between rounded-[6px] px-4 py-3 text-left text-sm transition ${
-                  activeSection === "costs"
-                    ? "border border-[var(--line)] bg-[#1f1f1f] text-white"
-                    : "border border-transparent text-white/64 hover:bg-white/[0.03] hover:text-white"
-                }`}
-              >
-                <span>Trade Costs</span>
-                <span className="text-white/40">
-                  ${Number(user?.defaultCommission ?? DEFAULT_COMMISSION_PER_SHARE).toFixed(4)}/sh
-                </span>
               </button>
               <button
                 type="button"
@@ -731,57 +671,6 @@ function SettingsPage() {
                 </div>
               </div>
             </Card>
-          ) : activeSection === "costs" ? (
-            <Card title="TRADE COSTS">
-                <div className="space-y-5">
-                  <p className="text-sm text-white/58">
-                    Set default fallback trade costs. These are used whenever a trade does not already contain explicit fees from imports or manual entry.
-                  </p>
-
-                  <div className="grid max-w-[720px] gap-4 md:grid-cols-2">
-                    <div>
-                      <label className="mb-2 block text-xs font-medium text-white/72">Default commission per share</label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.0001"
-                        value={defaultCommission}
-                        onChange={(event) => setDefaultCommission(event.target.value)}
-                        className="ui-input"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="mb-2 block text-xs font-medium text-white/72">Default fees per trade</label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={defaultFees}
-                        onChange={(event) => setDefaultFees(event.target.value)}
-                        className="ui-input"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={handleSaveCommission}
-                      disabled={savingCommission}
-                      className="ui-button-solid px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {savingCommission ? "Saving..." : "Save"}
-                    </button>
-                    <span className="rounded-[6px] border border-[var(--line)] bg-black px-3 py-2 text-sm text-white/50">
-                      Current: ${Number(user?.defaultCommission ?? DEFAULT_COMMISSION_PER_SHARE).toFixed(4)}/sh
-                      {Number(user?.defaultFees ?? 0) > 0
-                        ? ` + $${Number(user?.defaultFees ?? 0).toFixed(2)} fee`
-                        : ""}
-                    </span>
-                  </div>
-                </div>
-              </Card>
           ) : (
               <Card title="WORKSPACE DATA">
                 <div className="space-y-5">

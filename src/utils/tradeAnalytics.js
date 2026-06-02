@@ -23,12 +23,13 @@ function getTradePnl(trade) {
   const entryPrice = toNumber(readField(trade, "entryPrice", "entry_price"), 0);
   const exitPrice = toNumber(readField(trade, "exitPrice", "exit_price"), 0);
   const quantity = toNumber(trade.quantity, 0);
+  const commissions = toNumber(trade.commissions, 0);
   const fees = toNumber(trade.fees, 0);
   const side = normalizeSide(trade.side);
   const multiplier = side === "SHORT" ? -1 : 1;
 
   const grossPnl = (exitPrice - entryPrice) * quantity * multiplier;
-  const pnl = grossPnl - fees;
+  const pnl = grossPnl - commissions - fees;
 
   return Number(pnl.toFixed(4));
 }

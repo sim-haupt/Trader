@@ -24,9 +24,7 @@ async function authenticate(req, res, next) {
         name: true,
         role: true,
         activeAccountScope: true,
-        liveDataStartDate: true,
-        defaultCommission: true,
-        defaultFees: true
+        liveDataStartDate: true
       }
     });
 

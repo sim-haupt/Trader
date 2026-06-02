@@ -13,6 +13,7 @@ const initialState = {
   exitPrice: "",
   entryDate: "",
   exitDate: "",
+  commissions: "",
   fees: "",
   strategy: "",
   tags: "",
@@ -40,6 +41,7 @@ function mapTradeToForm(trade) {
     exitPrice: trade.exitPrice ?? "",
     entryDate: formatDateTimeLocal(trade.entryDate),
     exitDate: formatDateTimeLocal(trade.exitDate),
+    commissions: trade.commissions ?? "",
     fees: trade.fees ?? "",
     strategy: trade.strategy ?? "",
     tags: trade.tags ?? "",
@@ -175,6 +177,7 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
       quantity: Number(form.quantity),
       entryPrice: Number(form.entryPrice),
       exitPrice: form.exitPrice ? Number(form.exitPrice) : null,
+      commissions: form.commissions ? Number(form.commissions) : 0,
       fees: form.fees ? Number(form.fees) : 0,
       entryDate: toMarketISOString(form.entryDate),
       exitDate: form.exitDate ? toMarketISOString(form.exitDate) : null
@@ -238,6 +241,18 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
           step="0.0001"
           min="0"
           value={form.exitPrice}
+          onChange={handleChange}
+          className="ui-input"
+        />
+      </FormField>
+
+      <FormField label="Commissions">
+        <input
+          name="commissions"
+          type="number"
+          step="0.0001"
+          min="0"
+          value={form.commissions}
           onChange={handleChange}
           className="ui-input"
         />

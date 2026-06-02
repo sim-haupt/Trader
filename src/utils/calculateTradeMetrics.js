@@ -12,7 +12,9 @@ function calculateTradeMetrics(input) {
   const entryPrice = toNumber(input.entryPrice);
   const exitPrice = toNumber(input.exitPrice);
   const quantity = toNumber(input.quantity);
+  const commissions = toNumber(input.commissions) ?? 0;
   const fees = toNumber(input.fees) ?? 0;
+  const costs = commissions + fees;
 
   if (entryPrice === null || quantity === null || exitPrice === null) {
     return {
@@ -23,7 +25,7 @@ function calculateTradeMetrics(input) {
 
   const direction = input.side === "SHORT" ? -1 : 1;
   const grossPnl = (exitPrice - entryPrice) * quantity * direction;
-  const netPnl = grossPnl - fees;
+  const netPnl = grossPnl - costs;
 
   return {
     grossPnl: Number(grossPnl.toFixed(4)),
