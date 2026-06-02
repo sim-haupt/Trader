@@ -713,6 +713,20 @@ function JournalChartTooltip({ active, payload, label }) {
   );
 }
 
+function EditIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
+      <path
+        d="M13.958 3.542a1.5 1.5 0 0 1 2.122 0l.378.378a1.5 1.5 0 0 1 0 2.122l-8.75 8.75-3.166.792.791-3.166 8.625-8.876Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <path d="m12.5 5 2.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function JournalDayCard({
   day,
   noteDraft,
@@ -720,10 +734,15 @@ function JournalDayCard({
   onNoteChange,
   onFeeChange,
   onSaveNote,
+  onSaveCosts,
   onStartEditingNote,
+  onStartEditingCosts,
   onCancelEditingNote,
+  onCancelEditingCosts,
   isEditingNote,
+  isEditingCosts,
   isSaving,
+  isSavingCosts,
   onOpenTrade,
   onExportTrades
 }) {
@@ -897,11 +916,70 @@ function JournalDayCard({
               <div className="mt-2 text-2xl font-semibold text-white">{Math.round(day.totalVolume).toLocaleString()}</div>
             </div>
             <div className="ui-metric-tile">
-              <div className="ui-title text-[10px] text-white/52">Total Costs</div>
-              <div className="mt-2 text-2xl font-semibold text-white">{formatCostCurrency(day.totalCosts)}</div>
-              <div className="mt-2 text-xs text-white/48">
-                SEC {formatCostCurrency(day.secFee)} · FINRA {formatCostCurrency(day.finraFee)}
+              <div className="flex items-center justify-between gap-2">
+                <div className="ui-title text-[10px] text-white/52">Total Costs</div>
+                {!isEditingCosts ? (
+                  <button
+                    type="button"
+                    onClick={() => onStartEditingCosts(day.dayKey)}
+                    className="ui-button inline-flex h-8 w-8 items-center justify-center rounded-[6px] p-0 text-white/70 hover:text-white"
+                    aria-label={`Edit regulatory fees for ${day.label}`}
+                    title="Edit regulatory fees"
+                  >
+                    <EditIcon />
+                  </button>
+                ) : null}
               </div>
+              {isEditingCosts ? (
+                <div className="mt-3 space-y-3">
+                  <label className="block">
+                    <span className="mb-1 block text-[10px] font-medium text-white/62">SEC fee</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.0001"
+                      value={feeDraft.secFee}
+                      onChange={(event) => onFeeChange(day.dayKey, "secFee", event.target.value)}
+                      className="ui-input px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1 block text-[10px] font-medium text-white/62">FINRA fee</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.0001"
+                      value={feeDraft.finraFee}
+                      onChange={(event) => onFeeChange(day.dayKey, "finraFee", event.target.value)}
+                      className="ui-input px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onCancelEditingCosts(day.dayKey)}
+                      className="ui-button px-3 py-1.5 text-[11px]"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onSaveCosts(day.dayKey)}
+                      disabled={isSavingCosts}
+                      className="ui-button-solid px-3 py-1.5 text-[11px] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isSavingCosts ? "Saving..." : "Save"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="mt-2 text-2xl font-semibold text-white">{formatCostCurrency(day.totalCosts)}</div>
+                  <div className="mt-2 text-xs text-white/48">
+                    SEC {formatCostCurrency(day.secFee)} · FINRA {formatCostCurrency(day.finraFee)}
+                  </div>
+                </>
+              )}
             </div>
             <div className="ui-metric-tile sm:col-span-2">
               <div className="ui-title text-[10px] text-white/52">USD to EUR FX Rate</div>
@@ -970,51 +1048,14 @@ function JournalDayCard({
           </div>
 
           {isEditingNote ? (
-            <div className="space-y-4">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="block">
-                  <span className="mb-2 block text-xs font-medium text-white/72">SEC fee</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.0001"
-                    value={feeDraft.secFee}
-                    onChange={(event) => onFeeChange(day.dayKey, "secFee", event.target.value)}
-                    className="ui-input"
-                  />
-                </label>
-                <label className="block">
-                  <span className="mb-2 block text-xs font-medium text-white/72">FINRA fee</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.0001"
-                    value={feeDraft.finraFee}
-                    onChange={(event) => onFeeChange(day.dayKey, "finraFee", event.target.value)}
-                    className="ui-input"
-                  />
-                </label>
-              </div>
-              <RichTextEditor
-                value={noteDraft}
-                onChange={(value) => onNoteChange(day.dayKey, value)}
-                placeholder="Write your review, mistakes, strengths, and lessons from this trading day..."
-                minHeight={180}
-              />
-            </div>
+            <RichTextEditor
+              value={noteDraft}
+              onChange={(value) => onNoteChange(day.dayKey, value)}
+              placeholder="Write your review, mistakes, strengths, and lessons from this trading day..."
+              minHeight={180}
+            />
           ) : (
             <div className="space-y-4">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-[6px] border border-[var(--line)] bg-black px-4 py-3">
-                  <div className="ui-title text-[10px] text-white/52">SEC fee</div>
-                  <div className="mt-2 text-lg font-semibold text-white">{formatCostCurrency(day.secFee)}</div>
-                </div>
-                <div className="rounded-[6px] border border-[var(--line)] bg-black px-4 py-3">
-                  <div className="ui-title text-[10px] text-white/52">FINRA fee</div>
-                  <div className="mt-2 text-lg font-semibold text-white">{formatCostCurrency(day.finraFee)}</div>
-                </div>
-              </div>
-
               {day.note ? (
                 <div className="rounded-[6px] border border-[var(--line)] bg-black px-4 py-4">
                   <div
@@ -1133,7 +1174,9 @@ function JournalPage() {
   const [draftNotes, setDraftNotes] = useState({});
   const [draftDayFees, setDraftDayFees] = useState({});
   const [editingNotesByDay, setEditingNotesByDay] = useState({});
+  const [editingCostsByDay, setEditingCostsByDay] = useState({});
   const [savingDayKey, setSavingDayKey] = useState("");
+  const [savingCostDayKey, setSavingCostDayKey] = useState("");
   const [fxRatesByDay, setFxRatesByDay] = useState({});
   const [loadingFxRates, setLoadingFxRates] = useState(false);
   const [fxRateError, setFxRateError] = useState("");
@@ -1388,6 +1431,13 @@ function JournalPage() {
     }));
   }
 
+  function handleStartEditingCosts(dayKey) {
+    setEditingCostsByDay((current) => ({
+      ...current,
+      [dayKey]: true
+    }));
+  }
+
   function handleCancelEditingDay(dayKey, value) {
     setDraftNotes((current) => ({
       ...current,
@@ -1407,19 +1457,32 @@ function JournalPage() {
     }));
   }
 
+  function handleCancelEditingCosts(dayKey) {
+    const journalDay = journalDaysResource.data.find((day) => day.dayKey === dayKey);
+    setDraftDayFees((current) => ({
+      ...current,
+      [dayKey]: {
+        secFee: String(journalDay?.secFee ?? 0),
+        finraFee: String(journalDay?.finraFee ?? 0)
+      }
+    }));
+    setEditingCostsByDay((current) => ({
+      ...current,
+      [dayKey]: false
+    }));
+  }
+
   async function handleSaveDay(dayKey) {
     setSavingDayKey(dayKey);
 
     try {
       await journalService.updateJournalDay(dayKey, {
-        notes: draftNotes[dayKey] ?? "",
-        secFee: Number(draftDayFees[dayKey]?.secFee || 0),
-        finraFee: Number(draftDayFees[dayKey]?.finraFee || 0)
+        notes: draftNotes[dayKey] ?? ""
       });
       await journalDaysResource.reload();
       notify({
-        title: "Journal day saved",
-        description: `Saved review and regulatory fees for ${formatDayLabel(dayKey)}.`,
+        title: "Journal notes saved",
+        description: `Saved review for ${formatDayLabel(dayKey)}.`,
         tone: "success"
       });
       setEditingNotesByDay((current) => ({
@@ -1427,9 +1490,34 @@ function JournalPage() {
         [dayKey]: false
       }));
     } catch (err) {
-      notify({ title: "Could not save journal day", description: err.message, tone: "error" });
+      notify({ title: "Could not save journal notes", description: err.message, tone: "error" });
     } finally {
       setSavingDayKey("");
+    }
+  }
+
+  async function handleSaveCosts(dayKey) {
+    setSavingCostDayKey(dayKey);
+
+    try {
+      await journalService.updateJournalDay(dayKey, {
+        secFee: Number(draftDayFees[dayKey]?.secFee || 0),
+        finraFee: Number(draftDayFees[dayKey]?.finraFee || 0)
+      });
+      await journalDaysResource.reload();
+      notify({
+        title: "Regulatory fees saved",
+        description: `Saved SEC and FINRA fees for ${formatDayLabel(dayKey)}.`,
+        tone: "success"
+      });
+      setEditingCostsByDay((current) => ({
+        ...current,
+        [dayKey]: false
+      }));
+    } catch (err) {
+      notify({ title: "Could not save regulatory fees", description: err.message, tone: "error" });
+    } finally {
+      setSavingCostDayKey("");
     }
   }
 
@@ -1514,10 +1602,15 @@ function JournalPage() {
               onNoteChange={handleNotesChange}
               onFeeChange={handleDayFeeChange}
               onSaveNote={handleSaveDay}
+              onSaveCosts={handleSaveCosts}
               onStartEditingNote={handleStartEditingDay}
+              onStartEditingCosts={handleStartEditingCosts}
               onCancelEditingNote={handleCancelEditingDay}
+              onCancelEditingCosts={handleCancelEditingCosts}
               isEditingNote={Boolean(editingNotesByDay[day.dayKey])}
+              isEditingCosts={Boolean(editingCostsByDay[day.dayKey])}
               isSaving={savingDayKey === day.dayKey}
+              isSavingCosts={savingCostDayKey === day.dayKey}
               onOpenTrade={(tradeId) => navigate(`/trades/${tradeId}`)}
               onExportTrades={exportJournalDayTrades}
             />
