@@ -1,6 +1,7 @@
 const prisma = require("../config/prisma");
 const ApiError = require("../utils/ApiError");
 const buildTradePayload = require("../utils/buildTradePayload");
+const parseNewYorkLocalDateTime = require("../utils/parseMarketDateTime");
 const tagService = require("./tag.service");
 const strategyService = require("./strategy.service");
 const { refreshTradeImportContext } = require("./market-data.service");
@@ -149,6 +150,22 @@ function getTradeGrossPnl(trade) {
   return 0;
 }
 
+function parseTradeDateBoundary(value, boundary) {
+  if (!value) {
+    return null;
+  }
+
+  const stringValue = String(value).trim();
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(stringValue)) {
+    return parseNewYorkLocalDateTime(
+      `${stringValue}T${boundary === "end" ? "23:59:59" : "00:00:00"}`
+    );
+  }
+
+  return parseNewYorkLocalDateTime(stringValue);
+}
+
 function buildTradeWhere(actor, filters = {}) {
   const where = {};
 
@@ -181,11 +198,11 @@ function buildTradeWhere(actor, filters = {}) {
     where.entryDate = {};
 
     if (filters.from) {
-      where.entryDate.gte = new Date(filters.from);
+      where.entryDate.gte = parseTradeDateBoundary(filters.from, "start");
     }
 
     if (filters.to) {
-      where.entryDate.lte = new Date(filters.to);
+      where.entryDate.lte = parseTradeDateBoundary(filters.to, "end");
     }
   }
 

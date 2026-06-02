@@ -19,6 +19,7 @@ import { formatDateTimeLocal } from "../utils/formatters";
 import {
   getEffectiveTradeCommission,
   getTradeFeeDisplayValue,
+  getTradeGrossPnl,
   getTradeNetPnl,
   getTradeTotalCostDisplayValue
 } from "../utils/tradePnl";
@@ -489,180 +490,327 @@ function TradesPage() {
   }
 
   async function handleExportTrades() {
-    if (trades.length === 0) {
-      return;
-    }
-
     setIsExporting(true);
 
     try {
-      const dayKeys = [...new Set(trades.map((trade) => getDayKey(trade.entryDate)).filter(Boolean))];
-      const fxRatesByDay = await journalService.getUsdEurRates(dayKeys);
-      const dailyTotals = new Map();
+      const cleanedFilters = Object.fromEntries(Object.entries(filters).filter(([, value]) => value));
+      const exportTrades = await tradeService.getTrades(cleanedFilters, { forceRefresh: true });
 
-      for (const trade of trades) {
+      if (exportTrades.length === 0) {
+        notify({
+          title: "No trades to export",
+          description: "There are no trades in the selected range.",
+          tone: "info"
+        });
+        return;
+      }
+
+      const dayKeys = [
+        ...new Set(exportTrades.map((trade) => getDayKey(trade.entryDate)).filter(Boolean))
+      ];
+      const [fxRatesByDay, journalDays] = await Promise.all([
+        journalService.getUsdEurRates(dayKeys),
+        journalService.getJournalDays({ forceRefresh: true })
+      ]);
+      const journalDaysByKey = new Map(journalDays.map((day) => [day.dayKey, day]));
+      const dailyTotals = new Map();
+      const tradesByDay = new Map();
+
+      for (const trade of exportTrades) {
         const dayKey = getDayKey(trade.entryDate);
-        const netPnl = getTradeNetPnl(trade);
+        const grossPnl = getTradeGrossPnl(trade);
         const commissions = getEffectiveTradeCommission(trade);
         const fees = getTradeFeeDisplayValue(trade);
         const costs = getTradeTotalCostDisplayValue(trade);
+        const netPnl = getTradeNetPnl(trade);
         const rate = Number(fxRatesByDay[dayKey]?.rate);
         const hasRate = Number.isFinite(rate);
         const current = dailyTotals.get(dayKey) || {
+          grossPnlUsd: 0,
           netPnlUsd: 0,
           commissionsUsd: 0,
           feesUsd: 0,
+          secFeeUsd: 0,
+          finraFeeUsd: 0,
           costsUsd: 0,
+          grossPnlEur: 0,
           netPnlEur: 0,
           commissionsEur: 0,
           feesEur: 0,
+          secFeeEur: 0,
+          finraFeeEur: 0,
           costsEur: 0
         };
 
+        current.grossPnlUsd += grossPnl;
         current.netPnlUsd += netPnl;
         current.commissionsUsd += commissions;
         current.feesUsd += fees;
         current.costsUsd += costs;
+        current.grossPnlEur += hasRate ? grossPnl * rate : 0;
         current.netPnlEur += hasRate ? netPnl * rate : 0;
         current.commissionsEur += hasRate ? commissions * rate : 0;
         current.feesEur += hasRate ? fees * rate : 0;
         current.costsEur += hasRate ? costs * rate : 0;
         dailyTotals.set(dayKey, current);
+
+        if (!tradesByDay.has(dayKey)) {
+          tradesByDay.set(dayKey, []);
+        }
+
+        tradesByDay.get(dayKey).push(trade);
       }
 
-    const headers = [
-      "date",
-      "symbol",
-      "side",
-      "entry_price",
-      "exit_price",
-      "quantity",
-      "gross_pnl_usd",
-      "commissions_usd",
-      "fees_usd",
-      "total_costs_usd",
-      "net_pnl_usd",
-      "usd_eur_fx_rate",
-      "fx_rate_date",
-      "commissions_eur",
-      "fees_eur",
-      "total_costs_eur",
-      "net_pnl_eur",
-      "day_total_net_pnl_usd",
-      "day_total_net_pnl_eur",
-      "strategy",
-      "tags",
-      "notes"
-    ];
-
-    const escapeCsvValue = (value) => {
-      if (value === null || value === undefined) {
-        return "";
-      }
-
-      const stringValue = String(value);
-      if (/[",\n]/.test(stringValue)) {
-        return `"${stringValue.replace(/"/g, "\"\"")}"`;
-      }
-
-      return stringValue;
-    };
-
-      const rows = trades.map((trade) => {
-        const dayKey = getDayKey(trade.entryDate);
-        const fxRate = Number(fxRatesByDay[dayKey]?.rate);
-        const hasRate = Number.isFinite(fxRate);
-        const netPnl = getTradeNetPnl(trade);
-        const commissions = getEffectiveTradeCommission(trade);
-        const fees = getTradeFeeDisplayValue(trade);
-        const costs = getTradeTotalCostDisplayValue(trade);
+      for (const dayKey of dayKeys) {
         const totals = dailyTotals.get(dayKey);
 
-        return [
-          trade.entryDate,
-          trade.symbol,
-          trade.side,
-          trade.entryPrice,
-          trade.exitPrice ?? "",
-          trade.quantity,
-          trade.grossPnl ?? "",
-          commissions.toFixed(4),
-          fees.toFixed(4),
-          costs.toFixed(4),
-          netPnl.toFixed(2),
-          hasRate ? fxRate.toFixed(6) : "",
-          fxRatesByDay[dayKey]?.rateDate ?? "",
-          hasRate ? (commissions * fxRate).toFixed(4) : "",
-          hasRate ? (fees * fxRate).toFixed(4) : "",
-          hasRate ? (costs * fxRate).toFixed(4) : "",
-          hasRate ? (netPnl * fxRate).toFixed(2) : "",
-          totals ? totals.netPnlUsd.toFixed(2) : "",
-          hasRate && totals ? totals.netPnlEur.toFixed(2) : "",
-          trade.strategy ?? "",
-          trade.tags ?? "",
-          trade.notes ?? ""
-        ];
-      });
+        if (!totals) {
+          continue;
+        }
+
+        const fxRate = Number(fxRatesByDay[dayKey]?.rate);
+        const hasRate = Number.isFinite(fxRate);
+        const journalDay = journalDaysByKey.get(dayKey);
+        const secFee = Number(journalDay?.secFee || 0);
+        const finraFee = Number(journalDay?.finraFee || 0);
+
+        totals.secFeeUsd = secFee;
+        totals.finraFeeUsd = finraFee;
+        totals.costsUsd += secFee + finraFee;
+        totals.netPnlUsd -= secFee + finraFee;
+        totals.secFeeEur = hasRate ? secFee * fxRate : 0;
+        totals.finraFeeEur = hasRate ? finraFee * fxRate : 0;
+        totals.costsEur += hasRate ? (secFee + finraFee) * fxRate : 0;
+        totals.netPnlEur -= hasRate ? (secFee + finraFee) * fxRate : 0;
+      }
+
+      const columns = [
+        "row_type",
+        "date",
+        "symbol",
+        "side",
+        "quantity",
+        "entry_price",
+        "exit_price",
+        "entry_date",
+        "exit_date",
+        "executions",
+        "strategy",
+        "tags",
+        "gross_pnl_usd",
+        "commissions_usd",
+        "trade_fees_usd",
+        "sec_fee_usd",
+        "finra_fee_usd",
+        "total_costs_usd",
+        "net_pnl_usd",
+        "usd_eur_fx_rate",
+        "fx_rate_date",
+        "gross_pnl_eur",
+        "commissions_eur",
+        "trade_fees_eur",
+        "sec_fee_eur",
+        "finra_fee_eur",
+        "total_costs_eur",
+        "net_pnl_eur",
+        "day_total_gross_pnl_usd",
+        "day_total_commissions_usd",
+        "day_total_trade_fees_usd",
+        "day_total_sec_fee_usd",
+        "day_total_finra_fee_usd",
+        "day_total_costs_usd",
+        "day_total_net_pnl_usd",
+        "day_total_gross_pnl_eur",
+        "day_total_commissions_eur",
+        "day_total_trade_fees_eur",
+        "day_total_sec_fee_eur",
+        "day_total_finra_fee_eur",
+        "day_total_costs_eur",
+        "day_total_net_pnl_eur",
+        "notes"
+      ];
+
+      const formatCurrency = (value, decimals = 2) =>
+        Number.isFinite(Number(value)) ? Number(value).toFixed(decimals) : "";
+      const formatRate = (value) => (Number.isFinite(Number(value)) ? Number(value).toFixed(6) : "");
+      const formatRow = (row) => columns.map((column) => row[column] ?? "");
+
+      const escapeCsvValue = (value) => {
+        if (value === null || value === undefined) {
+          return "";
+        }
+
+        const stringValue = String(value);
+        if (/[",\n]/.test(stringValue)) {
+          return `"${stringValue.replace(/"/g, "\"\"")}"`;
+        }
+
+        return stringValue;
+      };
+
+      const buildDayTotalFields = (dayKey) => {
+        const totals = dailyTotals.get(dayKey);
+
+        if (!totals) {
+          return {};
+        }
+
+        return {
+          day_total_gross_pnl_usd: formatCurrency(totals.grossPnlUsd),
+          day_total_commissions_usd: formatCurrency(totals.commissionsUsd, 4),
+          day_total_trade_fees_usd: formatCurrency(totals.feesUsd, 4),
+          day_total_sec_fee_usd: formatCurrency(totals.secFeeUsd),
+          day_total_finra_fee_usd: formatCurrency(totals.finraFeeUsd),
+          day_total_costs_usd: formatCurrency(totals.costsUsd, 4),
+          day_total_net_pnl_usd: formatCurrency(totals.netPnlUsd),
+          day_total_gross_pnl_eur: formatCurrency(totals.grossPnlEur),
+          day_total_commissions_eur: formatCurrency(totals.commissionsEur, 4),
+          day_total_trade_fees_eur: formatCurrency(totals.feesEur, 4),
+          day_total_sec_fee_eur: formatCurrency(totals.secFeeEur),
+          day_total_finra_fee_eur: formatCurrency(totals.finraFeeEur),
+          day_total_costs_eur: formatCurrency(totals.costsEur, 4),
+          day_total_net_pnl_eur: formatCurrency(totals.netPnlEur)
+        };
+      };
+
+      const rows = [];
+
+      for (const [dayKey, dayTrades] of tradesByDay.entries()) {
+        for (const trade of dayTrades) {
+          const fxRate = Number(fxRatesByDay[dayKey]?.rate);
+          const hasRate = Number.isFinite(fxRate);
+          const grossPnl = getTradeGrossPnl(trade);
+          const commissions = getEffectiveTradeCommission(trade);
+          const fees = getTradeFeeDisplayValue(trade);
+          const costs = getTradeTotalCostDisplayValue(trade);
+          const netPnl = getTradeNetPnl(trade);
+
+          rows.push(
+            formatRow({
+              row_type: "TRADE",
+              date: dayKey,
+              symbol: trade.symbol,
+              side: trade.side,
+              quantity: trade.quantity,
+              entry_price: trade.entryPrice,
+              exit_price: trade.exitPrice ?? "",
+              entry_date: trade.entryDate,
+              exit_date: trade.exitDate ?? "",
+              executions: trade.reportedExecutionCount ?? trade.executions?.length ?? "",
+              strategy: trade.strategy ?? "",
+              tags: trade.tags ?? "",
+              gross_pnl_usd: formatCurrency(grossPnl),
+              commissions_usd: formatCurrency(commissions, 4),
+              trade_fees_usd: formatCurrency(fees, 4),
+              total_costs_usd: formatCurrency(costs, 4),
+              net_pnl_usd: formatCurrency(netPnl),
+              usd_eur_fx_rate: hasRate ? formatRate(fxRate) : "",
+              fx_rate_date: fxRatesByDay[dayKey]?.rateDate ?? "",
+              gross_pnl_eur: hasRate ? formatCurrency(grossPnl * fxRate) : "",
+              commissions_eur: hasRate ? formatCurrency(commissions * fxRate, 4) : "",
+              trade_fees_eur: hasRate ? formatCurrency(fees * fxRate, 4) : "",
+              total_costs_eur: hasRate ? formatCurrency(costs * fxRate, 4) : "",
+              net_pnl_eur: hasRate ? formatCurrency(netPnl * fxRate) : "",
+              ...buildDayTotalFields(dayKey),
+              notes: trade.notes ?? ""
+            })
+          );
+        }
+
+        const totals = dailyTotals.get(dayKey);
+        rows.push(
+          formatRow({
+            row_type: "DAY TOTAL",
+            date: dayKey,
+            gross_pnl_usd: formatCurrency(totals.grossPnlUsd),
+            commissions_usd: formatCurrency(totals.commissionsUsd, 4),
+            trade_fees_usd: formatCurrency(totals.feesUsd, 4),
+            sec_fee_usd: formatCurrency(totals.secFeeUsd),
+            finra_fee_usd: formatCurrency(totals.finraFeeUsd),
+            total_costs_usd: formatCurrency(totals.costsUsd, 4),
+            net_pnl_usd: formatCurrency(totals.netPnlUsd),
+            gross_pnl_eur: formatCurrency(totals.grossPnlEur),
+            commissions_eur: formatCurrency(totals.commissionsEur, 4),
+            trade_fees_eur: formatCurrency(totals.feesEur, 4),
+            sec_fee_eur: formatCurrency(totals.secFeeEur),
+            finra_fee_eur: formatCurrency(totals.finraFeeEur),
+            total_costs_eur: formatCurrency(totals.costsEur, 4),
+            net_pnl_eur: formatCurrency(totals.netPnlEur),
+            ...buildDayTotalFields(dayKey)
+          })
+        );
+      }
 
       const exportTotals = [...dailyTotals.values()].reduce(
         (totals, day) => ({
+          grossPnlUsd: totals.grossPnlUsd + day.grossPnlUsd,
           netPnlUsd: totals.netPnlUsd + day.netPnlUsd,
           commissionsUsd: totals.commissionsUsd + day.commissionsUsd,
           feesUsd: totals.feesUsd + day.feesUsd,
+          secFeeUsd: totals.secFeeUsd + day.secFeeUsd,
+          finraFeeUsd: totals.finraFeeUsd + day.finraFeeUsd,
           costsUsd: totals.costsUsd + day.costsUsd,
+          grossPnlEur: totals.grossPnlEur + day.grossPnlEur,
           netPnlEur: totals.netPnlEur + day.netPnlEur,
           commissionsEur: totals.commissionsEur + day.commissionsEur,
           feesEur: totals.feesEur + day.feesEur,
+          secFeeEur: totals.secFeeEur + day.secFeeEur,
+          finraFeeEur: totals.finraFeeEur + day.finraFeeEur,
           costsEur: totals.costsEur + day.costsEur
         }),
         {
+          grossPnlUsd: 0,
           netPnlUsd: 0,
           commissionsUsd: 0,
           feesUsd: 0,
+          secFeeUsd: 0,
+          finraFeeUsd: 0,
           costsUsd: 0,
+          grossPnlEur: 0,
           netPnlEur: 0,
           commissionsEur: 0,
           feesEur: 0,
+          secFeeEur: 0,
+          finraFeeEur: 0,
           costsEur: 0
         }
       );
 
-      rows.push([
-        "TOTAL",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        exportTotals.commissionsUsd.toFixed(4),
-        exportTotals.feesUsd.toFixed(4),
-        exportTotals.costsUsd.toFixed(4),
-        exportTotals.netPnlUsd.toFixed(2),
-        "",
-        "",
-        exportTotals.commissionsEur.toFixed(4),
-        exportTotals.feesEur.toFixed(4),
-        exportTotals.costsEur.toFixed(4),
-        exportTotals.netPnlEur.toFixed(2),
-        exportTotals.netPnlUsd.toFixed(2),
-        exportTotals.netPnlEur.toFixed(2),
-        "",
-        "",
-        ""
-      ]);
+      rows.push(
+        formatRow({
+          row_type: "EXPORT TOTAL",
+          gross_pnl_usd: formatCurrency(exportTotals.grossPnlUsd),
+          commissions_usd: formatCurrency(exportTotals.commissionsUsd, 4),
+          trade_fees_usd: formatCurrency(exportTotals.feesUsd, 4),
+          sec_fee_usd: formatCurrency(exportTotals.secFeeUsd),
+          finra_fee_usd: formatCurrency(exportTotals.finraFeeUsd),
+          total_costs_usd: formatCurrency(exportTotals.costsUsd, 4),
+          net_pnl_usd: formatCurrency(exportTotals.netPnlUsd),
+          gross_pnl_eur: formatCurrency(exportTotals.grossPnlEur),
+          commissions_eur: formatCurrency(exportTotals.commissionsEur, 4),
+          trade_fees_eur: formatCurrency(exportTotals.feesEur, 4),
+          sec_fee_eur: formatCurrency(exportTotals.secFeeEur),
+          finra_fee_eur: formatCurrency(exportTotals.finraFeeEur),
+          total_costs_eur: formatCurrency(exportTotals.costsEur, 4),
+          net_pnl_eur: formatCurrency(exportTotals.netPnlEur)
+        })
+      );
 
-    const csvContent = [headers, ...rows]
-      .map((row) => row.map(escapeCsvValue).join(","))
-      .join("\n");
+      const csvContent = [columns, ...rows]
+        .map((row) => row.map(escapeCsvValue).join(","))
+        .join("\n");
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `trades-export-${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+      const rangeLabel =
+        cleanedFilters.from || cleanedFilters.to
+          ? `${cleanedFilters.from || "start"}_to_${cleanedFilters.to || "end"}`
+          : "all";
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `trades-export-${rangeLabel}-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
     } catch (err) {
       notify({ title: "Could not export trades", description: err.message, tone: "error" });
     } finally {
@@ -717,7 +865,7 @@ function TradesPage() {
               <button
                 type="button"
                 onClick={handleExportTrades}
-                disabled={trades.length === 0 || isExporting}
+                disabled={isExporting}
                 className="ui-button-solid text-sm disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isExporting ? "Exporting..." : "Export CSV"}
