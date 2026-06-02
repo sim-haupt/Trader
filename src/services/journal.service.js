@@ -7,6 +7,11 @@ function normalizeDayKeys(dayKeys) {
   return [...new Set((dayKeys || []).map((dayKey) => String(dayKey || "").trim()).filter(Boolean))];
 }
 
+function roundCurrencyCents(value) {
+  const numericValue = Number(value || 0);
+  return Number.isFinite(numericValue) ? Number(numericValue.toFixed(2)) : 0;
+}
+
 async function fetchUsdEurRate(dayKey) {
   const cached = fxRateCache.get(dayKey);
 
@@ -71,8 +76,8 @@ async function updateJournalDay(actor, dayKey, payload) {
       : payload.notes === null || payload.notes === ""
         ? null
         : String(payload.notes);
-  const secFee = payload.secFee === undefined ? undefined : Number(payload.secFee || 0);
-  const finraFee = payload.finraFee === undefined ? undefined : Number(payload.finraFee || 0);
+  const secFee = payload.secFee === undefined ? undefined : roundCurrencyCents(payload.secFee);
+  const finraFee = payload.finraFee === undefined ? undefined : roundCurrencyCents(payload.finraFee);
   const update = {};
 
   if (notes !== undefined) {

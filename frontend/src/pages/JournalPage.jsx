@@ -227,6 +227,19 @@ function getTradeTags(trade) {
     .filter(Boolean);
 }
 
+function formatCents(value) {
+  return Number(value || 0).toFixed(2);
+}
+
+function formatCostCents(value, currency = "USD") {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(Number(value || 0));
+}
+
 function buildTradePnl(trade, pnlType, defaultCommission, defaultFees) {
   return pnlType === "NET"
     ? getTradeNetPnl(trade, defaultCommission, defaultFees)
@@ -517,15 +530,15 @@ function exportJournalDayTrades(day) {
     "",
     "",
     Number(day.totalCommissions ?? 0).toFixed(4),
-    Number(day.secFee ?? 0).toFixed(4),
-    Number(day.finraFee ?? 0).toFixed(4),
+    formatCents(day.secFee),
+    formatCents(day.finraFee),
     Number(day.totalCosts ?? 0).toFixed(4),
     Number(day.totalNetPnl ?? 0).toFixed(2),
     day.fxRate ?? "",
     day.fxRateDate ?? "",
     day.fxRate ? Number(day.totalCommissionsEur ?? 0).toFixed(4) : "",
-    day.fxRate ? Number(day.secFeeEur ?? 0).toFixed(4) : "",
-    day.fxRate ? Number(day.finraFeeEur ?? 0).toFixed(4) : "",
+    day.fxRate ? formatCents(day.secFeeEur) : "",
+    day.fxRate ? formatCents(day.finraFeeEur) : "",
     day.fxRate ? Number(day.totalCostsEur ?? 0).toFixed(4) : "",
     day.fxRate ? Number(day.totalNetPnlEur ?? 0).toFixed(2) : "",
     Number(day.totalNetPnl ?? 0).toFixed(2),
@@ -666,10 +679,10 @@ function buildDailyJournal(
         ...day,
         trades: visualization.trades,
         chartData: visualization.chartData,
-        secFee: Number(day.secFee || 0),
-        secFeeEur: day.fxRate ? Number((Number(day.secFee || 0) * day.fxRate).toFixed(4)) : null,
-        finraFee: Number(day.finraFee || 0),
-        finraFeeEur: day.fxRate ? Number((Number(day.finraFee || 0) * day.fxRate).toFixed(4)) : null,
+        secFee: Number(Number(day.secFee || 0).toFixed(2)),
+        secFeeEur: day.fxRate ? Number((Number(day.secFee || 0) * day.fxRate).toFixed(2)) : null,
+        finraFee: Number(Number(day.finraFee || 0).toFixed(2)),
+        finraFeeEur: day.fxRate ? Number((Number(day.finraFee || 0) * day.fxRate).toFixed(2)) : null,
         totalPnl: Number((day.totalPnl - (pnlType === "NET" ? Number(day.secFee || 0) + Number(day.finraFee || 0) : 0)).toFixed(2)),
         totalPnlEur: day.fxRate
           ? Number((day.totalPnlEur - (pnlType === "NET" ? (Number(day.secFee || 0) + Number(day.finraFee || 0)) * day.fxRate : 0)).toFixed(2))
@@ -937,7 +950,7 @@ function JournalDayCard({
                     <input
                       type="number"
                       min="0"
-                      step="0.0001"
+                      step="0.01"
                       value={feeDraft.secFee}
                       onChange={(event) => onFeeChange(day.dayKey, "secFee", event.target.value)}
                       className="ui-input px-3 py-2 text-sm"
@@ -948,7 +961,7 @@ function JournalDayCard({
                     <input
                       type="number"
                       min="0"
-                      step="0.0001"
+                      step="0.01"
                       value={feeDraft.finraFee}
                       onChange={(event) => onFeeChange(day.dayKey, "finraFee", event.target.value)}
                       className="ui-input px-3 py-2 text-sm"
@@ -976,7 +989,7 @@ function JournalDayCard({
                 <>
                   <div className="mt-2 text-2xl font-semibold text-white">{formatCostCurrency(day.totalCosts)}</div>
                   <div className="mt-2 text-xs text-white/48">
-                    SEC {formatCostCurrency(day.secFee)} · FINRA {formatCostCurrency(day.finraFee)}
+                    SEC {formatCostCents(day.secFee)} · FINRA {formatCostCents(day.finraFee)}
                   </div>
                 </>
               )}
