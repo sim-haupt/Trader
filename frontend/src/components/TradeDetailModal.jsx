@@ -18,7 +18,7 @@ import TradeReviewCharts from "./TradeReviewCharts";
 import Card from "./ui/Card";
 import LoadingState from "./ui/LoadingState";
 import RichTextEditor from "./ui/RichTextEditor";
-import { formatCurrency, formatDate, formatDateTimeLocal } from "../utils/formatters";
+import { formatCostCurrency, formatCurrency, formatDate, formatDateTimeLocal } from "../utils/formatters";
 import { normalizeRichTextHtml } from "../utils/richText";
 import {
   buildDayRunningPnl,
@@ -513,8 +513,8 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
               accent={tradePnl >= 0 ? "text-mint" : "text-coral"}
             />
             <SummaryMetric label="Quantity" value={String(activeTrade.quantity)} />
-            <SummaryMetric label="Commissions" value={formatCurrency(tradeCommissions)} />
-            <SummaryMetric label="Fees" value={formatCurrency(tradeFees)} />
+            <SummaryMetric label="Commissions" value={formatCostCurrency(tradeCommissions)} />
+            <SummaryMetric label="Fees" value={formatCostCurrency(tradeFees)} />
             <SummaryMetric label="Hold Time" value={formatHoldTime(holdMinutes)} />
             <SummaryMetric label="Executions" value={String(executionCount)} />
           </div>

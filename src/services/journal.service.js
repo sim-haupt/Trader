@@ -67,10 +67,25 @@ async function listJournalDays(actor) {
 async function updateJournalDay(actor, dayKey, payload) {
   const notes =
     payload.notes === undefined
-      ? null
+      ? undefined
       : payload.notes === null || payload.notes === ""
         ? null
         : String(payload.notes);
+  const secFee = payload.secFee === undefined ? undefined : Number(payload.secFee || 0);
+  const finraFee = payload.finraFee === undefined ? undefined : Number(payload.finraFee || 0);
+  const update = {};
+
+  if (notes !== undefined) {
+    update.notes = notes;
+  }
+
+  if (secFee !== undefined) {
+    update.secFee = secFee;
+  }
+
+  if (finraFee !== undefined) {
+    update.finraFee = finraFee;
+  }
 
   return prisma.journalDay.upsert({
     where: {
@@ -84,11 +99,11 @@ async function updateJournalDay(actor, dayKey, payload) {
       userId: actor.id,
       accountScope: actor.activeAccountScope || "SIMULATOR",
       dayKey,
-      notes
+      notes: notes === undefined ? null : notes,
+      secFee: secFee === undefined ? 0 : secFee,
+      finraFee: finraFee === undefined ? 0 : finraFee
     },
-    update: {
-      notes
-    }
+    update
   });
 }
 

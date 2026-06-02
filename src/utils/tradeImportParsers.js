@@ -424,15 +424,7 @@ function parseTradesFromDasCsvRows(rows) {
       "commissions",
       "Commissions"
     ]);
-    const fees = sumNumericFields(row, [
-      "RouteFee",
-      "routeFee",
-      "route_fee",
-      "fee",
-      "Fee",
-      "fees",
-      "Fees"
-    ]);
+    const fees = 0;
     const errors = [];
 
     if (!symbol) {

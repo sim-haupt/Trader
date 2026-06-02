@@ -109,6 +109,17 @@ export function formatCurrency(value) {
   }).format(amount);
 }
 
+export function formatCostCurrency(value, currency = "USD") {
+  const amount = Number(value || 0);
+
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4
+  }).format(amount);
+}
+
 export function formatEuroCurrency(value) {
   const amount = Number(value || 0);
 

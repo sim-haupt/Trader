@@ -24,7 +24,7 @@ import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 import tagService from "../services/tagService";
 import strategyService from "../services/strategyService";
 import tradeService from "../services/tradeService";
-import { formatCurrency, formatPercent } from "../utils/formatters";
+import { formatCostCurrency, formatCurrency, formatPercent } from "../utils/formatters";
 import { useAuth } from "../context/AuthContext";
 import {
   getEffectiveTradeCommission,
@@ -692,8 +692,8 @@ function buildDetailedStats(trades, options = {}) {
       null
     ],
     [
-      { label: "Total Commissions", value: formatCurrency(summary.totalCommissions), tone: "text-white" },
-      { label: "Total Fees", value: formatCurrency(summary.totalFees), tone: "text-white" },
+      { label: "Total Commissions", value: formatCostCurrency(summary.totalCommissions), tone: "text-white" },
+      { label: "Total Fees", value: formatCostCurrency(summary.totalFees), tone: "text-white" },
       null
     ]
   ];
@@ -1027,8 +1027,8 @@ function buildWinLossDayRows(summary) {
     { label: "Profit Factor", value: summary.profitFactor ? summary.profitFactor.toFixed(2) : "0.00", tone: "text-white" },
     { label: "Largest Gain", value: formatCurrency(summary.largestGain), tone: "text-mint" },
     { label: "Largest Loss", value: formatCurrency(summary.largestLoss), tone: "text-coral" },
-    { label: "Total Commissions", value: formatCurrency(summary.totalCommissions), tone: "text-white" },
-    { label: "Total Fees", value: formatCurrency(summary.totalFees), tone: "text-white" }
+    { label: "Total Commissions", value: formatCostCurrency(summary.totalCommissions), tone: "text-white" },
+    { label: "Total Fees", value: formatCostCurrency(summary.totalFees), tone: "text-white" }
   ];
 }
 

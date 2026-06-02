@@ -1,4 +1,4 @@
-import { formatCurrency, formatDate } from "../utils/formatters";
+import { formatCostCurrency, formatCurrency, formatDate } from "../utils/formatters";
 import { getTradeNetPnl } from "../utils/tradePnl";
 
 function EditIcon() {
@@ -152,8 +152,8 @@ function TradeTable({
                     </td>
                     <td className="px-4 py-4 text-white/84">{trade.quantity}</td>
                     <td className="px-4 py-4 text-white/84">{executionCount || "-"}</td>
-                    <td className="px-4 py-4 text-white/84">{formatCurrency(Number(trade.commissions ?? 0))}</td>
-                    <td className="px-4 py-4 text-white/84">{formatCurrency(Number(trade.fees ?? 0))}</td>
+                    <td className="px-4 py-4 text-white/84">{formatCostCurrency(Number(trade.commissions ?? 0))}</td>
+                    <td className="px-4 py-4 text-white/84">{formatCostCurrency(Number(trade.fees ?? 0))}</td>
                     <td
                       className={`px-4 py-4 font-semibold ${
                         pnl >= 0 ? "text-mint" : "text-coral"

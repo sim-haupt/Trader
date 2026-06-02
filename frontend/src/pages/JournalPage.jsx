@@ -22,15 +22,19 @@ import tradeService from "../services/tradeService";
 import journalService from "../services/journalService";
 import tagService from "../services/tagService";
 import strategyService from "../services/strategyService";
-import { formatCurrency, formatDateTimeLocal, formatEuroCurrency } from "../utils/formatters";
+import {
+  formatCostCurrency,
+  formatCurrency,
+  formatDateTimeLocal,
+  formatEuroCurrency
+} from "../utils/formatters";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
 import {
   getEffectiveTradeCommission,
   getTradeFeeDisplayValue,
   getTradeGrossPnl,
-  getTradeNetPnl,
-  getTradeTotalCostDisplayValue
+  getTradeNetPnl
 } from "../utils/tradePnl";
 import { normalizeRichTextHtml } from "../utils/richText";
 
@@ -454,13 +458,15 @@ function exportJournalDayTrades(day) {
     "Tags",
     "Gross P&L USD",
     "Commissions USD",
-    "Fees USD",
+    "SEC Fee USD",
+    "FINRA Fee USD",
     "Total Costs USD",
     "Net P&L USD",
     "USD/EUR FX Rate",
     "FX Rate Date",
     "Commissions EUR",
-    "Fees EUR",
+    "SEC Fee EUR",
+    "FINRA Fee EUR",
     "Total Costs EUR",
     "Net P&L EUR",
     "Day Total Net P&L USD",
@@ -480,15 +486,17 @@ function exportJournalDayTrades(day) {
     trade.strategy ?? "",
     trade.parsedTags.join("; "),
     Number(trade.dayPnl ?? 0).toFixed(2),
-    Number(trade.dayCommissions ?? 0).toFixed(2),
-    Number(trade.dayFees ?? 0).toFixed(2),
-    Number(trade.dayCosts ?? 0).toFixed(2),
+    Number(trade.dayCommissions ?? 0).toFixed(4),
+    "",
+    "",
+    Number(trade.dayCommissions ?? 0).toFixed(4),
     Number(trade.dayNetPnl ?? 0).toFixed(2),
     day.fxRate ?? "",
     day.fxRateDate ?? "",
-    day.fxRate ? Number(trade.dayCommissionsEur ?? 0).toFixed(2) : "",
-    day.fxRate ? Number(trade.dayFeesEur ?? 0).toFixed(2) : "",
-    day.fxRate ? Number(trade.dayCostsEur ?? 0).toFixed(2) : "",
+    day.fxRate ? Number(trade.dayCommissionsEur ?? 0).toFixed(4) : "",
+    "",
+    "",
+    day.fxRate ? Number(trade.dayCommissionsEur ?? 0).toFixed(4) : "",
     day.fxRate ? Number(trade.dayNetPnlEur ?? 0).toFixed(2) : "",
     Number(day.totalNetPnl ?? 0).toFixed(2),
     day.fxRate ? Number(day.totalNetPnlEur ?? 0).toFixed(2) : "",
@@ -508,15 +516,17 @@ function exportJournalDayTrades(day) {
     "",
     "",
     "",
-    Number(day.totalCommissions ?? 0).toFixed(2),
-    Number(day.totalFees ?? 0).toFixed(2),
-    Number(day.totalCosts ?? 0).toFixed(2),
+    Number(day.totalCommissions ?? 0).toFixed(4),
+    Number(day.secFee ?? 0).toFixed(4),
+    Number(day.finraFee ?? 0).toFixed(4),
+    Number(day.totalCosts ?? 0).toFixed(4),
     Number(day.totalNetPnl ?? 0).toFixed(2),
     day.fxRate ?? "",
     day.fxRateDate ?? "",
-    day.fxRate ? Number(day.totalCommissionsEur ?? 0).toFixed(2) : "",
-    day.fxRate ? Number(day.totalFeesEur ?? 0).toFixed(2) : "",
-    day.fxRate ? Number(day.totalCostsEur ?? 0).toFixed(2) : "",
+    day.fxRate ? Number(day.totalCommissionsEur ?? 0).toFixed(4) : "",
+    day.fxRate ? Number(day.secFeeEur ?? 0).toFixed(4) : "",
+    day.fxRate ? Number(day.finraFeeEur ?? 0).toFixed(4) : "",
+    day.fxRate ? Number(day.totalCostsEur ?? 0).toFixed(4) : "",
     day.fxRate ? Number(day.totalNetPnlEur ?? 0).toFixed(2) : "",
     Number(day.totalNetPnl ?? 0).toFixed(2),
     day.fxRate ? Number(day.totalNetPnlEur ?? 0).toFixed(2) : "",
@@ -528,7 +538,7 @@ function exportJournalDayTrades(day) {
 
 function buildDailyJournal(
   trades,
-  dayNotes,
+  journalDaysByDay,
   defaultCommission,
   defaultFees,
   fxRatesByDay = {},
@@ -550,10 +560,11 @@ function buildDailyJournal(
     const perSharePnl = Math.abs(quantity) > 0 ? pnl / Math.abs(quantity) : 0;
     const commissions = getEffectiveTradeCommission(trade);
     const fees = getTradeFeeDisplayValue(trade);
-    const costs = getTradeTotalCostDisplayValue(trade);
+    const costs = commissions;
     const fxRate = Number(fxRatesByDay[dayKey]?.rate);
     const hasFxRate = Number.isFinite(fxRate);
     const existing = grouped.get(dayKey) || {
+      ...(journalDaysByDay.get(dayKey) || {}),
       dayKey,
       label: formatDayLabel(dayKey),
       trades: [],
@@ -622,13 +633,18 @@ function buildDailyJournal(
     }
 
     grouped.set(dayKey, {
+      ...(journalDaysByDay.get(dayKey) || {}),
       dayKey,
       label: formatDayLabel(dayKey),
       trades: [],
       totalTrades: 0,
       totalVolume: 0,
+      totalCommissions: 0,
+      totalCommissionsEur: 0,
       totalFees: 0,
       totalFeesEur: 0,
+      totalCosts: 0,
+      totalCostsEur: 0,
       totalPnl: 0,
       totalPnlEur: 0,
       totalNetPnl: 0,
@@ -650,17 +666,31 @@ function buildDailyJournal(
         ...day,
         trades: visualization.trades,
         chartData: visualization.chartData,
-        totalPnl: Number(day.totalPnl.toFixed(2)),
-        totalPnlEur: day.fxRate ? Number(day.totalPnlEur.toFixed(2)) : null,
-        totalNetPnl: Number(day.totalNetPnl.toFixed(2)),
-        totalNetPnlEur: day.fxRate ? Number(day.totalNetPnlEur.toFixed(2)) : null,
-        totalFees: Number(day.totalFees.toFixed(2)),
-        totalFeesEur: day.fxRate ? Number(day.totalFeesEur.toFixed(2)) : null,
+        secFee: Number(day.secFee || 0),
+        secFeeEur: day.fxRate ? Number((Number(day.secFee || 0) * day.fxRate).toFixed(4)) : null,
+        finraFee: Number(day.finraFee || 0),
+        finraFeeEur: day.fxRate ? Number((Number(day.finraFee || 0) * day.fxRate).toFixed(4)) : null,
+        totalPnl: Number((day.totalPnl - (pnlType === "NET" ? Number(day.secFee || 0) + Number(day.finraFee || 0) : 0)).toFixed(2)),
+        totalPnlEur: day.fxRate
+          ? Number((day.totalPnlEur - (pnlType === "NET" ? (Number(day.secFee || 0) + Number(day.finraFee || 0)) * day.fxRate : 0)).toFixed(2))
+          : null,
+        totalNetPnl: Number((day.totalNetPnl - Number(day.secFee || 0) - Number(day.finraFee || 0)).toFixed(2)),
+        totalNetPnlEur: day.fxRate
+          ? Number((day.totalNetPnlEur - (Number(day.secFee || 0) + Number(day.finraFee || 0)) * day.fxRate).toFixed(2))
+          : null,
+        totalCommissions: Number(day.totalCommissions.toFixed(4)),
+        totalCommissionsEur: day.fxRate ? Number(day.totalCommissionsEur.toFixed(4)) : null,
+        totalFees: Number(day.totalFees.toFixed(4)),
+        totalFeesEur: day.fxRate ? Number(day.totalFeesEur.toFixed(4)) : null,
+        totalCosts: Number((day.totalCosts + Number(day.secFee || 0) + Number(day.finraFee || 0)).toFixed(4)),
+        totalCostsEur: day.fxRate
+          ? Number((day.totalCostsEur + (Number(day.secFee || 0) + Number(day.finraFee || 0)) * day.fxRate).toFixed(4))
+          : null,
         averagePerShare: Number(
           (day.totalTrades > 0 ? day.perShareTotal / day.totalTrades : 0).toFixed(4)
         ),
         winRate: day.totalTrades ? (day.wins / day.totalTrades) * 100 : 0,
-        note: dayNotes.get(day.dayKey)?.notes || ""
+        note: journalDaysByDay.get(day.dayKey)?.notes || ""
       };
     })
     .sort((left, right) => right.dayKey.localeCompare(left.dayKey));
@@ -686,7 +716,9 @@ function JournalChartTooltip({ active, payload, label }) {
 function JournalDayCard({
   day,
   noteDraft,
+  feeDraft,
   onNoteChange,
+  onFeeChange,
   onSaveNote,
   onStartEditingNote,
   onCancelEditingNote,
@@ -866,7 +898,10 @@ function JournalDayCard({
             </div>
             <div className="ui-metric-tile">
               <div className="ui-title text-[10px] text-white/52">Total Costs</div>
-              <div className="mt-2 text-2xl font-semibold text-white">{formatCurrency(day.totalCosts)}</div>
+              <div className="mt-2 text-2xl font-semibold text-white">{formatCostCurrency(day.totalCosts)}</div>
+              <div className="mt-2 text-xs text-white/48">
+                SEC {formatCostCurrency(day.secFee)} · FINRA {formatCostCurrency(day.finraFee)}
+              </div>
             </div>
             <div className="ui-metric-tile sm:col-span-2">
               <div className="ui-title text-[10px] text-white/52">USD to EUR FX Rate</div>
@@ -878,7 +913,7 @@ function JournalDayCard({
                 <span className="min-w-0">
                   Costs EUR:{" "}
                   <span className="font-medium text-white">
-                    {day.fxRate ? formatEuroCurrency(day.totalCostsEur) : "Unavailable"}
+                    {day.fxRate ? formatCostCurrency(day.totalCostsEur, "EUR") : "Unavailable"}
                   </span>
                 </span>
                 <span className="min-w-0">
@@ -903,7 +938,7 @@ function JournalDayCard({
         <div className="rounded-[6px] border border-[var(--line)] bg-[rgba(255,255,255,0.05)] p-4">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div className="ui-title inline-flex min-h-[36px] items-center text-[10px] leading-none text-white/56">
-              Day Notes
+              Day Review
             </div>
             {!isEditingNote ? (
               <button
@@ -928,19 +963,45 @@ function JournalDayCard({
                   disabled={isSaving}
                   className="ui-button-solid px-4 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {isSaving ? "Saving..." : "Save notes"}
+                  {isSaving ? "Saving..." : "Save day"}
                 </button>
               </div>
             )}
           </div>
 
           {isEditingNote ? (
-            <RichTextEditor
-              value={noteDraft}
-              onChange={(value) => onNoteChange(day.dayKey, value)}
-              placeholder="Write your review, mistakes, strengths, and lessons from this trading day..."
-              minHeight={180}
-            />
+            <div className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block">
+                  <span className="mb-2 block text-xs font-medium text-white/72">SEC fee</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.0001"
+                    value={feeDraft.secFee}
+                    onChange={(event) => onFeeChange(day.dayKey, "secFee", event.target.value)}
+                    className="ui-input"
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-2 block text-xs font-medium text-white/72">FINRA fee</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.0001"
+                    value={feeDraft.finraFee}
+                    onChange={(event) => onFeeChange(day.dayKey, "finraFee", event.target.value)}
+                    className="ui-input"
+                  />
+                </label>
+              </div>
+              <RichTextEditor
+                value={noteDraft}
+                onChange={(value) => onNoteChange(day.dayKey, value)}
+                placeholder="Write your review, mistakes, strengths, and lessons from this trading day..."
+                minHeight={180}
+              />
+            </div>
           ) : day.note ? (
             <div className="rounded-[6px] border border-[var(--line)] bg-black px-4 py-4">
               <div
@@ -1055,6 +1116,7 @@ function JournalPage() {
   });
   const [page, setPage] = useState(1);
   const [draftNotes, setDraftNotes] = useState({});
+  const [draftDayFees, setDraftDayFees] = useState({});
   const [editingNotesByDay, setEditingNotesByDay] = useState({});
   const [savingDayKey, setSavingDayKey] = useState("");
   const [fxRatesByDay, setFxRatesByDay] = useState({});
@@ -1111,6 +1173,22 @@ function JournalPage() {
     }
 
     setDraftNotes((current) => ({
+      ...current,
+      ...nextDrafts
+    }));
+  }, [journalDaysResource.data]);
+
+  useEffect(() => {
+    const nextDrafts = {};
+
+    for (const day of journalDaysResource.data) {
+      nextDrafts[day.dayKey] = {
+        secFee: String(day.secFee ?? 0),
+        finraFee: String(day.finraFee ?? 0)
+      };
+    }
+
+    setDraftDayFees((current) => ({
       ...current,
       ...nextDrafts
     }));
@@ -1277,6 +1355,17 @@ function JournalPage() {
     }));
   }
 
+  function handleDayFeeChange(dayKey, field, value) {
+    setDraftDayFees((current) => ({
+      ...current,
+      [dayKey]: {
+        secFee: current[dayKey]?.secFee ?? "0",
+        finraFee: current[dayKey]?.finraFee ?? "0",
+        [field]: value
+      }
+    }));
+  }
+
   function handleStartEditingDay(dayKey) {
     setEditingNotesByDay((current) => ({
       ...current,
@@ -1289,6 +1378,14 @@ function JournalPage() {
       ...current,
       [dayKey]: value
     }));
+    const journalDay = journalDaysResource.data.find((day) => day.dayKey === dayKey);
+    setDraftDayFees((current) => ({
+      ...current,
+      [dayKey]: {
+        secFee: String(journalDay?.secFee ?? 0),
+        finraFee: String(journalDay?.finraFee ?? 0)
+      }
+    }));
     setEditingNotesByDay((current) => ({
       ...current,
       [dayKey]: false
@@ -1300,7 +1397,9 @@ function JournalPage() {
 
     try {
       await journalService.updateJournalDay(dayKey, {
-        notes: draftNotes[dayKey] ?? ""
+        notes: draftNotes[dayKey] ?? "",
+        secFee: Number(draftDayFees[dayKey]?.secFee || 0),
+        finraFee: Number(draftDayFees[dayKey]?.finraFee || 0)
       });
       await journalDaysResource.reload();
       notify({
@@ -1393,7 +1492,12 @@ function JournalPage() {
               key={day.dayKey}
               day={day}
               noteDraft={draftNotes[day.dayKey] ?? day.note ?? ""}
+              feeDraft={draftDayFees[day.dayKey] ?? {
+                secFee: String(day.secFee ?? 0),
+                finraFee: String(day.finraFee ?? 0)
+              }}
               onNoteChange={handleNotesChange}
+              onFeeChange={handleDayFeeChange}
               onSaveNote={handleSaveDay}
               onStartEditingNote={handleStartEditingDay}
               onCancelEditingNote={handleCancelEditingDay}

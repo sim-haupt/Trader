@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { formatCurrency, formatDate, formatDateTimeLocal, toMarketISOString } from "../utils/formatters";
+import { formatCostCurrency, formatCurrency, formatDate, formatDateTimeLocal, toMarketISOString } from "../utils/formatters";
 import { getTradeNetPnl } from "../utils/tradePnl";
 
 function createFormState(trade) {
@@ -246,8 +246,8 @@ function AdminTradeTable({
                       <td className="px-4 py-4 text-mist">{trade.entryPrice}</td>
                       <td className="px-4 py-4 text-mist">{trade.exitPrice ?? "-"}</td>
                       <td className="px-4 py-4 text-mist">{trade.quantity}</td>
-                      <td className="px-4 py-4 text-mist">{formatCurrency(Number(trade.commissions ?? 0))}</td>
-                      <td className="px-4 py-4 text-mist">{formatCurrency(Number(trade.fees ?? 0))}</td>
+                      <td className="px-4 py-4 text-mist">{formatCostCurrency(Number(trade.commissions ?? 0))}</td>
+                      <td className="px-4 py-4 text-mist">{formatCostCurrency(Number(trade.fees ?? 0))}</td>
                       <td
                         className={`px-4 py-4 font-semibold ${
                           pnl >= 0 ? "text-mint" : "text-coral"

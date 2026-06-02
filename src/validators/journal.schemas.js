@@ -7,7 +7,9 @@ const journalDayParamsSchema = z.object({
 });
 
 const journalDayNoteSchema = z.object({
-  notes: z.string().max(20000).nullable().optional()
+  notes: z.string().max(20000).nullable().optional(),
+  secFee: z.coerce.number().min(0).max(100000).optional(),
+  finraFee: z.coerce.number().min(0).max(100000).optional()
 });
 
 const journalFxRatesQuerySchema = z.object({
