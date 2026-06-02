@@ -939,7 +939,7 @@ function JournalDayCard({
             </div>
             <div className="ui-metric-tile">
               <div className="flex items-center justify-between gap-2">
-                <div className="ui-title text-[10px] text-white/52">Total Costs</div>
+                <div className="ui-title text-[10px] text-white/52">Commissions</div>
                 {!isEditingCosts ? (
                   <button
                     type="button"
@@ -998,7 +998,7 @@ function JournalDayCard({
                 <>
                   <div className="mt-2 text-2xl font-semibold text-white">{formatCostCurrency(day.totalCosts)}</div>
                   <div className="mt-2 text-xs text-white/48">
-                    SEC {formatCostCents(day.secFee)} · FINRA {formatCostCents(day.finraFee)}
+                    Commissions {formatCostCurrency(day.totalCommissions)} · SEC {formatCostCents(day.secFee)} · FINRA {formatCostCents(day.finraFee)}
                   </div>
                 </>
               )}
@@ -1011,7 +1011,7 @@ function JournalDayCard({
                   <span className="font-medium text-white">{formatFxRate(day.fxRate)}</span>
                 </span>
                 <span className="min-w-0">
-                  Costs EUR:{" "}
+                  Total Commissions EUR:{" "}
                   <span className="font-medium text-white">
                     {day.fxRate ? formatCostCurrency(day.totalCostsEur, "EUR") : "Unavailable"}
                   </span>

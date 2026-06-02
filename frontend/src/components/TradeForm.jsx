@@ -20,6 +20,20 @@ const initialState = {
   notes: ""
 };
 
+function formatCommissionInputValue(value) {
+  if (value === null || value === undefined || value === "") {
+    return "";
+  }
+
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue)) {
+    return "";
+  }
+
+  return String(Math.round(numericValue * 100) / 100);
+}
+
 function RemoveIcon() {
   return (
     <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className="ui-chip-remove-icon h-3.5 w-3.5">
@@ -41,7 +55,7 @@ function mapTradeToForm(trade) {
     exitPrice: trade.exitPrice ?? "",
     entryDate: formatDateTimeLocal(trade.entryDate),
     exitDate: formatDateTimeLocal(trade.exitDate),
-    commissions: trade.commissions ?? "",
+    commissions: formatCommissionInputValue(trade.commissions),
     fees: trade.fees ?? "",
     strategy: trade.strategy ?? "",
     tags: trade.tags ?? "",
@@ -177,7 +191,7 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
       quantity: Number(form.quantity),
       entryPrice: Number(form.entryPrice),
       exitPrice: form.exitPrice ? Number(form.exitPrice) : null,
-      commissions: form.commissions ? Number(form.commissions) : 0,
+      commissions: form.commissions ? Number(Number(form.commissions).toFixed(2)) : 0,
       fees: form.fees ? Number(form.fees) : 0,
       entryDate: toMarketISOString(form.entryDate),
       exitDate: form.exitDate ? toMarketISOString(form.exitDate) : null
@@ -250,21 +264,9 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
         <input
           name="commissions"
           type="number"
-          step="0.0001"
+          step="0.01"
           min="0"
           value={form.commissions}
-          onChange={handleChange}
-          className="ui-input"
-        />
-      </FormField>
-
-      <FormField label="Fees">
-        <input
-          name="fees"
-          type="number"
-          step="0.0001"
-          min="0"
-          value={form.fees}
           onChange={handleChange}
           className="ui-input"
         />

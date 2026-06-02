@@ -276,7 +276,7 @@ function sameDirectionAction(side) {
   return side === "LONG" ? "B" : "S";
 }
 
-function buildClosedTrade(state, notes = "Imported from trade text") {
+function buildClosedTrade(state, notes = null) {
   return {
     symbol: state.symbol,
     side: state.side,
@@ -295,7 +295,7 @@ function buildClosedTrade(state, notes = "Imported from trade text") {
 }
 
 function convertFillsToTrades(fills, options = {}) {
-  const notes = options.notes || "Imported from trade text";
+  const notes = options.notes ?? null;
   const states = new Map();
   const trades = [];
 
@@ -469,9 +469,7 @@ function parseTradesFromDasCsvRows(rows) {
     });
   });
 
-  const { trades, openPositions } = convertFillsToTrades(validFills, {
-    notes: "Imported from DAS Trader CSV"
-  });
+  const { trades, openPositions } = convertFillsToTrades(validFills);
 
   openPositions.forEach((position) => {
     invalidRows.push({
