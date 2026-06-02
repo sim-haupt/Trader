@@ -946,7 +946,7 @@ function JournalDayCard({
                 onClick={() => onStartEditingNote(day.dayKey)}
                 className="ui-button px-4 py-2 text-xs"
               >
-                {day.note ? "Edit notes" : "Add notes"}
+                Edit day
               </button>
             ) : (
               <div className="flex items-center gap-2">
@@ -1002,16 +1002,31 @@ function JournalDayCard({
                 minHeight={180}
               />
             </div>
-          ) : day.note ? (
-            <div className="rounded-[6px] border border-[var(--line)] bg-black px-4 py-4">
-              <div
-                className="prose prose-invert max-w-none text-sm text-white/72"
-                dangerouslySetInnerHTML={{ __html: normalizeRichTextHtml(day.note) }}
-              />
-            </div>
           ) : (
-            <div className="rounded-[6px] border border-dashed border-[var(--line)] bg-black px-4 py-5 text-sm text-white/40">
-              No notes captured for this trading day yet.
+            <div className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-[6px] border border-[var(--line)] bg-black px-4 py-3">
+                  <div className="ui-title text-[10px] text-white/52">SEC fee</div>
+                  <div className="mt-2 text-lg font-semibold text-white">{formatCostCurrency(day.secFee)}</div>
+                </div>
+                <div className="rounded-[6px] border border-[var(--line)] bg-black px-4 py-3">
+                  <div className="ui-title text-[10px] text-white/52">FINRA fee</div>
+                  <div className="mt-2 text-lg font-semibold text-white">{formatCostCurrency(day.finraFee)}</div>
+                </div>
+              </div>
+
+              {day.note ? (
+                <div className="rounded-[6px] border border-[var(--line)] bg-black px-4 py-4">
+                  <div
+                    className="prose prose-invert max-w-none text-sm text-white/72"
+                    dangerouslySetInnerHTML={{ __html: normalizeRichTextHtml(day.note) }}
+                  />
+                </div>
+              ) : (
+                <div className="rounded-[6px] border border-dashed border-[var(--line)] bg-black px-4 py-5 text-sm text-white/40">
+                  No notes captured for this trading day yet.
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1403,8 +1418,8 @@ function JournalPage() {
       });
       await journalDaysResource.reload();
       notify({
-        title: "Journal notes saved",
-        description: `Saved notes for ${formatDayLabel(dayKey)}.`,
+        title: "Journal day saved",
+        description: `Saved review and regulatory fees for ${formatDayLabel(dayKey)}.`,
         tone: "success"
       });
       setEditingNotesByDay((current) => ({
@@ -1412,7 +1427,7 @@ function JournalPage() {
         [dayKey]: false
       }));
     } catch (err) {
-      notify({ title: "Could not save day notes", description: err.message, tone: "error" });
+      notify({ title: "Could not save journal day", description: err.message, tone: "error" });
     } finally {
       setSavingDayKey("");
     }
