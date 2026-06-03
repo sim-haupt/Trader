@@ -1,5 +1,6 @@
 const asyncHandler = require("../middleware/async-handler");
 const journalService = require("../services/journal.service");
+const ApiError = require("../utils/ApiError");
 
 const listJournalDays = asyncHandler(async (req, res) => {
   const days = await journalService.listJournalDays(req.user);
@@ -32,8 +33,22 @@ const updateJournalDay = asyncHandler(async (req, res) => {
   });
 });
 
+const importJournalCommissions = asyncHandler(async (req, res) => {
+  if (!req.file) {
+    throw new ApiError(400, "Excel file is required");
+  }
+
+  const days = await journalService.importJournalCommissions(req.user, req.file);
+
+  res.status(200).json({
+    success: true,
+    data: days
+  });
+});
+
 module.exports = {
   listJournalDays,
   getUsdEurRates,
-  updateJournalDay
+  updateJournalDay,
+  importJournalCommissions
 };

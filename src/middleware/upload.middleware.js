@@ -1,7 +1,7 @@
 const multer = require("multer");
 const ApiError = require("../utils/ApiError");
 
-const upload = multer({
+const csvUpload = multer({
   storage: multer.memoryStorage(),
   limits: {
     fileSize: 5 * 1024 * 1024
@@ -20,4 +20,26 @@ const upload = multer({
   }
 });
 
-module.exports = upload;
+const excelUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024
+  },
+  fileFilter: (req, file, cb) => {
+    const fileName = file.originalname.toLowerCase();
+    const isExcel =
+      file.mimetype === "application/vnd.ms-excel" ||
+      file.mimetype === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+      fileName.endsWith(".xls") ||
+      fileName.endsWith(".xlsx");
+
+    if (!isExcel) {
+      return cb(new ApiError(400, "Only Excel files are allowed"));
+    }
+
+    cb(null, true);
+  }
+});
+
+module.exports = csvUpload;
+module.exports.excelUpload = excelUpload;

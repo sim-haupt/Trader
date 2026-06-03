@@ -28,6 +28,19 @@ const journalService = {
     return response.data.data;
   },
 
+  async importCommissionFile(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await api.post("/journal-days/import-commissions", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data"
+      }
+    });
+    clearJournalDayCache();
+    return response.data.data ?? [];
+  },
+
   async getUsdEurRates(dayKeys = []) {
     const uniqueDayKeys = [...new Set(dayKeys.filter(Boolean))];
     const missingDayKeys = uniqueDayKeys.filter((dayKey) => !fxRateCache.has(dayKey));

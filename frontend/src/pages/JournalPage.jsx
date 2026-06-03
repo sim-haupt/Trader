@@ -773,6 +773,7 @@ function JournalDayCard({
   onFeeChange,
   onSaveNote,
   onSaveCosts,
+  onImportCostsFile,
   onStartEditingNote,
   onStartEditingCosts,
   onCancelEditingNote,
@@ -781,6 +782,7 @@ function JournalDayCard({
   isEditingCosts,
   isSaving,
   isSavingCosts,
+  isImportingCosts,
   onOpenTrade,
   onExportTrades
 }) {
@@ -970,6 +972,26 @@ function JournalDayCard({
               </div>
               {isEditingCosts ? (
                 <div className="mt-3 space-y-3">
+                  <label className="block rounded-[6px] border border-dashed border-[var(--line)] bg-black/40 p-3">
+                    <span className="mb-2 block text-[10px] font-medium text-white/62">Upload commissions file</span>
+                    <input
+                      type="file"
+                      accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                      disabled={isImportingCosts}
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        event.target.value = "";
+
+                        if (file) {
+                          onImportCostsFile(day.dayKey, file);
+                        }
+                      }}
+                      className="block w-full text-xs text-white/62 file:mr-3 file:rounded-[6px] file:border file:border-[var(--line-strong)] file:bg-white/[0.08] file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white file:transition hover:file:bg-white/[0.12] disabled:cursor-not-allowed disabled:opacity-50"
+                    />
+                    <span className="mt-2 block text-[11px] text-white/42">
+                      {isImportingCosts ? "Importing..." : "Reads Equities commission totals by day."}
+                    </span>
+                  </label>
                   <div className="grid gap-3 sm:grid-cols-3">
                     {JOURNAL_COMMISSION_FIELDS.map((field) => (
                       <label key={field.key} className="block">
@@ -1208,6 +1230,7 @@ function JournalPage() {
   const [editingCostsByDay, setEditingCostsByDay] = useState({});
   const [savingDayKey, setSavingDayKey] = useState("");
   const [savingCostDayKey, setSavingCostDayKey] = useState("");
+  const [importingCostDayKey, setImportingCostDayKey] = useState("");
   const [fxRatesByDay, setFxRatesByDay] = useState({});
   const [loadingFxRates, setLoadingFxRates] = useState(false);
   const [fxRateError, setFxRateError] = useState("");
@@ -1547,6 +1570,24 @@ function JournalPage() {
     }
   }
 
+  async function handleImportCostsFile(dayKey, file) {
+    setImportingCostDayKey(dayKey);
+
+    try {
+      const importedDays = await journalService.importCommissionFile(file);
+      await journalDaysResource.reload();
+      notify({
+        title: "Commissions imported",
+        description: `Updated ${importedDays.length} ${importedDays.length === 1 ? "journal day" : "journal days"} from ${file.name}.`,
+        tone: "success"
+      });
+    } catch (err) {
+      notify({ title: "Could not import commissions", description: err.message, tone: "error" });
+    } finally {
+      setImportingCostDayKey("");
+    }
+  }
+
   const loading =
     tradesResource.loading ||
     journalDaysResource.loading ||
@@ -1626,6 +1667,7 @@ function JournalPage() {
               onFeeChange={handleDayFeeChange}
               onSaveNote={handleSaveDay}
               onSaveCosts={handleSaveCosts}
+              onImportCostsFile={handleImportCostsFile}
               onStartEditingNote={handleStartEditingDay}
               onStartEditingCosts={handleStartEditingCosts}
               onCancelEditingNote={handleCancelEditingDay}
@@ -1634,6 +1676,7 @@ function JournalPage() {
               isEditingCosts={Boolean(editingCostsByDay[day.dayKey])}
               isSaving={savingDayKey === day.dayKey}
               isSavingCosts={savingCostDayKey === day.dayKey}
+              isImportingCosts={importingCostDayKey === day.dayKey}
               onOpenTrade={(tradeId) => navigate(`/trades/${tradeId}`)}
               onExportTrades={exportJournalDayTrades}
             />

@@ -1,4 +1,5 @@
 const prisma = require("../config/prisma");
+const XLSX = require("xlsx");
 
 const fxRateCache = new Map();
 const USD_EUR_RATE_SOURCE = "frankfurter.dev";
@@ -21,6 +22,105 @@ const JOURNAL_FEE_FIELDS = [
   "nsccFee",
   "finraFee"
 ];
+
+const COMMISSION_COLUMN_MAP = {
+  Comm: "commissionFee",
+  "Ecn Fee": "ecnFee",
+  "ECN Fee": "ecnFee",
+  SEC: "secFee",
+  CAT: "catFee",
+  TAF: "tafFee",
+  NSCC: "nsccFee"
+};
+
+function parseMoney(value) {
+  if (value === null || value === undefined || value === "") {
+    return 0;
+  }
+
+  const normalizedValue = String(value).trim().replace(/[$,]/g, "");
+  const isNegative = /^\(.+\)$/.test(normalizedValue);
+  const numericValue = Number(normalizedValue.replace(/[()]/g, ""));
+
+  if (!Number.isFinite(numericValue)) {
+    return 0;
+  }
+
+  return isNegative ? -numericValue : numericValue;
+}
+
+function parseWorkbookDateKey(value) {
+  if (!value) {
+    return "";
+  }
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString().slice(0, 10);
+  }
+
+  const stringValue = String(value).trim();
+  const match = stringValue.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s|$)/);
+
+  if (!match) {
+    return "";
+  }
+
+  const [, month, day, year] = match;
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function normalizeHeader(value) {
+  return String(value || "").trim().replace(/\s+/g, " ");
+}
+
+function extractCommissionBreakdownRows(buffer) {
+  const workbook = XLSX.read(buffer, { type: "buffer", cellDates: true, raw: false });
+  const importedDays = [];
+
+  for (const sheetName of workbook.SheetNames) {
+    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
+      header: 1,
+      defval: "",
+      raw: false
+    });
+    let header = [];
+    let currentDayKey = "";
+
+    for (const row of rows) {
+      const firstCell = normalizeHeader(row[0]);
+      const rowDayKey = parseWorkbookDateKey(row[0]);
+
+      if (rowDayKey) {
+        currentDayKey = rowDayKey;
+      }
+
+      if (row.some((cell) => normalizeHeader(cell) === "Opened")) {
+        header = row.map(normalizeHeader);
+        continue;
+      }
+
+      if (firstCell.toLowerCase() !== "equities" || !currentDayKey || header.length === 0) {
+        continue;
+      }
+
+      const values = {};
+
+      for (const [columnName, fieldName] of Object.entries(COMMISSION_COLUMN_MAP)) {
+        const columnIndex = header.findIndex(
+          (headerName) => headerName.toLowerCase() === columnName.toLowerCase()
+        );
+        values[fieldName] = columnIndex >= 0 ? roundCurrencyMillis(parseMoney(row[columnIndex])) : 0;
+      }
+
+      importedDays.push({
+        dayKey: currentDayKey,
+        ...values
+      });
+    }
+  }
+
+  return importedDays;
+}
 
 async function fetchUsdEurRate(dayKey) {
   const cached = fxRateCache.get(dayKey);
@@ -123,6 +223,33 @@ async function updateJournalDay(actor, dayKey, payload) {
   });
 }
 
+async function importJournalCommissions(actor, file) {
+  const importedDays = extractCommissionBreakdownRows(file.buffer);
+
+  if (importedDays.length === 0) {
+    return [];
+  }
+
+  const accountScope = actor.activeAccountScope || "SIMULATOR";
+  const savedDays = [];
+
+  for (const day of importedDays) {
+    const savedDay = await updateJournalDay(actor, day.dayKey, {
+      commissionFee: day.commissionFee,
+      ecnFee: day.ecnFee,
+      secFee: day.secFee,
+      catFee: day.catFee,
+      tafFee: day.tafFee,
+      nsccFee: day.nsccFee,
+      finraFee: day.tafFee
+    });
+
+    savedDays.push(savedDay);
+  }
+
+  return savedDays.filter((day) => day.accountScope === accountScope);
+}
+
 async function getUsdEurRates(dayKeys) {
   const normalizedDayKeys = normalizeDayKeys(dayKeys);
   const rates = await Promise.all(normalizedDayKeys.map((dayKey) => fetchUsdEurRate(dayKey)));
@@ -136,5 +263,6 @@ async function getUsdEurRates(dayKeys) {
 module.exports = {
   listJournalDays,
   updateJournalDay,
+  importJournalCommissions,
   getUsdEurRates
 };

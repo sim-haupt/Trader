@@ -2,6 +2,7 @@ const express = require("express");
 const journalController = require("../controllers/journal.controller");
 const validate = require("../middleware/validate.middleware");
 const { authenticate } = require("../middleware/auth.middleware");
+const { excelUpload } = require("../middleware/upload.middleware");
 const {
   journalDayParamsSchema,
   journalDayNoteSchema,
@@ -17,6 +18,11 @@ router.get(
   "/fx-rates",
   validate(journalFxRatesQuerySchema, "query"),
   journalController.getUsdEurRates
+);
+router.post(
+  "/import-commissions",
+  excelUpload.single("file"),
+  journalController.importJournalCommissions
 );
 router.patch(
   "/:dayKey",
