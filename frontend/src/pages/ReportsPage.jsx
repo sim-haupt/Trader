@@ -536,6 +536,7 @@ function summarizeTrades(trades, dayCountOverride, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
   const defaultFees = options.defaultFees || 0;
   const pnlType = options.pnlType || "NET";
+  const journalCommissionsByDay = options.journalCommissionsByDay || new Map();
   const sortedTrades = [...trades].sort(
     (a, b) => new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime()
   );
