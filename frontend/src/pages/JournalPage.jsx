@@ -37,6 +37,11 @@ import {
   getTradeNetPnl
 } from "../utils/tradePnl";
 import { normalizeRichTextHtml } from "../utils/richText";
+import {
+  JOURNAL_COMMISSION_FIELDS,
+  getJournalCommissionTotal,
+  getJournalCommissionValue
+} from "../utils/journalCommissions";
 
 const PAGE_SIZE = 5;
 const JOURNAL_CHART_EDGE_PADDING_MS = 60 * 60 * 1000;
@@ -238,6 +243,13 @@ function formatCostCents(value, currency = "USD") {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }).format(Number(value || 0));
+}
+
+function buildJournalFeeDraft(day = {}) {
+  return JOURNAL_COMMISSION_FIELDS.reduce((draft, field) => {
+    draft[field.key] = String(getJournalCommissionValue(day, field.key));
+    return draft;
+  }, {});
 }
 
 function buildTradePnl(trade, pnlType, defaultCommission, defaultFees) {
@@ -472,8 +484,7 @@ function exportJournalDayTrades(day) {
     "Gross P&L USD",
     "Commissions USD",
     "Trade Fees USD",
-    "SEC Fee USD",
-    "FINRA Fee USD",
+    ...JOURNAL_COMMISSION_FIELDS.map((field) => `${field.label} USD`),
     "Total Costs USD",
     "Net P&L USD",
     "USD/EUR FX Rate",
@@ -481,8 +492,7 @@ function exportJournalDayTrades(day) {
     "Gross P&L EUR",
     "Commissions EUR",
     "Trade Fees EUR",
-    "SEC Fee EUR",
-    "FINRA Fee EUR",
+    ...JOURNAL_COMMISSION_FIELDS.map((field) => `${field.label} EUR`),
     "Total Costs EUR",
     "Net P&L EUR",
     "Day Total Net P&L USD",
@@ -504,8 +514,7 @@ function exportJournalDayTrades(day) {
     Number(trade.dayPnl ?? 0).toFixed(2),
     Number(trade.dayCommissions ?? 0).toFixed(4),
     Number(trade.dayFees ?? 0).toFixed(4),
-    "",
-    "",
+    ...JOURNAL_COMMISSION_FIELDS.map(() => ""),
     Number(trade.dayCosts ?? 0).toFixed(4),
     Number(trade.dayNetPnl ?? 0).toFixed(2),
     day.fxRate ?? "",
@@ -513,8 +522,7 @@ function exportJournalDayTrades(day) {
     day.fxRate ? Number(trade.dayPnlEur ?? 0).toFixed(2) : "",
     day.fxRate ? Number(trade.dayCommissionsEur ?? 0).toFixed(4) : "",
     day.fxRate ? Number(trade.dayFeesEur ?? 0).toFixed(4) : "",
-    "",
-    "",
+    ...JOURNAL_COMMISSION_FIELDS.map(() => ""),
     day.fxRate ? Number(trade.dayCostsEur ?? 0).toFixed(4) : "",
     day.fxRate ? Number(trade.dayNetPnlEur ?? 0).toFixed(2) : "",
     Number(day.totalNetPnl ?? 0).toFixed(2),
@@ -535,19 +543,17 @@ function exportJournalDayTrades(day) {
     "",
     "",
     Number(day.totalPnl ?? 0).toFixed(2),
-    Number(day.totalCommissions ?? 0).toFixed(4),
+    Number(day.totalTradeCommissions ?? 0).toFixed(4),
     Number(day.totalFees ?? 0).toFixed(4),
-    formatCents(day.secFee),
-    formatCents(day.finraFee),
+    ...JOURNAL_COMMISSION_FIELDS.map((field) => formatCents(day[field.key])),
     Number(day.totalCosts ?? 0).toFixed(4),
     Number(day.totalNetPnl ?? 0).toFixed(2),
     day.fxRate ?? "",
     day.fxRateDate ?? "",
     day.fxRate ? Number(day.totalPnlEur ?? 0).toFixed(2) : "",
-    day.fxRate ? Number(day.totalCommissionsEur ?? 0).toFixed(4) : "",
+    day.fxRate ? Number(day.totalTradeCommissionsEur ?? 0).toFixed(4) : "",
     day.fxRate ? Number(day.totalFeesEur ?? 0).toFixed(4) : "",
-    day.fxRate ? formatCents(day.secFeeEur) : "",
-    day.fxRate ? formatCents(day.finraFeeEur) : "",
+    ...JOURNAL_COMMISSION_FIELDS.map((field) => (day.fxRate ? formatCents(day[`${field.key}Eur`]) : "")),
     day.fxRate ? Number(day.totalCostsEur ?? 0).toFixed(4) : "",
     day.fxRate ? Number(day.totalNetPnlEur ?? 0).toFixed(2) : "",
     Number(day.totalNetPnl ?? 0).toFixed(2),
@@ -565,7 +571,7 @@ function buildDailyJournal(
   defaultFees,
   fxRatesByDay = {},
   includeDayKeys = [],
-  pnlType = "GROSS"
+  pnlType = "NET"
 ) {
   const grouped = new Map();
 
@@ -576,13 +582,14 @@ function buildDailyJournal(
       continue;
     }
 
-    const pnl = buildTradePnl(trade, pnlType, defaultCommission, defaultFees);
+    const grossPnl = getTradeGrossPnl(trade);
     const netPnl = getTradeNetPnl(trade, defaultCommission, defaultFees);
+    const pnl = pnlType === "NET" ? grossPnl : buildTradePnl(trade, pnlType, defaultCommission, defaultFees);
     const quantity = Number(trade.quantity || 0);
     const perSharePnl = Math.abs(quantity) > 0 ? pnl / Math.abs(quantity) : 0;
     const commissions = getEffectiveTradeCommission(trade);
     const fees = getTradeFeeDisplayValue(trade);
-    const costs = commissions;
+    const costs = commissions + fees;
     const fxRate = Number(fxRatesByDay[dayKey]?.rate);
     const hasFxRate = Number.isFinite(fxRate);
     const existing = grouped.get(dayKey) || {
@@ -592,7 +599,8 @@ function buildDailyJournal(
       trades: [],
       totalTrades: 0,
       totalVolume: 0,
-      totalCommissions: 0,
+      totalTradeCommissions: 0,
+      totalTradeCommissionsEur: 0,
       totalCommissionsEur: 0,
       totalFees: 0,
       totalFeesEur: 0,
@@ -628,8 +636,8 @@ function buildDailyJournal(
     });
     existing.totalTrades += 1;
     existing.totalVolume += quantity;
-    existing.totalCommissions += commissions;
-    existing.totalCommissionsEur += hasFxRate ? commissions * fxRate : 0;
+    existing.totalTradeCommissions += commissions;
+    existing.totalTradeCommissionsEur += hasFxRate ? commissions * fxRate : 0;
     existing.totalFees += fees;
     existing.totalFeesEur += hasFxRate ? fees * fxRate : 0;
     existing.totalCosts += costs;
@@ -661,7 +669,8 @@ function buildDailyJournal(
       trades: [],
       totalTrades: 0,
       totalVolume: 0,
-      totalCommissions: 0,
+      totalTradeCommissions: 0,
+      totalTradeCommissionsEur: 0,
       totalCommissionsEur: 0,
       totalFees: 0,
       totalFeesEur: 0,
@@ -688,25 +697,32 @@ function buildDailyJournal(
         ...day,
         trades: visualization.trades,
         chartData: visualization.chartData,
-        secFee: Number(Number(day.secFee || 0).toFixed(2)),
-        secFeeEur: day.fxRate ? Number((Number(day.secFee || 0) * day.fxRate).toFixed(2)) : null,
-        finraFee: Number(Number(day.finraFee || 0).toFixed(2)),
-        finraFeeEur: day.fxRate ? Number((Number(day.finraFee || 0) * day.fxRate).toFixed(2)) : null,
-        totalPnl: Number((day.totalPnl - (pnlType === "NET" ? Number(day.secFee || 0) + Number(day.finraFee || 0) : 0)).toFixed(2)),
+        ...Object.fromEntries(
+          JOURNAL_COMMISSION_FIELDS.flatMap((field) => {
+            const value = Number(getJournalCommissionValue(day, field.key).toFixed(2));
+            return [
+              [field.key, value],
+              [`${field.key}Eur`, day.fxRate ? Number((value * day.fxRate).toFixed(2)) : null]
+            ];
+          })
+        ),
+        totalPnl: Number((day.totalPnl - (pnlType === "NET" ? getJournalCommissionTotal(day) : 0)).toFixed(2)),
         totalPnlEur: day.fxRate
-          ? Number((day.totalPnlEur - (pnlType === "NET" ? (Number(day.secFee || 0) + Number(day.finraFee || 0)) * day.fxRate : 0)).toFixed(2))
+          ? Number((day.totalPnlEur - (pnlType === "NET" ? getJournalCommissionTotal(day) * day.fxRate : 0)).toFixed(2))
           : null,
-        totalNetPnl: Number((day.totalNetPnl - Number(day.secFee || 0) - Number(day.finraFee || 0)).toFixed(2)),
+        totalNetPnl: Number((day.totalPnl - getJournalCommissionTotal(day)).toFixed(2)),
         totalNetPnlEur: day.fxRate
-          ? Number((day.totalNetPnlEur - (Number(day.secFee || 0) + Number(day.finraFee || 0)) * day.fxRate).toFixed(2))
+          ? Number((day.totalPnlEur - getJournalCommissionTotal(day) * day.fxRate).toFixed(2))
           : null,
-        totalCommissions: Number(day.totalCommissions.toFixed(4)),
-        totalCommissionsEur: day.fxRate ? Number(day.totalCommissionsEur.toFixed(4)) : null,
+        totalCommissions: getJournalCommissionTotal(day),
+        totalCommissionsEur: day.fxRate ? Number((getJournalCommissionTotal(day) * day.fxRate).toFixed(4)) : null,
+        totalTradeCommissions: Number(day.totalTradeCommissions.toFixed(4)),
+        totalTradeCommissionsEur: day.fxRate ? Number(day.totalTradeCommissionsEur.toFixed(4)) : null,
         totalFees: Number(day.totalFees.toFixed(4)),
         totalFeesEur: day.fxRate ? Number(day.totalFeesEur.toFixed(4)) : null,
-        totalCosts: Number((day.totalCosts + Number(day.secFee || 0) + Number(day.finraFee || 0)).toFixed(4)),
+        totalCosts: getJournalCommissionTotal(day),
         totalCostsEur: day.fxRate
-          ? Number((day.totalCostsEur + (Number(day.secFee || 0) + Number(day.finraFee || 0)) * day.fxRate).toFixed(4))
+          ? Number((getJournalCommissionTotal(day) * day.fxRate).toFixed(4))
           : null,
         averagePerShare: Number(
           (day.totalTrades > 0 ? day.perShareTotal / day.totalTrades : 0).toFixed(4)
@@ -954,28 +970,21 @@ function JournalDayCard({
               </div>
               {isEditingCosts ? (
                 <div className="mt-3 space-y-3">
-                  <label className="block">
-                    <span className="mb-1 block text-[10px] font-medium text-white/62">SEC fee</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={feeDraft.secFee}
-                      onChange={(event) => onFeeChange(day.dayKey, "secFee", event.target.value)}
-                      className="ui-input px-3 py-2 text-sm"
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="mb-1 block text-[10px] font-medium text-white/62">FINRA fee</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={feeDraft.finraFee}
-                      onChange={(event) => onFeeChange(day.dayKey, "finraFee", event.target.value)}
-                      className="ui-input px-3 py-2 text-sm"
-                    />
-                  </label>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    {JOURNAL_COMMISSION_FIELDS.map((field) => (
+                      <label key={field.key} className="block">
+                        <span className="mb-1 block text-[10px] font-medium text-white/62">{field.label}</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.001"
+                          value={feeDraft[field.key] ?? "0"}
+                          onChange={(event) => onFeeChange(day.dayKey, field.key, event.target.value)}
+                          className="ui-input px-3 py-2 text-sm"
+                        />
+                      </label>
+                    ))}
+                  </div>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
@@ -998,7 +1007,7 @@ function JournalDayCard({
                 <>
                   <div className="mt-2 text-2xl font-semibold text-white">{formatCostCurrency(day.totalCosts)}</div>
                   <div className="mt-2 text-xs text-white/48">
-                    Commissions {formatCostCurrency(day.totalCommissions)} · SEC {formatCostCents(day.secFee)} · FINRA {formatCostCents(day.finraFee)}
+                    {JOURNAL_COMMISSION_FIELDS.map((field) => `${field.label} ${formatCostCents(day[field.key])}`).join(" · ")}
                   </div>
                 </>
               )}
@@ -1011,7 +1020,7 @@ function JournalDayCard({
                   <span className="font-medium text-white">{formatFxRate(day.fxRate)}</span>
                 </span>
                 <span className="min-w-0">
-                  Total Commissions EUR:{" "}
+                  Comm/Fees EUR:{" "}
                   <span className="font-medium text-white">
                     {day.fxRate ? formatCostCurrency(day.totalCostsEur, "EUR") : "Unavailable"}
                   </span>
@@ -1202,7 +1211,7 @@ function JournalPage() {
   const [fxRatesByDay, setFxRatesByDay] = useState({});
   const [loadingFxRates, setLoadingFxRates] = useState(false);
   const [fxRateError, setFxRateError] = useState("");
-  const [pnlType, setPnlType] = useState("GROSS");
+  const [pnlType, setPnlType] = useState("NET");
 
   const tradesResource = useCachedAsyncResource({
     peek: () => tradeService.peekAllTrades(),
@@ -1262,10 +1271,7 @@ function JournalPage() {
     const nextDrafts = {};
 
     for (const day of journalDaysResource.data) {
-      nextDrafts[day.dayKey] = {
-        secFee: String(day.secFee ?? 0),
-        finraFee: String(day.finraFee ?? 0)
-      };
+      nextDrafts[day.dayKey] = buildJournalFeeDraft(day);
     }
 
     setDraftDayFees((current) => ({
@@ -1439,8 +1445,8 @@ function JournalPage() {
     setDraftDayFees((current) => ({
       ...current,
       [dayKey]: {
-        secFee: current[dayKey]?.secFee ?? "0",
-        finraFee: current[dayKey]?.finraFee ?? "0",
+        ...buildJournalFeeDraft(),
+        ...(current[dayKey] || {}),
         [field]: value
       }
     }));
@@ -1468,10 +1474,7 @@ function JournalPage() {
     const journalDay = journalDaysResource.data.find((day) => day.dayKey === dayKey);
     setDraftDayFees((current) => ({
       ...current,
-      [dayKey]: {
-        secFee: String(journalDay?.secFee ?? 0),
-        finraFee: String(journalDay?.finraFee ?? 0)
-      }
+      [dayKey]: buildJournalFeeDraft(journalDay)
     }));
     setEditingNotesByDay((current) => ({
       ...current,
@@ -1483,10 +1486,7 @@ function JournalPage() {
     const journalDay = journalDaysResource.data.find((day) => day.dayKey === dayKey);
     setDraftDayFees((current) => ({
       ...current,
-      [dayKey]: {
-        secFee: String(journalDay?.secFee ?? 0),
-        finraFee: String(journalDay?.finraFee ?? 0)
-      }
+      [dayKey]: buildJournalFeeDraft(journalDay)
     }));
     setEditingCostsByDay((current) => ({
       ...current,
@@ -1523,13 +1523,17 @@ function JournalPage() {
 
     try {
       await journalService.updateJournalDay(dayKey, {
-        secFee: Number(draftDayFees[dayKey]?.secFee || 0),
-        finraFee: Number(draftDayFees[dayKey]?.finraFee || 0)
+        ...Object.fromEntries(
+          JOURNAL_COMMISSION_FIELDS.map((field) => [
+            field.key,
+            Number(draftDayFees[dayKey]?.[field.key] || 0)
+          ])
+        )
       });
       await journalDaysResource.reload();
       notify({
-        title: "Regulatory fees saved",
-        description: `Saved SEC and FINRA fees for ${formatDayLabel(dayKey)}.`,
+        title: "Commissions saved",
+        description: `Saved commission breakdown for ${formatDayLabel(dayKey)}.`,
         tone: "success"
       });
       setEditingCostsByDay((current) => ({
@@ -1570,8 +1574,8 @@ function JournalPage() {
         <div className="mb-4 flex justify-end">
           <div className="ui-segment">
             {[
-              { key: "GROSS", label: "Gross" },
-              { key: "NET", label: "Net" }
+              { key: "NET", label: "Net" },
+              { key: "GROSS", label: "Gross" }
             ].map((option) => (
               <button
                 key={option.key}
@@ -1617,10 +1621,7 @@ function JournalPage() {
               key={day.dayKey}
               day={day}
               noteDraft={draftNotes[day.dayKey] ?? day.note ?? ""}
-              feeDraft={draftDayFees[day.dayKey] ?? {
-                secFee: String(day.secFee ?? 0),
-                finraFee: String(day.finraFee ?? 0)
-              }}
+              feeDraft={draftDayFees[day.dayKey] ?? buildJournalFeeDraft(day)}
               onNoteChange={handleNotesChange}
               onFeeChange={handleDayFeeChange}
               onSaveNote={handleSaveDay}

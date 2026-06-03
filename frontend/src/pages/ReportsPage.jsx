@@ -24,6 +24,7 @@ import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 import tagService from "../services/tagService";
 import strategyService from "../services/strategyService";
 import tradeService from "../services/tradeService";
+import journalService from "../services/journalService";
 import { formatCostCurrency, formatCurrency, formatPercent } from "../utils/formatters";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -33,6 +34,7 @@ import {
   getTradePnlByType
 } from "../utils/tradePnl";
 import { isUsMarketDay } from "../utils/marketCalendar";
+import { buildJournalCommissionMap } from "../utils/journalCommissions";
 
 const TAB_ITEMS = [
   "Overview",
@@ -198,7 +200,8 @@ function formatAxisCurrency(value) {
 function buildOverviewSeries(trades, rangeDays, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
   const defaultFees = options.defaultFees || 0;
-  const pnlType = options.pnlType || "GROSS";
+  const pnlType = options.pnlType || "NET";
+  const journalCommissionsByDay = options.journalCommissionsByDay || new Map();
   if (trades.length === 0) {
     return {
       grossDaily: [],
@@ -280,11 +283,13 @@ function buildOverviewSeries(trades, rangeDays, options = {}) {
       wins: 0
     };
 
-    const dayPnl = pnlType === "GROSS" ? stats.grossPnl : stats.netPnl;
+    const journalCommissions = Number(journalCommissionsByDay.get(dayKey) || 0);
+    const dayPnl = pnlType === "GROSS" ? stats.grossPnl : stats.grossPnl - journalCommissions;
     runningEquity = Number((runningEquity + dayPnl).toFixed(2));
 
     days.push({
       ...stats,
+      displayPnl: dayPnl,
       cumulativePnl: runningEquity,
       winRate: stats.trades ? Number(((stats.wins / stats.trades) * 100).toFixed(2)) : 0
     });
@@ -296,7 +301,7 @@ function buildOverviewSeries(trades, rangeDays, options = {}) {
     grossDaily: days.map((day) => ({
       date: day.date,
       label: day.label,
-      grossPnl: pnlType === "GROSS" ? day.grossPnl : day.netPnl
+      grossPnl: day.displayPnl
     })),
     cumulative: days.map((day) => ({
       date: day.date,
@@ -415,7 +420,7 @@ function calculateSqn(summary) {
   return (Math.sqrt(n) * summary.averageTradeGainLoss) / summary.tradePnlStdDev;
 }
 
-function calculateDrawdownStats(sortedTrades, defaultCommission, defaultFees, pnlType) {
+function calculateDrawdownStats(sortedTrades, defaultCommission, defaultFees, pnlType, journalCommissionsByDay = new Map()) {
   if (sortedTrades.length === 0) {
     return {
       averageDrawdown: 0,
@@ -438,15 +443,26 @@ function calculateDrawdownStats(sortedTrades, defaultCommission, defaultFees, pn
       pnl: 0,
       trades: 0
     };
+    const pnl = pnlType === "NET"
+      ? getTradeGrossPnl(trade)
+      : getTradePnlByType(trade, pnlType, defaultCommission, defaultFees);
 
     current.pnl = Number(
-      (current.pnl + getTradePnlByType(trade, pnlType, defaultCommission, defaultFees)).toFixed(2)
+      (current.pnl + pnl).toFixed(2)
     );
     current.trades += 1;
     dailyMap.set(dayKey, current);
   }
 
   const dailySeries = Array.from(dailyMap.values()).sort((a, b) => a.date - b.date);
+  if (pnlType === "NET") {
+    for (const [dayKey, amount] of journalCommissionsByDay.entries()) {
+      const current = dailyMap.get(dayKey);
+      if (current) {
+        current.pnl = Number((current.pnl - Number(amount || 0)).toFixed(2));
+      }
+    }
+  }
   let runningEquity = 0;
   let peakEquity = 0;
   let currentEpisode = null;
@@ -519,7 +535,7 @@ function calculateDrawdownStats(sortedTrades, defaultCommission, defaultFees, pn
 function summarizeTrades(trades, dayCountOverride, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
   const defaultFees = options.defaultFees || 0;
-  const pnlType = options.pnlType || "GROSS";
+  const pnlType = options.pnlType || "NET";
   const sortedTrades = [...trades].sort(
     (a, b) => new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime()
   );
@@ -549,7 +565,9 @@ function summarizeTrades(trades, dayCountOverride, options = {}) {
   let effectiveCommissions = 0;
 
   for (const trade of sortedTrades) {
-    const pnl = getTradePnlByType(trade, pnlType, defaultCommission, defaultFees);
+    const pnl = pnlType === "NET"
+      ? getTradeGrossPnl(trade)
+      : getTradePnlByType(trade, pnlType, defaultCommission, defaultFees);
     const quantity = Math.abs(asNumber(trade.quantity));
     const perShare = quantity > 0 ? pnl / quantity : 0;
     const holdMinutes = getHoldMinutes(trade);
@@ -595,6 +613,16 @@ function summarizeTrades(trades, dayCountOverride, options = {}) {
     }
   }
 
+  const journalCommissionTotal =
+    pnlType === "NET"
+      ? [...dailyStats.keys()].reduce(
+          (total, dayKey) => total + Number(journalCommissionsByDay.get(dayKey) || 0),
+          0
+        )
+      : 0;
+  totalPnl = Number((totalPnl - journalCommissionTotal).toFixed(2));
+  effectiveCommissions = pnlType === "NET" ? journalCommissionTotal : effectiveCommissions;
+
   const totalTrades = sortedTrades.length;
   const totalDays = Math.max(dayCountOverride ?? dailyStats.size, 1);
   const randomChanceProbability = calculateRandomChanceProbability(winningTrades, losingTrades);
@@ -604,7 +632,13 @@ function summarizeTrades(trades, dayCountOverride, options = {}) {
     averageWinningTrade: winningTrades ? totalWinningPnl / winningTrades : 0,
     averageLosingTrade: losingTrades ? totalLosingPnl / losingTrades : 0
   });
-  const drawdownStats = calculateDrawdownStats(sortedTrades, defaultCommission, defaultFees, pnlType);
+  const drawdownStats = calculateDrawdownStats(
+    sortedTrades,
+    defaultCommission,
+    defaultFees,
+    pnlType,
+    journalCommissionsByDay
+  );
 
   return {
     totalPnl,
@@ -704,7 +738,7 @@ function buildDetailedStats(trades, options = {}) {
 function buildDetailedBreakdownStats(trades, timeframeMinutes, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
   const defaultFees = options.defaultFees || 0;
-  const pnlType = options.pnlType || "GROSS";
+  const pnlType = options.pnlType || "NET";
 
   const weekdayMap = new Map(
     WEEKDAY_ORDER.map((day) => [day, { label: day, count: 0, pnl: 0 }])
@@ -766,7 +800,7 @@ function buildDetailedBreakdownStats(trades, timeframeMinutes, options = {}) {
 function buildBucketStats(trades, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
   const defaultFees = options.defaultFees || 0;
-  const pnlType = options.pnlType || "GROSS";
+  const pnlType = options.pnlType || "NET";
 
   const makeBuckets = (labels) =>
     new Map(labels.map((label) => [label, { label, count: 0, pnl: 0 }]));
@@ -855,7 +889,7 @@ function buildBucketStats(trades, options = {}) {
 function buildInstrumentStats(trades, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
   const defaultFees = options.defaultFees || 0;
-  const pnlType = options.pnlType || "GROSS";
+  const pnlType = options.pnlType || "NET";
 
   const symbolMap = new Map();
   const volumeBuckets = new Map(
@@ -1035,7 +1069,7 @@ function buildWinLossDayRows(summary) {
 function buildWinVsLossDaysStats(trades, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
   const defaultFees = options.defaultFees || 0;
-  const pnlType = options.pnlType || "GROSS";
+  const pnlType = options.pnlType || "NET";
   const dayMap = new Map();
 
   for (const trade of trades) {
@@ -2083,7 +2117,7 @@ function applyReportFilters(trades, filters, rangeDays) {
 function applyCompareGroupFilters(trades, filters, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
   const defaultFees = options.defaultFees || 0;
-  const pnlType = options.pnlType || "GROSS";
+  const pnlType = options.pnlType || "NET";
   let nextTrades = [...trades];
 
   if (filters.symbol) {
@@ -2143,7 +2177,7 @@ function ReportsPage() {
   const [filters, setFilters] = useState(REPORT_FILTERS);
   const [groupAFilters, setGroupAFilters] = useState(COMPARE_GROUP_FILTERS);
   const [groupBFilters, setGroupBFilters] = useState(COMPARE_GROUP_FILTERS);
-  const [pnlType, setPnlType] = useState("GROSS");
+  const [pnlType, setPnlType] = useState("NET");
   const [detailedTimeframeKey, setDetailedTimeframeKey] = useState("60");
   const [detailedBreakdownTab, setDetailedBreakdownTab] = useState("Days/Times");
   const [winLossBreakdownTab, setWinLossBreakdownTab] = useState("Days/Times");
@@ -2170,8 +2204,18 @@ function ReportsPage() {
     initialValue: [],
     deps: []
   });
+  const { data: journalDays = [] } = useCachedAsyncResource({
+    peek: () => journalService.peekJournalDays(),
+    load: () => journalService.getJournalDays(),
+    initialValue: [],
+    deps: [user?.activeAccountScope]
+  });
 
   const activeRange = RANGE_OPTIONS.find((item) => item.key === rangeKey) || RANGE_OPTIONS[0];
+  const journalCommissionsByDay = useMemo(
+    () => buildJournalCommissionMap(journalDays),
+    [journalDays]
+  );
   const filteredTrades = useMemo(
     () => applyReportFilters(trades, filters, activeRange.days),
     [trades, filters, activeRange.days]
@@ -2180,26 +2224,29 @@ function ReportsPage() {
     () => buildOverviewSeries(filteredTrades, activeRange.days, {
       defaultCommission: user?.defaultCommission ?? 0,
       defaultFees: user?.defaultFees ?? 0,
-      pnlType
+      pnlType,
+      journalCommissionsByDay
     }),
-    [filteredTrades, activeRange.days, user?.defaultCommission, user?.defaultFees, pnlType]
+    [filteredTrades, activeRange.days, user?.defaultCommission, user?.defaultFees, pnlType, journalCommissionsByDay]
   );
   const reportSummary = useMemo(
     () =>
       summarizeTrades(filteredTrades, undefined, {
         defaultCommission: user?.defaultCommission ?? 0,
         defaultFees: user?.defaultFees ?? 0,
-        pnlType
+        pnlType,
+        journalCommissionsByDay
       }),
-    [filteredTrades, user?.defaultCommission, user?.defaultFees, pnlType]
+    [filteredTrades, user?.defaultCommission, user?.defaultFees, pnlType, journalCommissionsByDay]
   );
   const detailedStats = useMemo(
     () => buildDetailedStats(filteredTrades, {
       defaultCommission: user?.defaultCommission ?? 0,
       defaultFees: user?.defaultFees ?? 0,
-      pnlType
+      pnlType,
+      journalCommissionsByDay
     }),
-    [filteredTrades, user?.defaultCommission, user?.defaultFees, pnlType]
+    [filteredTrades, user?.defaultCommission, user?.defaultFees, pnlType, journalCommissionsByDay]
   );
   const detailedBreakdownStats = useMemo(() => {
     const timeframe =
@@ -2452,8 +2499,8 @@ function ReportsPage() {
             value={pnlType}
             onChange={(nextValue) => setPnlType(nextValue)}
             options={[
-              { label: "Gross", value: "GROSS" },
-              { label: "Net", value: "NET" }
+              { label: "Net", value: "NET" },
+              { label: "Gross", value: "GROSS" }
             ]}
             className="max-w-[150px]"
             buttonClassName="max-w-[150px]"

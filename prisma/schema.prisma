@@ -167,7 +167,12 @@ model JournalDay {
   accountScope AccountScope @default(SIMULATOR)
   dayKey    String
   notes     String?
+  commissionFee Decimal @default(0) @db.Decimal(18, 4)
+  ecnFee    Decimal  @default(0) @db.Decimal(18, 4)
   secFee    Decimal  @default(0) @db.Decimal(18, 4)
+  catFee    Decimal  @default(0) @db.Decimal(18, 4)
+  tafFee    Decimal  @default(0) @db.Decimal(18, 4)
+  nsccFee   Decimal  @default(0) @db.Decimal(18, 4)
   finraFee  Decimal  @default(0) @db.Decimal(18, 4)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

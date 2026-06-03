@@ -7,10 +7,20 @@ function normalizeDayKeys(dayKeys) {
   return [...new Set((dayKeys || []).map((dayKey) => String(dayKey || "").trim()).filter(Boolean))];
 }
 
-function roundCurrencyCents(value) {
+function roundCurrencyMillis(value) {
   const numericValue = Number(value || 0);
-  return Number.isFinite(numericValue) ? Number(numericValue.toFixed(2)) : 0;
+  return Number.isFinite(numericValue) ? Number(numericValue.toFixed(3)) : 0;
 }
+
+const JOURNAL_FEE_FIELDS = [
+  "commissionFee",
+  "ecnFee",
+  "secFee",
+  "catFee",
+  "tafFee",
+  "nsccFee",
+  "finraFee"
+];
 
 async function fetchUsdEurRate(dayKey) {
   const cached = fxRateCache.get(dayKey);
@@ -76,20 +86,16 @@ async function updateJournalDay(actor, dayKey, payload) {
       : payload.notes === null || payload.notes === ""
         ? null
         : String(payload.notes);
-  const secFee = payload.secFee === undefined ? undefined : roundCurrencyCents(payload.secFee);
-  const finraFee = payload.finraFee === undefined ? undefined : roundCurrencyCents(payload.finraFee);
   const update = {};
 
   if (notes !== undefined) {
     update.notes = notes;
   }
 
-  if (secFee !== undefined) {
-    update.secFee = secFee;
-  }
-
-  if (finraFee !== undefined) {
-    update.finraFee = finraFee;
+  for (const field of JOURNAL_FEE_FIELDS) {
+    if (payload[field] !== undefined) {
+      update[field] = roundCurrencyMillis(payload[field]);
+    }
   }
 
   return prisma.journalDay.upsert({
@@ -105,8 +111,13 @@ async function updateJournalDay(actor, dayKey, payload) {
       accountScope: actor.activeAccountScope || "SIMULATOR",
       dayKey,
       notes: notes === undefined ? null : notes,
-      secFee: secFee === undefined ? 0 : secFee,
-      finraFee: finraFee === undefined ? 0 : finraFee
+      commissionFee: update.commissionFee ?? 0,
+      ecnFee: update.ecnFee ?? 0,
+      secFee: update.secFee ?? 0,
+      catFee: update.catFee ?? 0,
+      tafFee: update.tafFee ?? update.finraFee ?? 0,
+      nsccFee: update.nsccFee ?? 0,
+      finraFee: update.finraFee ?? update.tafFee ?? 0
     },
     update
   });

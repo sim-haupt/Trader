@@ -3,9 +3,11 @@ import AnalyticsCharts from "../components/AnalyticsCharts";
 import EmptyState from "../components/ui/EmptyState";
 import LoadingState from "../components/ui/LoadingState";
 import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
+import journalService from "../services/journalService";
 import tradeService from "../services/tradeService";
 import { buildAnalytics } from "../utils/analytics";
 import { useAuth } from "../context/AuthContext";
+import { buildJournalCommissionMap } from "../utils/journalCommissions";
 
 const RANGE_OPTIONS = [
   { key: "7", label: "7D", days: 7 },
@@ -16,8 +18,8 @@ const RANGE_OPTIONS = [
   { key: "ALL", label: "ALL", days: null }
 ];
 const PNL_OPTIONS = [
-  { key: "GROSS", label: "Gross" },
-  { key: "NET", label: "Net" }
+  { key: "NET", label: "Net" },
+  { key: "GROSS", label: "Gross" }
 ];
 
 function filterTradesByRange(trades, days) {
@@ -35,7 +37,7 @@ function filterTradesByRange(trades, days) {
 function DashboardPage() {
   const { user } = useAuth();
   const [rangeKey, setRangeKey] = useState("ALL");
-  const [pnlType, setPnlType] = useState("GROSS");
+  const [pnlType, setPnlType] = useState("NET");
   const {
     data: trades,
     error,
@@ -46,11 +48,21 @@ function DashboardPage() {
     initialValue: [],
     deps: [user?.activeAccountScope]
   });
+  const { data: journalDays = [] } = useCachedAsyncResource({
+    peek: () => journalService.peekJournalDays(),
+    load: () => journalService.getJournalDays(),
+    initialValue: [],
+    deps: [user?.activeAccountScope]
+  });
 
   const activeRange = RANGE_OPTIONS.find((option) => option.key === rangeKey) || RANGE_OPTIONS[0];
   const filteredTrades = useMemo(
     () => filterTradesByRange(trades, activeRange.days),
     [trades, activeRange.days]
+  );
+  const journalCommissionsByDay = useMemo(
+    () => buildJournalCommissionMap(journalDays),
+    [journalDays]
   );
 
   if (loading) {
@@ -113,7 +125,8 @@ function DashboardPage() {
           analytics={buildAnalytics(filteredTrades, {
             defaultCommission: user?.defaultCommission ?? 0,
             defaultFees: user?.defaultFees ?? 0,
-            pnlType
+            pnlType,
+            journalCommissionsByDay
           })}
         />
       )}

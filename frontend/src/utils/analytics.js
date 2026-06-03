@@ -272,7 +272,8 @@ function buildDailyEquityAndDrawdownCurves(dailyMap) {
 export function buildAnalytics(trades, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
   const defaultFees = options.defaultFees || 0;
-  const pnlType = options.pnlType || "GROSS";
+  const pnlType = options.pnlType || "NET";
+  const journalCommissionsByDay = options.journalCommissionsByDay || new Map();
   const sortedTrades = [...trades].sort(
     (a, b) => new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime()
   );
@@ -314,7 +315,9 @@ export function buildAnalytics(trades, options = {}) {
 
   const processedTrades = sortedTrades.map((trade) => {
     const entryDate = new Date(trade.entryDate);
-    const pnl = getTradePnlByType(trade, pnlType, defaultCommission, defaultFees);
+    const pnl = pnlType === "NET"
+      ? getTradeGrossPnl(trade)
+      : getTradePnlByType(trade, pnlType, defaultCommission, defaultFees);
     const quantity = Math.abs(asNumber(trade.quantity));
     const holdMinutes = getHoldMinutes(trade, entryDate);
     const perSharePnl = quantity > 0 ? pnl / quantity : 0;
@@ -384,10 +387,22 @@ export function buildAnalytics(trades, options = {}) {
     };
   });
 
+  if (pnlType === "NET") {
+    for (const [dayKey, amount] of journalCommissionsByDay.entries()) {
+      const stats = dailyMap.get(dayKey);
+      if (stats) {
+        stats.pnl = Number((stats.pnl - Number(amount || 0)).toFixed(2));
+      }
+    }
+  }
+
   const tradeCount = processedTrades.length;
   const averageWin = wins ? totalWin / wins : 0;
   const averageLoss = losses ? totalLoss / losses : 0;
-  const totalPnl = processedTrades.reduce((sum, item) => sum + item.pnl, 0);
+  const journalCommissionTotal = pnlType === "NET"
+    ? [...dailyMap.keys()].reduce((sum, dayKey) => sum + Number(journalCommissionsByDay.get(dayKey) || 0), 0)
+    : 0;
+  const totalPnl = processedTrades.reduce((sum, item) => sum + item.pnl, 0) - journalCommissionTotal;
   const averageTradePnl = tradeCount ? totalPnl / tradeCount : 0;
   const expectancyPerTrade = tradeCount
     ? (wins / tradeCount) * averageWin - (losses / tradeCount) * averageLoss
@@ -410,17 +425,25 @@ export function buildAnalytics(trades, options = {}) {
     (sum, item) =>
       item.entryDate >= currentMonthStart && item.entryDate <= currentDayEnd ? sum + item.pnl : sum,
     0
-  );
+  ) - (pnlType === "NET"
+    ? [...dailyMap.keys()]
+        .filter((dayKey) => new Date(`${dayKey}T00:00:00`) >= currentMonthStart && new Date(`${dayKey}T00:00:00`) <= currentDayEnd)
+        .reduce((sum, dayKey) => sum + Number(journalCommissionsByDay.get(dayKey) || 0), 0)
+    : 0);
   const totalWeekPnl = processedTrades.reduce(
     (sum, item) =>
       item.entryDate >= currentWeekStart && item.entryDate <= currentDayEnd ? sum + item.pnl : sum,
     0
-  );
+  ) - (pnlType === "NET"
+    ? [...dailyMap.keys()]
+        .filter((dayKey) => new Date(`${dayKey}T00:00:00`) >= currentWeekStart && new Date(`${dayKey}T00:00:00`) <= currentDayEnd)
+        .reduce((sum, dayKey) => sum + Number(journalCommissionsByDay.get(dayKey) || 0), 0)
+    : 0);
   const totalTodayPnl = processedTrades.reduce(
     (sum, item) =>
       getLocalDayKey(item.entryDate) === currentMarketDayKey ? sum + item.pnl : sum,
     0
-  );
+  ) - (pnlType === "NET" ? Number(journalCommissionsByDay.get(currentMarketDayKey) || 0) : 0);
 
   const lastSevenDays = getLastMarketDayKeys(currentMarketDayKey, 7).map((dayKey) => {
     const stats = dailyMap.get(dayKey);
