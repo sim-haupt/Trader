@@ -446,12 +446,7 @@ function parseTradesFromDasCsvRows(rows) {
     const price = toNumber(getRowValue(row, ["price", "avg price", "fill price"]));
     const datetime = normalizeDateTime(getRowValue(row, ["time", "datetime", "date/time", "order time"]));
     const action = normalizeDasAction(getRowValue(row, ["B/S", "side", "action", "buy/sell"]));
-    const commissions = sumNumericFields(row, [
-      "commission",
-      "Commission",
-      "commissions",
-      "Commissions"
-    ]);
+    const commissions = 0;
     const fees = 0;
     const errors = [];
 
