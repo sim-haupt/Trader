@@ -260,18 +260,6 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
         />
       </FormField>
 
-      <FormField label="Commissions">
-        <input
-          name="commissions"
-          type="number"
-          step="0.01"
-          min="0"
-          value={form.commissions}
-          onChange={handleChange}
-          className="ui-input"
-        />
-      </FormField>
-
       <FormField label="Entry Date">
         <input
           name="entryDate"

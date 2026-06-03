@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { formatCostCurrency, formatCurrency, formatDate, formatDateTimeLocal, toMarketISOString } from "../utils/formatters";
+import { formatCurrency, formatDate, formatDateTimeLocal, toMarketISOString } from "../utils/formatters";
 import { getTradeNetPnl } from "../utils/tradePnl";
 
 function createFormState(trade) {
@@ -85,8 +85,6 @@ function AdminTradeTable({
               <th className="px-4 py-4">Entry</th>
               <th className="px-4 py-4">Exit</th>
               <th className="px-4 py-4">Quantity</th>
-              <th className="px-4 py-4">Commissions</th>
-              <th className="px-4 py-4">Fees</th>
               <th className="px-4 py-4">P&amp;L</th>
               <th className="px-4 py-4">P&amp;L / Share</th>
               <th className="px-4 py-4">Strategy</th>
@@ -169,26 +167,6 @@ function AdminTradeTable({
                           className="ui-input w-28 px-3 py-2"
                         />
                       </td>
-                      <td className="px-4 py-4">
-                        <input
-                          name="commissions"
-                          type="number"
-                          step="0.0001"
-                          value={draft.commissions}
-                          onChange={handleChange}
-                          className="ui-input w-24 px-3 py-2"
-                        />
-                      </td>
-                      <td className="px-4 py-4">
-                        <input
-                          name="fees"
-                          type="number"
-                          step="0.0001"
-                          value={draft.fees}
-                          onChange={handleChange}
-                          className="ui-input w-24 px-3 py-2"
-                        />
-                      </td>
                       <td className="px-4 py-4 text-slate-300">{formatCurrency(pnl)}</td>
                       <td className="px-4 py-4 text-slate-300">{formatCurrency(perSharePnl)}</td>
                       <td className="px-4 py-4">
@@ -246,8 +224,6 @@ function AdminTradeTable({
                       <td className="px-4 py-4 text-mist">{trade.entryPrice}</td>
                       <td className="px-4 py-4 text-mist">{trade.exitPrice ?? "-"}</td>
                       <td className="px-4 py-4 text-mist">{trade.quantity}</td>
-                      <td className="px-4 py-4 text-mist">{formatCostCurrency(Number(trade.commissions ?? 0))}</td>
-                      <td className="px-4 py-4 text-mist">{formatCostCurrency(Number(trade.fees ?? 0))}</td>
                       <td
                         className={`px-4 py-4 font-semibold ${
                           pnl >= 0 ? "text-mint" : "text-coral"

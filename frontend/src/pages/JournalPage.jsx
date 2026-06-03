@@ -922,10 +922,14 @@ function JournalDayCard({
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-3">
             <div className="ui-metric-tile">
               <div className="ui-title text-[10px] text-white/52">Total Trades</div>
               <div className="mt-2 text-2xl font-semibold text-white">{day.totalTrades}</div>
+            </div>
+            <div className="ui-metric-tile">
+              <div className="ui-title text-[10px] text-white/52">Total Volume</div>
+              <div className="mt-2 text-2xl font-semibold text-white">{Math.round(day.totalVolume).toLocaleString()}</div>
             </div>
             <div className="ui-metric-tile">
               <div className="ui-title text-[10px] text-white/52">Win %</div>
@@ -933,11 +937,7 @@ function JournalDayCard({
                 {hasTrades ? `${day.winRate.toFixed(1)}%` : "No trades"}
               </div>
             </div>
-            <div className="ui-metric-tile">
-              <div className="ui-title text-[10px] text-white/52">Total Volume</div>
-              <div className="mt-2 text-2xl font-semibold text-white">{Math.round(day.totalVolume).toLocaleString()}</div>
-            </div>
-            <div className="ui-metric-tile">
+            <div className="ui-metric-tile sm:col-span-3">
               <div className="flex items-center justify-between gap-2">
                 <div className="ui-title text-[10px] text-white/52">Commissions</div>
                 {!isEditingCosts ? (
@@ -1003,7 +1003,7 @@ function JournalDayCard({
                 </>
               )}
             </div>
-            <div className="ui-metric-tile sm:col-span-2">
+            <div className="ui-metric-tile sm:col-span-3">
               <div className="ui-title text-[10px] text-white/52">USD to EUR FX Rate</div>
               <div className="mt-3 grid gap-3 text-xs text-white/54 sm:grid-cols-3">
                 <span className="min-w-0">

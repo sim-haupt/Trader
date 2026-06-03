@@ -40,7 +40,7 @@ function TradeTable({
   onToggleAll
 }) {
   const allSelected = trades.length > 0 && trades.every((trade) => selectedIds.includes(trade.id));
-  const columnCount = (onToggleSelection ? 1 : 0) + 9 + (showActions ? 1 : 0);
+  const columnCount = (onToggleSelection ? 1 : 0) + 8 + (showActions ? 1 : 0);
 
   return (
     <div className="ui-table-shell">
@@ -64,7 +64,6 @@ function TradeTable({
               <th className="px-4 py-4">TAGS</th>
               <th className="px-4 py-4">QUANTITY</th>
               <th className="px-4 py-4">EXECUTIONS</th>
-              <th className="px-4 py-4">COMMISSIONS</th>
               <th className="px-4 py-4">P&amp;L</th>
               <th className="px-4 py-4">P&amp;L / SHARE</th>
               {showActions && <th className="px-4 py-4">ACTIONS</th>}
@@ -151,7 +150,6 @@ function TradeTable({
                     </td>
                     <td className="px-4 py-4 text-white/84">{trade.quantity}</td>
                     <td className="px-4 py-4 text-white/84">{executionCount || "-"}</td>
-                    <td className="px-4 py-4 text-white/84">{formatCurrency(Number(trade.commissions ?? 0))}</td>
                     <td
                       className={`px-4 py-4 font-semibold ${
                         pnl >= 0 ? "text-mint" : "text-coral"

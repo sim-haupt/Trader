@@ -18,7 +18,7 @@ import TradeReviewCharts from "./TradeReviewCharts";
 import Card from "./ui/Card";
 import LoadingState from "./ui/LoadingState";
 import RichTextEditor from "./ui/RichTextEditor";
-import { formatCostCurrency, formatCurrency, formatDate, formatDateTimeLocal } from "../utils/formatters";
+import { formatCurrency, formatDate, formatDateTimeLocal } from "../utils/formatters";
 import { normalizeRichTextHtml } from "../utils/richText";
 import {
   buildDayRunningPnl,
@@ -300,8 +300,6 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
 
   const activeTrade = editableTrade || tradeDetail || trade;
   const tradePnl = getTradePnl(activeTrade);
-  const tradeCommissions = Number(activeTrade?.commissions ?? 0);
-  const tradeFees = Number(activeTrade?.fees ?? 0);
   const holdMinutes = getTradeHoldMinutes(activeTrade);
   const executionCount = getDisplayedExecutionCount(activeTrade);
   const tradeRunningPnl = useMemo(
@@ -506,15 +504,13 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
             </div>
           )}
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <SummaryMetric
               label="Trade P&L"
               value={formatCurrency(tradePnl)}
               accent={tradePnl >= 0 ? "text-mint" : "text-coral"}
             />
             <SummaryMetric label="Quantity" value={String(activeTrade.quantity)} />
-            <SummaryMetric label="Commissions" value={formatCostCurrency(tradeCommissions)} />
-            <SummaryMetric label="Fees" value={formatCostCurrency(tradeFees)} />
             <SummaryMetric label="Hold Time" value={formatHoldTime(holdMinutes)} />
             <SummaryMetric label="Executions" value={String(executionCount)} />
           </div>

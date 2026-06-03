@@ -99,13 +99,23 @@ function normalizeCsvFormat(value) {
 }
 
 function hasAnyHeader(record, headers) {
-  return headers.some((header) => Object.prototype.hasOwnProperty.call(record, header));
+  const normalizedRecordHeaders = new Set(
+    Object.keys(record).map((header) => String(header || "").trim().toLowerCase())
+  );
+
+  return headers.some((header) => normalizedRecordHeaders.has(String(header).toLowerCase()));
 }
 
 function detectCsvFormat(records, requestedFormat) {
   const firstRecord = records[0] || {};
 
-  if (hasAnyHeader(firstRecord, ["B/S"]) && hasAnyHeader(firstRecord, ["symb", "qty", "price", "time"])) {
+  if (
+    hasAnyHeader(firstRecord, ["B/S", "side", "action", "buy/sell"]) &&
+    hasAnyHeader(firstRecord, ["symb", "symbol", "ticker"]) &&
+    hasAnyHeader(firstRecord, ["qty", "quantity", "shares"]) &&
+    hasAnyHeader(firstRecord, ["price", "avg price", "fill price"]) &&
+    hasAnyHeader(firstRecord, ["time", "datetime", "date/time", "order time"])
+  ) {
     return "das";
   }
 

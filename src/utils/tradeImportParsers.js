@@ -397,15 +397,43 @@ function convertFillsToTrades(fills, options = {}) {
 function normalizeDasAction(value) {
   const normalizedValue = String(value || "").trim().toUpperCase();
 
-  if (normalizedValue === "B" || normalizedValue === "BUY") {
+  if (
+    normalizedValue === "B" ||
+    normalizedValue === "BUY" ||
+    normalizedValue === "BOT" ||
+    normalizedValue === "BOUGHT"
+  ) {
     return "B";
   }
 
-  if (normalizedValue === "S" || normalizedValue === "SELL") {
+  if (
+    normalizedValue === "S" ||
+    normalizedValue === "SELL" ||
+    normalizedValue === "SLD" ||
+    normalizedValue === "SOLD"
+  ) {
     return "S";
   }
 
   return normalizedValue;
+}
+
+function getRowValue(row, fieldNames) {
+  const normalizedEntries = Object.entries(row).map(([key, value]) => [
+    String(key || "").trim().toLowerCase(),
+    value
+  ]);
+
+  for (const fieldName of fieldNames) {
+    const normalizedFieldName = String(fieldName || "").trim().toLowerCase();
+    const match = normalizedEntries.find(([key]) => key === normalizedFieldName);
+
+    if (match) {
+      return match[1];
+    }
+  }
+
+  return undefined;
 }
 
 function parseTradesFromDasCsvRows(rows) {
@@ -413,11 +441,11 @@ function parseTradesFromDasCsvRows(rows) {
   const validFills = [];
 
   rows.forEach((row, index) => {
-    const symbol = String(row.symb || row.Symbol || row.symbol || "").trim().toUpperCase();
-    const quantity = toNumber(row.qty || row.Quantity || row.quantity);
-    const price = toNumber(row.price || row.Price);
-    const datetime = normalizeDateTime(row.time || row.Time || row.datetime);
-    const action = normalizeDasAction(row["B/S"] || row.Action || row.action);
+    const symbol = String(getRowValue(row, ["symb", "symbol", "ticker"]) || "").trim().toUpperCase();
+    const quantity = toNumber(getRowValue(row, ["qty", "quantity", "shares"]));
+    const price = toNumber(getRowValue(row, ["price", "avg price", "fill price"]));
+    const datetime = normalizeDateTime(getRowValue(row, ["time", "datetime", "date/time", "order time"]));
+    const action = normalizeDasAction(getRowValue(row, ["B/S", "side", "action", "buy/sell"]));
     const commissions = sumNumericFields(row, [
       "commission",
       "Commission",
