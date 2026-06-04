@@ -990,31 +990,30 @@ function JournalDayCard({
               </div>
               {isEditingCosts ? (
                 <div className="mt-3 space-y-3">
-                  <label className="block rounded-[6px] border border-dashed border-[var(--line)] bg-black/40 p-3">
+                  <label className="block">
                     <span className="mb-2 block text-[10px] font-medium text-white/62">Upload commissions file</span>
-                    <input
-                      key={selectedCostFile?.name || "empty"}
-                      type="file"
-                      accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                      disabled={isImportingCosts}
-                      onChange={(event) => {
-                        const file = event.target.files?.[0];
-                        onCostFileChange(day.dayKey, file || null);
-                      }}
-                      className="block w-full text-xs text-white/62 file:mr-3 file:rounded-[6px] file:border file:border-[var(--line-strong)] file:bg-white/[0.08] file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white file:transition hover:file:bg-white/[0.12] disabled:cursor-not-allowed disabled:opacity-50"
-                    />
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center">
+                      <div className="ui-panel flex-1 border-dashed p-3">
+                      <input
+                        key={selectedCostFile?.name || "empty"}
+                        type="file"
+                        accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        disabled={isImportingCosts}
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          onCostFileChange(day.dayKey, file || null);
+                        }}
+                        className="block w-full text-sm text-white/72 file:mr-4 file:rounded-[6px] file:border file:border-[var(--line)] file:bg-white file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-[#0c1522] hover:file:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+                      />
+                      </div>
                       <button
                         type="button"
                         onClick={() => onImportCostsFile(day.dayKey, selectedCostFile)}
                         disabled={!selectedCostFile || isImportingCosts}
-                        className="ui-button-solid px-3 py-1.5 text-[11px] disabled:cursor-not-allowed disabled:opacity-50"
+                        className="ui-button-solid shrink-0 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {isImportingCosts ? "Uploading..." : "Upload"}
                       </button>
-                      <span className="text-[11px] text-white/42">
-                        {selectedCostFile ? selectedCostFile.name : "Reads Equities commission totals by day."}
-                      </span>
                     </div>
                   </label>
                   <div className="grid gap-3 sm:grid-cols-3">
