@@ -252,6 +252,21 @@ function buildJournalFeeDraft(day = {}) {
   }, {});
 }
 
+function mergeJournalDays(currentDays = [], updatedDays = []) {
+  const byDayKey = new Map(currentDays.map((day) => [day.dayKey, day]));
+
+  for (const day of updatedDays) {
+    if (day?.dayKey) {
+      byDayKey.set(day.dayKey, {
+        ...(byDayKey.get(day.dayKey) || {}),
+        ...day
+      });
+    }
+  }
+
+  return [...byDayKey.values()];
+}
+
 function buildTradePnl(trade, pnlType, defaultCommission, defaultFees) {
   return pnlType === "NET"
     ? getTradeNetPnl(trade, defaultCommission, defaultFees)
@@ -692,6 +707,13 @@ function buildDailyJournal(
   return [...grouped.values()]
     .map((day) => {
       const visualization = buildJournalVisualization(day.dayKey, day.trades);
+      const journalCommissionTotal = getJournalCommissionTotal(day);
+      const totalGrossPnlEur = day.fxRate ? Number(day.totalPnlEur.toFixed(2)) : null;
+      const totalCommissionEur = day.fxRate ? Number((journalCommissionTotal * day.fxRate).toFixed(2)) : null;
+      const totalNetPnlEur =
+        totalGrossPnlEur !== null && totalCommissionEur !== null
+          ? Number((totalGrossPnlEur - totalCommissionEur).toFixed(2))
+          : null;
 
       return {
         ...day,
@@ -706,24 +728,18 @@ function buildDailyJournal(
             ];
           })
         ),
-        totalPnl: Number((day.totalPnl - (pnlType === "NET" ? getJournalCommissionTotal(day) : 0)).toFixed(2)),
-        totalPnlEur: day.fxRate
-          ? Number((day.totalPnlEur - (pnlType === "NET" ? getJournalCommissionTotal(day) * day.fxRate : 0)).toFixed(2))
-          : null,
-        totalNetPnl: Number((day.totalPnl - getJournalCommissionTotal(day)).toFixed(2)),
-        totalNetPnlEur: day.fxRate
-          ? Number((day.totalPnlEur - getJournalCommissionTotal(day) * day.fxRate).toFixed(2))
-          : null,
-        totalCommissions: Number(getJournalCommissionTotal(day).toFixed(2)),
-        totalCommissionsEur: day.fxRate ? Number((getJournalCommissionTotal(day) * day.fxRate).toFixed(2)) : null,
+        totalPnl: Number((day.totalPnl - (pnlType === "NET" ? journalCommissionTotal : 0)).toFixed(2)),
+        totalPnlEur: pnlType === "NET" ? totalNetPnlEur : totalGrossPnlEur,
+        totalNetPnl: Number((day.totalPnl - journalCommissionTotal).toFixed(2)),
+        totalNetPnlEur,
+        totalCommissions: Number(journalCommissionTotal.toFixed(2)),
+        totalCommissionsEur: totalCommissionEur,
         totalTradeCommissions: Number(day.totalTradeCommissions.toFixed(2)),
         totalTradeCommissionsEur: day.fxRate ? Number(day.totalTradeCommissionsEur.toFixed(2)) : null,
         totalFees: Number(day.totalFees.toFixed(2)),
         totalFeesEur: day.fxRate ? Number(day.totalFeesEur.toFixed(2)) : null,
-        totalCosts: Number(getJournalCommissionTotal(day).toFixed(2)),
-        totalCostsEur: day.fxRate
-          ? Number((getJournalCommissionTotal(day) * day.fxRate).toFixed(2))
-          : null,
+        totalCosts: Number(journalCommissionTotal.toFixed(2)),
+        totalCostsEur: totalCommissionEur,
         averagePerShare: Number(
           (day.totalTrades > 0 ? day.perShareTotal / day.totalTrades : 0).toFixed(4)
         ),
@@ -774,6 +790,7 @@ function JournalDayCard({
   onSaveNote,
   onSaveCosts,
   onImportCostsFile,
+  onCostFileChange,
   onStartEditingNote,
   onStartEditingCosts,
   onCancelEditingNote,
@@ -783,6 +800,7 @@ function JournalDayCard({
   isSaving,
   isSavingCosts,
   isImportingCosts,
+  selectedCostFile,
   onOpenTrade,
   onExportTrades
 }) {
@@ -975,22 +993,29 @@ function JournalDayCard({
                   <label className="block rounded-[6px] border border-dashed border-[var(--line)] bg-black/40 p-3">
                     <span className="mb-2 block text-[10px] font-medium text-white/62">Upload commissions file</span>
                     <input
+                      key={selectedCostFile?.name || "empty"}
                       type="file"
                       accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                       disabled={isImportingCosts}
                       onChange={(event) => {
                         const file = event.target.files?.[0];
-                        event.target.value = "";
-
-                        if (file) {
-                          onImportCostsFile(day.dayKey, file);
-                        }
+                        onCostFileChange(day.dayKey, file || null);
                       }}
                       className="block w-full text-xs text-white/62 file:mr-3 file:rounded-[6px] file:border file:border-[var(--line-strong)] file:bg-white/[0.08] file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white file:transition hover:file:bg-white/[0.12] disabled:cursor-not-allowed disabled:opacity-50"
                     />
-                    <span className="mt-2 block text-[11px] text-white/42">
-                      {isImportingCosts ? "Importing..." : "Reads Equities commission totals by day."}
-                    </span>
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => onImportCostsFile(day.dayKey, selectedCostFile)}
+                        disabled={!selectedCostFile || isImportingCosts}
+                        className="ui-button-solid px-3 py-1.5 text-[11px] disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {isImportingCosts ? "Uploading..." : "Upload"}
+                      </button>
+                      <span className="text-[11px] text-white/42">
+                        {selectedCostFile ? selectedCostFile.name : "Reads Equities commission totals by day."}
+                      </span>
+                    </div>
                   </label>
                   <div className="grid gap-3 sm:grid-cols-3">
                     {JOURNAL_COMMISSION_FIELDS.map((field) => (
@@ -1228,6 +1253,7 @@ function JournalPage() {
   const [draftDayFees, setDraftDayFees] = useState({});
   const [editingNotesByDay, setEditingNotesByDay] = useState({});
   const [editingCostsByDay, setEditingCostsByDay] = useState({});
+  const [selectedCostFilesByDay, setSelectedCostFilesByDay] = useState({});
   const [savingDayKey, setSavingDayKey] = useState("");
   const [savingCostDayKey, setSavingCostDayKey] = useState("");
   const [importingCostDayKey, setImportingCostDayKey] = useState("");
@@ -1475,6 +1501,13 @@ function JournalPage() {
     }));
   }
 
+  function handleCostFileChange(dayKey, file) {
+    setSelectedCostFilesByDay((current) => ({
+      ...current,
+      [dayKey]: file
+    }));
+  }
+
   function handleStartEditingDay(dayKey) {
     setEditingNotesByDay((current) => ({
       ...current,
@@ -1510,6 +1543,10 @@ function JournalPage() {
     setDraftDayFees((current) => ({
       ...current,
       [dayKey]: buildJournalFeeDraft(journalDay)
+    }));
+    setSelectedCostFilesByDay((current) => ({
+      ...current,
+      [dayKey]: null
     }));
     setEditingCostsByDay((current) => ({
       ...current,
@@ -1571,11 +1608,24 @@ function JournalPage() {
   }
 
   async function handleImportCostsFile(dayKey, file) {
+    if (!file) {
+      notify({ title: "Choose a commissions file first", tone: "error" });
+      return;
+    }
+
     setImportingCostDayKey(dayKey);
 
     try {
       const importedDays = await journalService.importCommissionFile(file);
-      await journalDaysResource.reload();
+      journalDaysResource.setData((current) => mergeJournalDays(current, importedDays));
+      setDraftDayFees((current) => ({
+        ...current,
+        ...Object.fromEntries(importedDays.map((day) => [day.dayKey, buildJournalFeeDraft(day)]))
+      }));
+      setSelectedCostFilesByDay((current) => ({
+        ...current,
+        [dayKey]: null
+      }));
       notify({
         title: "Commissions imported",
         description: `Updated ${importedDays.length} ${importedDays.length === 1 ? "journal day" : "journal days"} from ${file.name}.`,
@@ -1668,6 +1718,7 @@ function JournalPage() {
               onSaveNote={handleSaveDay}
               onSaveCosts={handleSaveCosts}
               onImportCostsFile={handleImportCostsFile}
+              onCostFileChange={handleCostFileChange}
               onStartEditingNote={handleStartEditingDay}
               onStartEditingCosts={handleStartEditingCosts}
               onCancelEditingNote={handleCancelEditingDay}
@@ -1677,6 +1728,7 @@ function JournalPage() {
               isSaving={savingDayKey === day.dayKey}
               isSavingCosts={savingCostDayKey === day.dayKey}
               isImportingCosts={importingCostDayKey === day.dayKey}
+              selectedCostFile={selectedCostFilesByDay[day.dayKey] || null}
               onOpenTrade={(tradeId) => navigate(`/trades/${tradeId}`)}
               onExportTrades={exportJournalDayTrades}
             />
