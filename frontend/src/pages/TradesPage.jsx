@@ -661,26 +661,26 @@ function TradesPage() {
 
         return {
           day_total_gross_pnl_usd: formatCurrency(totals.grossPnlUsd),
-          day_total_commissions_usd: formatCurrency(totals.commissionsUsd, 4),
-          day_total_trade_fees_usd: formatCurrency(totals.feesUsd, 4),
+          day_total_commissions_usd: formatCurrency(totals.commissionsUsd),
+          day_total_trade_fees_usd: formatCurrency(totals.feesUsd),
           ...Object.fromEntries(
             JOURNAL_COMMISSION_FIELDS.map((field) => [
               `day_total_${field.key}_usd`,
               formatCurrency(totals.journalFeesUsd[field.key])
             ])
           ),
-          day_total_costs_usd: formatCurrency(totals.costsUsd, 4),
+          day_total_costs_usd: formatCurrency(totals.costsUsd),
           day_total_net_pnl_usd: formatCurrency(totals.netPnlUsd),
           day_total_gross_pnl_eur: formatCurrency(totals.grossPnlEur),
-          day_total_commissions_eur: formatCurrency(totals.commissionsEur, 4),
-          day_total_trade_fees_eur: formatCurrency(totals.feesEur, 4),
+          day_total_commissions_eur: formatCurrency(totals.commissionsEur),
+          day_total_trade_fees_eur: formatCurrency(totals.feesEur),
           ...Object.fromEntries(
             JOURNAL_COMMISSION_FIELDS.map((field) => [
               `day_total_${field.key}_eur`,
               formatCurrency(totals.journalFeesEur[field.key])
             ])
           ),
-          day_total_costs_eur: formatCurrency(totals.costsEur, 4),
+          day_total_costs_eur: formatCurrency(totals.costsEur),
           day_total_net_pnl_eur: formatCurrency(totals.netPnlEur)
         };
       };
@@ -712,16 +712,16 @@ function TradesPage() {
               strategy: trade.strategy ?? "",
               tags: trade.tags ?? "",
               gross_pnl_usd: formatCurrency(grossPnl),
-              commissions_usd: formatCurrency(commissions, 4),
-              trade_fees_usd: formatCurrency(fees, 4),
-              total_costs_usd: formatCurrency(costs, 4),
+              commissions_usd: formatCurrency(commissions),
+              trade_fees_usd: formatCurrency(fees),
+              total_costs_usd: formatCurrency(costs),
               net_pnl_usd: formatCurrency(netPnl),
               usd_eur_fx_rate: hasRate ? formatRate(fxRate) : "",
               fx_rate_date: fxRatesByDay[dayKey]?.rateDate ?? "",
               gross_pnl_eur: hasRate ? formatCurrency(grossPnl * fxRate) : "",
-              commissions_eur: hasRate ? formatCurrency(commissions * fxRate, 4) : "",
-              trade_fees_eur: hasRate ? formatCurrency(fees * fxRate, 4) : "",
-              total_costs_eur: hasRate ? formatCurrency(costs * fxRate, 4) : "",
+              commissions_eur: hasRate ? formatCurrency(commissions * fxRate) : "",
+              trade_fees_eur: hasRate ? formatCurrency(fees * fxRate) : "",
+              total_costs_eur: hasRate ? formatCurrency(costs * fxRate) : "",
               net_pnl_eur: hasRate ? formatCurrency(netPnl * fxRate) : "",
               ...buildDayTotalFields(dayKey),
               notes: trade.notes ?? ""
@@ -735,26 +735,26 @@ function TradesPage() {
             row_type: "DAY TOTAL",
             date: dayKey,
             gross_pnl_usd: formatCurrency(totals.grossPnlUsd),
-            commissions_usd: formatCurrency(totals.commissionsUsd, 4),
-            trade_fees_usd: formatCurrency(totals.feesUsd, 4),
+            commissions_usd: formatCurrency(totals.commissionsUsd),
+            trade_fees_usd: formatCurrency(totals.feesUsd),
             ...Object.fromEntries(
               JOURNAL_COMMISSION_FIELDS.map((field) => [
                 `${field.key}_usd`,
                 formatCurrency(totals.journalFeesUsd[field.key])
               ])
             ),
-            total_costs_usd: formatCurrency(totals.costsUsd, 4),
+            total_costs_usd: formatCurrency(totals.costsUsd),
             net_pnl_usd: formatCurrency(totals.netPnlUsd),
             gross_pnl_eur: formatCurrency(totals.grossPnlEur),
-            commissions_eur: formatCurrency(totals.commissionsEur, 4),
-            trade_fees_eur: formatCurrency(totals.feesEur, 4),
+            commissions_eur: formatCurrency(totals.commissionsEur),
+            trade_fees_eur: formatCurrency(totals.feesEur),
             ...Object.fromEntries(
               JOURNAL_COMMISSION_FIELDS.map((field) => [
                 `${field.key}_eur`,
                 formatCurrency(totals.journalFeesEur[field.key])
               ])
             ),
-            total_costs_eur: formatCurrency(totals.costsEur, 4),
+            total_costs_eur: formatCurrency(totals.costsEur),
             net_pnl_eur: formatCurrency(totals.netPnlEur),
             ...buildDayTotalFields(dayKey)
           })
@@ -806,26 +806,26 @@ function TradesPage() {
         formatRow({
           row_type: "EXPORT TOTAL",
           gross_pnl_usd: formatCurrency(exportTotals.grossPnlUsd),
-          commissions_usd: formatCurrency(exportTotals.commissionsUsd, 4),
-          trade_fees_usd: formatCurrency(exportTotals.feesUsd, 4),
+          commissions_usd: formatCurrency(exportTotals.commissionsUsd),
+          trade_fees_usd: formatCurrency(exportTotals.feesUsd),
           ...Object.fromEntries(
             JOURNAL_COMMISSION_FIELDS.map((field) => [
               `${field.key}_usd`,
               formatCurrency(exportTotals.journalFeesUsd[field.key])
             ])
           ),
-          total_costs_usd: formatCurrency(exportTotals.costsUsd, 4),
+          total_costs_usd: formatCurrency(exportTotals.costsUsd),
           net_pnl_usd: formatCurrency(exportTotals.netPnlUsd),
           gross_pnl_eur: formatCurrency(exportTotals.grossPnlEur),
-          commissions_eur: formatCurrency(exportTotals.commissionsEur, 4),
-          trade_fees_eur: formatCurrency(exportTotals.feesEur, 4),
+          commissions_eur: formatCurrency(exportTotals.commissionsEur),
+          trade_fees_eur: formatCurrency(exportTotals.feesEur),
           ...Object.fromEntries(
             JOURNAL_COMMISSION_FIELDS.map((field) => [
               `${field.key}_eur`,
               formatCurrency(exportTotals.journalFeesEur[field.key])
             ])
           ),
-          total_costs_eur: formatCurrency(exportTotals.costsEur, 4),
+          total_costs_eur: formatCurrency(exportTotals.costsEur),
           net_pnl_eur: formatCurrency(exportTotals.netPnlEur)
         })
       );

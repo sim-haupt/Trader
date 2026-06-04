@@ -25,7 +25,7 @@ export function getJournalCommissionTotal(day) {
     JOURNAL_COMMISSION_FIELDS.reduce(
       (total, field) => total + getJournalCommissionValue(day, field.key),
       0
-    ).toFixed(4)
+    ).toFixed(2)
   );
 }
 
