@@ -3,10 +3,19 @@ import { useNavigate } from "react-router-dom";
 import authService from "../services/authService";
 import api from "../services/api";
 import { clearJournalDayCache } from "../services/journalService";
+import { clearStrategyCache } from "../services/strategyService";
+import { clearTagCache } from "../services/tagService";
 import { clearTradeCaches } from "../services/tradeService";
 import { clearStoredAuth, readStoredAuth, writeStoredAuth } from "../utils/authStorage";
 
 const AuthContext = createContext(null);
+
+function clearAppDataCaches() {
+  clearTradeCaches();
+  clearJournalDayCache();
+  clearTagCache();
+  clearStrategyCache();
+}
 
 function syncUserState(current, user) {
   if (!current) {
@@ -14,8 +23,7 @@ function syncUserState(current, user) {
   }
 
   if (current?.user?.activeAccountScope !== user?.activeAccountScope) {
-    clearTradeCaches();
-    clearJournalDayCache();
+    clearAppDataCaches();
   }
 
   const next = {
@@ -44,6 +52,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     function handleUnauthorized() {
+      clearAppDataCaches();
       setAuth({ token: null, user: null });
       navigate("/login", { replace: true });
     }
@@ -69,6 +78,7 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (credentials) => {
     const data = await authService.login(credentials);
+    clearAppDataCaches();
     api.defaults.headers.common.Authorization = `Bearer ${data.token}`;
     writeStoredAuth(data);
     setAuth(data);
@@ -77,6 +87,7 @@ export function AuthProvider({ children }) {
 
   const register = useCallback(async (payload) => {
     const data = await authService.register(payload);
+    clearAppDataCaches();
     api.defaults.headers.common.Authorization = `Bearer ${data.token}`;
     writeStoredAuth(data);
     setAuth(data);
@@ -96,6 +107,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(() => {
+    clearAppDataCaches();
     setAuth({ token: null, user: null });
     navigate("/login", { replace: true });
   }, [navigate]);
