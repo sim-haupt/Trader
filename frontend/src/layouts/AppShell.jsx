@@ -1,7 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
+import journalService from "../services/journalService";
+import strategyService from "../services/strategyService";
+import tagService from "../services/tagService";
+import tradeService from "../services/tradeService";
 
 const navigationItems = [
   { label: "Dashboard", path: "/dashboard", icon: "M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" },
@@ -56,6 +60,20 @@ function AppShell() {
   const accountLabel = user?.activeAccountScope === "LIVE" ? "Live" : "Simulator";
   const accountLabelClass =
     user?.activeAccountScope === "LIVE" ? "text-mint" : "text-[var(--text-muted)]";
+
+  useEffect(() => {
+    if (!user?.id) {
+      return;
+    }
+
+    void Promise.allSettled([
+      tradeService.getTrades(),
+      tradeService.getAllTrades(),
+      journalService.getJournalDays(),
+      tagService.getTags(),
+      strategyService.getStrategies()
+    ]);
+  }, [user?.id, user?.activeAccountScope]);
 
   async function handleAccountScopeToggle() {
     const nextScope = isLiveAccount ? "SIMULATOR" : "LIVE";

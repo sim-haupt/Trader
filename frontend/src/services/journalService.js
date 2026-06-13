@@ -1,25 +1,59 @@
 import api from "./api";
+import {
+  clearPersistentCacheGroup,
+  readPersistentCache,
+  removePersistentCache,
+  writePersistentCache
+} from "../utils/persistentCache";
 
 let journalDayCache = null;
+let journalDayRequest = null;
 const fxRateCache = new Map();
+const JOURNAL_DAY_TTL_MS = 5 * 60_000;
 
 export function clearJournalDayCache() {
   journalDayCache = null;
+  journalDayRequest = null;
+  clearPersistentCacheGroup("journal");
 }
 
 const journalService = {
   peekJournalDays() {
+    if (journalDayCache) {
+      return journalDayCache;
+    }
+
+    journalDayCache = readPersistentCache("journal:days", JOURNAL_DAY_TTL_MS);
     return journalDayCache;
   },
 
   async getJournalDays(options = {}) {
-    if (journalDayCache && !options.forceRefresh) {
-      return journalDayCache;
+    const cached = this.peekJournalDays();
+
+    if (cached && !options.forceRefresh) {
+      return cached;
     }
 
-    const response = await api.get("/journal-days");
-    journalDayCache = response.data.data ?? [];
-    return journalDayCache;
+    if (!options.forceRefresh && journalDayRequest) {
+      return journalDayRequest;
+    }
+
+    if (options.forceRefresh) {
+      removePersistentCache("journal:days");
+    }
+
+    journalDayRequest = api
+      .get("/journal-days")
+      .then((response) => {
+        journalDayCache = response.data.data ?? [];
+        writePersistentCache("journal:days", journalDayCache);
+        return journalDayCache;
+      })
+      .finally(() => {
+        journalDayRequest = null;
+      });
+
+    return journalDayRequest;
   },
 
   async updateJournalDay(dayKey, payload) {

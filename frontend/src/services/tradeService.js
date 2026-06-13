@@ -1,16 +1,25 @@
 import api from "./api";
+import {
+  clearPersistentCacheGroup,
+  readPersistentCache,
+  removePersistentCache,
+  writePersistentCache
+} from "../utils/persistentCache";
 
 function extractTrades(response) {
   return response.data.data ?? [];
 }
 
-const TRADE_LIST_TTL_MS = 60_000;
+const TRADE_LIST_TTL_MS = 5 * 60_000;
 const TRADE_DETAIL_TTL_MS = 60_000;
 const TRADE_TAGS_TTL_MS = 60_000;
 const tradeListCache = new Map();
 const tradeDetailCache = new Map();
+const tradeListRequests = new Map();
+const tradeDetailRequests = new Map();
 let tradeTagsCache = null;
 let tradeTagsCreatedAt = 0;
+let tradeTagsRequest = null;
 
 function buildCacheKey(prefix, filters = {}) {
   const normalized = Object.entries(filters)
@@ -23,16 +32,15 @@ function buildCacheKey(prefix, filters = {}) {
 function readCache(cache, key, ttlMs) {
   const entry = cache.get(key);
 
-  if (!entry) {
-    return null;
-  }
+  if (entry) {
+    if (Date.now() - entry.createdAt <= ttlMs) {
+      return entry.data;
+    }
 
-  if (Date.now() - entry.createdAt > ttlMs) {
     cache.delete(key);
-    return null;
   }
 
-  return entry.data;
+  return readPersistentCache(`trade:${key}`, ttlMs);
 }
 
 function writeCache(cache, key, data) {
@@ -41,14 +49,18 @@ function writeCache(cache, key, data) {
     createdAt: Date.now()
   });
 
-  return data;
+  return writePersistentCache(`trade:${key}`, data);
 }
 
 export function clearTradeCaches() {
   tradeListCache.clear();
   tradeDetailCache.clear();
+  tradeListRequests.clear();
+  tradeDetailRequests.clear();
   tradeTagsCache = null;
   tradeTagsCreatedAt = 0;
+  tradeTagsRequest = null;
+  clearPersistentCacheGroup("trade");
 }
 
 const tradeService = {
@@ -65,17 +77,24 @@ const tradeService = {
   },
 
   peekTradeTags() {
-    if (!tradeTagsCache) {
-      return null;
-    }
+    if (tradeTagsCache) {
+      if (Date.now() - tradeTagsCreatedAt <= TRADE_TAGS_TTL_MS) {
+        return tradeTagsCache;
+      }
 
-    if (Date.now() - tradeTagsCreatedAt > TRADE_TAGS_TTL_MS) {
       tradeTagsCache = null;
       tradeTagsCreatedAt = 0;
-      return null;
     }
 
-    return tradeTagsCache;
+    const persisted = readPersistentCache("trade:tags", TRADE_TAGS_TTL_MS);
+
+    if (persisted) {
+      tradeTagsCache = persisted;
+      tradeTagsCreatedAt = Date.now();
+      return tradeTagsCache;
+    }
+
+    return null;
   },
 
   async getTrades(filters = {}, options = {}) {
@@ -86,8 +105,21 @@ const tradeService = {
       return cached;
     }
 
-    const response = await api.get("/trades", { params: filters });
-    return writeCache(tradeListCache, cacheKey, extractTrades(response));
+    if (!options.forceRefresh && tradeListRequests.has(cacheKey)) {
+      return tradeListRequests.get(cacheKey);
+    }
+
+    if (options.forceRefresh) {
+      removePersistentCache(`trade:${cacheKey}`);
+    }
+
+    const request = api
+      .get("/trades", { params: filters })
+      .then((response) => writeCache(tradeListCache, cacheKey, extractTrades(response)))
+      .finally(() => tradeListRequests.delete(cacheKey));
+
+    tradeListRequests.set(cacheKey, request);
+    return request;
   },
 
   async getAllTrades(filters = {}, options = {}) {
@@ -98,13 +130,26 @@ const tradeService = {
       return cached;
     }
 
-    const response = await api.get("/trades", {
-      params: {
-        ...filters,
-        scope: "all"
-      }
-    });
-    return writeCache(tradeListCache, cacheKey, extractTrades(response));
+    if (!options.forceRefresh && tradeListRequests.has(cacheKey)) {
+      return tradeListRequests.get(cacheKey);
+    }
+
+    if (options.forceRefresh) {
+      removePersistentCache(`trade:${cacheKey}`);
+    }
+
+    const request = api
+      .get("/trades", {
+        params: {
+          ...filters,
+          scope: "all"
+        }
+      })
+      .then((response) => writeCache(tradeListCache, cacheKey, extractTrades(response)))
+      .finally(() => tradeListRequests.delete(cacheKey));
+
+    tradeListRequests.set(cacheKey, request);
+    return request;
   },
 
   async getTrade(id, options = {}) {
@@ -115,8 +160,21 @@ const tradeService = {
       return cached;
     }
 
-    const response = await api.get(`/trades/${id}`);
-    return writeCache(tradeDetailCache, cacheKey, response.data.data);
+    if (!options.forceRefresh && tradeDetailRequests.has(cacheKey)) {
+      return tradeDetailRequests.get(cacheKey);
+    }
+
+    if (options.forceRefresh) {
+      removePersistentCache(`trade:${cacheKey}`);
+    }
+
+    const request = api
+      .get(`/trades/${id}`)
+      .then((response) => writeCache(tradeDetailCache, cacheKey, response.data.data))
+      .finally(() => tradeDetailRequests.delete(cacheKey));
+
+    tradeDetailRequests.set(cacheKey, request);
+    return request;
   },
 
   async getTradeTags(options = {}) {
@@ -126,10 +184,27 @@ const tradeService = {
       return cached;
     }
 
-    const response = await api.get("/trades/tags");
-    tradeTagsCache = response.data.data ?? [];
-    tradeTagsCreatedAt = Date.now();
-    return tradeTagsCache;
+    if (!options.forceRefresh && tradeTagsRequest) {
+      return tradeTagsRequest;
+    }
+
+    if (options.forceRefresh) {
+      removePersistentCache("trade:tags");
+    }
+
+    tradeTagsRequest = api
+      .get("/trades/tags")
+      .then((response) => {
+        tradeTagsCache = response.data.data ?? [];
+        tradeTagsCreatedAt = Date.now();
+        writePersistentCache("trade:tags", tradeTagsCache);
+        return tradeTagsCache;
+      })
+      .finally(() => {
+        tradeTagsRequest = null;
+      });
+
+    return tradeTagsRequest;
   },
 
   async createTrade(payload) {

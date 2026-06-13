@@ -1,24 +1,58 @@
 import api from "./api";
+import {
+  clearPersistentCacheGroup,
+  readPersistentCache,
+  removePersistentCache,
+  writePersistentCache
+} from "../utils/persistentCache";
 
 let strategyCache = null;
+let strategyRequest = null;
+const STRATEGY_TTL_MS = 5 * 60_000;
 
-function clearStrategyCache() {
+export function clearStrategyCache() {
   strategyCache = null;
+  strategyRequest = null;
+  clearPersistentCacheGroup("strategy");
 }
 
 const strategyService = {
   peekStrategies() {
+    if (strategyCache) {
+      return strategyCache;
+    }
+
+    strategyCache = readPersistentCache("strategy:list", STRATEGY_TTL_MS);
     return strategyCache;
   },
 
   async getStrategies(options = {}) {
-    if (strategyCache && !options.forceRefresh) {
-      return strategyCache;
+    const cached = this.peekStrategies();
+
+    if (cached && !options.forceRefresh) {
+      return cached;
     }
 
-    const response = await api.get("/strategies");
-    strategyCache = response.data.data ?? [];
-    return strategyCache;
+    if (!options.forceRefresh && strategyRequest) {
+      return strategyRequest;
+    }
+
+    if (options.forceRefresh) {
+      removePersistentCache("strategy:list");
+    }
+
+    strategyRequest = api
+      .get("/strategies")
+      .then((response) => {
+        strategyCache = response.data.data ?? [];
+        writePersistentCache("strategy:list", strategyCache);
+        return strategyCache;
+      })
+      .finally(() => {
+        strategyRequest = null;
+      });
+
+    return strategyRequest;
   },
 
   async createStrategy(name) {

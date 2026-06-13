@@ -1,24 +1,58 @@
 import api from "./api";
+import {
+  clearPersistentCacheGroup,
+  readPersistentCache,
+  removePersistentCache,
+  writePersistentCache
+} from "../utils/persistentCache";
 
 let tagCache = null;
+let tagRequest = null;
+const TAG_TTL_MS = 5 * 60_000;
 
-function clearTagCache() {
+export function clearTagCache() {
   tagCache = null;
+  tagRequest = null;
+  clearPersistentCacheGroup("tag");
 }
 
 const tagService = {
   peekTags() {
+    if (tagCache) {
+      return tagCache;
+    }
+
+    tagCache = readPersistentCache("tag:list", TAG_TTL_MS);
     return tagCache;
   },
 
   async getTags(options = {}) {
-    if (tagCache && !options.forceRefresh) {
-      return tagCache;
+    const cached = this.peekTags();
+
+    if (cached && !options.forceRefresh) {
+      return cached;
     }
 
-    const response = await api.get("/tags");
-    tagCache = response.data.data ?? [];
-    return tagCache;
+    if (!options.forceRefresh && tagRequest) {
+      return tagRequest;
+    }
+
+    if (options.forceRefresh) {
+      removePersistentCache("tag:list");
+    }
+
+    tagRequest = api
+      .get("/tags")
+      .then((response) => {
+        tagCache = response.data.data ?? [];
+        writePersistentCache("tag:list", tagCache);
+        return tagCache;
+      })
+      .finally(() => {
+        tagRequest = null;
+      });
+
+    return tagRequest;
   },
 
   async createTag(name) {
