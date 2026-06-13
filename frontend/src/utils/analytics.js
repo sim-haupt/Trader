@@ -272,7 +272,7 @@ function buildDailyEquityAndDrawdownCurves(dailyMap) {
 export function buildAnalytics(trades, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
   const defaultFees = options.defaultFees || 0;
-  const pnlType = options.pnlType || "NET";
+  const pnlType = options.pnlType || "GROSS";
   const journalCommissionsByDay = options.journalCommissionsByDay || new Map();
   const sortedTrades = [...trades].sort(
     (a, b) => new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime()

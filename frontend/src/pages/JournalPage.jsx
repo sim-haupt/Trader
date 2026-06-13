@@ -586,7 +586,7 @@ function buildDailyJournal(
   defaultFees,
   fxRatesByDay = {},
   includeDayKeys = [],
-  pnlType = "NET"
+  pnlType = "GROSS"
 ) {
   const grouped = new Map();
 
@@ -865,9 +865,9 @@ function JournalDayCard({
                 <LineChart data={signedChartData.data} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
                   <defs>
                     <linearGradient id={`journal-day-pnl-fill-positive-${day.dayKey}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="rgba(15, 191, 62, 0.34)" />
-                      <stop offset="65%" stopColor="rgba(15, 191, 62, 0.12)" />
-                      <stop offset="100%" stopColor="rgba(15, 191, 62, 0.02)" />
+                      <stop offset="0%" stopColor="rgba(52, 224, 161, 0.34)" />
+                      <stop offset="65%" stopColor="rgba(52, 224, 161, 0.12)" />
+                      <stop offset="100%" stopColor="rgba(52, 224, 161, 0.02)" />
                     </linearGradient>
                     <linearGradient id={`journal-day-pnl-fill-negative-${day.dayKey}`} x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="rgba(255, 95, 122, 0.28)" />
@@ -924,7 +924,7 @@ function JournalDayCard({
                   <Line
                     type="monotone"
                     dataKey="positivePnl"
-                    stroke="#0FBF3E"
+                    stroke="#34e0a1"
                     strokeWidth={3}
                     dot={false}
                     isAnimationActive={false}
@@ -949,7 +949,7 @@ function JournalDayCard({
                         x={new Date(point.timestamp).getTime()}
                         y={point.pnl}
                         r={point.isSelected ? 6 : 5}
-                        fill={point.pnl > 0 ? "#0FBF3E" : point.pnl < 0 ? "#ff5f7a" : "#ededed"}
+                        fill={point.pnl > 0 ? "#34e0a1" : point.pnl < 0 ? "#ff5f7a" : "#ededed"}
                         stroke="transparent"
                       />
                     ))}
@@ -990,21 +990,33 @@ function JournalDayCard({
               </div>
               {isEditingCosts ? (
                 <div className="mt-3 space-y-3">
-                  <label className="block">
+                  <div className="block">
                     <span className="mb-2 block text-[10px] font-medium text-white/62">Upload commissions file</span>
                     <div className="flex flex-col gap-4 md:flex-row md:items-center">
                       <div className="ui-panel flex-1 border-dashed p-3">
-                      <input
-                        key={selectedCostFile?.name || "empty"}
-                        type="file"
-                        accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                        disabled={isImportingCosts}
-                        onChange={(event) => {
-                          const file = event.target.files?.[0];
-                          onCostFileChange(day.dayKey, file || null);
-                        }}
-                        className="block w-full text-sm text-white/72 file:mr-4 file:rounded-[6px] file:border file:border-[var(--line)] file:bg-white file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-[#0c1522] hover:file:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
-                      />
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                          <input
+                            id={`commission-file-${day.dayKey}`}
+                            key={selectedCostFile?.name || "empty"}
+                            type="file"
+                            accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                            disabled={isImportingCosts}
+                            onChange={(event) => {
+                              const file = event.target.files?.[0];
+                              onCostFileChange(day.dayKey, file || null);
+                            }}
+                            className="sr-only"
+                          />
+                          <label
+                            htmlFor={`commission-file-${day.dayKey}`}
+                            className={`ui-button shrink-0 text-sm ${isImportingCosts ? "pointer-events-none opacity-50" : ""}`}
+                          >
+                            Choose file
+                          </label>
+                          <span className="min-w-0 flex-1 truncate text-sm text-white/72">
+                            {selectedCostFile?.name || "No file selected"}
+                          </span>
+                        </div>
                       </div>
                       <button
                         type="button"
@@ -1015,7 +1027,7 @@ function JournalDayCard({
                         {isImportingCosts ? "Uploading..." : "Upload"}
                       </button>
                     </div>
-                  </label>
+                  </div>
                   <div className="grid gap-3 sm:grid-cols-3">
                     {JOURNAL_COMMISSION_FIELDS.map((field) => (
                       <label key={field.key} className="block">
@@ -1259,7 +1271,7 @@ function JournalPage() {
   const [fxRatesByDay, setFxRatesByDay] = useState({});
   const [loadingFxRates, setLoadingFxRates] = useState(false);
   const [fxRateError, setFxRateError] = useState("");
-  const [pnlType, setPnlType] = useState("NET");
+  const [pnlType, setPnlType] = useState("GROSS");
 
   const tradesResource = useCachedAsyncResource({
     peek: () => tradeService.peekAllTrades(),
@@ -1664,8 +1676,8 @@ function JournalPage() {
         <div className="mb-4 flex justify-end">
           <div className="ui-segment">
             {[
-              { key: "NET", label: "Net" },
-              { key: "GROSS", label: "Gross" }
+              { key: "GROSS", label: "Gross" },
+              { key: "NET", label: "Net" }
             ].map((option) => (
               <button
                 key={option.key}

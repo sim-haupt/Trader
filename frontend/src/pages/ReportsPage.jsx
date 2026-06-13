@@ -155,7 +155,7 @@ const CurrencyTooltip = buildChartTooltip("currency");
 const PercentTooltip = buildChartTooltip("percent");
 const VolumeTooltip = buildChartTooltip("volume");
 const CountTooltip = buildChartTooltip("count");
-const REPORT_GREEN = "#0FBF3E";
+const REPORT_GREEN = "#34e0a1";
 const REPORT_RED = "#ff5f7a";
 const REPORT_YELLOW = "#ffd84d";
 
@@ -200,7 +200,7 @@ function formatAxisCurrency(value) {
 function buildOverviewSeries(trades, rangeDays, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
   const defaultFees = options.defaultFees || 0;
-  const pnlType = options.pnlType || "NET";
+  const pnlType = options.pnlType || "GROSS";
   const journalCommissionsByDay = options.journalCommissionsByDay || new Map();
   if (trades.length === 0) {
     return {
@@ -535,7 +535,7 @@ function calculateDrawdownStats(sortedTrades, defaultCommission, defaultFees, pn
 function summarizeTrades(trades, dayCountOverride, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
   const defaultFees = options.defaultFees || 0;
-  const pnlType = options.pnlType || "NET";
+  const pnlType = options.pnlType || "GROSS";
   const journalCommissionsByDay = options.journalCommissionsByDay || new Map();
   const sortedTrades = [...trades].sort(
     (a, b) => new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime()
@@ -739,7 +739,7 @@ function buildDetailedStats(trades, options = {}) {
 function buildDetailedBreakdownStats(trades, timeframeMinutes, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
   const defaultFees = options.defaultFees || 0;
-  const pnlType = options.pnlType || "NET";
+  const pnlType = options.pnlType || "GROSS";
 
   const weekdayMap = new Map(
     WEEKDAY_ORDER.map((day) => [day, { label: day, count: 0, pnl: 0 }])
@@ -801,7 +801,7 @@ function buildDetailedBreakdownStats(trades, timeframeMinutes, options = {}) {
 function buildBucketStats(trades, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
   const defaultFees = options.defaultFees || 0;
-  const pnlType = options.pnlType || "NET";
+  const pnlType = options.pnlType || "GROSS";
 
   const makeBuckets = (labels) =>
     new Map(labels.map((label) => [label, { label, count: 0, pnl: 0 }]));
@@ -890,7 +890,7 @@ function buildBucketStats(trades, options = {}) {
 function buildInstrumentStats(trades, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
   const defaultFees = options.defaultFees || 0;
-  const pnlType = options.pnlType || "NET";
+  const pnlType = options.pnlType || "GROSS";
 
   const symbolMap = new Map();
   const volumeBuckets = new Map(
@@ -1070,7 +1070,7 @@ function buildWinLossDayRows(summary) {
 function buildWinVsLossDaysStats(trades, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
   const defaultFees = options.defaultFees || 0;
-  const pnlType = options.pnlType || "NET";
+  const pnlType = options.pnlType || "GROSS";
   const dayMap = new Map();
 
   for (const trade of trades) {
@@ -2118,7 +2118,7 @@ function applyReportFilters(trades, filters, rangeDays) {
 function applyCompareGroupFilters(trades, filters, options = {}) {
   const defaultCommission = options.defaultCommission || 0;
   const defaultFees = options.defaultFees || 0;
-  const pnlType = options.pnlType || "NET";
+  const pnlType = options.pnlType || "GROSS";
   let nextTrades = [...trades];
 
   if (filters.symbol) {
@@ -2178,7 +2178,7 @@ function ReportsPage() {
   const [filters, setFilters] = useState(REPORT_FILTERS);
   const [groupAFilters, setGroupAFilters] = useState(COMPARE_GROUP_FILTERS);
   const [groupBFilters, setGroupBFilters] = useState(COMPARE_GROUP_FILTERS);
-  const [pnlType, setPnlType] = useState("NET");
+  const [pnlType, setPnlType] = useState("GROSS");
   const [detailedTimeframeKey, setDetailedTimeframeKey] = useState("60");
   const [detailedBreakdownTab, setDetailedBreakdownTab] = useState("Days/Times");
   const [winLossBreakdownTab, setWinLossBreakdownTab] = useState("Days/Times");
@@ -2500,8 +2500,8 @@ function ReportsPage() {
             value={pnlType}
             onChange={(nextValue) => setPnlType(nextValue)}
             options={[
-              { label: "Net", value: "NET" },
-              { label: "Gross", value: "GROSS" }
+              { label: "Gross", value: "GROSS" },
+              { label: "Net", value: "NET" }
             ]}
             className="max-w-[150px]"
             buttonClassName="max-w-[150px]"

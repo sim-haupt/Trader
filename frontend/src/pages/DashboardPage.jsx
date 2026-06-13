@@ -18,8 +18,8 @@ const RANGE_OPTIONS = [
   { key: "ALL", label: "ALL", days: null }
 ];
 const PNL_OPTIONS = [
-  { key: "NET", label: "Net" },
-  { key: "GROSS", label: "Gross" }
+  { key: "GROSS", label: "Gross" },
+  { key: "NET", label: "Net" }
 ];
 
 function filterTradesByRange(trades, days) {
@@ -37,7 +37,7 @@ function filterTradesByRange(trades, days) {
 function DashboardPage() {
   const { user } = useAuth();
   const [rangeKey, setRangeKey] = useState("ALL");
-  const [pnlType, setPnlType] = useState("NET");
+  const [pnlType, setPnlType] = useState("GROSS");
   const {
     data: trades,
     error,

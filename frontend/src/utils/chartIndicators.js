@@ -151,7 +151,7 @@ function calculateMacdSeries(bars) {
     return {
       time: point.time,
       value,
-      color: value >= 0 ? "rgba(15, 191, 62, 0.55)" : "rgba(255, 126, 107, 0.6)"
+      color: value >= 0 ? "rgba(52, 224, 161, 0.55)" : "rgba(255, 126, 107, 0.6)"
     };
   });
 
@@ -187,7 +187,7 @@ function buildExecutionMarkers(trade) {
         rawTime: timestamp,
         price: asNumber(execution.price),
         position: execution.action === "BUY" ? "belowBar" : "aboveBar",
-        color: execution.action === "BUY" ? "#6ef0c3" : "#ff7e6b",
+        color: execution.action === "BUY" ? "#34e0a1" : "#ff7e6b",
         shape: execution.action === "BUY" ? "arrowUp" : "arrowDown",
         text: `${execution.action === "BUY" ? "Buy" : "Sell"} ${asNumber(
           execution.quantity

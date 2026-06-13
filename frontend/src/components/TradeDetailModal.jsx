@@ -724,9 +724,9 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                       <Line
                         type="monotone"
                         dataKey="pnl"
-                        stroke={tradePnl >= 0 ? "#6ef0c3" : "#ff7e6b"}
+                        stroke={tradePnl >= 0 ? "#34e0a1" : "#ff7e6b"}
                         strokeWidth={3}
-                        dot={{ r: 4, strokeWidth: 0, fill: tradePnl >= 0 ? "#6ef0c3" : "#ff7e6b" }}
+                        dot={{ r: 4, strokeWidth: 0, fill: tradePnl >= 0 ? "#34e0a1" : "#ff7e6b" }}
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -750,9 +750,9 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                     <LineChart data={signedDayRunningPnl.data} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
                       <defs>
                         <linearGradient id="trade-day-pnl-fill-positive" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="rgba(15, 191, 62, 0.34)" />
-                          <stop offset="65%" stopColor="rgba(15, 191, 62, 0.12)" />
-                          <stop offset="100%" stopColor="rgba(15, 191, 62, 0.02)" />
+                          <stop offset="0%" stopColor="rgba(52, 224, 161, 0.34)" />
+                          <stop offset="65%" stopColor="rgba(52, 224, 161, 0.12)" />
+                          <stop offset="100%" stopColor="rgba(52, 224, 161, 0.02)" />
                         </linearGradient>
                         <linearGradient id="trade-day-pnl-fill-negative" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="0%" stopColor="rgba(255, 95, 122, 0.28)" />
@@ -801,7 +801,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                       <Line
                         type="monotone"
                         dataKey="positivePnl"
-                        stroke="#0FBF3E"
+                        stroke="#34e0a1"
                         strokeWidth={3}
                         dot={false}
                         isAnimationActive={false}
@@ -826,7 +826,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                             x={new Date(point.timestamp).getTime()}
                             y={point.pnl}
                             r={6}
-                            fill={point.pnl >= 0 ? "#0FBF3E" : "#ff5f7a"}
+                            fill={point.pnl >= 0 ? "#34e0a1" : "#ff5f7a"}
                             stroke="transparent"
                           />
                         ))}

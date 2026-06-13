@@ -15,7 +15,7 @@ import {
 import Card from "./ui/Card";
 import { formatCurrency, formatPercent } from "../utils/formatters";
 
-const CHART_GREEN = "#0FBF3E";
+const CHART_GREEN = "#34e0a1";
 const CHART_RED = "#ff5f7a";
 const CHART_YELLOW = "#ffd84d";
 const STANDARD_CHART_MARGIN = { top: 8, right: 8, left: 0, bottom: 16 };
@@ -74,7 +74,7 @@ function ChartTooltipContent({ active, payload, label }) {
 function metricBorderColor(tone) {
   switch (tone) {
     case "text-mint":
-      return "rgba(15, 191, 62, 0.34)";
+      return "rgba(52, 224, 161, 0.34)";
     case "text-coral":
       return "rgba(255, 107, 107, 0.34)";
     case "text-gold":
@@ -275,7 +275,7 @@ function getLastSevenDayTone(day) {
         "ui-metric-tile rounded-[6px] bg-[linear-gradient(180deg,rgba(15,191,62,0.18),rgba(15,191,62,0.06))] px-4 py-4",
       valueTone: "text-mint",
       style: {
-        borderColor: "rgba(15, 191, 62, 0.34)"
+        borderColor: "rgba(52, 224, 161, 0.34)"
       }
     };
   }

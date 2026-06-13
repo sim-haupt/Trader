@@ -155,7 +155,7 @@ function getDayBorderStyle(stats, isCurrentMonth) {
   }
 
   if (stats.pnl > 0) {
-    return { borderColor: "rgba(15, 191, 62, 0.34)" };
+    return { borderColor: "rgba(52, 224, 161, 0.34)" };
   }
 
   if (stats.pnl < 0) {
