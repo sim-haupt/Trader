@@ -436,14 +436,13 @@ function AnalyticsCharts({
     pnlType
   } = analytics;
   const pnlLabel = pnlType === "GROSS" ? "GROSS" : "NET";
-  const cumulativePnlTone = summary.totalPnl < 0 ? "text-coral" : "text-white/72";
   const cumulativePnlColor = summary.totalPnl < 0 ? CHART_RED : CHART_GREEN;
 
   const widgets = useMemo(
     () => [
       {
         id: "cumulative",
-        title: <span className={cumulativePnlTone}>{pnlLabel} CUMULATIVE P&L</span>,
+        title: `${pnlLabel} CUMULATIVE P&L`,
         defaultSpan: 2,
         className: "min-h-[620px]",
         body: (
@@ -756,7 +755,6 @@ function AnalyticsCharts({
       dailyVolumeThirtyDays,
       lastThirtyTrades,
       cumulativePnlColor,
-      cumulativePnlTone,
       navigate,
       pnlLabel
     ]
