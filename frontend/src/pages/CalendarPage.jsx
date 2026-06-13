@@ -135,7 +135,7 @@ function getDayTone(stats, isCurrentMonth) {
   }
 
   if (stats.pnl > 0) {
-    return "bg-[linear-gradient(180deg,rgba(15,191,62,0.18),rgba(15,191,62,0.06))] text-mint";
+    return "bg-[linear-gradient(180deg,rgba(52,224,161,0.18),rgba(52,224,161,0.06))] text-mint";
   }
 
   if (stats.pnl < 0) {

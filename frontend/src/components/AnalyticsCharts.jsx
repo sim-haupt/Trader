@@ -272,7 +272,7 @@ function getLastSevenDayTone(day) {
   if (day.pnl >= 0) {
     return {
       className:
-        "ui-metric-tile rounded-[6px] bg-[linear-gradient(180deg,rgba(15,191,62,0.18),rgba(15,191,62,0.06))] px-4 py-4",
+        "ui-metric-tile rounded-[6px] bg-[linear-gradient(180deg,rgba(52,224,161,0.18),rgba(52,224,161,0.06))] px-4 py-4",
       valueTone: "text-mint",
       style: {
         borderColor: "rgba(52, 224, 161, 0.34)"
@@ -312,14 +312,14 @@ function getHeatmapTileStyle(trade, maxWin, maxLoss) {
     const intensity = maxWin ? pnl / maxWin : 0;
     const level = intensity > 0.66 ? 2 : intensity > 0.33 ? 1 : 0;
     const backgrounds = [
-      "rgba(15,191,62,0.14)",
-      "rgba(15,191,62,0.28)",
-      "rgba(15,191,62,0.48)"
+      "rgba(52,224,161,0.14)",
+      "rgba(52,224,161,0.28)",
+      "rgba(52,224,161,0.48)"
     ];
     const borders = [
-      "rgba(15,191,62,0.32)",
-      "rgba(15,191,62,0.48)",
-      "rgba(15,191,62,0.72)"
+      "rgba(52,224,161,0.32)",
+      "rgba(52,224,161,0.48)",
+      "rgba(52,224,161,0.72)"
     ];
 
     return {
