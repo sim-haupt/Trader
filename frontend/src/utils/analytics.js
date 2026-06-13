@@ -403,6 +403,7 @@ export function buildAnalytics(trades, options = {}) {
     ? [...dailyMap.keys()].reduce((sum, dayKey) => sum + Number(journalCommissionsByDay.get(dayKey) || 0), 0)
     : 0;
   const totalPnl = processedTrades.reduce((sum, item) => sum + item.pnl, 0) - journalCommissionTotal;
+  const averageDailyPnl = totalPnl / Math.max(dailyMap.size, 1);
   const averageTradePnl = tradeCount ? totalPnl / tradeCount : 0;
   const expectancyPerTrade = tradeCount
     ? (wins / tradeCount) * averageWin - (losses / tradeCount) * averageLoss
@@ -502,6 +503,7 @@ export function buildAnalytics(trades, options = {}) {
       totalMonthPnl,
       totalWeekPnl,
       totalTodayPnl,
+      averageDailyPnl,
       winRate: tradeCount ? (wins / tradeCount) * 100 : 0,
       wins,
       losses,

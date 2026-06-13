@@ -480,7 +480,7 @@ function AnalyticsCharts({
         className: "min-h-[620px]",
         body: (
           <div className="flex h-full flex-col gap-3">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <MiniMetric
                 label="WIN RATE"
                 value={formatPercent(summary.winRate)}
@@ -497,6 +497,12 @@ function AnalyticsCharts({
                 label="EXPECTANCY"
                 value={formatCurrency(summary.expectancyPerTrade)}
                 tone={toneForValue(summary.expectancyPerTrade)}
+                shadow
+              />
+              <MiniMetric
+                label="AVG DAILY"
+                value={formatCurrency(summary.averageDailyPnl)}
+                tone={toneForValue(summary.averageDailyPnl)}
                 shadow
               />
             </div>
