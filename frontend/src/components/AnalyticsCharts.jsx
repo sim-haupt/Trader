@@ -436,12 +436,14 @@ function AnalyticsCharts({
     pnlType
   } = analytics;
   const pnlLabel = pnlType === "GROSS" ? "GROSS" : "NET";
+  const cumulativePnlTone = summary.totalPnl < 0 ? "text-coral" : "text-white/72";
+  const cumulativePnlColor = summary.totalPnl < 0 ? CHART_RED : CHART_GREEN;
 
   const widgets = useMemo(
     () => [
       {
         id: "cumulative",
-        title: `${pnlLabel} CUMULATIVE P&L`,
+        title: <span className={cumulativePnlTone}>{pnlLabel} CUMULATIVE P&L</span>,
         defaultSpan: 2,
         className: "min-h-[620px]",
         body: (
@@ -457,16 +459,16 @@ function AnalyticsCharts({
                 <AreaChart data={equityCurve} margin={STANDARD_CHART_MARGIN}>
                   <defs>
                     <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={CHART_GREEN} stopOpacity={0.22} />
-                      <stop offset="55%" stopColor={CHART_GREEN} stopOpacity={0.08} />
-                      <stop offset="100%" stopColor={CHART_GREEN} stopOpacity={0.01} />
+                      <stop offset="0%" stopColor={cumulativePnlColor} stopOpacity={0.22} />
+                      <stop offset="55%" stopColor={cumulativePnlColor} stopOpacity={0.08} />
+                      <stop offset="100%" stopColor={cumulativePnlColor} stopOpacity={0.01} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
                   <Tooltip contentStyle={tooltipStyle()} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
-                  <Area type="monotone" dataKey="equity" stroke={CHART_GREEN} strokeWidth={3} fill="url(#equityGradient)" />
+                  <Area type="monotone" dataKey="equity" stroke={cumulativePnlColor} strokeWidth={3} fill="url(#equityGradient)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -753,6 +755,8 @@ function AnalyticsCharts({
       winRateThirtyDays,
       dailyVolumeThirtyDays,
       lastThirtyTrades,
+      cumulativePnlColor,
+      cumulativePnlTone,
       navigate,
       pnlLabel
     ]
