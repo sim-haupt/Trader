@@ -31,6 +31,7 @@ import {
   getEffectiveTradeCommission,
   getTradeGrossPnl,
   getTradeNetPnl,
+  getTradePerSharePnl,
   getTradePnlByType
 } from "../utils/tradePnl";
 import { isUsMarketDay } from "../utils/marketCalendar";
@@ -570,7 +571,7 @@ function summarizeTrades(trades, dayCountOverride, options = {}) {
       ? getTradeGrossPnl(trade)
       : getTradePnlByType(trade, pnlType, defaultCommission, defaultFees);
     const quantity = Math.abs(asNumber(trade.quantity));
-    const perShare = quantity > 0 ? pnl / quantity : 0;
+    const perShare = getTradePerSharePnl(trade, pnl);
     const holdMinutes = getHoldMinutes(trade);
     const dayKey = getDayKey(new Date(trade.entryDate));
     const day = dailyStats.get(dayKey) || { pnl: 0, volume: 0, trades: 0 };
@@ -649,7 +650,7 @@ function summarizeTrades(trades, dayCountOverride, options = {}) {
     averageDailyGainLoss: totalPnl / totalDays,
     averageDailyVolume: totalVolume / totalDays,
     averageTradeGainLoss: totalTrades ? totalPnl / totalTrades : 0,
-    averagePerShareGainLoss: totalTrades ? totalPerShare / totalTrades : 0,
+    averagePerShareGainLoss: totalPerShare,
     averageWinningTrade: winningTrades ? totalWinningPnl / winningTrades : 0,
     averageLosingTrade: losingTrades ? totalLosingPnl / losingTrades : 0,
     averageScratchHold: calculateTrimmedAverage(scratchHoldValues),
@@ -694,7 +695,7 @@ function buildDetailedStats(trades, options = {}) {
     [
       { label: "Average Daily Gain/Loss", value: formatCurrency(summary.averageDailyGainLoss), tone: summary.averageDailyGainLoss >= 0 ? "text-mint" : "text-coral" },
       { label: "Average Daily Volume", value: formatCompactNumber(summary.averageDailyVolume), tone: "text-white" },
-      { label: "Average Per-share Gain/Loss", value: formatCurrency(summary.averagePerShareGainLoss), tone: summary.averagePerShareGainLoss >= 0 ? "text-mint" : "text-coral" }
+      { label: "Total Per-share Gain/Loss", value: formatCurrency(summary.averagePerShareGainLoss), tone: summary.averagePerShareGainLoss >= 0 ? "text-mint" : "text-coral" }
     ],
     [
       { label: "Average Trade Gain/Loss", value: formatCurrency(summary.averageTradeGainLoss), tone: summary.averageTradeGainLoss >= 0 ? "text-mint" : "text-coral" },
@@ -1046,7 +1047,7 @@ function buildWinLossDayRows(summary) {
     { label: "Total Gain / Loss", value: formatCurrency(summary.totalPnl), tone: summary.totalPnl >= 0 ? "text-mint" : "text-coral" },
     { label: "Average Daily Gain / Loss", value: formatCurrency(summary.averageDailyGainLoss), tone: summary.averageDailyGainLoss >= 0 ? "text-mint" : "text-coral" },
     { label: "Average Daily Volume", value: formatCompactNumber(summary.averageDailyVolume), tone: "text-white" },
-    { label: "Average Per-share Gain / Loss", value: formatCurrency(summary.averagePerShareGainLoss), tone: summary.averagePerShareGainLoss >= 0 ? "text-mint" : "text-coral" },
+    { label: "Total Per-share Gain / Loss", value: formatCurrency(summary.averagePerShareGainLoss), tone: summary.averagePerShareGainLoss >= 0 ? "text-mint" : "text-coral" },
     { label: "Average Trade Gain / Loss", value: formatCurrency(summary.averageTradeGainLoss), tone: summary.averageTradeGainLoss >= 0 ? "text-mint" : "text-coral" },
     { label: "Total Number of Trades", value: formatCompactNumber(summary.totalTrades), tone: "text-white" },
     { label: "Winning Trades", value: `${summary.winningTrades} (${formatPercent(summary.totalTrades ? (summary.winningTrades / summary.totalTrades) * 100 : 0)})`, tone: "text-white" },

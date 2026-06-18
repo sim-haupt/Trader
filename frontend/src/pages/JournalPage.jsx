@@ -34,7 +34,8 @@ import {
   getEffectiveTradeCommission,
   getTradeFeeDisplayValue,
   getTradeGrossPnl,
-  getTradeNetPnl
+  getTradeNetPnl,
+  getTradePerSharePnl
 } from "../utils/tradePnl";
 import { normalizeRichTextHtml } from "../utils/richText";
 import {
@@ -601,7 +602,7 @@ function buildDailyJournal(
     const netPnl = getTradeNetPnl(trade, defaultCommission, defaultFees);
     const pnl = pnlType === "NET" ? grossPnl : buildTradePnl(trade, pnlType, defaultCommission, defaultFees);
     const quantity = Number(trade.quantity || 0);
-    const perSharePnl = Math.abs(quantity) > 0 ? pnl / Math.abs(quantity) : 0;
+    const perSharePnl = getTradePerSharePnl(trade, pnl);
     const commissions = getEffectiveTradeCommission(trade);
     const fees = getTradeFeeDisplayValue(trade);
     const costs = commissions + fees;
@@ -740,9 +741,7 @@ function buildDailyJournal(
         totalFeesEur: day.fxRate ? Number(day.totalFeesEur.toFixed(2)) : null,
         totalCosts: Number(journalCommissionTotal.toFixed(2)),
         totalCostsEur: totalCommissionEur,
-        averagePerShare: Number(
-          (day.totalTrades > 0 ? day.perShareTotal / day.totalTrades : 0).toFixed(4)
-        ),
+        averagePerShare: Number(day.perShareTotal.toFixed(4)),
         winRate: day.totalTrades ? (day.wins / day.totalTrades) * 100 : 0,
         note: journalDaysByDay.get(day.dayKey)?.notes || ""
       };

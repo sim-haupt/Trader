@@ -69,3 +69,17 @@ export function getTradePnlByType(trade, pnlType = "GROSS", defaultCommission = 
     ? getTradeGrossPnl(trade)
     : getTradeNetPnl(trade, defaultCommission, defaultFees);
 }
+
+export function getPerSharePnl(pnl, quantity) {
+  const shareCount = Math.abs(asNumber(quantity));
+
+  if (shareCount === 0) {
+    return 0;
+  }
+
+  return Number((asNumber(pnl) / shareCount).toFixed(4));
+}
+
+export function getTradePerSharePnl(trade, pnl) {
+  return getPerSharePnl(pnl, trade?.quantity);
+}

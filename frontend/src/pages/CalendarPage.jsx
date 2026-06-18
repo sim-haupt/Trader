@@ -7,7 +7,7 @@ import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 import tradeService from "../services/tradeService";
 import { useAuth } from "../context/AuthContext";
 import { formatCurrency, formatDateTimeLocal } from "../utils/formatters";
-import { getTradeGrossPnl } from "../utils/tradePnl";
+import { getTradeGrossPnl, getTradePerSharePnl } from "../utils/tradePnl";
 
 const weekdayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const CALENDAR_VALUE_MODES = [
@@ -35,7 +35,7 @@ function buildDailyStats(trades) {
     const dayKey = getDayKey(date);
     const pnl = getTradeGrossPnl(trade);
     const quantity = Math.abs(Number(trade.quantity || 0));
-    const perSharePnl = quantity > 0 ? pnl / quantity : 0;
+    const perSharePnl = getTradePerSharePnl(trade, pnl);
     const existing = dailyMap.get(dayKey) || {
       date: dayKey,
       pnl: 0,
@@ -58,9 +58,7 @@ function buildDailyStats(trades) {
       existing.losses += 1;
     }
 
-    existing.averagePerShare = Number(
-      (existing.trades > 0 ? existing.perShareTotal / existing.trades : 0).toFixed(4)
-    );
+    existing.averagePerShare = Number(existing.perShareTotal.toFixed(4));
 
     dailyMap.set(dayKey, existing);
   }
@@ -291,9 +289,7 @@ function MonthDetailSection({ month, displayMode, onDisplayModeChange, onClose, 
             },
             { pnl: 0, volume: 0, perShareTotal: 0, trades: 0 }
           );
-          const weekAveragePerShare = Number(
-            (weekStats.trades > 0 ? weekStats.perShareTotal / weekStats.trades : 0).toFixed(4)
-          );
+          const weekAveragePerShare = Number(weekStats.perShareTotal.toFixed(4));
           const weekDisplayTone = getDisplayTone(weekAveragePerShare);
           const weekDollarTone = getDisplayTone(weekStats.pnl);
 
@@ -401,9 +397,7 @@ function CalendarPage() {
         }),
         weeks,
         monthPnl: Number(monthPnl.toFixed(2)),
-        monthAveragePerShare: Number(
-          (monthTrades > 0 ? monthPerShareTotal / monthTrades : 0).toFixed(4)
-        ),
+        monthAveragePerShare: Number(monthPerShareTotal.toFixed(4)),
         monthTrades
       };
     });

@@ -1,4 +1,4 @@
-import { getTradeGrossPnl, getTradePnlByType } from "./tradePnl";
+import { getTradeGrossPnl, getTradePerSharePnl, getTradePnlByType } from "./tradePnl";
 import {
   getLastMarketDayKeys,
   isUsMarketDay,
@@ -320,7 +320,7 @@ export function buildAnalytics(trades, options = {}) {
       : getTradePnlByType(trade, pnlType, defaultCommission, defaultFees);
     const quantity = Math.abs(asNumber(trade.quantity));
     const holdMinutes = getHoldMinutes(trade, entryDate);
-    const perSharePnl = quantity > 0 ? pnl / quantity : 0;
+    const perSharePnl = getTradePerSharePnl(trade, pnl);
     const dayKey = getLocalDayKey(entryDate);
     const weekday = getMarketDateParts(entryDate).weekday;
     const timeBucket = getTimeBucket(entryDate);

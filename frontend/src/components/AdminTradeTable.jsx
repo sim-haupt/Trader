@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { formatCurrency, formatDate, formatDateTimeLocal, toMarketISOString } from "../utils/formatters";
-import { getTradeNetPnl } from "../utils/tradePnl";
+import { getPerSharePnl, getTradeNetPnl } from "../utils/tradePnl";
 
 function createFormState(trade) {
   return {
@@ -99,7 +99,7 @@ function AdminTradeTable({
               const quantity = isEditing
                 ? Math.abs(Number(draft?.quantity ?? trade.quantity ?? 0))
                 : Math.abs(Number(trade.quantity ?? 0));
-              const perSharePnl = quantity > 0 ? pnl / quantity : 0;
+              const perSharePnl = getPerSharePnl(pnl, quantity);
 
               return (
                 <tr key={trade.id} className="align-top transition hover:bg-white/5">

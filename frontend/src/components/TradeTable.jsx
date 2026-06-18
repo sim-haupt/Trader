@@ -1,5 +1,5 @@
 import { formatCurrency, formatDate } from "../utils/formatters";
-import { getTradeNetPnl } from "../utils/tradePnl";
+import { getTradeNetPnl, getTradePerSharePnl } from "../utils/tradePnl";
 
 function EditIcon() {
   return (
@@ -72,8 +72,7 @@ function TradeTable({
           <tbody className="divide-y divide-[var(--line)] bg-transparent">
             {trades.map((trade, index) => {
               const pnl = getTradeNetPnl(trade);
-              const quantity = Math.abs(Number(trade.quantity ?? 0));
-              const perSharePnl = quantity > 0 ? pnl / quantity : 0;
+              const perSharePnl = getTradePerSharePnl(trade, pnl);
               const executionCount =
                 Number(trade.reportedExecutionCount ?? trade.executions?.length ?? 0) || 0;
               const currentDate = formatDate(trade.entryDate);

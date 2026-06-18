@@ -1,4 +1,4 @@
-import { getTradeNetPnl } from "./tradePnl";
+import { getPerSharePnl, getTradeNetPnl } from "./tradePnl";
 
 function asNumber(value) {
   const numericValue = Number(value ?? 0);
@@ -222,15 +222,7 @@ function buildTradeTimeline(trade, defaultCommission = 0, defaultFees = 0) {
       quantity: Math.abs(asNumber(trade.quantity)),
       price: asNumber(trade.exitPrice),
       pnl: getTradePnl(trade, defaultCommission, defaultFees),
-      perSharePnl:
-        Math.abs(asNumber(trade.quantity)) > 0
-          ? Number(
-              (
-                getTradePnl(trade, defaultCommission, defaultFees) /
-                Math.abs(asNumber(trade.quantity))
-              ).toFixed(4)
-            )
-          : 0,
+      perSharePnl: getPerSharePnl(getTradePnl(trade, defaultCommission, defaultFees), trade.quantity),
       position: 0,
       source: "SYNTHETIC"
     });
