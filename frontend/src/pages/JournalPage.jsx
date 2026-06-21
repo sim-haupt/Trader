@@ -1101,7 +1101,7 @@ function JournalDayCard({
           </div>
         </div>
 
-        <div className="rounded-[6px] border border-[var(--line)] bg-[rgba(255,255,255,0.05)] p-4">
+        <div className="rounded-[6px] border border-[var(--line)] bg-[#ffffff0d] p-4">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div className="ui-title inline-flex min-h-[36px] items-center text-[10px] leading-none text-white/56">
               Day Review
@@ -1163,7 +1163,7 @@ function JournalDayCard({
         <div className="ui-table-shell overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
-              <thead className="bg-white/[0.03] text-left text-white/56">
+              <thead className="bg-[#ffffff0d] text-left text-white/56">
                 <tr>
                   <th className="px-4 py-3 font-medium">Time</th>
                   <th className="px-4 py-3 font-medium">Symbol</th>
@@ -1180,7 +1180,7 @@ function JournalDayCard({
                   day.trades.map((trade) => (
                     <tr
                       key={trade.id}
-                      className="cursor-pointer border-t border-[var(--line)] bg-[rgba(255,255,255,0.05)] text-white/82 transition hover:bg-white/[0.08]"
+                      className="cursor-pointer border-t border-[var(--line)] bg-[#ffffff0d] text-white/82 transition hover:bg-white/[0.08]"
                       onClick={() => onOpenTrade(trade.id)}
                     >
                       <td className="px-4 py-3 whitespace-nowrap">{trade.entryTimeLabel}</td>
@@ -1228,7 +1228,7 @@ function JournalDayCard({
                     </tr>
                   ))
                 ) : (
-                  <tr className="border-t border-[var(--line)] bg-[rgba(255,255,255,0.05)]">
+                  <tr className="border-t border-[var(--line)] bg-[#ffffff0d]">
                     <td colSpan={8} className="px-4 py-5 text-sm text-white/40">
                       No trades logged for this day.
                     </td>

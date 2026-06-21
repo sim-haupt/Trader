@@ -46,7 +46,7 @@ function TradeTable({
     <div className="ui-table-shell">
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-[var(--line)] text-sm">
-          <thead className="bg-[rgba(255,255,255,0.05)]">
+          <thead className="bg-[#ffffff0d]">
             <tr className="ui-title text-left text-[11px] text-white/58">
               {onToggleSelection && (
                 <th className="px-4 py-4">
@@ -103,7 +103,7 @@ function TradeTable({
                         onSelectTrade?.(trade);
                       }
                     }}
-                    className="cursor-pointer bg-[rgba(255,255,255,0.05)] transition hover:bg-white/[0.08] focus:bg-white/[0.08] focus:outline-none"
+                    className="cursor-pointer bg-[#ffffff0d] transition hover:bg-white/[0.08] focus:bg-white/[0.08] focus:outline-none"
                   >
                     {onToggleSelection && (
                       <td className="px-4 py-4">
