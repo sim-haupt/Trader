@@ -1101,7 +1101,7 @@ function JournalDayCard({
           </div>
         </div>
 
-        <div className="rounded-[6px] border border-[var(--line)] bg-[rgba(255,255,255,0.05)] p-4">
+        <div className="ui-inset-box p-4">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div className="ui-title inline-flex min-h-[36px] items-center text-[10px] leading-none text-white/56">
               Day Review
@@ -1145,14 +1145,14 @@ function JournalDayCard({
           ) : (
             <div className="space-y-4">
               {day.note ? (
-                <div className="rounded-[6px] border border-[var(--line)] bg-black px-4 py-4">
+                <div className="ui-surface-subtle px-4 py-4">
                   <div
                     className="prose prose-invert max-w-none text-sm text-white/72"
                     dangerouslySetInnerHTML={{ __html: normalizeRichTextHtml(day.note) }}
                   />
                 </div>
               ) : (
-                <div className="rounded-[6px] border border-dashed border-[var(--line)] bg-black px-4 py-5 text-sm text-white/40">
+                <div className="ui-surface-subtle border-dashed px-4 py-5 text-sm text-white/40">
                   No notes captured for this trading day yet.
                 </div>
               )}
