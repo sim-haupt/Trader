@@ -23,7 +23,7 @@ function buildIframeSrc(symbol) {
     interval: "1",
     symboledit: "1",
     saveimage: "1",
-    toolbarbg: "#12192b",
+    toolbarbg: "#1f1f1f",
     theme: "dark",
     style: "1",
     timezone: "America/New_York",

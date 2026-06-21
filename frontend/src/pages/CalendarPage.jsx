@@ -416,7 +416,7 @@ function CalendarPage() {
   }
 
   if (error) {
-    return <div className="ui-notice border-coral/20 bg-[#1b1012] text-coral">{error}</div>;
+    return <div className="ui-notice border-coral/20 bg-coral/10 text-coral">{error}</div>;
   }
 
   if (trades.length === 0) {

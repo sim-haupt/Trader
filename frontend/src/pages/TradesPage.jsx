@@ -887,7 +887,7 @@ function TradesPage() {
         </>
       )}
 
-      {error && <div className="ui-notice border-coral/20 bg-[#1b1012] text-coral">{error}</div>}
+      {error && <div className="ui-notice border-coral/20 bg-coral/10 text-coral">{error}</div>}
 
       {!isImportMode ? (
         <Card

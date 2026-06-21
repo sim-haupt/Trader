@@ -822,7 +822,7 @@ function JournalDayCard({
               positive
                 ? "border-mint bg-mint/10 text-mint"
                 : negative
-                  ? "border-coral bg-[#1b1012] text-coral"
+                  ? "border-coral bg-coral/10 text-coral"
                   : "border-[#e5e7eb42] bg-white/[0.05] text-mist"
             }`}
           >
@@ -833,7 +833,7 @@ function JournalDayCard({
               averagePerSharePositive
                 ? "border-mint bg-mint/10 text-mint"
                 : averagePerShareNegative
-                  ? "border-coral bg-[#1b1012] text-coral"
+                  ? "border-coral bg-coral/10 text-coral"
                   : "border-[#e5e7eb42] bg-white/[0.05] text-mist"
             }`}
           >
@@ -1661,7 +1661,7 @@ function JournalPage() {
   }
 
   if (error) {
-    return <div className="ui-notice border-coral/20 bg-[#1b1012] text-coral">{error}</div>;
+    return <div className="ui-notice border-coral/20 bg-coral/10 text-coral">{error}</div>;
   }
 
   return (

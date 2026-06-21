@@ -335,7 +335,7 @@ function DateRangePicker({
                   selectedStart || selectedEnd
                     ? "border border-[var(--line)] bg-[#1f1f1f] text-[var(--text)]"
                     : inRange
-                      ? "bg-[#111111] text-[var(--text)]"
+                      ? "bg-[#1f1f1f] text-[var(--text)]"
                       : currentMonth
                         ? "text-[var(--text-muted)] hover:bg-[#1f1f1f] hover:text-[var(--text)]"
                         : "text-white/22"

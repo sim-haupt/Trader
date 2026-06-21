@@ -6,7 +6,7 @@ export default {
       colors: {
         ink: "#ededed",
         panel: "#000000",
-        line: "rgb(31,31,31)",
+        line: "#1f1f1f",
         mist: "#ffffff9c",
         mint: "#34e0a1",
         coral: "#ff5f7a",

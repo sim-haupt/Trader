@@ -38,7 +38,7 @@ export const DEFAULT_DASHBOARD_LAYOUT = [
 function tooltipStyle() {
   return {
     background: "#050505",
-    border: "1px solid rgb(31,31,31)",
+    border: "1px solid #1f1f1f",
     borderRadius: "6px",
     color: "#ededed",
     boxShadow: "none"
@@ -302,7 +302,7 @@ function getHeatmapTileStyle(trade, maxWin, maxLoss) {
   if (!trade) {
     return {
       background: "rgba(255,255,255,0.03)",
-      borderColor: "rgb(31,31,31)"
+      borderColor: "#1f1f1f"
     };
   }
 

@@ -79,7 +79,7 @@ function RegisterPage() {
             className="ui-input"
           />
 
-          {error && <p className="ui-notice border-coral/20 bg-[#1b1012] text-coral">{error}</p>}
+          {error && <p className="ui-notice border-coral/20 bg-coral/10 text-coral">{error}</p>}
 
           <button
             type="submit"

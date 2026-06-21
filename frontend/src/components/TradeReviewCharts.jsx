@@ -285,7 +285,7 @@ function renderOverlay({ overlayEl, chart, candleSeries, bars, markers, dayStamp
     label.style.left = "12px";
     label.style.top = `${marker.shape === "arrowUp" ? -24 : 6}px`;
     label.style.color = marker.color;
-    label.style.background = "rgba(11,15,23,0.94)";
+    label.style.background = "rgba(5,5,5,0.94)";
     label.style.borderColor = `${marker.color}66`;
     label.style.boxShadow = "0 8px 24px rgba(0,0,0,0.28)";
     label.style.opacity = "0";
@@ -338,7 +338,7 @@ function PremiumChart({
 
     const chartOptions = {
       layout: {
-        background: { type: ColorType.Solid, color: "#0b1018" },
+        background: { type: ColorType.Solid, color: "#050505" },
         textColor: "#b9c2d0",
         attributionLogo: false
       },
@@ -362,11 +362,11 @@ function PremiumChart({
       crosshair: {
         vertLine: {
           color: "rgba(125,211,252,0.28)",
-          labelBackgroundColor: "#111827"
+          labelBackgroundColor: "#1f1f1f"
         },
         horzLine: {
           color: "rgba(125,211,252,0.28)",
-          labelBackgroundColor: "#111827"
+          labelBackgroundColor: "#1f1f1f"
         }
       }
     };

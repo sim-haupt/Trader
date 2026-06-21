@@ -7,15 +7,19 @@
 :root,
 body,
 body[data-theme="dark"] {
+  --black-0: #000000;
+  --black-1: #050505;
+  --black-2: #1f1f1f;
+  --black-3: #262626;
   --bg-canvas: #000000;
   --bg-elevated: #000000;
   --surface-1: #000000;
   --surface-2: #050505;
-  --surface-3: #0b0b0b;
-  --surface-soft: #0c0c0c;
-  --line: rgb(31, 31, 31);
-  --line-strong: rgb(31, 31, 31);
-  --line-soft: rgb(31, 31, 31);
+  --surface-3: #1f1f1f;
+  --surface-soft: #050505;
+  --line: #1f1f1f;
+  --line-strong: #1f1f1f;
+  --line-soft: #1f1f1f;
   --text: #ededed;
   --text-soft: #ededed;
   --text-muted: #ffffff9c;
@@ -122,7 +126,7 @@ button:disabled {
 }
 
 ::selection {
-  background: #1f1f1f;
+  background: var(--black-2);
   color: #ededed;
 }
 
@@ -132,18 +136,18 @@ button:disabled {
 }
 
 *::-webkit-scrollbar-track {
-  background: #000000;
+  background: var(--black-0);
 }
 
 *::-webkit-scrollbar-thumb {
-  background: rgb(31, 31, 31);
+  background: var(--black-2);
   border: 2px solid transparent;
   border-radius: 6px;
   background-clip: padding-box;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: rgb(45, 45, 45);
+  background: var(--black-3);
   background-clip: padding-box;
 }
 
@@ -173,11 +177,11 @@ strong {
     gap: 0;
   }
 
-.top-status {
+  .top-status {
     position: relative;
     z-index: 1;
     border-bottom: 1px solid var(--line);
-    background: #1f1f1f;
+    background: var(--black-2);
     backdrop-filter: blur(10px);
     box-shadow: none;
     padding: 18px 28px;
@@ -269,7 +273,7 @@ strong {
   }
 
   .ui-button {
-    background: #1f1f1f;
+    background: var(--black-2);
     color: #ededed;
     padding: 9px 13px;
     font-size: 0.86rem;
@@ -277,7 +281,7 @@ strong {
   }
 
   .ui-button:hover {
-    background: #262626;
+    background: var(--black-3);
   }
 
   .ui-button-solid {
@@ -309,7 +313,7 @@ strong {
   }
 
   .ui-chip {
-    background: #0f0f0f;
+    background: var(--black-1);
     color: #ededed;
     border-color: rgba(255, 255, 255, 0.52);
     padding: 6px 10px;
@@ -324,7 +328,7 @@ strong {
     gap: 8px;
     border-radius: var(--radius-sm);
     border: 1px solid rgba(255, 255, 255, 0.52);
-    background: #0f0f0f;
+    background: var(--black-1);
     color: #ededed;
     padding: 6px 10px;
     font-size: 0.74rem;
@@ -339,7 +343,7 @@ strong {
 
   .ui-chip-removable:hover {
     border-color: rgba(255, 255, 255, 0.68);
-    background: #151515;
+    background: var(--black-2);
   }
 
   .ui-chip-remove-icon {
@@ -350,7 +354,7 @@ strong {
   .ui-notice {
     border: 1px solid var(--line-strong);
     border-radius: var(--radius-md);
-    background: #050505;
+    background: var(--black-1);
     color: var(--text);
     padding: 14px 16px;
     font-size: 0.93rem;
@@ -369,14 +373,14 @@ strong {
   .ui-surface-subtle {
     border: 1px solid var(--line);
     border-radius: var(--radius-md);
-    background: #050505;
+    background: var(--black-1);
     box-shadow: none;
   }
 
   .ui-metric-tile {
     border: 1px solid var(--line);
     border-radius: var(--radius-md);
-    background: #050505;
+    background: var(--black-1);
     padding: 16px;
     box-shadow: none;
   }
@@ -384,7 +388,7 @@ strong {
   .ui-inset-box {
     border: 1px solid var(--line);
     border-radius: var(--radius-md);
-    background: #050505;
+    background: var(--black-1);
     box-shadow: none;
   }
 
@@ -403,7 +407,7 @@ strong {
     padding: 4px;
     border: 1px solid var(--line);
     border-radius: var(--radius-sm);
-    background: #000000;
+    background: var(--black-0);
     box-shadow: none;
   }
 
@@ -420,12 +424,12 @@ strong {
   }
 
   .ui-segment button:hover {
-    background: #1f1f1f;
+    background: var(--black-2);
     color: var(--text);
   }
 
   .ui-segment button[data-active="true"] {
-    background: #1f1f1f;
+    background: var(--black-2);
     color: var(--text);
     border-color: var(--line);
   }
@@ -446,7 +450,7 @@ strong {
     height: 100vh;
     overflow-y: auto;
     border-right: 1px solid var(--line);
-    background: #000000;
+    background: var(--black-0);
   }
 
   .ui-sidebar-nav {
@@ -473,23 +477,23 @@ strong {
   }
 
   .ui-sidebar-link:hover {
-    background: #1f1f1f;
+    background: var(--black-2);
     color: var(--text);
   }
 
   .ui-sidebar-link[data-active="true"] {
     border-color: var(--line);
-    background: #1f1f1f;
+    background: var(--black-2);
     color: var(--text);
   }
 
   .ui-content {
     min-width: 0;
-    background: #000000;
+    background: var(--black-0);
   }
 
   .ui-content-body {
-    background-color: #000000;
+    background-color: var(--black-0);
     padding: 24px 28px 32px;
   }
 
