@@ -489,8 +489,13 @@ strong {
   }
 
   .ui-content-body {
-    background-color: #ffffff0d;
+    background-color: #000000;
     padding: 24px 28px 32px;
+  }
+
+  .dashboard-page .ui-panel,
+  .dashboard-page .ui-metric-tile {
+    background: #ffffff0d;
   }
 }
 
