@@ -177,7 +177,7 @@ strong {
     position: relative;
     z-index: 1;
     border-bottom: 1px solid var(--line);
-    background: rgba(0, 0, 0, 0.96);
+    background: #1f1f1f;
     backdrop-filter: blur(10px);
     box-shadow: none;
     padding: 18px 28px;
@@ -497,9 +497,16 @@ strong {
     background: #ffffff0d;
   }
 
+  .reports-page .ui-panel {
+    background: #ffffff0d;
+  }
+
   .dashboard-page-widget:not(.dashboard-page-days) .ui-metric-tile,
   .dashboard-page-widget:not(.dashboard-page-days) .ui-inset-box,
-  .dashboard-page-widget:not(.dashboard-page-days) .ui-surface-subtle {
+  .dashboard-page-widget:not(.dashboard-page-days) .ui-surface-subtle,
+  .reports-page .ui-metric-tile,
+  .reports-page .ui-inset-box,
+  .reports-page .ui-surface-subtle {
     background: #ffffff03;
   }
 }

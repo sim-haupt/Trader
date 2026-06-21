@@ -2399,7 +2399,7 @@ function ReportsPage() {
   const pnlLabel = pnlType === "GROSS" ? "GROSS" : "NET";
 
   return (
-    <div className="space-y-5">
+    <div className="reports-page space-y-5">
       <Card className="relative z-20 overflow-visible">
         <div className="space-y-5">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[180px_160px_160px_160px_180px_auto] xl:items-end xl:justify-start">
