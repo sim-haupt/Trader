@@ -504,7 +504,9 @@ strong {
   .reports-page .ui-panel,
   .journal-page .ui-panel,
   .settings-page .ui-panel,
-  .trades-page .ui-panel {
+  .trades-page .ui-panel,
+  .trade-detail-page .ui-panel,
+  .trade-detail-page-widget {
     background: #ffffff0d;
   }
 
@@ -522,7 +524,11 @@ strong {
   .settings-page .ui-surface-subtle,
   .trades-page .ui-metric-tile,
   .trades-page .ui-inset-box,
-  .trades-page .ui-surface-subtle {
+  .trades-page .ui-surface-subtle,
+  .trade-detail-page .ui-metric-tile,
+  .trade-detail-page .ui-inset-box,
+  .trade-detail-page .ui-surface-subtle,
+  .trade-detail-page .ui-table-shell {
     background: #ffffff03;
   }
 }

@@ -23,28 +23,36 @@ function TradeDetailPage() {
   });
 
   if (loading && !trade) {
-    return <LoadingState label="Loading trade..." panel className="min-h-[420px]" />;
+    return (
+      <div className="trade-detail-page">
+        <LoadingState label="Loading trade..." panel className="min-h-[420px]" />
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="ui-notice border-coral/20 bg-coral/10 text-coral">{error}</div>;
+    return <div className="trade-detail-page ui-notice border-coral/20 bg-coral/10 text-coral">{error}</div>;
   }
 
   if (!trade) {
     return (
-      <EmptyState
-        title="Trade not found"
-        description="This trade could not be loaded. It may have been deleted."
-      />
+      <div className="trade-detail-page">
+        <EmptyState
+          title="Trade not found"
+          description="This trade could not be loaded. It may have been deleted."
+        />
+      </div>
     );
   }
 
   return (
-    <TradeDetailModal
-      trade={trade}
-      pageMode
-      onClose={() => navigate("/trades")}
-    />
+    <div className="trade-detail-page w-full">
+      <TradeDetailModal
+        trade={trade}
+        pageMode
+        onClose={() => navigate("/trades")}
+      />
+    </div>
   );
 }
 
