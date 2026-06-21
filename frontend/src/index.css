@@ -496,6 +496,12 @@ strong {
   .dashboard-page-widget {
     background: #ffffff0d;
   }
+
+  .dashboard-page-widget .ui-metric-tile,
+  .dashboard-page-widget .ui-inset-box,
+  .dashboard-page-widget .ui-surface-subtle {
+    background: #ffffff08;
+  }
 }
 
 .font-semibold,
