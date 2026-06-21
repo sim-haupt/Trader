@@ -497,10 +497,10 @@ strong {
     background: #ffffff0d;
   }
 
-  .dashboard-page-widget .ui-metric-tile,
-  .dashboard-page-widget .ui-inset-box,
-  .dashboard-page-widget .ui-surface-subtle {
-    background: #ffffff08;
+  .dashboard-page-widget:not(.dashboard-page-days) .ui-metric-tile,
+  .dashboard-page-widget:not(.dashboard-page-days) .ui-inset-box,
+  .dashboard-page-widget:not(.dashboard-page-days) .ui-surface-subtle {
+    background: #ffffff03;
   }
 }
 

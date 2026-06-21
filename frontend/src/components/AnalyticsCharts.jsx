@@ -771,7 +771,7 @@ function AnalyticsCharts({
 
   return (
     <div className="space-y-6">
-      <div className="dashboard-page-widget ui-panel p-5">
+      <div className="dashboard-page-days dashboard-page-widget ui-panel p-5">
         <div className="grid gap-3 md:grid-cols-7">
           {lastSevenDays.map((day) => {
             const tone = getLastSevenDayTone(day);
