@@ -1665,7 +1665,7 @@ function JournalPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="journal-page space-y-6">
       <Card title="TRADING JOURNAL">
         {fxRateError ? (
           <div className="mb-4 ui-notice border-gold/20 bg-gold/10 text-gold">

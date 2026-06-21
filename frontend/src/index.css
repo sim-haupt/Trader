@@ -497,7 +497,8 @@ strong {
     background: #ffffff0d;
   }
 
-  .reports-page .ui-panel {
+  .reports-page .ui-panel,
+  .journal-page .ui-panel {
     background: #ffffff0d;
   }
 
@@ -506,7 +507,10 @@ strong {
   .dashboard-page-widget:not(.dashboard-page-days) .ui-surface-subtle,
   .reports-page .ui-metric-tile,
   .reports-page .ui-inset-box,
-  .reports-page .ui-surface-subtle {
+  .reports-page .ui-surface-subtle,
+  .journal-page .ui-metric-tile,
+  .journal-page .ui-inset-box,
+  .journal-page .ui-surface-subtle {
     background: #ffffff03;
   }
 }
