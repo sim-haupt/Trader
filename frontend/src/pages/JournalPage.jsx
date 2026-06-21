@@ -852,7 +852,7 @@ function JournalDayCard({
     >
       <div className="space-y-5">
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)]">
-          <div className="rounded-[6px] border border-[var(--line)] bg-black">
+          <div className="ui-surface-subtle overflow-hidden">
             <div className="border-b border-[var(--line)] px-4 py-4">
               <div className="ui-title text-[10px] text-white/72">Day Running P&amp;L</div>
               <div className="mt-3 text-sm text-white/54">
@@ -874,7 +874,7 @@ function JournalDayCard({
                       <stop offset="100%" stopColor="rgba(255, 95, 122, 0.02)" />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
+                  <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
                   <XAxis
                     type="number"
                     dataKey="timeValue"
