@@ -21,7 +21,7 @@ import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 import tradeService from "../services/tradeService";
 import journalService from "../services/journalService";
 import tagService from "../services/tagService";
-import strategyService from "../services/strategyService";
+import setupService from "../services/setupService";
 import {
   formatCostCurrency,
   formatCurrency,
@@ -337,7 +337,7 @@ function buildSignedChartSeries(points) {
 
 function matchesTradeFilters(trade, filters) {
   const symbol = String(trade.symbol || "").toUpperCase();
-  const strategy = String(trade.strategy || "").trim();
+  const setup = String(trade.setup || "").trim();
   const side = String(trade.side || "").toUpperCase();
   const dayKey = getDayKey(trade.entryDate);
   const tags = getTradeTags(trade);
@@ -350,7 +350,7 @@ function matchesTradeFilters(trade, filters) {
     return false;
   }
 
-  if (filters.strategy && strategy !== filters.strategy) {
+  if (filters.setup && setup !== filters.setup) {
     return false;
   }
 
@@ -495,7 +495,7 @@ function exportJournalDayTrades(day) {
     "Entry Date",
     "Exit Date",
     "Executions",
-    "Strategy",
+    "Setup",
     "Tags",
     "Gross P&L USD",
     "Commissions USD",
@@ -525,7 +525,7 @@ function exportJournalDayTrades(day) {
     trade.entryDate,
     trade.exitDate ?? "",
     trade.execCount,
-    trade.strategy ?? "",
+    trade.setup ?? "",
     trade.parsedTags.join("; "),
     Number(trade.dayPnl ?? 0).toFixed(2),
     Number(trade.dayCommissions ?? 0).toFixed(2),
@@ -1171,7 +1171,7 @@ function JournalDayCard({
                   <th className="px-4 py-3 font-medium">Execs</th>
                   <th className="px-4 py-3 font-medium">P&amp;L</th>
                   <th className="px-4 py-3 font-medium">P&amp;L / Share</th>
-                  <th className="px-4 py-3 font-medium">Strategy</th>
+                  <th className="px-4 py-3 font-medium">Setup</th>
                   <th className="px-4 py-3 font-medium">Tags</th>
                 </tr>
               </thead>
@@ -1210,7 +1210,7 @@ function JournalDayCard({
                         )}
                       </td>
                       <td className="px-4 py-3 text-white/54">
-                        {trade.strategy ? <span className="ui-chip">{trade.strategy}</span> : <span className="text-white/26">—</span>}
+                        {trade.setup ? <span className="ui-chip">{trade.setup}</span> : <span className="text-white/26">—</span>}
                       </td>
                       <td className="px-4 py-3">
                         {trade.parsedTags.length > 0 ? (
@@ -1252,7 +1252,7 @@ function JournalPage() {
   const [filters, setFilters] = useState({
     symbol: "",
     tag: "",
-    strategy: "",
+    setup: "",
     side: "",
     from: selectedDay,
     to: selectedDay,
@@ -1293,9 +1293,9 @@ function JournalPage() {
     deps: []
   });
 
-  const strategiesResource = useCachedAsyncResource({
-    peek: () => strategyService.peekStrategies(),
-    load: () => strategyService.getStrategies(),
+  const setupsResource = useCachedAsyncResource({
+    peek: () => setupService.peekSetups(),
+    load: () => setupService.getSetups(),
     initialValue: [],
     deps: []
   });
@@ -1349,10 +1349,10 @@ function JournalPage() {
     const accountStartKey =
       user?.activeAccountScope === "LIVE" && user?.liveDataStartDate ? user.liveDataStartDate : null;
     const hasTradeSpecificFilters = Boolean(
-      filters.symbol || filters.tag || filters.strategy || filters.side
+      filters.symbol || filters.tag || filters.setup || filters.side
     );
 
-    // If you filter by ticker/tag/strategy/side, default to hiding empty days (matches your request).
+    // If you filter by ticker/tag/setup/side, default to hiding empty days (matches your request).
     const hideNoTradeDays = Boolean(filters.hideNoTradeDays || hasTradeSpecificFilters);
 
     const allTradeDayKeys = tradesResource.data.map((trade) => getDayKey(trade.entryDate)).filter(Boolean);
@@ -1393,7 +1393,7 @@ function JournalPage() {
     journalDaysResource.data,
     filters.symbol,
     filters.tag,
-    filters.strategy,
+    filters.setup,
     filters.side,
     filters.from,
     filters.to,
@@ -1483,7 +1483,7 @@ function JournalPage() {
     setFilters({
       symbol: "",
       tag: "",
-      strategy: "",
+      setup: "",
       side: "",
       from: "",
       to: "",
@@ -1652,9 +1652,9 @@ function JournalPage() {
     tradesResource.loading ||
     journalDaysResource.loading ||
     tagsResource.loading ||
-    strategiesResource.loading;
+    setupsResource.loading;
   const error =
-    tradesResource.error || journalDaysResource.error || tagsResource.error || strategiesResource.error;
+    tradesResource.error || journalDaysResource.error || tagsResource.error || setupsResource.error;
 
   if (loading) {
     return <LoadingState label="Loading journal..." panel />;
@@ -1693,7 +1693,7 @@ function JournalPage() {
           filters={filters}
           onChange={updateFilter}
           onReset={handleResetFilters}
-          strategies={strategiesResource.data || []}
+          setups={setupsResource.data || []}
           tags={tagsResource.data || []}
           actionContent={
             <button

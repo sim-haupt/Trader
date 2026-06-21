@@ -1,7 +1,7 @@
 import CustomSelect from "./ui/CustomSelect";
 import DateRangePicker from "./ui/DateRangePicker";
 
-function Filters({ filters, onChange, onReset, strategies = [], tags = [], actionContent = null }) {
+function Filters({ filters, onChange, onReset, setups = [], tags = [], actionContent = null }) {
   return (
     <div className="relative z-20 overflow-visible">
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[180px_160px_160px_160px_180px_auto] xl:items-end xl:justify-start">
@@ -33,15 +33,15 @@ function Filters({ filters, onChange, onReset, strategies = [], tags = [], actio
         </div>
 
         <div className="min-w-0 xl:w-[160px]">
-          <label className="mb-2 block text-xs font-medium text-white/72">Strategy</label>
+          <label className="mb-2 block text-xs font-medium text-white/72">Setup</label>
           <CustomSelect
-            value={filters.strategy}
-            onChange={(nextValue) => onChange("strategy", nextValue)}
+            value={filters.setup}
+            onChange={(nextValue) => onChange("setup", nextValue)}
             options={[
               { label: "All", value: "" },
-              ...strategies.map((strategy) => ({
-                label: strategy.name,
-                value: strategy.name
+              ...setups.map((setup) => ({
+                label: setup.name,
+                value: setup.name
               }))
             ]}
             placeholder="All"

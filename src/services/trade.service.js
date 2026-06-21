@@ -190,8 +190,10 @@ function buildTradeWhere(actor, filters = {}) {
     };
   }
 
-  if (filters.strategy) {
-    where.strategy = filters.strategy;
+  const setupFilter = filters.setup || filters.strategy;
+
+  if (setupFilter) {
+    where.strategy = setupFilter;
   }
 
   if (filters.from || filters.to) {
@@ -234,8 +236,10 @@ async function createTrade(actor, data) {
     await tagService.ensureTags(actor.id, data.tags);
   }
 
-  if (data.strategy) {
-    await strategyService.ensureStrategies(actor.id, data.strategy);
+  const setup = data.setup || data.strategy;
+
+  if (setup) {
+    await strategyService.ensureStrategies(actor.id, setup);
   }
 
   return trade;
@@ -420,8 +424,10 @@ async function updateTrade(actor, tradeId, data) {
     await tagService.ensureTags(existingTrade.userId, data.tags);
   }
 
-  if (data.strategy) {
-    await strategyService.ensureStrategies(existingTrade.userId, data.strategy);
+  const setup = data.setup || data.strategy;
+
+  if (setup) {
+    await strategyService.ensureStrategies(existingTrade.userId, setup);
   }
 
   return trade;
@@ -442,8 +448,9 @@ async function updateTradeMeta(actor, tradeId, payload) {
 
   const notes =
     payload.notes === undefined ? undefined : payload.notes === "" ? null : payload.notes;
+  const setupValue = payload.setup !== undefined ? payload.setup : payload.strategy;
   const strategy =
-    payload.strategy === undefined ? undefined : payload.strategy === "" ? null : payload.strategy.trim();
+    setupValue === undefined ? undefined : setupValue === "" ? null : setupValue.trim();
 
   const data = {};
 
@@ -561,8 +568,9 @@ async function bulkUpdateTrades(actor, payload) {
   const notes =
     payload.notes === undefined ? undefined : payload.notes === "" ? null : payload.notes;
   const tagsMode = payload.tagsMode || "append";
+  const setupValue = payload.setup !== undefined ? payload.setup : payload.strategy;
   const strategy =
-    payload.strategy === undefined ? undefined : payload.strategy === "" ? null : payload.strategy.trim();
+    setupValue === undefined ? undefined : setupValue === "" ? null : setupValue.trim();
 
   await prisma.$transaction(
     trades.map((trade) => {
@@ -665,7 +673,7 @@ async function createManyTrades(userId, trades, accountScope = "SIMULATOR") {
   )].join(", ");
   const strategyValues = [...new Set(
     trades
-      .map((trade) => String(trade.strategy || "").trim())
+      .map((trade) => String(trade.setup || trade.strategy || "").trim())
       .filter(Boolean)
   )].join(", ");
 

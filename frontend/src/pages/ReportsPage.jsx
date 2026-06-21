@@ -22,7 +22,7 @@ import EmptyState from "../components/ui/EmptyState";
 import LoadingState from "../components/ui/LoadingState";
 import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 import tagService from "../services/tagService";
-import strategyService from "../services/strategyService";
+import setupService from "../services/setupService";
 import tradeService from "../services/tradeService";
 import journalService from "../services/journalService";
 import { formatCostCurrency, formatCurrency, formatPercent } from "../utils/formatters";
@@ -57,7 +57,7 @@ const RANGE_OPTIONS = [
 const REPORT_FILTERS = {
   symbol: "",
   tag: "",
-  strategy: "",
+  setup: "",
   side: "",
   from: "",
   to: ""
@@ -66,7 +66,7 @@ const REPORT_FILTERS = {
 const COMPARE_GROUP_FILTERS = {
   symbol: "",
   tag: "",
-  strategy: "",
+  setup: "",
   side: "",
   tradePnl: "",
   from: "",
@@ -1854,7 +1854,7 @@ function CompareStatsColumn({ title, rows, tradesMatched }) {
   );
 }
 
-function CompareGroupCard({ title, filters, onChange, tags, strategies, matchedCount }) {
+function CompareGroupCard({ title, filters, onChange, tags, setups, matchedCount }) {
   return (
     <div className="relative z-20 overflow-visible rounded-[6px] border border-[var(--line)] bg-black p-4">
       <div className="mb-4">
@@ -1899,13 +1899,13 @@ function CompareGroupCard({ title, filters, onChange, tags, strategies, matchedC
           />
         </div>
         <div className="min-w-0">
-          <label className="mb-2 block text-xs font-medium text-white/72">Strategy</label>
+          <label className="mb-2 block text-xs font-medium text-white/72">Setup</label>
           <CustomSelect
-            value={filters.strategy}
-            onChange={(nextValue) => onChange("strategy", nextValue)}
+            value={filters.setup}
+            onChange={(nextValue) => onChange("setup", nextValue)}
             options={[
               { label: "All", value: "" },
-              ...strategies.map((strategy) => ({ label: strategy.name, value: strategy.name }))
+              ...setups.map((setup) => ({ label: setup.name, value: setup.name }))
             ]}
             placeholder="All"
             buttonClassName="!py-3 !w-full"
@@ -1947,7 +1947,7 @@ function CompareGroupCard({ title, filters, onChange, tags, strategies, matchedC
 
 function CompareSection({
   tags,
-  strategies,
+  setups,
   groupAFilters,
   groupBFilters,
   onGroupAChange,
@@ -1990,7 +1990,7 @@ function CompareSection({
             filters={groupAFilters}
             onChange={onGroupAChange}
             tags={tags}
-            strategies={strategies}
+            setups={setups}
             matchedCount={groupATrades.length}
           />
           <CompareGroupCard
@@ -1998,7 +1998,7 @@ function CompareSection({
             filters={groupBFilters}
             onChange={onGroupBChange}
             tags={tags}
-            strategies={strategies}
+            setups={setups}
             matchedCount={groupBTrades.length}
           />
         </div>
@@ -2089,9 +2089,9 @@ function applyReportFilters(trades, filters, rangeDays) {
     );
   }
 
-  if (filters.strategy) {
+  if (filters.setup) {
     nextTrades = nextTrades.filter(
-      (trade) => String(trade.strategy || "").toLowerCase() === filters.strategy.toLowerCase()
+      (trade) => String(trade.setup || "").toLowerCase() === filters.setup.toLowerCase()
     );
   }
 
@@ -2131,9 +2131,9 @@ function applyCompareGroupFilters(trades, filters, options = {}) {
     );
   }
 
-  if (filters.strategy) {
+  if (filters.setup) {
     nextTrades = nextTrades.filter(
-      (trade) => String(trade.strategy || "").toLowerCase() === filters.strategy.toLowerCase()
+      (trade) => String(trade.setup || "").toLowerCase() === filters.setup.toLowerCase()
     );
   }
 
@@ -2198,9 +2198,9 @@ function ReportsPage() {
     initialValue: [],
     deps: []
   });
-  const { data: strategies = [] } = useCachedAsyncResource({
-    peek: () => strategyService.peekStrategies(),
-    load: () => strategyService.getStrategies(),
+  const { data: setups = [] } = useCachedAsyncResource({
+    peek: () => setupService.peekSetups(),
+    load: () => setupService.getSetups(),
     initialValue: [],
     deps: []
   });
@@ -2426,13 +2426,13 @@ function ReportsPage() {
               />
             </div>
             <div className="min-w-0 xl:w-[160px]">
-              <label className="mb-2 block text-xs font-medium text-white/72">Strategy</label>
+              <label className="mb-2 block text-xs font-medium text-white/72">Setup</label>
               <CustomSelect
-                value={filters.strategy}
-                onChange={(nextValue) => updateFilter("strategy", nextValue)}
+                value={filters.setup}
+                onChange={(nextValue) => updateFilter("setup", nextValue)}
                 options={[
                   { label: "All", value: "" },
-                  ...strategies.map((strategy) => ({ label: strategy.name, value: strategy.name }))
+                  ...setups.map((setup) => ({ label: setup.name, value: setup.name }))
                 ]}
                 placeholder="All"
                 buttonClassName="!py-3"
@@ -2555,7 +2555,7 @@ function ReportsPage() {
       ) : activeTab === "Compare" ? (
         <CompareSection
           tags={tags}
-          strategies={strategies}
+          setups={setups}
           groupAFilters={groupAFilters}
           groupBFilters={groupBFilters}
           onGroupAChange={(key, value) => updateGroupFilters("A", key, value)}

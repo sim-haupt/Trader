@@ -69,7 +69,7 @@ async function deleteStrategy(actor, strategyId) {
 
   await prisma.savedStrategy.deleteMany({ where });
 
-  return { message: "Strategy deleted successfully" };
+  return { message: "Setup deleted successfully" };
 }
 
 module.exports = {

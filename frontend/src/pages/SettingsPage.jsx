@@ -5,7 +5,7 @@ import LoadingState from "../components/ui/LoadingState";
 import EmptyState from "../components/ui/EmptyState";
 import authService from "../services/authService";
 import tagService from "../services/tagService";
-import strategyService from "../services/strategyService";
+import setupService from "../services/setupService";
 import tradeService from "../services/tradeService";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
@@ -20,22 +20,22 @@ function SettingsPage() {
   const [backendMeta, setBackendMeta] = useState(null);
   const [activeSection, setActiveSection] = useState("account");
   const [tags, setTags] = useState(() => tagService.peekTags() || []);
-  const [strategies, setStrategies] = useState(() => strategyService.peekStrategies() || []);
+  const [setups, setSetups] = useState(() => setupService.peekSetups() || []);
   const [newTag, setNewTag] = useState("");
-  const [newStrategy, setNewStrategy] = useState("");
+  const [newSetup, setNewSetup] = useState("");
   const [selectedTagIds, setSelectedTagIds] = useState([]);
-  const [selectedStrategyIds, setSelectedStrategyIds] = useState([]);
+  const [selectedSetupIds, setSelectedSetupIds] = useState([]);
   const [activeAccountScope, setActiveAccountScope] = useState(user?.activeAccountScope ?? "SIMULATOR");
   const [liveDataStartDate, setLiveDataStartDate] = useState(user?.liveDataStartDate ?? "");
-  const [loading, setLoading] = useState(() => !tagService.peekTags() || !strategyService.peekStrategies());
+  const [loading, setLoading] = useState(() => !tagService.peekTags() || !setupService.peekSetups());
   const [savingTag, setSavingTag] = useState(false);
-  const [savingStrategy, setSavingStrategy] = useState(false);
+  const [savingSetup, setSavingSetup] = useState(false);
   const [savingAccount, setSavingAccount] = useState(false);
   const [deletingAllTrades, setDeletingAllTrades] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
-  const [deletingStrategyId, setDeletingStrategyId] = useState(null);
+  const [deletingSetupId, setDeletingSetupId] = useState(null);
   const [bulkDeletingTags, setBulkDeletingTags] = useState(false);
-  const [bulkDeletingStrategies, setBulkDeletingStrategies] = useState(false);
+  const [bulkDeletingSetups, setBulkDeletingSetups] = useState(false);
   const [error, setError] = useState("");
 
   async function loadTags(options = {}) {
@@ -56,18 +56,18 @@ function SettingsPage() {
     }
   }
 
-  async function loadStrategies(options = {}) {
-    if (!strategyService.peekStrategies() || options.forceRefresh) {
+  async function loadSetups(options = {}) {
+    if (!setupService.peekSetups() || options.forceRefresh) {
       setLoading(true);
     }
 
     setError("");
 
     try {
-      const data = await strategyService.getStrategies(options);
-      setStrategies(data);
-      setSelectedStrategyIds((current) =>
-        current.filter((id) => data.some((strategy) => strategy.id === id))
+      const data = await setupService.getSetups(options);
+      setSetups(data);
+      setSelectedSetupIds((current) =>
+        current.filter((id) => data.some((setup) => setup.id === id))
       );
     } catch (err) {
       setError(err.message);
@@ -78,7 +78,7 @@ function SettingsPage() {
 
   useEffect(() => {
     loadTags();
-    loadStrategies();
+    loadSetups();
     refreshSettings().catch(() => {});
     authService.getMeta().then(setBackendMeta).catch(() => {});
   }, []);
@@ -138,30 +138,30 @@ function SettingsPage() {
     }
   }
 
-  async function handleCreateStrategy() {
-    const name = newStrategy.trim();
+  async function handleCreateSetup() {
+    const name = newSetup.trim();
 
     if (!name) {
       return;
     }
 
-    setSavingStrategy(true);
+    setSavingSetup(true);
     setError("");
 
     try {
-      await strategyService.createStrategy(name);
-      setNewStrategy("");
+      await setupService.createSetup(name);
+      setNewSetup("");
       notify({
-        title: "Strategy saved",
+        title: "Setup saved",
         description: `"${name}" is now available across the app.`,
         tone: "success"
       });
-      await loadStrategies({ forceRefresh: true });
+      await loadSetups({ forceRefresh: true });
     } catch (err) {
       setError(err.message);
-      notify({ title: "Could not save strategy", description: err.message, tone: "error" });
+      notify({ title: "Could not save setup", description: err.message, tone: "error" });
     } finally {
-      setSavingStrategy(false);
+      setSavingSetup(false);
     }
   }
 
@@ -232,11 +232,11 @@ function SettingsPage() {
     }
   }
 
-  async function handleDeleteStrategy(strategy) {
+  async function handleDeleteSetup(setup) {
     const confirmed = await confirm({
-      title: "Delete saved strategy?",
-      description: `"${strategy.name}" will be removed from your saved strategy list.`,
-      confirmLabel: "Delete Strategy",
+      title: "Delete saved setup?",
+      description: `"${setup.name}" will be removed from your saved setup list.`,
+      confirmLabel: "Delete Setup",
       tone: "error"
     });
 
@@ -244,35 +244,35 @@ function SettingsPage() {
       return;
     }
 
-    setDeletingStrategyId(strategy.id);
+    setDeletingSetupId(setup.id);
     setError("");
 
     try {
-      await strategyService.deleteStrategy(strategy.id);
+      await setupService.deleteSetup(setup.id);
       notify({
-        title: "Strategy deleted",
-        description: `"${strategy.name}" was removed.`,
+        title: "Setup deleted",
+        description: `"${setup.name}" was removed.`,
         tone: "success"
       });
-      await loadStrategies({ forceRefresh: true });
+      await loadSetups({ forceRefresh: true });
     } catch (err) {
       setError(err.message);
-      notify({ title: "Could not delete strategy", description: err.message, tone: "error" });
+      notify({ title: "Could not delete setup", description: err.message, tone: "error" });
     } finally {
-      setDeletingStrategyId(null);
+      setDeletingSetupId(null);
     }
   }
 
-  async function handleBulkDeleteStrategies() {
-    if (selectedStrategyIds.length === 0) {
+  async function handleBulkDeleteSetups() {
+    if (selectedSetupIds.length === 0) {
       return;
     }
 
     const confirmed = await confirm({
-      title: "Delete selected strategies?",
-      description: `This will remove ${selectedStrategyIds.length} saved ${
-        selectedStrategyIds.length === 1 ? "strategy" : "strategies"
-      } from your strategy list.`,
+      title: "Delete selected setups?",
+      description: `This will remove ${selectedSetupIds.length} saved ${
+        selectedSetupIds.length === 1 ? "setup" : "setups"
+      } from your setup list.`,
       confirmLabel: "Delete Selected",
       tone: "error"
     });
@@ -281,25 +281,25 @@ function SettingsPage() {
       return;
     }
 
-    setBulkDeletingStrategies(true);
+    setBulkDeletingSetups(true);
     setError("");
 
     try {
-      await strategyService.deleteStrategies(selectedStrategyIds);
-      setSelectedStrategyIds([]);
+      await setupService.deleteSetups(selectedSetupIds);
+      setSelectedSetupIds([]);
       notify({
-        title: "Strategies deleted",
-        description: `${selectedStrategyIds.length} ${
-          selectedStrategyIds.length === 1 ? "strategy was" : "strategies were"
+        title: "Setups deleted",
+        description: `${selectedSetupIds.length} ${
+          selectedSetupIds.length === 1 ? "setup was" : "setups were"
         } removed.`,
         tone: "success"
       });
-      await loadStrategies({ forceRefresh: true });
+      await loadSetups({ forceRefresh: true });
     } catch (err) {
       setError(err.message);
-      notify({ title: "Could not delete strategies", description: err.message, tone: "error" });
+      notify({ title: "Could not delete setups", description: err.message, tone: "error" });
     } finally {
-      setBulkDeletingStrategies(false);
+      setBulkDeletingSetups(false);
     }
   }
 
@@ -309,11 +309,11 @@ function SettingsPage() {
     );
   }
 
-  function toggleStrategySelection(strategyId) {
-    setSelectedStrategyIds((current) =>
-      current.includes(strategyId)
-        ? current.filter((id) => id !== strategyId)
-        : [...current, strategyId]
+  function toggleSetupSelection(setupId) {
+    setSelectedSetupIds((current) =>
+      current.includes(setupId)
+        ? current.filter((id) => id !== setupId)
+        : [...current, setupId]
     );
   }
 
@@ -382,7 +382,7 @@ function SettingsPage() {
                 }`}
               >
                 <span>Trade Library</span>
-                <span className="text-white/40">{tags.length + strategies.length}</span>
+                <span className="text-white/40">{tags.length + setups.length}</span>
               </button>
               <button
                 type="button"
@@ -573,75 +573,75 @@ function SettingsPage() {
 
                 <div className="border-t border-[var(--line)] pt-8">
                   <div className="space-y-5">
-                    <div className="ui-title text-[11px] text-white/60">Strategies</div>
+                    <div className="ui-title text-[11px] text-white/60">Setups</div>
                   <div className="flex flex-col gap-3 lg:flex-row">
                     <input
-                      value={newStrategy}
-                      onChange={(event) => setNewStrategy(event.target.value)}
-                      placeholder="Add a new strategy"
+                      value={newSetup}
+                      onChange={(event) => setNewSetup(event.target.value)}
+                      placeholder="Add a new setup"
                       className="ui-input"
                     />
                     <button
                       type="button"
-                      onClick={handleCreateStrategy}
-                      disabled={savingStrategy || !newStrategy.trim()}
+                      onClick={handleCreateSetup}
+                      disabled={savingSetup || !newSetup.trim()}
                       className="ui-button whitespace-nowrap px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      {savingStrategy ? "Saving..." : "Add Strategy"}
+                      {savingSetup ? "Saving..." : "Add Setup"}
                     </button>
                   </div>
 
                   <p className="text-sm text-white/58">
-                    Manage the shared strategy list here. Trades can only select from this saved set.
+                    Manage the shared setup list here. Trades can only select from this saved set.
                   </p>
 
-                  {!!strategies.length && (
+                  {!!setups.length && (
                     <div className="ui-panel flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between">
                       <div className="flex flex-wrap items-center gap-2 text-sm text-white/62">
-                        <span>{selectedStrategyIds.length} selected</span>
+                        <span>{selectedSetupIds.length} selected</span>
                         <button
                           type="button"
-                          onClick={() => setSelectedStrategyIds(strategies.map((strategy) => strategy.id))}
+                          onClick={() => setSelectedSetupIds(setups.map((setup) => setup.id))}
                           className="ui-chip"
                         >
                           Select all
                         </button>
                         <button
                           type="button"
-                          onClick={() => setSelectedStrategyIds([])}
+                          onClick={() => setSelectedSetupIds([])}
                           className="ui-chip"
-                          disabled={selectedStrategyIds.length === 0}
+                          disabled={selectedSetupIds.length === 0}
                         >
                           Clear
                         </button>
                       </div>
                     <button
                       type="button"
-                      onClick={handleBulkDeleteStrategies}
-                      disabled={selectedStrategyIds.length === 0 || bulkDeletingStrategies}
+                      onClick={handleBulkDeleteSetups}
+                      disabled={selectedSetupIds.length === 0 || bulkDeletingSetups}
                       className="ui-button-danger px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      {bulkDeletingStrategies
+                      {bulkDeletingSetups
                         ? "Deleting..."
-                        : `Delete${selectedStrategyIds.length ? ` (${selectedStrategyIds.length})` : ""}`}
+                        : `Delete${selectedSetupIds.length ? ` (${selectedSetupIds.length})` : ""}`}
                     </button>
                     </div>
                   )}
 
                   {loading ? (
-                    <LoadingState label="Loading strategies..." className="min-h-[180px]" />
-                  ) : strategies.length === 0 ? (
+                    <LoadingState label="Loading setups..." className="min-h-[180px]" />
+                  ) : setups.length === 0 ? (
                     <EmptyState
-                      title="No saved strategies yet"
-                      description="Create reusable strategies here and they will be available from each trade."
+                      title="No saved setups yet"
+                      description="Create reusable setups here and they will be available from each trade."
                     />
                   ) : (
                     <div className="grid auto-rows-min items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
-                      {strategies.map((strategy) => (
+                      {setups.map((setup) => (
                         <div
-                          key={strategy.id}
+                          key={setup.id}
                           className={`ui-panel self-start flex items-center justify-between gap-3 rounded-[6px] px-4 py-3 transition ${
-                            selectedStrategyIds.includes(strategy.id)
+                            selectedSetupIds.includes(setup.id)
                               ? "border-[var(--line)] bg-[#1f1f1f]"
                               : ""
                           }`}
@@ -649,19 +649,19 @@ function SettingsPage() {
                           <label className="flex min-w-0 flex-1 items-center gap-3">
                             <input
                               type="checkbox"
-                              checked={selectedStrategyIds.includes(strategy.id)}
-                              onChange={() => toggleStrategySelection(strategy.id)}
+                              checked={selectedSetupIds.includes(setup.id)}
+                              onChange={() => toggleSetupSelection(setup.id)}
                               className="h-4 w-4 rounded border border-[var(--line-strong)] bg-transparent accent-[var(--accent)]"
                             />
-                            <span className="truncate text-sm text-white/82">{strategy.name}</span>
+                            <span className="truncate text-sm text-white/82">{setup.name}</span>
                           </label>
                           <button
                             type="button"
-                            onClick={() => handleDeleteStrategy(strategy)}
-                            disabled={deletingStrategyId === strategy.id || bulkDeletingStrategies}
+                            onClick={() => handleDeleteSetup(setup)}
+                            disabled={deletingSetupId === setup.id || bulkDeletingSetups}
                             className="rounded-[6px] border border-coral/35 bg-coral/10 px-3 py-1.5 text-xs font-semibold text-coral transition hover:bg-coral/15 disabled:opacity-50"
                           >
-                            {deletingStrategyId === strategy.id ? "..." : "Delete"}
+                            {deletingSetupId === setup.id ? "..." : "Delete"}
                           </button>
                         </div>
                       ))}

@@ -32,6 +32,7 @@ function buildTradePayload(data, userId, accountScope = "SIMULATOR") {
   const hasEntryPriorCloseDiffPercent = Object.prototype.hasOwnProperty.call(data, "entryPriorCloseDiffPercent");
   const hasMarketDataFeed = Object.prototype.hasOwnProperty.call(data, "marketDataFeed");
   const hasMarketDataNeedsBackfill = Object.prototype.hasOwnProperty.call(data, "marketDataNeedsBackfill");
+  const setup = data.setup !== undefined ? data.setup : data.strategy;
 
   const payload = {
     userId,
@@ -45,7 +46,7 @@ function buildTradePayload(data, userId, accountScope = "SIMULATOR") {
     exitDate: data.exitDate ? parseNewYorkLocalDateTime(data.exitDate) : null,
     commissions,
     fees,
-    strategy: typeof data.strategy === "string" ? data.strategy.trim() || null : data.strategy ?? null,
+    strategy: typeof setup === "string" ? setup.trim() || null : setup ?? null,
     tags: data.tags ?? null,
     notes: data.notes ?? null,
     grossPnl,

@@ -3,6 +3,10 @@ function asNumber(value) {
   return Number.isFinite(numericValue) ? numericValue : 0;
 }
 
+const CHART_GREEN = "#089981";
+const CHART_RED = "#f23645";
+const ENTRY_MARKER_GREEN = "#006400";
+
 function parseTimezoneOffsetMs(date, timeZone) {
   const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone,
@@ -151,7 +155,7 @@ function calculateMacdSeries(bars) {
     return {
       time: point.time,
       value,
-      color: value >= 0 ? "rgba(52, 224, 161, 0.55)" : "rgba(255, 126, 107, 0.6)"
+      color: value >= 0 ? "rgba(8, 153, 129, 0.55)" : "rgba(242, 54, 69, 0.6)"
     };
   });
 
@@ -182,12 +186,19 @@ function buildExecutionMarkers(trade) {
           }).format(executionTime)
         : null;
 
+      const isEntryMarker = index === 0;
+      const markerColor = isEntryMarker
+        ? ENTRY_MARKER_GREEN
+        : execution.action === "BUY"
+          ? CHART_GREEN
+          : CHART_RED;
+
       return {
         time: Math.floor(timestamp / 60) * 60,
         rawTime: timestamp,
         price: asNumber(execution.price),
         position: execution.action === "BUY" ? "belowBar" : "aboveBar",
-        color: execution.action === "BUY" ? "#34e0a1" : "#ff7e6b",
+        color: markerColor,
         shape: execution.action === "BUY" ? "arrowUp" : "arrowDown",
         text: `${execution.action === "BUY" ? "Buy" : "Sell"} ${asNumber(
           execution.quantity

@@ -109,7 +109,7 @@ symbol,side,quantity,entryPrice,entryDate
 Optional headers:
 
 ```text
-exitPrice,exitDate,commissions,fees,strategy,notes
+exitPrice,exitDate,commissions,fees,setup,notes
 ```
 
 Example row:

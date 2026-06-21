@@ -18,6 +18,8 @@ import {
 } from "../utils/chartIndicators";
 import LoadingState from "./ui/LoadingState";
 
+const CHART_GREEN = "#089981";
+const CHART_RED = "#f23645";
 const CHART_TZ = "America/New_York";
 const DAY_STAMP_FORMATTER = new Intl.DateTimeFormat("en-CA", {
   timeZone: CHART_TZ,
@@ -150,7 +152,7 @@ function buildVolumeData(bars) {
   return bars.map((bar) => ({
     time: bar.time,
     value: Number(bar.volume || 0),
-    color: bar.close >= bar.open ? "rgba(52,224,161,0.42)" : "rgba(239,68,68,0.38)"
+    color: bar.close >= bar.open ? "rgba(8,153,129,0.42)" : "rgba(242,54,69,0.38)"
   }));
 }
 
@@ -355,11 +357,11 @@ function PremiumChart({
     });
 
     const candleSeries = mainChart.addSeries(CandlestickSeries, {
-      upColor: "#34e0a1",
-      downColor: "#ff5f7a",
+      upColor: CHART_GREEN,
+      downColor: CHART_RED,
       borderVisible: false,
-      wickUpColor: "#34e0a1",
-      wickDownColor: "#ff5f7a",
+      wickUpColor: CHART_GREEN,
+      wickDownColor: CHART_RED,
       priceLineVisible: false,
       lastValueVisible: true
     });

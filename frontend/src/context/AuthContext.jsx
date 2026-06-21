@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import authService from "../services/authService";
 import api from "../services/api";
 import { clearJournalDayCache } from "../services/journalService";
-import { clearStrategyCache } from "../services/strategyService";
+import { clearSetupCache } from "../services/setupService";
 import { clearTagCache } from "../services/tagService";
 import { clearTradeCaches } from "../services/tradeService";
 import { clearStoredAuth, readStoredAuth, writeStoredAuth } from "../utils/authStorage";
@@ -14,7 +14,7 @@ function clearAppDataCaches() {
   clearTradeCaches();
   clearJournalDayCache();
   clearTagCache();
-  clearStrategyCache();
+  clearSetupCache();
 }
 
 function syncUserState(current, user) {

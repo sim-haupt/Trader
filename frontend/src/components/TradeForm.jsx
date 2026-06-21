@@ -3,7 +3,7 @@ import FormField from "./ui/FormField";
 import RichTextEditor from "./ui/RichTextEditor";
 import { formatDateTimeLocal, toMarketISOString } from "../utils/formatters";
 import tagService from "../services/tagService";
-import strategyService from "../services/strategyService";
+import setupService from "../services/setupService";
 
 const initialState = {
   symbol: "",
@@ -15,7 +15,7 @@ const initialState = {
   exitDate: "",
   commissions: "",
   fees: "",
-  strategy: "",
+  setup: "",
   tags: "",
   notes: ""
 };
@@ -57,7 +57,7 @@ function mapTradeToForm(trade) {
     exitDate: formatDateTimeLocal(trade.exitDate),
     commissions: formatCommissionInputValue(trade.commissions),
     fees: trade.fees ?? "",
-    strategy: trade.strategy ?? "",
+    setup: trade.setup ?? "",
     tags: trade.tags ?? "",
     notes: trade.notes ?? ""
   };
@@ -66,8 +66,8 @@ function mapTradeToForm(trade) {
 function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
   const [form, setForm] = useState(initialState);
   const [availableTags, setAvailableTags] = useState(() => tagService.peekTags() || []);
-  const [availableStrategies, setAvailableStrategies] = useState(
-    () => strategyService.peekStrategies() || []
+  const [availableSetups, setAvailableSetups] = useState(
+    () => setupService.peekSetups() || []
   );
 
   useEffect(() => {
@@ -101,21 +101,21 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
   useEffect(() => {
     let cancelled = false;
 
-    async function loadStrategies() {
+    async function loadSetups() {
       try {
-        const strategies = await strategyService.getStrategies();
+        const setups = await setupService.getSetups();
 
         if (!cancelled) {
-          setAvailableStrategies(strategies);
+          setAvailableSetups(setups);
         }
       } catch {
         if (!cancelled) {
-          setAvailableStrategies([]);
+          setAvailableSetups([]);
         }
       }
     }
 
-    loadStrategies();
+    loadSetups();
 
     return () => {
       cancelled = true;
@@ -142,7 +142,7 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
     return availableTags.filter((tag) => !active.has(tag.name.toLowerCase()));
   }, [availableTags, selectedTags]);
 
-  const selectedStrategy = useMemo(() => String(form.strategy || "").trim(), [form.strategy]);
+  const selectedSetup = useMemo(() => String(form.setup || "").trim(), [form.setup]);
 
   function handleAddTag(tagName) {
     setForm((current) => {
@@ -169,17 +169,17 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
     }));
   }
 
-  function handleSelectStrategy(strategyName) {
+  function handleSelectSetup(setupName) {
     setForm((current) => ({
       ...current,
-      strategy: strategyName
+      setup: setupName
     }));
   }
 
-  function handleRemoveStrategy() {
+  function handleRemoveSetup() {
     setForm((current) => ({
       ...current,
-      strategy: ""
+      setup: ""
     }));
   }
 
@@ -284,43 +284,43 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
       </FormField>
 
       <div className="md:col-span-2">
-        <FormField label="Strategy">
+        <FormField label="Setup">
           <div className="space-y-3">
-            {selectedStrategy ? (
+            {selectedSetup ? (
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={handleRemoveStrategy}
+                  onClick={handleRemoveSetup}
                   className="ui-chip-removable"
                 >
-                  <span>{selectedStrategy}</span>
+                  <span>{selectedSetup}</span>
                   <RemoveIcon />
                 </button>
               </div>
             ) : (
               <div className="ui-inset-box px-4 py-3 text-sm text-white/54">
-                No strategy selected
+                No setup selected
               </div>
             )}
 
-            {availableStrategies.length > 0 ? (
+            {availableSetups.length > 0 ? (
               <div className="flex flex-wrap gap-2">
-                {availableStrategies
-                  .filter((strategy) => strategy.name !== selectedStrategy)
-                  .map((strategy) => (
+                {availableSetups
+                  .filter((setup) => setup.name !== selectedSetup)
+                  .map((setup) => (
                     <button
-                      key={strategy.id}
+                      key={setup.id}
                       type="button"
-                      onClick={() => handleSelectStrategy(strategy.name)}
+                      onClick={() => handleSelectSetup(setup.name)}
                       className="ui-button px-3 py-1.5 text-xs"
                     >
-                      {strategy.name}
+                      {setup.name}
                     </button>
                   ))}
               </div>
             ) : (
               <div className="text-xs text-white/48">
-                No saved strategies available. Add them from Settings.
+                No saved setups available. Add them from Settings.
               </div>
             )}
           </div>

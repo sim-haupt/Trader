@@ -10,7 +10,7 @@ import TradeTextImport from "../components/TradeTextImport";
 import CustomSelect from "../components/ui/CustomSelect";
 import LoadingState from "../components/ui/LoadingState";
 import tagService from "../services/tagService";
-import strategyService from "../services/strategyService";
+import setupService from "../services/setupService";
 import tradeService from "../services/tradeService";
 import journalService from "../services/journalService";
 import { useAuth } from "../context/AuthContext";
@@ -33,7 +33,7 @@ const initialFilters = {
   symbol: "",
   tag: "",
   side: "",
-  strategy: "",
+  setup: "",
   from: "",
   to: ""
 };
@@ -61,10 +61,10 @@ function TradesPage() {
   const [bulkTags, setBulkTags] = useState("");
   const [bulkTagsMode, setBulkTagsMode] = useState("append");
   const [availableTags, setAvailableTags] = useState(() => tagService.peekTags() || []);
-  const [availableStrategies, setAvailableStrategies] = useState(
-    () => strategyService.peekStrategies() || []
+  const [availableSetups, setAvailableSetups] = useState(
+    () => setupService.peekSetups() || []
   );
-  const [bulkStrategy, setBulkStrategy] = useState("");
+  const [bulkSetup, setBulkSetup] = useState("");
   const [filters, setFilters] = useState(initialFilters);
   const [pageSize, setPageSize] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
@@ -100,21 +100,21 @@ function TradesPage() {
   useEffect(() => {
     let cancelled = false;
 
-    async function loadStrategies() {
+    async function loadSetups() {
       try {
-        const strategies = await strategyService.getStrategies();
+        const setups = await setupService.getSetups();
 
         if (!cancelled) {
-          setAvailableStrategies(strategies);
+          setAvailableSetups(setups);
         }
       } catch {
         if (!cancelled) {
-          setAvailableStrategies([]);
+          setAvailableSetups([]);
         }
       }
     }
 
-    loadStrategies();
+    loadSetups();
 
     return () => {
       cancelled = true;
@@ -167,7 +167,7 @@ function TradesPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [filters.symbol, filters.tag, filters.side, filters.strategy, filters.from, filters.to, pageSize]);
+  }, [filters.symbol, filters.tag, filters.side, filters.setup, filters.from, filters.to, pageSize]);
 
   useEffect(() => {
     loadTrades(filters);
@@ -204,7 +204,7 @@ function TradesPage() {
   function resetBulkForm() {
     setBulkTags("");
     setBulkTagsMode("append");
-    setBulkStrategy("");
+    setBulkSetup("");
   }
 
   const selectedBulkTags = useMemo(
@@ -335,11 +335,11 @@ function TradesPage() {
       return;
     }
 
-    if (!trimmedTags && !bulkStrategy) {
-      setError("Select tags or a strategy before applying bulk changes.");
+    if (!trimmedTags && !bulkSetup) {
+      setError("Select tags or a setup before applying bulk changes.");
       notify({
         title: "Nothing to apply",
-        description: "Choose tags or a strategy before applying bulk changes.",
+        description: "Choose tags or a setup before applying bulk changes.",
         tone: "warning"
       });
       return;
@@ -353,7 +353,7 @@ function TradesPage() {
         tradeIds: selectedIds,
         tags: trimmedTags,
         tagsMode: bulkTagsMode,
-        strategy: bulkStrategy || undefined
+        setup: bulkSetup || undefined
       });
 
       notify({
@@ -603,7 +603,7 @@ function TradesPage() {
         "entry_date",
         "exit_date",
         "executions",
-        "strategy",
+        "setup",
         "tags",
         "gross_pnl_usd",
         "commissions_usd",
@@ -709,7 +709,7 @@ function TradesPage() {
               entry_date: trade.entryDate,
               exit_date: trade.exitDate ?? "",
               executions: trade.reportedExecutionCount ?? trade.executions?.length ?? "",
-              strategy: trade.strategy ?? "",
+              setup: trade.setup ?? "",
               tags: trade.tags ?? "",
               gross_pnl_usd: formatCurrency(grossPnl),
               commissions_usd: formatCurrency(commissions),
@@ -863,7 +863,7 @@ function TradesPage() {
                 <div className="ui-notice mt-4 border-dashed border-[#e5e7eb42] text-white/72">
                   Supported CSVs: <span className="text-phosphor">DAS Trader executions and Warrior Trading exports with Open Datetime / Entry Price / Exit Price columns</span>
                   <br />
-                  Normalized format: <span className="text-phosphor">symbol, side, quantity, entryPrice, entryDate, exitPrice, exitDate, commissions, fees, strategy, notes</span>
+                  Normalized format: <span className="text-phosphor">symbol, side, quantity, entryPrice, entryDate, exitPrice, exitDate, commissions, fees, setup, notes</span>
                 </div>
               </Card>
 
@@ -912,7 +912,7 @@ function TradesPage() {
               filters={filters}
               onChange={handleFilterChange}
               onReset={handleResetFilters}
-              strategies={availableStrategies}
+              setups={availableSetups}
               tags={availableTags}
             />
           </div>
@@ -950,43 +950,43 @@ function TradesPage() {
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/42">
-                          Strategy
+                          Setup
                         </div>
-                        {bulkStrategy ? (
+                        {bulkSetup ? (
                           <div className="flex flex-wrap gap-2">
                             <button
                               type="button"
-                              onClick={() => setBulkStrategy("")}
+                              onClick={() => setBulkSetup("")}
                               className="inline-flex items-center gap-2 rounded-[6px] border border-[var(--line)] bg-black px-3 py-1.5 text-xs text-white/82"
                             >
-                              <span>{bulkStrategy}</span>
+                              <span>{bulkSetup}</span>
                               <span className="text-white/48">x</span>
                             </button>
                           </div>
                         ) : (
                           <div className="ui-surface-subtle px-4 py-3 text-sm text-white/48">
-                            No strategy selected
+                            No setup selected
                           </div>
                         )}
 
-                        {availableStrategies.length > 0 ? (
+                        {availableSetups.length > 0 ? (
                           <div className="flex flex-wrap gap-2">
-                            {availableStrategies
-                              .filter((strategy) => strategy.name !== bulkStrategy)
-                              .map((strategy) => (
+                            {availableSetups
+                              .filter((setup) => setup.name !== bulkSetup)
+                              .map((setup) => (
                                 <button
-                                  key={strategy.id}
+                                  key={setup.id}
                                   type="button"
-                                  onClick={() => setBulkStrategy(strategy.name)}
+                                  onClick={() => setBulkSetup(setup.name)}
                                   className="rounded-[6px] border border-[var(--line)] bg-black px-3 py-1.5 text-xs font-medium text-white/78 transition hover:border-white/20 hover:bg-[#1f1f1f] hover:text-white"
                                 >
-                                  {strategy.name}
+                                  {setup.name}
                                 </button>
                               ))}
                           </div>
                         ) : (
                           <div className="text-xs text-white/48">
-                            No saved strategies available. Add them from Settings.
+                            No saved setups available. Add them from Settings.
                           </div>
                         )}
                       </div>

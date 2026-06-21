@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationContext";
 import journalService from "../services/journalService";
-import strategyService from "../services/strategyService";
+import setupService from "../services/setupService";
 import tagService from "../services/tagService";
 import tradeService from "../services/tradeService";
 
@@ -41,7 +41,7 @@ function getPageMeta(pathname) {
     return { title: "Journal", description: "Daily summaries, reflections, and trading notes." };
   }
   if (pathname.startsWith("/settings")) {
-    return { title: "Settings", description: "Reusable tags, strategies, and account defaults." };
+    return { title: "Settings", description: "Reusable tags, setups, and account defaults." };
   }
   if (pathname.startsWith("/admin")) {
     return { title: "Admin", description: "Workspace oversight and user trade management." };
@@ -71,7 +71,7 @@ function AppShell() {
       tradeService.getAllTrades(),
       journalService.getJournalDays(),
       tagService.getTags(),
-      strategyService.getStrategies()
+      setupService.getSetups()
     ]);
   }, [user?.id, user?.activeAccountScope]);
 

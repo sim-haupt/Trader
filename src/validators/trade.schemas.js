@@ -20,6 +20,7 @@ const tradeSchema = z
       .optional(),
     commissions: z.coerce.number().min(0).optional(),
     fees: z.coerce.number().min(0).optional(),
+    setup: z.string().trim().max(100).nullable().optional(),
     strategy: z.string().trim().max(100).nullable().optional(),
     tags: z.string().trim().max(500).nullable().optional(),
     notes: z.string().trim().max(2000).nullable().optional()
@@ -58,15 +59,16 @@ const bulkUpdateTradesSchema = z
   .object({
     tradeIds: z.array(z.string().min(1)).min(1),
     tags: z.string().trim().max(500).optional(),
+    setup: z.string().trim().max(100).nullable().optional(),
     strategy: z.string().trim().max(100).nullable().optional(),
     notes: z.string().trim().max(2000).optional(),
     tagsMode: z.enum(["append", "replace"]).optional()
   })
   .superRefine((data, context) => {
-    if (!data.tags && !data.notes && data.strategy === undefined) {
+    if (!data.tags && !data.notes && data.setup === undefined && data.strategy === undefined) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "At least one of tags, strategy or notes is required"
+        message: "At least one of tags, setup or notes is required"
       });
     }
   });
@@ -74,15 +76,21 @@ const bulkUpdateTradesSchema = z
 const tradeMetaSchema = z
   .object({
     tags: z.string().trim().max(500).nullable().optional(),
+    setup: z.string().trim().max(100).nullable().optional(),
     strategy: z.string().trim().max(100).nullable().optional(),
     notes: z.string().trim().max(2000).nullable().optional(),
     tagsMode: z.enum(["append", "replace"]).optional()
   })
   .superRefine((data, context) => {
-    if (data.tags === undefined && data.notes === undefined && data.strategy === undefined) {
+    if (
+      data.tags === undefined &&
+      data.notes === undefined &&
+      data.setup === undefined &&
+      data.strategy === undefined
+    ) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "At least one of tags, strategy or notes is required"
+        message: "At least one of tags, setup or notes is required"
       });
     }
   });
@@ -118,6 +126,7 @@ const tradeQuerySchema = z.object({
   symbol: z.string().trim().max(20).optional(),
   side: z.enum(["LONG", "SHORT"]).optional(),
   tag: z.string().trim().max(100).optional(),
+  setup: z.string().trim().max(100).optional(),
   strategy: z.string().trim().max(100).optional(),
   from: z.string().refine(isValidDateString, "from must be a valid date").optional(),
   to: z.string().refine(isValidDateString, "to must be a valid date").optional(),
@@ -142,7 +151,11 @@ function mapImportRowToPayload(row) {
         ? null
         : row.reportedExecutionCount,
     executions: Array.isArray(row.executions) ? row.executions : [],
-    strategy: row.strategy ? String(row.strategy).trim() : null,
+    strategy: row.setup
+      ? String(row.setup).trim()
+      : row.strategy
+        ? String(row.strategy).trim()
+        : null,
     tags: row.tags ? String(row.tags).trim() : null,
     notes: row.notes ? String(row.notes).trim() : null
   };

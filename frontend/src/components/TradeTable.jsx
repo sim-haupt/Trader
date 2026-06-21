@@ -124,8 +124,8 @@ function TradeTable({
                       <div className="text-[15px] font-semibold tracking-[-0.02em] text-white">{trade.symbol}</div>
                     </td>
                     <td className="px-4 py-4 text-white/84">
-                      {trade.strategy ? (
-                        <span className="ui-chip">{trade.strategy}</span>
+                      {trade.setup ? (
+                        <span className="ui-chip">{trade.setup}</span>
                       ) : (
                         <span className="text-sm text-white/36">-</span>
                       )}

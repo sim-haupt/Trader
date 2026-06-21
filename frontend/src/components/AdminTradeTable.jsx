@@ -13,7 +13,7 @@ function createFormState(trade) {
     exitDate: formatDateTimeLocal(trade.exitDate),
     commissions: trade.commissions ?? "",
     fees: trade.fees ?? "",
-    strategy: trade.strategy ?? "",
+    setup: trade.setup ?? "",
     notes: trade.notes ?? ""
   };
 }
@@ -87,7 +87,7 @@ function AdminTradeTable({
               <th className="px-4 py-4">Quantity</th>
               <th className="px-4 py-4">P&amp;L</th>
               <th className="px-4 py-4">P&amp;L / Share</th>
-              <th className="px-4 py-4">Strategy</th>
+              <th className="px-4 py-4">Setup</th>
               <th className="px-4 py-4">Entry Date</th>
               <th className="px-4 py-4">Actions</th>
             </tr>
@@ -171,8 +171,8 @@ function AdminTradeTable({
                       <td className="px-4 py-4 text-slate-300">{formatCurrency(perSharePnl)}</td>
                       <td className="px-4 py-4">
                         <input
-                          name="strategy"
-                          value={draft.strategy}
+                          name="setup"
+                          value={draft.setup}
                           onChange={handleChange}
                           className="ui-input w-32 px-3 py-2"
                         />
@@ -238,7 +238,7 @@ function AdminTradeTable({
                       >
                         {formatCurrency(perSharePnl)}
                       </td>
-                      <td className="px-4 py-4 text-mist">{trade.strategy || "-"}</td>
+                      <td className="px-4 py-4 text-mist">{trade.setup || "-"}</td>
                       <td className="px-4 py-4 text-mist">{formatDate(trade.entryDate)}</td>
                       <td className="px-4 py-4">
                         <div className="flex flex-wrap gap-2">

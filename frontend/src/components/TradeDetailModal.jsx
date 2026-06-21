@@ -13,7 +13,7 @@ import {
 } from "recharts";
 import tradeService from "../services/tradeService";
 import tagService from "../services/tagService";
-import strategyService from "../services/strategyService";
+import setupService from "../services/setupService";
 import TradeReviewCharts from "./TradeReviewCharts";
 import Card from "./ui/Card";
 import LoadingState from "./ui/LoadingState";
@@ -224,10 +224,10 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
   });
   const [editableTrade, setEditableTrade] = useState(trade);
   const [availableTags, setAvailableTags] = useState(() => tagService.peekTags() || []);
-  const [availableStrategies, setAvailableStrategies] = useState(
-    () => strategyService.peekStrategies() || []
+  const [availableSetups, setAvailableSetups] = useState(
+    () => setupService.peekSetups() || []
   );
-  const [isStrategyEditorOpen, setIsStrategyEditorOpen] = useState(false);
+  const [isSetupEditorOpen, setIsSetupEditorOpen] = useState(false);
   const [isTagEditorOpen, setIsTagEditorOpen] = useState(false);
   const [isNotesEditorOpen, setIsNotesEditorOpen] = useState(false);
   const [noteDraft, setNoteDraft] = useState(trade.notes || "");
@@ -266,21 +266,21 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
   useEffect(() => {
     let cancelled = false;
 
-    async function loadStrategies() {
+    async function loadSetups() {
       try {
-        const strategies = await strategyService.getStrategies();
+        const setups = await setupService.getSetups();
 
         if (!cancelled) {
-          setAvailableStrategies(strategies);
+          setAvailableSetups(setups);
         }
       } catch {
         if (!cancelled) {
-          setAvailableStrategies([]);
+          setAvailableSetups([]);
         }
       }
     }
 
-    loadStrategies();
+    loadSetups();
 
     return () => {
       cancelled = true;
@@ -316,7 +316,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
   );
   const signedDayRunningPnl = useMemo(() => buildSignedChartSeries(dayRunningPnl), [dayRunningPnl]);
   const activeTags = useMemo(() => parseTags(activeTrade.tags), [activeTrade.tags]);
-  const activeStrategy = useMemo(() => String(activeTrade.strategy || "").trim(), [activeTrade.strategy]);
+  const activeSetup = useMemo(() => String(activeTrade.setup || "").trim(), [activeTrade.setup]);
   const tagSuggestions = useMemo(() => {
     const current = new Set(activeTags.map((tag) => tag.toLowerCase()));
 
@@ -330,13 +330,13 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
       return true;
     });
   }, [activeTags, availableTags]);
-  const strategySuggestions = useMemo(
+  const setupSuggestions = useMemo(
     () =>
-      availableStrategies.filter(
-        (strategy) =>
-          String(strategy.name || "").trim().toLowerCase() !== activeStrategy.toLowerCase()
+      availableSetups.filter(
+        (setup) =>
+          String(setup.name || "").trim().toLowerCase() !== activeSetup.toLowerCase()
       ),
-    [availableStrategies, activeStrategy]
+    [availableSetups, activeSetup]
   );
 
   async function refreshAvailableTags() {
@@ -344,9 +344,9 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
     setAvailableTags(tags);
   }
 
-  async function refreshAvailableStrategies() {
-    const strategies = await strategyService.getStrategies({ forceRefresh: true });
-    setAvailableStrategies(strategies);
+  async function refreshAvailableSetups() {
+    const setups = await setupService.getSetups({ forceRefresh: true });
+    setAvailableSetups(setups);
   }
 
   async function handleAddTag(tagValue) {
@@ -397,27 +397,27 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
     }
   }
 
-  async function handleSetStrategy(strategyValue) {
-    const nextStrategy = String(strategyValue || "").trim();
+  async function handleSetSetup(setupValue) {
+    const nextSetup = String(setupValue || "").trim();
 
-    if (!nextStrategy || nextStrategy.toLowerCase() === activeStrategy.toLowerCase()) {
+    if (!nextSetup || nextSetup.toLowerCase() === activeSetup.toLowerCase()) {
       return;
     }
 
     setEditableTrade({
       ...activeTrade,
-      strategy: nextStrategy
+      setup: nextSetup
     });
-    setIsStrategyEditorOpen(false);
+    setIsSetupEditorOpen(false);
     setIsSavingMeta(true);
 
     try {
       const updatedTrade = await tradeService.updateTradeMeta(activeTrade.id, {
-        strategy: nextStrategy
+        setup: nextSetup
       });
 
       setEditableTrade(updatedTrade);
-      await refreshAvailableStrategies();
+      await refreshAvailableSetups();
     } catch (error) {
       setEditableTrade(activeTrade);
       throw error;
@@ -426,12 +426,12 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
     }
   }
 
-  async function handleRemoveStrategy() {
+  async function handleRemoveSetup() {
     setIsSavingMeta(true);
 
     try {
       const updatedTrade = await tradeService.updateTradeMeta(activeTrade.id, {
-        strategy: ""
+        setup: ""
       });
 
       setEditableTrade(updatedTrade);
@@ -520,48 +520,48 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
               <div className="grid gap-5 xl:grid-cols-2">
                 <div className="ui-inset-box p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="ui-title text-xs text-white/48">Strategy</p>
+                  <p className="ui-title text-xs text-white/48">Setup</p>
                   <button
                     type="button"
-                    onClick={() => setIsStrategyEditorOpen((current) => !current)}
+                    onClick={() => setIsSetupEditorOpen((current) => !current)}
                     className="ui-button px-3 py-2 text-xs"
                   >
-                    Add strategy
+                    Add setup
                   </button>
                 </div>
-                {activeStrategy ? (
+                {activeSetup ? (
                   <div className="mt-3 flex flex-wrap gap-2">
                     <button
                       type="button"
-                      onClick={handleRemoveStrategy}
+                      onClick={handleRemoveSetup}
                       className="ui-chip-removable"
                     >
-                      <span>{activeStrategy}</span>
+                      <span>{activeSetup}</span>
                       <RemoveIcon />
                     </button>
                   </div>
                 ) : (
-                  <p className="mt-2 text-sm text-phosphor">No strategy selected</p>
+                  <p className="mt-2 text-sm text-phosphor">No setup selected</p>
                 )}
 
-                {isStrategyEditorOpen && (
+                {isSetupEditorOpen && (
                   <div className="mt-4 space-y-3">
-                    {strategySuggestions.length > 0 ? (
+                    {setupSuggestions.length > 0 ? (
                       <div className="flex flex-wrap gap-2">
-                        {strategySuggestions.map((strategy) => (
+                        {setupSuggestions.map((setup) => (
                           <button
-                            key={strategy.id}
+                            key={setup.id}
                             type="button"
-                            onClick={() => handleSetStrategy(strategy.name)}
+                            onClick={() => handleSetSetup(setup.name)}
                             className="ui-button px-3 py-1.5 text-xs"
                           >
-                            {strategy.name}
+                            {setup.name}
                           </button>
                         ))}
                       </div>
                     ) : (
                       <div className="text-xs text-white/48">
-                        No more saved strategies available. Add new ones from Settings.
+                        No more saved setups available. Add new ones from Settings.
                       </div>
                     )}
                   </div>

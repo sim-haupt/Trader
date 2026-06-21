@@ -6,8 +6,45 @@ import {
   writePersistentCache
 } from "../utils/persistentCache";
 
+function normalizeTradeFromApi(trade) {
+  if (!trade || typeof trade !== "object") {
+    return trade;
+  }
+
+  return {
+    ...trade,
+    setup: trade.setup ?? trade.strategy ?? ""
+  };
+}
+
+function normalizeTradesFromApi(trades) {
+  return Array.isArray(trades) ? trades.map(normalizeTradeFromApi) : [];
+}
+
+function normalizeTradePayload(payload = {}) {
+  if (!payload || typeof payload !== "object") {
+    return payload;
+  }
+
+  const { setup, ...rest } = payload;
+
+  return {
+    ...rest,
+    ...(setup !== undefined ? { strategy: setup } : {})
+  };
+}
+
+function normalizeTradeFilters(filters = {}) {
+  const { setup, ...rest } = filters;
+
+  return {
+    ...rest,
+    ...(setup ? { strategy: setup } : {})
+  };
+}
+
 function extractTrades(response) {
-  return response.data.data ?? [];
+  return normalizeTradesFromApi(response.data.data ?? []);
 }
 
 const TRADE_LIST_TTL_MS = 5 * 60_000;
@@ -65,11 +102,11 @@ export function clearTradeCaches() {
 
 const tradeService = {
   peekTrades(filters = {}) {
-    return readCache(tradeListCache, buildCacheKey("trades", filters), TRADE_LIST_TTL_MS);
+    return readCache(tradeListCache, buildCacheKey("trades", normalizeTradeFilters(filters)), TRADE_LIST_TTL_MS);
   },
 
   peekAllTrades(filters = {}) {
-    return readCache(tradeListCache, buildCacheKey("all-trades", filters), TRADE_LIST_TTL_MS);
+    return readCache(tradeListCache, buildCacheKey("all-trades", normalizeTradeFilters(filters)), TRADE_LIST_TTL_MS);
   },
 
   peekTrade(id) {
@@ -98,7 +135,8 @@ const tradeService = {
   },
 
   async getTrades(filters = {}, options = {}) {
-    const cacheKey = buildCacheKey("trades", filters);
+    const apiFilters = normalizeTradeFilters(filters);
+    const cacheKey = buildCacheKey("trades", apiFilters);
     const cached = readCache(tradeListCache, cacheKey, TRADE_LIST_TTL_MS);
 
     if (cached && !options.forceRefresh) {
@@ -114,7 +152,7 @@ const tradeService = {
     }
 
     const request = api
-      .get("/trades", { params: filters })
+      .get("/trades", { params: apiFilters })
       .then((response) => writeCache(tradeListCache, cacheKey, extractTrades(response)))
       .finally(() => tradeListRequests.delete(cacheKey));
 
@@ -123,7 +161,8 @@ const tradeService = {
   },
 
   async getAllTrades(filters = {}, options = {}) {
-    const cacheKey = buildCacheKey("all-trades", filters);
+    const apiFilters = normalizeTradeFilters(filters);
+    const cacheKey = buildCacheKey("all-trades", apiFilters);
     const cached = readCache(tradeListCache, cacheKey, TRADE_LIST_TTL_MS);
 
     if (cached && !options.forceRefresh) {
@@ -141,7 +180,7 @@ const tradeService = {
     const request = api
       .get("/trades", {
         params: {
-          ...filters,
+          ...apiFilters,
           scope: "all"
         }
       })
@@ -170,7 +209,7 @@ const tradeService = {
 
     const request = api
       .get(`/trades/${id}`)
-      .then((response) => writeCache(tradeDetailCache, cacheKey, response.data.data))
+      .then((response) => writeCache(tradeDetailCache, cacheKey, normalizeTradeFromApi(response.data.data)))
       .finally(() => tradeDetailRequests.delete(cacheKey));
 
     tradeDetailRequests.set(cacheKey, request);
@@ -208,21 +247,21 @@ const tradeService = {
   },
 
   async createTrade(payload) {
-    const response = await api.post("/trades", payload);
+    const response = await api.post("/trades", normalizeTradePayload(payload));
     clearTradeCaches();
-    return response.data.data;
+    return normalizeTradeFromApi(response.data.data);
   },
 
   async updateTrade(id, payload) {
-    const response = await api.put(`/trades/${id}`, payload);
+    const response = await api.put(`/trades/${id}`, normalizeTradePayload(payload));
     clearTradeCaches();
-    return response.data.data;
+    return normalizeTradeFromApi(response.data.data);
   },
 
   async updateTradeMeta(id, payload) {
-    const response = await api.patch(`/trades/${id}/meta`, payload);
+    const response = await api.patch(`/trades/${id}/meta`, normalizeTradePayload(payload));
     clearTradeCaches();
-    return response.data.data;
+    return normalizeTradeFromApi(response.data.data);
   },
 
   async deleteTrade(id) {
@@ -238,7 +277,7 @@ const tradeService = {
   },
 
   async bulkUpdateTrades(payload) {
-    const response = await api.post("/trades/bulk-update", payload);
+    const response = await api.post("/trades/bulk-update", normalizeTradePayload(payload));
     clearTradeCaches();
     return response.data.data;
   },
