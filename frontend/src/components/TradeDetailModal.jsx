@@ -192,6 +192,27 @@ function TimelineTable({ rows }) {
   );
 }
 
+function getReviewChartHeights(width) {
+  if (width < 640) {
+    return {
+      trade: 240,
+      day: 260
+    };
+  }
+
+  if (width < 1024) {
+    return {
+      trade: 270,
+      day: 290
+    };
+  }
+
+  return {
+    trade: 290,
+    day: 290
+  };
+}
+
 function TradeDetailModal({ trade, onClose, pageMode = false }) {
   const initialDayStart = new Date(trade.entryDate);
   initialDayStart.setHours(0, 0, 0, 0);
@@ -232,6 +253,9 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
   const [isNotesEditorOpen, setIsNotesEditorOpen] = useState(false);
   const [noteDraft, setNoteDraft] = useState(trade.notes || "");
   const [isSavingMeta, setIsSavingMeta] = useState(false);
+  const [viewportWidth, setViewportWidth] = useState(
+    typeof window === "undefined" ? 1024 : window.innerWidth
+  );
 
   useEffect(() => {
     const nextTrade = tradeDetail || trade;
@@ -298,6 +322,15 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
     return () => window.removeEventListener("keydown", handleEscape);
   }, [onClose]);
 
+  useEffect(() => {
+    function handleResize() {
+      setViewportWidth(window.innerWidth);
+    }
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const activeTrade = editableTrade || tradeDetail || trade;
   const tradePnl = getTradePnl(activeTrade);
   const holdMinutes = getTradeHoldMinutes(activeTrade);
@@ -315,6 +348,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
     [activeTrade, dayTrades]
   );
   const signedDayRunningPnl = useMemo(() => buildSignedChartSeries(dayRunningPnl), [dayRunningPnl]);
+  const chartHeights = getReviewChartHeights(viewportWidth);
   const activeTags = useMemo(() => parseTags(activeTrade.tags), [activeTrade.tags]);
   const activeSetup = useMemo(() => String(activeTrade.setup || "").trim(), [activeTrade.setup]);
   const tagSuggestions = useMemo(() => {
@@ -459,19 +493,19 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
     <div
       className={
         pageMode
-          ? "w-full"
-          : "fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-black/80 px-4 pb-4 pt-0 backdrop-blur"
+          ? "w-full max-w-full overflow-hidden"
+          : "fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-black/80 px-3 pb-4 pt-0 backdrop-blur sm:px-4"
       }
     >
       <div
-        className={`w-full max-w-[1520px] border border-[#e5e7eb42] bg-black ${
+        className={`w-full max-w-[1520px] overflow-hidden border border-[#e5e7eb42] bg-black ${
           pageMode ? "rounded-[6px]" : "rounded-[6px]"
         }`}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-[#e5e7eb42] bg-black px-6 py-5">
-          <div>
+        <div className="flex flex-col gap-4 border-b border-[#e5e7eb42] bg-black px-4 py-4 sm:px-6 sm:py-5 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3">
-              <h2 className="text-4xl font-bold tracking-[-0.05em] text-white">{activeTrade.symbol}</h2>
+              <h2 className="break-words text-3xl font-bold tracking-[-0.04em] text-white sm:text-4xl">{activeTrade.symbol}</h2>
               <span
                 className={`inline-flex rounded-[6px] border px-3 py-1 text-[11px] font-semibold ${
                   activeTrade.side === "LONG"
@@ -491,20 +525,20 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
             <button
               type="button"
               onClick={onClose}
-              className="ui-button text-sm"
+              className="ui-button w-full text-sm sm:w-auto lg:shrink-0"
             >
               {pageMode ? "Back to Trades" : "Close"}
             </button>
         </div>
 
-        <div className="space-y-6 p-6">
+        <div className="space-y-5 p-4 sm:space-y-6 sm:p-6">
           {tradeDetailError && (
             <div className="ui-notice border-coral/20 bg-[#1b1012] text-coral">
               {tradeDetailError}
             </div>
           )}
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <SummaryMetric
               label="Trade P&L"
               value={formatCurrency(tradePnl)}
@@ -517,7 +551,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
 
           <Card title="TRADER NOTES">
             <div className="space-y-5">
-              <div className="grid gap-5 xl:grid-cols-2">
+              <div className="grid gap-5 lg:grid-cols-2">
                 <div className="ui-inset-box p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="ui-title text-xs text-white/48">Setup</p>
@@ -701,7 +735,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
               {loadingTradeDetail ? (
                 <LoadingState label="Loading trade detail..." className="min-h-[290px]" />
               ) : (
-                <div className="h-[290px] pb-4">
+                <div className="pb-4" style={{ height: chartHeights.trade }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={tradeRunningPnl} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
                       <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
@@ -745,7 +779,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                   {dayTradesError}
                 </div>
               ) : (
-                <div className="h-[290px] pb-4">
+                <div className="pb-4" style={{ height: chartHeights.day }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={signedDayRunningPnl.data} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
                       <defs>

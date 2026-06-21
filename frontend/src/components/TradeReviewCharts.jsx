@@ -162,6 +162,27 @@ function padSeriesToTimeline(series, timelineBars) {
   return timelineBars.map((bar) => seriesMap.get(bar.time) ?? { time: bar.time });
 }
 
+function getChartHeights(width) {
+  if (width < 640) {
+    return {
+      main: 420,
+      macd: 130
+    };
+  }
+
+  if (width < 1024) {
+    return {
+      main: 520,
+      macd: 160
+    };
+  }
+
+  return {
+    main: 620,
+    macd: 180
+  };
+}
+
 function nearestBarTime(bars, rawTime) {
   let match = bars[0]?.time ?? null;
 
@@ -353,7 +374,7 @@ function PremiumChart({
     const mainChart = createChart(mainRef.current, {
       ...chartOptions,
       width: mainRef.current.clientWidth,
-      height: 620
+      height: getChartHeights(mainRef.current.clientWidth).main
     });
 
     const candleSeries = mainChart.addSeries(CandlestickSeries, {
@@ -411,7 +432,7 @@ function PremiumChart({
     const macdChart = createChart(macdRef.current, {
       ...chartOptions,
       width: macdRef.current.clientWidth,
-      height: 180,
+      height: getChartHeights(macdRef.current.clientWidth).macd,
       rightPriceScale: {
         borderColor: "rgba(229,231,235,0.14)",
         scaleMargins: {
@@ -493,10 +514,12 @@ function PremiumChart({
 
     const resizeObserver = new ResizeObserver(() => {
       if (mainRef.current) {
-        mainChart.applyOptions({ width: mainRef.current.clientWidth });
+        const heights = getChartHeights(mainRef.current.clientWidth);
+        mainChart.applyOptions({ width: mainRef.current.clientWidth, height: heights.main });
       }
       if (macdRef.current) {
-        macdChart.applyOptions({ width: macdRef.current.clientWidth });
+        const heights = getChartHeights(macdRef.current.clientWidth);
+        macdChart.applyOptions({ width: macdRef.current.clientWidth, height: heights.macd });
       }
       refreshOverlay();
     });
