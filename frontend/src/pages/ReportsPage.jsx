@@ -557,7 +557,6 @@ function summarizeTrades(trades, dayCountOverride, options = {}) {
   let winningTrades = 0;
   let losingTrades = 0;
   let scratchTrades = 0;
-  let totalPerShare = 0;
   let currentWinStreak = 0;
   let currentLossStreak = 0;
   let maxWinStreak = 0;
@@ -571,7 +570,6 @@ function summarizeTrades(trades, dayCountOverride, options = {}) {
       ? getTradeGrossPnl(trade)
       : getTradePnlByType(trade, pnlType, defaultCommission, defaultFees);
     const quantity = Math.abs(asNumber(trade.quantity));
-    const perShare = getTradePerSharePnl(trade, pnl);
     const holdMinutes = getHoldMinutes(trade);
     const dayKey = getDayKey(new Date(trade.entryDate));
     const day = dailyStats.get(dayKey) || { pnl: 0, volume: 0, trades: 0 };
@@ -583,7 +581,6 @@ function summarizeTrades(trades, dayCountOverride, options = {}) {
 
     totalPnl += pnl;
     totalVolume += quantity;
-    totalPerShare += perShare;
     largestGain = Math.max(largestGain, pnl);
     largestLoss = Math.min(largestLoss, pnl);
     pnlSeries.push(pnl);
@@ -624,6 +621,7 @@ function summarizeTrades(trades, dayCountOverride, options = {}) {
       : 0;
   totalPnl = Number((totalPnl - journalCommissionTotal).toFixed(2));
   effectiveCommissions = pnlType === "NET" ? journalCommissionTotal : effectiveCommissions;
+  const totalPerShareGainLoss = totalVolume ? totalPnl / totalVolume : 0;
 
   const totalTrades = sortedTrades.length;
   const totalDays = Math.max(dayCountOverride ?? dailyStats.size, 1);
@@ -650,7 +648,7 @@ function summarizeTrades(trades, dayCountOverride, options = {}) {
     averageDailyGainLoss: totalPnl / totalDays,
     averageDailyVolume: totalVolume / totalDays,
     averageTradeGainLoss: totalTrades ? totalPnl / totalTrades : 0,
-    averagePerShareGainLoss: totalPerShare,
+    totalPerShareGainLoss,
     averageWinningTrade: winningTrades ? totalWinningPnl / winningTrades : 0,
     averageLosingTrade: losingTrades ? totalLosingPnl / losingTrades : 0,
     averageScratchHold: calculateTrimmedAverage(scratchHoldValues),
@@ -695,7 +693,7 @@ function buildDetailedStats(trades, options = {}) {
     [
       { label: "Average Daily Gain/Loss", value: formatCurrency(summary.averageDailyGainLoss), tone: summary.averageDailyGainLoss >= 0 ? "text-mint" : "text-coral" },
       { label: "Average Daily Volume", value: formatCompactNumber(summary.averageDailyVolume), tone: "text-white" },
-      { label: "Total Per-share Gain/Loss", value: formatCurrency(summary.averagePerShareGainLoss), tone: summary.averagePerShareGainLoss >= 0 ? "text-mint" : "text-coral" }
+      { label: "Total Per-share Gain/Loss", value: formatCurrency(summary.totalPerShareGainLoss), tone: summary.totalPerShareGainLoss >= 0 ? "text-mint" : "text-coral" }
     ],
     [
       { label: "Average Trade Gain/Loss", value: formatCurrency(summary.averageTradeGainLoss), tone: summary.averageTradeGainLoss >= 0 ? "text-mint" : "text-coral" },
@@ -1047,7 +1045,7 @@ function buildWinLossDayRows(summary) {
     { label: "Total Gain / Loss", value: formatCurrency(summary.totalPnl), tone: summary.totalPnl >= 0 ? "text-mint" : "text-coral" },
     { label: "Average Daily Gain / Loss", value: formatCurrency(summary.averageDailyGainLoss), tone: summary.averageDailyGainLoss >= 0 ? "text-mint" : "text-coral" },
     { label: "Average Daily Volume", value: formatCompactNumber(summary.averageDailyVolume), tone: "text-white" },
-    { label: "Total Per-share Gain / Loss", value: formatCurrency(summary.averagePerShareGainLoss), tone: summary.averagePerShareGainLoss >= 0 ? "text-mint" : "text-coral" },
+    { label: "Total Per-share Gain / Loss", value: formatCurrency(summary.totalPerShareGainLoss), tone: summary.totalPerShareGainLoss >= 0 ? "text-mint" : "text-coral" },
     { label: "Average Trade Gain / Loss", value: formatCurrency(summary.averageTradeGainLoss), tone: summary.averageTradeGainLoss >= 0 ? "text-mint" : "text-coral" },
     { label: "Total Number of Trades", value: formatCompactNumber(summary.totalTrades), tone: "text-white" },
     { label: "Winning Trades", value: `${summary.winningTrades} (${formatPercent(summary.totalTrades ? (summary.winningTrades / summary.totalTrades) * 100 : 0)})`, tone: "text-white" },
