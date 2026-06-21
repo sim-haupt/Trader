@@ -54,14 +54,14 @@ function LoginPage() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="ui-metric-tile">
+            <div className="ui-metric-tile bg-white/[0.03]">
               <p className="ui-title text-[10px] text-white/42">Trade Review</p>
               <p className="mt-3 text-xl font-medium tracking-[-0.03em] text-white">Execution Replay</p>
               <p className="mt-2 text-sm leading-6 text-white/50">
                 Inspect fills, context, notes, and chart behavior in one place.
               </p>
             </div>
-            <div className="ui-metric-tile">
+            <div className="ui-metric-tile bg-white/[0.03]">
               <p className="ui-title text-[10px] text-white/42">Reports</p>
               <p className="mt-3 text-xl font-medium tracking-[-0.03em] text-white">Structured Analytics</p>
               <p className="mt-2 text-sm leading-6 text-white/50">

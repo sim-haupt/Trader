@@ -195,7 +195,7 @@ strong {
   }
 
   .calendar-panel .ui-panel {
-    background-color: #ffffff0d;
+    background-color: rgba(255, 255, 255, 0.05);
   }
 
   .ui-title {
@@ -362,21 +362,21 @@ strong {
     overflow: hidden;
     border: 1px solid var(--line);
     border-radius: var(--radius-lg);
-    background: #ffffff0d;
+    background: var(--surface-2);
     box-shadow: none;
   }
 
   .ui-surface-subtle {
     border: 1px solid var(--line);
     border-radius: var(--radius-md);
-    background: #ffffff0d;
+    background: #050505;
     box-shadow: none;
   }
 
   .ui-metric-tile {
     border: 1px solid var(--line);
     border-radius: var(--radius-md);
-    background: #ffffff0d;
+    background: #050505;
     padding: 16px;
     box-shadow: none;
   }
@@ -384,7 +384,7 @@ strong {
   .ui-inset-box {
     border: 1px solid var(--line);
     border-radius: var(--radius-md);
-    background: #ffffff0d;
+    background: #050505;
     box-shadow: none;
   }
 
