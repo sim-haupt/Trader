@@ -493,8 +493,7 @@ strong {
     padding: 24px 28px 32px;
   }
 
-  .dashboard-page .ui-panel,
-  .dashboard-page .ui-metric-tile {
+  .dashboard-page-widget {
     background: #ffffff0d;
   }
 }

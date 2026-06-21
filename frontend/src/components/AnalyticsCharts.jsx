@@ -271,7 +271,8 @@ function getLastSevenDayTone(day) {
 
   if (day.pnl >= 0) {
     return {
-      className: "ui-metric-tile rounded-[6px] px-4 py-4",
+      className:
+        "ui-metric-tile rounded-[6px] bg-[linear-gradient(180deg,rgba(52,224,161,0.18),rgba(52,224,161,0.06))] px-4 py-4",
       valueTone: "text-mint",
       style: {
         borderColor: "rgba(52, 224, 161, 0.34)"
@@ -281,7 +282,8 @@ function getLastSevenDayTone(day) {
 
   if (day.pnl < 0) {
     return {
-      className: "ui-metric-tile rounded-[6px] px-4 py-4",
+      className:
+        "ui-metric-tile rounded-[6px] bg-[linear-gradient(180deg,rgba(255,95,122,0.16),rgba(255,95,122,0.05))] px-4 py-4",
       valueTone: "text-coral",
       style: {
         borderColor: "rgba(255, 107, 107, 0.34)"
@@ -290,7 +292,7 @@ function getLastSevenDayTone(day) {
   }
 
   return {
-    className: "ui-metric-tile rounded-[6px] px-4 py-4",
+    className: "ui-metric-tile rounded-[6px] bg-white/[0.03] px-4 py-4",
     valueTone: "text-phosphor",
     style: { borderColor: "rgba(229, 231, 235, 0.16)" }
   };
@@ -769,7 +771,7 @@ function AnalyticsCharts({
 
   return (
     <div className="space-y-6">
-      <div className="ui-panel p-5">
+      <div className="dashboard-page-widget ui-panel p-5">
         <div className="grid gap-3 md:grid-cols-7">
           {lastSevenDays.map((day) => {
             const tone = getLastSevenDayTone(day);
@@ -802,7 +804,7 @@ function AnalyticsCharts({
             >
               <Card
                 title={widget.title}
-                className={`h-full ${widget.className || ""}`}
+                className={`dashboard-page-widget h-full ${widget.className || ""}`}
               >
                 {widget.body}
               </Card>
