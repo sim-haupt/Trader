@@ -504,7 +504,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
             : "w-full max-w-[1520px] overflow-hidden rounded-[6px] border border-[var(--line)] bg-black"
         }
       >
-        <div className="flex flex-col gap-4 border-b border-[var(--line)] bg-transparent px-4 py-4 sm:px-6 sm:py-5 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex flex-col gap-4 border-b border-[var(--line)] bg-white/[0.03] px-4 py-4 sm:px-6 sm:py-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3">
               <h2 className="break-words text-3xl font-bold tracking-[-0.04em] text-white sm:text-4xl">{activeTrade.symbol}</h2>

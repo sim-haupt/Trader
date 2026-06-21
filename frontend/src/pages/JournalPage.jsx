@@ -853,7 +853,7 @@ function JournalDayCard({
       <div className="space-y-5">
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)]">
           <div className="ui-surface-subtle overflow-hidden">
-            <div className="border-b border-[var(--line)] px-4 py-4">
+            <div className="border-b border-[var(--line)] bg-white/[0.03] px-4 py-4">
               <div className="ui-title text-[10px] text-white/72">Day Running P&amp;L</div>
               <div className="mt-3 text-sm text-white/54">
                 All trades from the same day, accumulated in close order.
