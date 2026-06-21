@@ -349,7 +349,7 @@ function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="settings-page space-y-6">
       {error && <div className="ui-notice border-coral/20 bg-[#1b1012] text-coral">{error}</div>}
 
       <Card

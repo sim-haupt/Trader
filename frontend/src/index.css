@@ -498,7 +498,9 @@ strong {
   }
 
   .reports-page .ui-panel,
-  .journal-page .ui-panel {
+  .journal-page .ui-panel,
+  .settings-page .ui-panel,
+  .trades-page .ui-panel {
     background: #ffffff0d;
   }
 
@@ -510,7 +512,13 @@ strong {
   .reports-page .ui-surface-subtle,
   .journal-page .ui-metric-tile,
   .journal-page .ui-inset-box,
-  .journal-page .ui-surface-subtle {
+  .journal-page .ui-surface-subtle,
+  .settings-page .ui-metric-tile,
+  .settings-page .ui-inset-box,
+  .settings-page .ui-surface-subtle,
+  .trades-page .ui-metric-tile,
+  .trades-page .ui-inset-box,
+  .trades-page .ui-surface-subtle {
     background: #ffffff03;
   }
 }

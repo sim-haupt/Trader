@@ -853,7 +853,7 @@ function TradesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="trades-page space-y-6">
       {isImportMode && (
         <>
           <div className="grid items-stretch gap-6 xl:grid-cols-[1.05fr_1.35fr]">
