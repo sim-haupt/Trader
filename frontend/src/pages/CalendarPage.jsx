@@ -125,11 +125,11 @@ function createMonthGrid(year, monthIndex, dailyStats) {
 
 function getDayTone(stats, isCurrentMonth) {
   if (!isCurrentMonth) {
-    return "bg-transparent text-mist";
+    return "bg-white/[0.03] text-mist";
   }
 
   if (!stats) {
-    return "bg-white/[0.03] text-mist";
+    return "bg-transparent text-mist";
   }
 
   if (stats.pnl > 0) {
