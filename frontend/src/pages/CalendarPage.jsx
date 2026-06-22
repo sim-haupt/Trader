@@ -191,7 +191,7 @@ function MonthCard({ month, onOpen }) {
             key={day.dayKey}
             className={
               day.isCurrentMonth
-                ? `aspect-square rounded-[6px] border border-transparent px-2 py-4 text-lg font-[200] transition ${getDayTone(
+                ? `aspect-square rounded-[6px] border border-white/[0.06] px-2 py-4 text-lg font-[200] transition ${getDayTone(
                     day.stats,
                     day.isCurrentMonth
                   )}`
