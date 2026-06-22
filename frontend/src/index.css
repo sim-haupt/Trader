@@ -7,13 +7,13 @@
 :root,
 body,
 body[data-theme="dark"] {
-  --black-0: #000000;
+  --black-0: #030303;
   --black-1: #050505;
   --black-2: #1f1f1f;
   --black-3: #262626;
-  --bg-canvas: #000000;
-  --bg-elevated: #000000;
-  --surface-1: #000000;
+  --bg-canvas: #030303;
+  --bg-elevated: #030303;
+  --surface-1: #030303;
   --surface-2: #050505;
   --surface-3: #1f1f1f;
   --surface-soft: #050505;
