@@ -168,7 +168,7 @@ function MonthCard({ month, onOpen }) {
     <Card
       title={month.label}
       headerInnerClassName="md:items-center"
-      className="calendar-panel shadow-none"
+      className="calendar-panel dashboard-page-widget shadow-none"
       action={
         <button
           type="button"
@@ -214,7 +214,7 @@ function MonthDetailSection({ month, displayMode, onDisplayModeChange, onClose, 
   return (
     <Card
       title={month.label.toUpperCase()}
-      className="calendar-panel shadow-none"
+      className="calendar-panel dashboard-page-widget shadow-none"
       action={
         <div className="flex items-center gap-3">
           <div
@@ -447,7 +447,7 @@ function CalendarPage() {
       )}
       <Card
         title="CALENDAR OVERVIEW"
-        className="calendar-panel"
+        className="calendar-panel dashboard-page-widget"
         action={
           <div className="ui-chip text-base">
             {calendarData.year}

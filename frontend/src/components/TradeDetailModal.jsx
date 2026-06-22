@@ -500,7 +500,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
       <div
         className={
           pageMode
-            ? "trade-detail-page-widget ui-panel w-full overflow-hidden rounded-[6px]"
+            ? "trade-detail-page-widget dashboard-page-widget ui-panel w-full overflow-hidden rounded-[6px]"
             : "w-full max-w-[1520px] overflow-hidden rounded-[6px] border border-[var(--line)] bg-black"
         }
       >
@@ -551,7 +551,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
             <SummaryMetric label="Executions" value={String(executionCount)} />
           </div>
 
-          <Card title="TRADER NOTES">
+          <Card title="TRADER NOTES" className="dashboard-page-widget">
             <div className="space-y-5">
               <div className="grid gap-5 lg:grid-cols-2">
                 <div className="ui-inset-box p-4">
@@ -721,11 +721,11 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
             </div>
           </Card>
 
-          <Card title="Executions">
+          <Card title="Executions" className="dashboard-page-widget">
             <TimelineTable rows={tradeTimeline} />
           </Card>
 
-          <Card title="Execution Review Charts">
+          <Card title="Execution Review Charts" className="dashboard-page-widget">
             <TradeReviewCharts trade={activeTrade} />
           </Card>
 
@@ -733,6 +733,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
             <Card
               title="Trade Running P&L"
               subtitle="Realized progression across the executions we have stored for this trade."
+              className="dashboard-page-widget"
             >
               {loadingTradeDetail ? (
                 <LoadingState label="Loading trade detail..." className="min-h-[290px]" />
@@ -770,7 +771,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
               )}
             </Card>
 
-            <Card title="Day Running P&L">
+            <Card title="Day Running P&L" className="dashboard-page-widget">
               {loadingDayTrades ? (
                 <LoadingState label="Loading same-day trades..." className="min-h-[290px]" />
               ) : dayTradesError ? (
