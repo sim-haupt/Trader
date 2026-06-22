@@ -17,6 +17,9 @@ body[data-theme="dark"] {
   --surface-2: #050505;
   --surface-3: #1f1f1f;
   --surface-soft: #050505;
+  --widget-bg: color-mix(in srgb, var(--bg-canvas) 94.9%, white);
+  --widget-inner-bg: color-mix(in srgb, var(--widget-bg) 98.8%, white);
+  --widget-heading-bg: color-mix(in srgb, var(--widget-inner-bg) 97%, white);
   --line: #1f1f1f;
   --line-strong: #1f1f1f;
   --line-soft: #1f1f1f;
@@ -389,7 +392,7 @@ strong {
   }
 
   .ui-widget-heading-bg {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--widget-heading-bg);
   }
 
   .ui-popover {
@@ -498,7 +501,7 @@ strong {
   }
 
   .dashboard-page-widget {
-    background: #ffffff0d;
+    background: var(--widget-bg);
   }
 
   .reports-page .ui-panel,
@@ -508,7 +511,7 @@ strong {
   .trades-page .ui-panel,
   .trade-detail-page .ui-panel,
   .trade-detail-page-widget {
-    background: #ffffff0d;
+    background: var(--widget-bg);
   }
 
   .dashboard-page-widget:not(.dashboard-page-days) .ui-metric-tile,
@@ -535,7 +538,7 @@ strong {
   .trade-detail-page .ui-inset-box,
   .trade-detail-page .ui-surface-subtle,
   .trade-detail-page .ui-table-shell {
-    background: #ffffff03;
+    background: var(--widget-inner-bg);
   }
 }
 

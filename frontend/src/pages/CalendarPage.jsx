@@ -168,7 +168,7 @@ function MonthCard({ month, onOpen }) {
     <Card
       title={month.label}
       headerInnerClassName="md:items-center"
-      className="calendar-panel dashboard-page-widget shadow-none"
+      className="calendar-panel ui-surface-subtle shadow-none"
       action={
         <button
           type="button"
