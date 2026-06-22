@@ -392,6 +392,10 @@ strong {
     box-shadow: none;
   }
 
+  .ui-widget-heading-bg {
+    background: rgba(255, 255, 255, 0.03);
+  }
+
   .ui-popover {
     border: 1px solid var(--line);
     border-radius: var(--radius-lg);
