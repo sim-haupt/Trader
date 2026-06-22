@@ -198,10 +198,6 @@ strong {
       background-color 140ms ease;
   }
 
-  .calendar-panel .ui-panel {
-    background-color: rgba(255, 255, 255, 0.05);
-  }
-
   .ui-title {
     font-family: "Roboto", sans-serif;
     font-weight: 500;
@@ -507,6 +503,7 @@ strong {
 
   .reports-page .ui-panel,
   .journal-page .ui-panel,
+  .calendar-page .ui-panel,
   .settings-page .ui-panel,
   .trades-page .ui-panel,
   .trade-detail-page .ui-panel,
@@ -523,12 +520,17 @@ strong {
   .journal-page .ui-metric-tile,
   .journal-page .ui-inset-box,
   .journal-page .ui-surface-subtle,
+  .calendar-page .ui-metric-tile,
+  .calendar-page .ui-inset-box,
+  .calendar-page .ui-surface-subtle,
+  .calendar-page .ui-table-shell,
   .settings-page .ui-metric-tile,
   .settings-page .ui-inset-box,
   .settings-page .ui-surface-subtle,
   .trades-page .ui-metric-tile,
   .trades-page .ui-inset-box,
   .trades-page .ui-surface-subtle,
+  .trades-page .ui-table-shell,
   .trade-detail-page .ui-metric-tile,
   .trade-detail-page .ui-inset-box,
   .trade-detail-page .ui-surface-subtle,

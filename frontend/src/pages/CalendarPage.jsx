@@ -129,7 +129,7 @@ function getDayTone(stats, isCurrentMonth) {
   }
 
   if (!stats) {
-    return "bg-white/[0.015] text-mist";
+    return "bg-white/[0.03] text-mist";
   }
 
   if (stats.pnl > 0) {
@@ -140,7 +140,7 @@ function getDayTone(stats, isCurrentMonth) {
     return "bg-[linear-gradient(180deg,rgba(255,95,122,0.16),rgba(255,95,122,0.05))] text-coral";
   }
 
-  return "bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04))] text-mist";
+  return "bg-white/[0.03] text-mist";
 }
 
 function getDayBorderStyle(stats, isCurrentMonth) {
@@ -168,7 +168,7 @@ function MonthCard({ month, onOpen }) {
     <Card
       title={month.label}
       headerInnerClassName="md:items-center"
-      className="calendar-panel p-6 shadow-none"
+      className="calendar-panel shadow-none"
       action={
         <button
           type="button"
@@ -214,7 +214,7 @@ function MonthDetailSection({ month, displayMode, onDisplayModeChange, onClose, 
   return (
     <Card
       title={month.label.toUpperCase()}
-      className="calendar-panel p-6 shadow-none"
+      className="calendar-panel shadow-none"
       action={
         <div className="flex items-center gap-3">
           <div
@@ -223,7 +223,7 @@ function MonthDetailSection({ month, displayMode, onDisplayModeChange, onClose, 
                 ? "border-mint/35 bg-mint/10 text-mint"
                 : monthPerShareTone === "text-coral"
                   ? "border-coral/35 bg-coral/10 text-coral"
-                  : "border-[#e5e7eb42] bg-white/5 text-mist"
+                  : "border-[var(--line)] bg-white/[0.03] text-mist"
             }`}
           >
             /sh {formatCurrency(month.monthAveragePerShare)}
@@ -234,7 +234,7 @@ function MonthDetailSection({ month, displayMode, onDisplayModeChange, onClose, 
                 ? "border-mint/35 bg-mint/10 text-mint"
                 : monthDollarTone === "text-coral"
                   ? "border-coral/35 bg-coral/10 text-coral"
-                  : "border-[#e5e7eb42] bg-white/5 text-mist"
+                  : "border-[var(--line)] bg-white/[0.03] text-mist"
             }`}
           >
             {formatCurrency(month.monthPnl)}
@@ -260,16 +260,16 @@ function MonthDetailSection({ month, displayMode, onDisplayModeChange, onClose, 
         </div>
       }
     >
-      <div className="grid grid-cols-8 gap-0 overflow-hidden rounded-[6px] border border-[var(--line)] bg-black">
+      <div className="ui-surface-subtle grid grid-cols-8 gap-0 overflow-hidden">
         {weekdayLabels.map((label) => (
           <div
             key={label}
-            className="ui-title border-b border-r border-[var(--line)] px-3 py-3 text-center text-xs text-white/78"
+            className="ui-widget-heading-bg ui-title border-b border-r border-[var(--line)] px-3 py-3 text-center text-xs text-white/78"
           >
             {label}
           </div>
         ))}
-        <div className="ui-title border-b border-[var(--line)] px-3 py-3 text-center text-xs text-white/78">
+        <div className="ui-widget-heading-bg ui-title border-b border-[var(--line)] px-3 py-3 text-center text-xs text-white/78">
           Total
         </div>
 
@@ -330,7 +330,7 @@ function MonthDetailSection({ month, displayMode, onDisplayModeChange, onClose, 
                 </button>
               ))}
 
-              <div className="min-h-[118px] border-b border-[var(--line)] px-3 py-3 bg-white/[0.02]">
+              <div className="min-h-[118px] border-b border-[var(--line)] bg-white/[0.03] px-3 py-3">
                 <div className="ui-title text-sm text-white">Week {index + 1}</div>
                 <div className={`mt-4 text-base font-semibold ${weekDollarTone}`}>
                   {formatCurrency(weekStats.pnl)}
@@ -412,24 +412,30 @@ function CalendarPage() {
     selectedMonthIndex === null ? null : calendarData.months[selectedMonthIndex] ?? null;
 
   if (loading) {
-    return <LoadingState label="Loading calendar..." panel />;
+    return (
+      <div className="calendar-page">
+        <LoadingState label="Loading calendar..." panel />
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="ui-notice border-coral/20 bg-coral/10 text-coral">{error}</div>;
+    return <div className="calendar-page ui-notice border-coral/20 bg-coral/10 text-coral">{error}</div>;
   }
 
   if (trades.length === 0) {
     return (
-      <EmptyState
-        title="No trades yet"
-        description="Import or add trades and the calendar will mark green and red days automatically."
-      />
+      <div className="calendar-page">
+        <EmptyState
+          title="No trades yet"
+          description="Import or add trades and the calendar will mark green and red days automatically."
+        />
+      </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="calendar-page space-y-6">
       {selectedMonth && (
         <MonthDetailSection
           month={selectedMonth}

@@ -46,7 +46,7 @@ function TradeTable({
     <div className="ui-table-shell">
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-[var(--line)] text-sm">
-          <thead className="bg-[rgba(255,255,255,0.05)]">
+          <thead className="ui-widget-heading-bg">
             <tr className="ui-title text-left text-[11px] text-white/58">
               {onToggleSelection && (
                 <th className="px-4 py-4">
@@ -85,7 +85,7 @@ function TradeTable({
                     <tr key={`${trade.id}-day-divider`} aria-hidden="true">
                       <td colSpan={columnCount} className="px-4 py-4 align-middle">
                         <div className="flex min-h-[44px] items-center gap-3">
-                          <span className="ui-title rounded-[6px] border border-[var(--line-strong)] bg-black px-3 py-1.5 text-[10px] text-[var(--text-muted)]">
+                          <span className="ui-surface-subtle ui-title px-3 py-1.5 text-[10px] text-[var(--text-muted)]">
                             {currentDate}
                           </span>
                         </div>
@@ -103,7 +103,7 @@ function TradeTable({
                         onSelectTrade?.(trade);
                       }
                     }}
-                    className="cursor-pointer bg-[rgba(255,255,255,0.05)] transition hover:bg-white/[0.08] focus:bg-white/[0.08] focus:outline-none"
+                    className="cursor-pointer bg-white/[0.03] transition hover:bg-white/[0.05] focus:bg-white/[0.05] focus:outline-none"
                   >
                     {onToggleSelection && (
                       <td className="px-4 py-4">

@@ -957,7 +957,7 @@ function TradesPage() {
                             <button
                               type="button"
                               onClick={() => setBulkSetup("")}
-                              className="inline-flex items-center gap-2 rounded-[6px] border border-[var(--line)] bg-black px-3 py-1.5 text-xs text-white/82"
+                              className="ui-surface-subtle inline-flex items-center gap-2 px-3 py-1.5 text-xs text-white/82"
                             >
                               <span>{bulkSetup}</span>
                               <span className="text-white/48">x</span>
@@ -978,7 +978,7 @@ function TradesPage() {
                                   key={setup.id}
                                   type="button"
                                   onClick={() => setBulkSetup(setup.name)}
-                                  className="rounded-[6px] border border-[var(--line)] bg-black px-3 py-1.5 text-xs font-medium text-white/78 transition hover:border-white/20 hover:bg-[#1f1f1f] hover:text-white"
+                                  className="ui-button px-3 py-1.5 text-xs"
                                 >
                                   {setup.name}
                                 </button>
@@ -998,7 +998,7 @@ function TradesPage() {
                               key={tag}
                               type="button"
                               onClick={() => removeBulkTag(tag)}
-                              className="inline-flex items-center gap-2 rounded-[6px] border border-[var(--line)] bg-black px-3 py-1.5 text-xs font-medium text-white/88 transition hover:bg-[#1f1f1f]"
+                              className="ui-surface-subtle inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white/88 transition hover:bg-white/[0.05]"
                             >
                               <span>{tag}</span>
                               <span className="text-white/45">×</span>
@@ -1018,7 +1018,7 @@ function TradesPage() {
                               key={tag.id}
                               type="button"
                               onClick={() => addBulkTag(tag.name)}
-                              className="rounded-[6px] border border-[var(--line)] bg-black px-3 py-1.5 text-xs font-medium text-white/78 transition hover:border-white/20 hover:bg-[#1f1f1f] hover:text-white"
+                              className="ui-button px-3 py-1.5 text-xs"
                             >
                               {tag.name}
                             </button>
@@ -1055,7 +1055,7 @@ function TradesPage() {
                           </div>
                         </div>
 
-                        <div className="rounded-[6px] border border-[var(--line)] bg-black px-4 py-3 text-sm leading-6 text-white/68">
+                        <div className="ui-inset-box px-4 py-3 text-sm leading-6 text-white/68">
                           Delete will permanently remove the selected trades.
                         </div>
                       </div>

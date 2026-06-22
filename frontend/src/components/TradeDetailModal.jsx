@@ -770,10 +770,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
               )}
             </Card>
 
-            <Card
-              title="Day Running P&L"
-              subtitle="All trades from the same day, accumulated in close order."
-            >
+            <Card title="Day Running P&L">
               {loadingDayTrades ? (
                 <LoadingState label="Loading same-day trades..." className="min-h-[290px]" />
               ) : dayTradesError ? (
