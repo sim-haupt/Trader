@@ -33,6 +33,14 @@ const tradeDetailInclude = {
   }
 };
 
+const tradeListInclude = {
+  executions: {
+    orderBy: {
+      sequence: "asc"
+    }
+  }
+};
+
 function getActorAccountScope(actor) {
   return actor?.activeAccountScope || "SIMULATOR";
 }
@@ -250,7 +258,12 @@ async function getTrades(actor, filters) {
 
   return prisma.trade.findMany({
     where,
-    include: hasGlobalTradeScope(actor, filters) ? adminTradeInclude : undefined,
+    include: hasGlobalTradeScope(actor, filters)
+      ? {
+          ...tradeListInclude,
+          ...adminTradeInclude
+        }
+      : tradeListInclude,
     orderBy: {
       entryDate: "desc"
     }

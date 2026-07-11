@@ -79,11 +79,16 @@ function getEasternTimestamp(dayStamp, hour, minute = 0, second = 0) {
 }
 
 function buildDayRange(anchorDate) {
+  if (!anchorDate) {
+    return { from: "", to: "", dayStamp: "" };
+  }
+
   const dayStamp = getEasternDayStamp(anchorDate);
 
   if (!dayStamp) {
     const fallback = new Date(anchorDate);
-    return { from: fallback.toISOString(), to: fallback.toISOString(), dayStamp: "" };
+    const fallbackIso = Number.isNaN(fallback.getTime()) ? "" : fallback.toISOString();
+    return { from: fallbackIso, to: fallbackIso, dayStamp: "" };
   }
 
   const fromSeconds = getEasternTimestamp(dayStamp, 4, 0, 0);
@@ -570,9 +575,21 @@ function PremiumChart({
   );
 }
 
-function TradeReviewCharts({ trade }) {
-  const range = buildDayRange(trade.entryDate);
-  const markers = useMemo(() => buildExecutionMarkers(trade), [trade]);
+function TradeReviewCharts({ trade, trades, title = "Execution Review" }) {
+  const chartTrades = useMemo(() => {
+    if (Array.isArray(trades) && trades.length > 0) {
+      return trades;
+    }
+
+    return trade ? [trade] : [];
+  }, [trade, trades]);
+  const anchorTrade = chartTrades[0];
+  const range = buildDayRange(anchorTrade?.entryDate);
+  const markers = useMemo(
+    () => chartTrades.flatMap((chartTrade) => buildExecutionMarkers(chartTrade)),
+    [chartTrades]
+  );
+
   const {
     data: response,
     loading,
@@ -580,7 +597,7 @@ function TradeReviewCharts({ trade }) {
   } = useCachedAsyncResource({
     peek: () =>
       marketDataService.peekBars({
-        symbol: trade.symbol,
+        symbol: anchorTrade?.symbol,
         resolution: "1m",
         from: range.from,
         to: range.to,
@@ -588,20 +605,29 @@ function TradeReviewCharts({ trade }) {
       }),
     load: () =>
       marketDataService.getBars({
-        symbol: trade.symbol,
+        symbol: anchorTrade?.symbol,
         resolution: "1m",
         from: range.from,
         to: range.to,
         includeExtended: true
       }),
     initialValue: { bars: [] },
-    deps: [trade.symbol, trade.entryDate]
+    enabled: Boolean(anchorTrade),
+    deps: [anchorTrade?.symbol, anchorTrade?.entryDate]
   });
 
   const timeline = useMemo(
     () => buildMinuteTimeline(response?.bars || [], range.dayStamp),
     [response?.bars, range.dayStamp]
   );
+
+  if (!anchorTrade) {
+    return (
+      <div className="rounded-[6px] border border-[var(--line)] bg-black p-5 text-sm text-mist">
+        No trades available for this chart.
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -630,7 +656,7 @@ function TradeReviewCharts({ trade }) {
 
   return (
     <PremiumChart
-      title="Execution Review"
+      title={title}
       candleBars={timeline.candleBars}
       actualBars={timeline.actualBars}
       markers={markers}

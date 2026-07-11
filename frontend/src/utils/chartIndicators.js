@@ -187,6 +187,8 @@ function buildExecutionMarkers(trade) {
         : null;
 
       const isEntryMarker = index === 0;
+      const isExitMarker = index === trade.executions.length - 1 && trade.executions.length > 1;
+      const markerLabel = isEntryMarker ? "Entry" : isExitMarker ? "Exit" : "Fill";
       const markerColor = isEntryMarker
         ? ENTRY_MARKER_GREEN
         : execution.action === "BUY"
@@ -200,10 +202,10 @@ function buildExecutionMarkers(trade) {
         position: execution.action === "BUY" ? "belowBar" : "aboveBar",
         color: markerColor,
         shape: execution.action === "BUY" ? "arrowUp" : "arrowDown",
-        text: `${execution.action === "BUY" ? "Buy" : "Sell"} ${asNumber(
+        text: `${markerLabel} · ${execution.action === "BUY" ? "Buy" : "Sell"} ${asNumber(
           execution.quantity
         )} @ ${asNumber(execution.price).toFixed(2)}`,
-        detailText: `${execution.action === "BUY" ? "Buy" : "Sell"} ${asNumber(
+        detailText: `${markerLabel} · ${execution.action === "BUY" ? "Buy" : "Sell"} ${asNumber(
           execution.quantity
         )} @ ${asNumber(execution.price).toFixed(2)}${timeLabel ? ` · ${timeLabel}` : ""}`,
         id: execution.id || `${trade.id}-${index + 1}`

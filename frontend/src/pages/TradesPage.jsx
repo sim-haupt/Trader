@@ -4,7 +4,7 @@ import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
 import Filters from "../components/Filters";
 import TradeForm from "../components/TradeForm";
-import TradeTable from "../components/TradeTable";
+import TradeTable, { buildTradeGroups } from "../components/TradeTable";
 import UploadCSV from "../components/UploadCSV";
 import TradeTextImport from "../components/TradeTextImport";
 import CustomSelect from "../components/ui/CustomSelect";
@@ -149,21 +149,26 @@ function TradesPage() {
     () => (selectedTrade ? `Editing ${selectedTrade.symbol}` : "Add a new trade"),
     [selectedTrade]
   );
+  const tradeGroups = useMemo(() => buildTradeGroups(trades), [trades]);
   const totalPages = useMemo(() => {
     if (pageSize === "all") {
       return 1;
     }
 
-    return Math.max(1, Math.ceil(trades.length / pageSize));
-  }, [pageSize, trades.length]);
-  const paginatedTrades = useMemo(() => {
+    return Math.max(1, Math.ceil(tradeGroups.length / pageSize));
+  }, [pageSize, tradeGroups.length]);
+  const paginatedGroups = useMemo(() => {
     if (pageSize === "all") {
-      return trades;
+      return tradeGroups;
     }
 
     const startIndex = (currentPage - 1) * pageSize;
-    return trades.slice(startIndex, startIndex + pageSize);
-  }, [currentPage, pageSize, trades]);
+    return tradeGroups.slice(startIndex, startIndex + pageSize);
+  }, [currentPage, pageSize, tradeGroups]);
+  const paginatedTrades = useMemo(
+    () => paginatedGroups.flatMap((group) => group.trades),
+    [paginatedGroups]
+  );
 
   useEffect(() => {
     setCurrentPage(1);
@@ -1085,6 +1090,7 @@ function TradesPage() {
 
               <TradeTable
                 trades={paginatedTrades}
+                groups={paginatedGroups}
                 onEdit={setSelectedTrade}
                 onDelete={handleDelete}
                 onSelectTrade={(trade) => navigate(`/trades/${trade.id}`, { state: { trade } })}
@@ -1097,13 +1103,13 @@ function TradesPage() {
                 <div className="text-sm text-white/62">
                   Showing{" "}
                   <span className="font-semibold text-white">
-                    {paginatedTrades.length === 0 ? 0 : pageSize === "all" ? 1 : (currentPage - 1) * pageSize + 1}
+                    {paginatedGroups.length === 0 ? 0 : pageSize === "all" ? 1 : (currentPage - 1) * pageSize + 1}
                   </span>
                   {" "}to{" "}
                   <span className="font-semibold text-white">
-                    {pageSize === "all" ? trades.length : Math.min(currentPage * pageSize, trades.length)}
+                    {pageSize === "all" ? tradeGroups.length : Math.min(currentPage * pageSize, tradeGroups.length)}
                   </span>
-                  {" "}of <span className="font-semibold text-white">{trades.length}</span> trades
+                  {" "}of <span className="font-semibold text-white">{tradeGroups.length}</span> ticker/day rows
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
