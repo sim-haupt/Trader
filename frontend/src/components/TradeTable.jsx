@@ -154,9 +154,8 @@ function ActionButton({ label, children, className = "", onClick }) {
 
 function TradeCountBadge({ count }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-[4px] border border-white/10 bg-black/40 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.08em] text-white/62">
-      <span className="text-xs font-semibold text-white">{count}</span>
-      <span>{count === 1 ? "trade" : "trades"}</span>
+    <span className="text-sm font-medium text-white/58" aria-label={`${count} ${count === 1 ? "trade" : "trades"}`}>
+      ({count})
     </span>
   );
 }
@@ -230,7 +229,7 @@ function TradeTable({
                 <h2 className="ui-title text-lg text-white">{chartGroup.symbol} · {chartGroup.dayLabel}</h2>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <TradeCountBadge count={chartGroup.trades.length} />
-                  <span className="inline-flex items-center rounded-[4px] border border-white/10 bg-black/40 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.08em] text-white/62">
+                  <span className="text-sm text-white/58">
                     {chartGroup.executionCount} execution{chartGroup.executionCount === 1 ? "" : "s"}
                   </span>
                 </div>
@@ -319,7 +318,7 @@ function TradeTable({
                         <button
                           type="button"
                           onClick={() => toggleGroup(group.id)}
-                          className="inline-flex items-center gap-2 text-left text-[15px] font-semibold tracking-[-0.02em] text-white transition hover:text-mint"
+                          className="inline-flex items-center gap-2 text-left text-[15px] font-semibold tracking-[-0.02em] text-white transition hover:text-white/78"
                           aria-expanded={isExpanded}
                         >
                           <ChevronIcon open={isExpanded} />

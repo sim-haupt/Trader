@@ -468,7 +468,7 @@ function MetricRow({ label, value, tone = "text-white" }) {
 }
 
 function MonthSummary({ month, compact = false, pnlMode }) {
-  const summary = month.summary;
+  const summary = pnlMode === "NET" ? month.netSummary : month.grossSummary;
   const range = `${month.rangeStart} -> ${month.rangeEnd}`;
 
   return (
@@ -571,7 +571,8 @@ function CalendarPage() {
       const lastDate = new Date(targetYear, monthIndex + 1, 0);
       const weeks = createMonthGrid(targetYear, monthIndex, dailyStats);
       const monthDays = weeks.flat().filter((day) => day.isCurrentMonth);
-      const summary = calculateSummary(monthDays, pnlMode);
+      const grossSummary = calculateSummary(monthDays, "GROSS");
+      const netSummary = calculateSummary(monthDays, "NET");
 
       return {
         monthIndex,
@@ -582,7 +583,8 @@ function CalendarPage() {
         rangeStart: getCalendarGridKey(monthDate),
         rangeEnd: getCalendarGridKey(lastDate),
         weeks,
-        summary
+        grossSummary,
+        netSummary
       };
     });
 
@@ -590,7 +592,7 @@ function CalendarPage() {
       year: targetYear,
       months
     };
-  }, [trades, pnlMode]);
+  }, [trades]);
 
   const selectedMonth = calendarData.months[selectedMonthIndex] ?? calendarData.months[currentMonthIndex] ?? calendarData.months[0];
 
