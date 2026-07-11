@@ -12,6 +12,7 @@ import CalendarPage from "./pages/CalendarPage";
 import JournalPage from "./pages/JournalPage";
 import SettingsPage from "./pages/SettingsPage";
 import ReportsPage from "./pages/ReportsPage";
+import TaxReportsPage from "./pages/TaxReportsPage";
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/tax-reports" element={<TaxReportsPage />} />
         <Route path="/trades" element={<TradesPage />} />
         <Route path="/trades/:id" element={<TradeDetailPage />} />
         <Route path="/settings" element={<SettingsPage />} />

@@ -39,6 +39,31 @@ enum AccountScope {
   LIVE
 }
 
+enum TaxImportStatus {
+  NEW
+  EXACT_DUPLICATE
+  POSSIBLE_DUPLICATE
+  INVALID
+  EXCLUDED
+}
+
+enum TaxReviewStatus {
+  NEEDS_REVIEW
+  REVIEWED
+  RESOLVED
+}
+
+enum TaxTransactionSide {
+  BUY
+  SELL
+}
+
+enum TaxReportStatus {
+  DRAFT
+  FINALIZED
+  BLOCKED
+}
+
 model User {
   id           String        @id @default(cuid())
   email        String        @unique
@@ -56,6 +81,13 @@ model User {
   savedTags    SavedTag[]
   savedStrategies SavedStrategy[]
   journalDays  JournalDay[]
+  taxStatements TaxStatement[]
+  taxTransactions TaxTransaction[]
+  taxCompletedTrades TaxCompletedTrade[]
+  taxExchangeRates TaxExchangeRate[]
+  taxSettings TaxSetting?
+  taxReports TaxReport[]
+  taxAuditLogs TaxAuditLog[]
 }
 
 model Trade {
@@ -158,6 +190,200 @@ model SavedStrategy {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, name])
+  @@index([userId, createdAt])
+}
+
+model TaxStatement {
+  id                    String      @id @default(cuid())
+  userId                String
+  originalFilename      String
+  storedPath            String
+  uploadedAt            DateTime    @default(now())
+  statementStartDate    DateTime?
+  statementEndDate      DateTime?
+  brokerName            String?
+  maskedAccountNumber   String?
+  originalCurrency      String      @default("USD")
+  fileHash              String
+  importerKey           String
+  importerVersion       String
+  importStatus          String      @default("IMPORTED")
+  importedTradeCount    Int         @default(0)
+  duplicateCount        Int         @default(0)
+  rejectedRowCount      Int         @default(0)
+  unresolvedRowCount    Int         @default(0)
+  sourceMetadata        Json?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions          TaxTransaction[]
+  completedTrades       TaxCompletedTrade[]
+
+  @@index([userId, statementStartDate])
+  @@index([userId, fileHash])
+}
+
+model TaxTransaction {
+  id                      String             @id @default(cuid())
+  userId                  String
+  statementId             String
+  sourceRow               Int
+  sourceRowHash           String
+  brokerTransactionId     String?
+  brokerAccount           String?
+  tradeDate               DateTime?
+  executionTime           DateTime?
+  timeZone                String             @default("America/New_York")
+  stockSymbol             String?
+  isin                    String?
+  companyName             String?
+  side                    TaxTransactionSide?
+  quantity                Decimal?           @db.Decimal(24, 8)
+  pricePerShare           Decimal?           @db.Decimal(24, 8)
+  grossAmount             Decimal?           @db.Decimal(24, 8)
+  commission              Decimal            @default(0) @db.Decimal(24, 8)
+  otherFees               Decimal            @default(0) @db.Decimal(24, 8)
+  netAmount               Decimal?           @db.Decimal(24, 8)
+  currency                String?
+  exchangeRateToEur       Decimal?           @db.Decimal(24, 10)
+  exchangeRateDate        DateTime?
+  exchangeRateSource      String?
+  exchangeRateFallbackRule String?
+  exchangeRateManualOverride Boolean         @default(false)
+  exchangeRateOverrideReason String?
+  eurGrossAmount          Decimal?           @db.Decimal(24, 8)
+  eurFees                 Decimal?           @db.Decimal(24, 8)
+  eurNetAmount            Decimal?           @db.Decimal(24, 8)
+  matchedTradeId          String?
+  realizedPnlOriginal     Decimal?           @db.Decimal(24, 8)
+  realizedPnlEur          Decimal?           @db.Decimal(24, 8)
+  importStatus            TaxImportStatus    @default(NEW)
+  duplicateStatus         String             @default("NEW")
+  reviewStatus            TaxReviewStatus    @default(NEEDS_REVIEW)
+  userNote                String?
+  invalidReason           String?
+  rawRow                  Json
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+  user                    User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  statement               TaxStatement       @relation(fields: [statementId], references: [id], onDelete: Cascade)
+  matchedTrade            TaxCompletedTrade? @relation(fields: [matchedTradeId], references: [id], onDelete: SetNull)
+
+  @@index([userId, tradeDate])
+  @@index([userId, stockSymbol])
+  @@index([userId, sourceRowHash])
+}
+
+model TaxCompletedTrade {
+  id                    String      @id @default(cuid())
+  userId                String
+  statementId           String?
+  brokerAccount         String?
+  tradeDate             DateTime
+  stockSymbol           String
+  side                  String      @default("LONG")
+  buyQuantity           Decimal     @db.Decimal(24, 8)
+  sellQuantity          Decimal     @db.Decimal(24, 8)
+  buyPrice              Decimal     @db.Decimal(24, 8)
+  sellPrice             Decimal     @db.Decimal(24, 8)
+  grossPurchaseValue    Decimal     @db.Decimal(24, 8)
+  grossSaleValue        Decimal     @db.Decimal(24, 8)
+  purchaseFees          Decimal     @default(0) @db.Decimal(24, 8)
+  saleFees              Decimal     @default(0) @db.Decimal(24, 8)
+  otherFees             Decimal     @default(0) @db.Decimal(24, 8)
+  realizedPnlOriginal   Decimal     @db.Decimal(24, 8)
+  exchangeRateToEur     Decimal?    @db.Decimal(24, 10)
+  exchangeRateDate      DateTime?
+  exchangeRateSource    String?
+  realizedPnlEur        Decimal?    @db.Decimal(24, 8)
+  brokerReportedPnl     Decimal?    @db.Decimal(24, 8)
+  reconciliationDifference Decimal? @db.Decimal(24, 8)
+  sourceRow             Int?
+  sourceRowHash         String?
+  status                String      @default("MATCHED")
+  warning               String?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  statement             TaxStatement? @relation(fields: [statementId], references: [id], onDelete: SetNull)
+  transactions          TaxTransaction[]
+
+  @@index([userId, tradeDate])
+  @@index([userId, stockSymbol])
+  @@index([userId, sourceRowHash])
+}
+
+model TaxExchangeRate {
+  id                    String      @id @default(cuid())
+  userId                String
+  currency              String
+  rateDate              DateTime
+  source                String
+  fallbackRule          String?
+  rateToEur             Decimal     @db.Decimal(24, 10)
+  manualOverride        Boolean     @default(false)
+  overrideReason        String?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, currency, rateDate, source])
+  @@index([userId, rateDate])
+}
+
+model TaxSetting {
+  id                         String   @id @default(cuid())
+  userId                     String   @unique
+  taxpayerName               String?
+  germanTaxYear              Int      @default(2026)
+  brokerName                 String   @default("International broker")
+  brokerAccount              String?
+  baseCurrency               String   @default("USD")
+  exchangeRateSource         String   @default("frankfurter.dev USD/EUR")
+  exchangeRateFallbackRule   String   @default("previous_available")
+  matchingMethod             String   @default("FIFO")
+  reconciliationTolerance    Decimal  @default(1.00) @db.Decimal(18, 4)
+  reportLanguage             String   @default("de")
+  rounding                   String   @default("2_decimals")
+  taxAdviserNotes            String?
+  disclaimer                 String   @default("This report is a technical calculation based on broker data and settings provided by the user. It is not an official tax certificate and does not constitute tax or legal advice. The report should be reviewed by the taxpayer or a qualified German tax adviser before submission.")
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+  user                       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TaxReport {
+  id                 String          @id @default(cuid())
+  userId             String
+  reportId           String          @unique
+  periodType         String
+  periodStart        DateTime
+  periodEnd          DateTime
+  brokerAccount      String?
+  status             TaxReportStatus @default(DRAFT)
+  isInterim          Boolean         @default(true)
+  snapshot           Json
+  finalizedAt        DateTime?
+  revision           Int             @default(1)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  user               User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, periodStart, periodEnd])
+}
+
+model TaxAuditLog {
+  id          String   @id @default(cuid())
+  userId      String
+  entityType  String
+  entityId    String?
+  action      String
+  before      Json?
+  after       Json?
+  reason      String?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId, createdAt])
 }
 
