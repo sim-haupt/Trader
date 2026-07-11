@@ -20,6 +20,10 @@ const VIEW_MODES = [
   { key: "MONTH", label: "Month" },
   { key: "YEAR", label: "Year" }
 ];
+const PNL_MODES = [
+  { key: "GROSS", label: "Gross" },
+  { key: "NET", label: "Net" }
+];
 
 function getDayKey(date) {
   const formatted = formatDateTimeLocal(date);
@@ -154,14 +158,23 @@ function createMonthGrid(year, monthIndex, dailyStats) {
   return weeks;
 }
 
-function calculateSummary(monthDays) {
+function getStatsPnl(stats, pnlMode) {
+  if (!stats) {
+    return 0;
+  }
+
+  return pnlMode === "NET" ? Number(stats.netPnl || 0) : Number(stats.pnl || 0);
+}
+
+function calculateSummary(monthDays, pnlMode) {
   const activeDays = monthDays.filter((day) => day.stats);
   const totals = activeDays.reduce(
     (sum, day) => {
       const stats = day.stats;
+      const pnl = getStatsPnl(stats, pnlMode);
 
       return {
-        pnl: sum.pnl + stats.pnl,
+        pnl: sum.pnl + pnl,
         netPnl: sum.netPnl + stats.netPnl,
         volume: sum.volume + stats.volume,
         perShareTotal: sum.perShareTotal + stats.perShareTotal,
@@ -173,8 +186,8 @@ function calculateSummary(monthDays) {
         holdMinutes: sum.holdMinutes + stats.holdMinutes,
         winningHoldMinutes: sum.winningHoldMinutes + stats.winningHoldMinutes,
         losingHoldMinutes: sum.losingHoldMinutes + stats.losingHoldMinutes,
-        largestWin: Math.max(sum.largestWin, stats.largestWin),
-        largestLoss: Math.min(sum.largestLoss, stats.largestLoss)
+        largestWin: Math.max(sum.largestWin, pnl),
+        largestLoss: Math.min(sum.largestLoss, pnl)
       };
     },
     {
@@ -195,10 +208,10 @@ function calculateSummary(monthDays) {
     }
   );
 
-  const winningDays = activeDays.filter((day) => day.stats.pnl > 0);
-  const losingDays = activeDays.filter((day) => day.stats.pnl < 0);
-  const dailyWins = winningDays.reduce((sum, day) => sum + day.stats.pnl, 0);
-  const dailyLosses = losingDays.reduce((sum, day) => sum + Math.abs(day.stats.pnl), 0);
+  const winningDays = activeDays.filter((day) => getStatsPnl(day.stats, pnlMode) > 0);
+  const losingDays = activeDays.filter((day) => getStatsPnl(day.stats, pnlMode) < 0);
+  const dailyWins = winningDays.reduce((sum, day) => sum + getStatsPnl(day.stats, pnlMode), 0);
+  const dailyLosses = losingDays.reduce((sum, day) => sum + Math.abs(getStatsPnl(day.stats, pnlMode)), 0);
   const avgWin = totals.wins ? dailyWins / Math.max(winningDays.length, 1) : 0;
   const avgLoss = losingDays.length ? dailyLosses / losingDays.length : 0;
   let runningPnl = 0;
@@ -206,7 +219,7 @@ function calculateSummary(monthDays) {
   let maxDrawdown = 0;
 
   for (const day of activeDays.sort((left, right) => left.dayKey.localeCompare(right.dayKey))) {
-    runningPnl += day.stats.pnl;
+    runningPnl += getStatsPnl(day.stats, pnlMode);
     peakPnl = Math.max(peakPnl, runningPnl);
     maxDrawdown = Math.min(maxDrawdown, runningPnl - peakPnl);
   }
@@ -233,21 +246,23 @@ function calculateSummary(monthDays) {
     averageWinningHoldMinutes: totals.wins ? totals.winningHoldMinutes / totals.wins : 0,
     averageLosingHoldMinutes: totals.losses ? totals.losingHoldMinutes / totals.losses : 0,
     maxDrawdown: Number(maxDrawdown.toFixed(2)),
-    biggestDay: activeDays.reduce((best, day) => (!best || day.stats.pnl > best.stats.pnl ? day : best), null),
-    worstDay: activeDays.reduce((worst, day) => (!worst || day.stats.pnl < worst.stats.pnl ? day : worst), null)
+    biggestDay: activeDays.reduce((best, day) => (!best || getStatsPnl(day.stats, pnlMode) > getStatsPnl(best.stats, pnlMode) ? day : best), null),
+    worstDay: activeDays.reduce((worst, day) => (!worst || getStatsPnl(day.stats, pnlMode) < getStatsPnl(worst.stats, pnlMode) ? day : worst), null)
   };
 }
 
-function getDayTone(stats, isCurrentMonth) {
+function getDayTone(stats, isCurrentMonth, pnlMode) {
   if (!isCurrentMonth || !stats) {
     return "bg-white/[0.025] text-mist";
   }
 
-  if (stats.pnl > 0) {
+  const pnl = getStatsPnl(stats, pnlMode);
+
+  if (pnl > 0) {
     return "bg-[linear-gradient(180deg,rgba(52,224,161,0.26),rgba(52,224,161,0.11))] text-mint";
   }
 
-  if (stats.pnl < 0) {
+  if (pnl < 0) {
     return "bg-[linear-gradient(180deg,rgba(255,95,122,0.24),rgba(255,95,122,0.1))] text-coral";
   }
 
@@ -274,21 +289,22 @@ function getAlpha(value, maxMagnitude) {
   return Math.min(0.9, 0.22 + (Math.abs(value) / maxMagnitude) * 0.56);
 }
 
-function getDayStyle(stats, maxMagnitude) {
+function getDayStyle(stats, maxMagnitude, pnlMode) {
   if (!stats) {
     return undefined;
   }
 
-  const alpha = getAlpha(stats.pnl, maxMagnitude);
+  const pnl = getStatsPnl(stats, pnlMode);
+  const alpha = getAlpha(pnl, maxMagnitude);
 
-  if (stats.pnl > 0) {
+  if (pnl > 0) {
     return {
       background: `linear-gradient(180deg, rgba(52,224,161,${alpha}), rgba(52,224,161,${alpha * 0.42}))`,
       borderColor: "rgba(52, 224, 161, 0.24)"
     };
   }
 
-  if (stats.pnl < 0) {
+  if (pnl < 0) {
     return {
       background: `linear-gradient(180deg, rgba(255,95,122,${alpha}), rgba(255,95,122,${alpha * 0.4}))`,
       borderColor: "rgba(255, 95, 122, 0.24)"
@@ -298,7 +314,7 @@ function getDayStyle(stats, maxMagnitude) {
   return undefined;
 }
 
-function getWeekStats(week) {
+function getWeekStats(week, pnlMode) {
   return week.reduce(
     (sum, day) => {
       if (!day.isCurrentMonth || !day.stats) {
@@ -306,7 +322,7 @@ function getWeekStats(week) {
       }
 
       return {
-        pnl: Number((sum.pnl + day.stats.pnl).toFixed(2)),
+        pnl: Number((sum.pnl + getStatsPnl(day.stats, pnlMode)).toFixed(2)),
         trades: sum.trades + day.stats.trades
       };
     },
@@ -314,7 +330,15 @@ function getWeekStats(week) {
   );
 }
 
-function CalendarToolbar({ calendarData, selectedMonthIndex, viewMode, onSelectedMonthChange, onViewModeChange }) {
+function CalendarToolbar({
+  calendarData,
+  selectedMonthIndex,
+  viewMode,
+  pnlMode,
+  onSelectedMonthChange,
+  onViewModeChange,
+  onPnlModeChange
+}) {
   return (
     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <div className="flex flex-wrap items-center gap-3">
@@ -333,26 +357,40 @@ function CalendarToolbar({ calendarData, selectedMonthIndex, viewMode, onSelecte
         <div className="ui-chip text-sm">{calendarData.year}</div>
       </div>
 
-      <div className="ui-segment">
-        {VIEW_MODES.map((option) => (
-          <button
-            key={option.key}
-            type="button"
-            data-active={viewMode === option.key}
-            onClick={() => onViewModeChange(option.key)}
-          >
-            {option.label}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="ui-segment">
+          {PNL_MODES.map((option) => (
+            <button
+              key={option.key}
+              type="button"
+              data-active={pnlMode === option.key}
+              onClick={() => onPnlModeChange(option.key)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+        <div className="ui-segment">
+          {VIEW_MODES.map((option) => (
+            <button
+              key={option.key}
+              type="button"
+              data-active={viewMode === option.key}
+              onClick={() => onViewModeChange(option.key)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
-function MonthCalendar({ month, compact = false, onSelectDay }) {
+function MonthCalendar({ month, compact = false, pnlMode, onSelectDay }) {
   const maxMagnitude = Math.max(
     1,
-    ...month.weeks.flat().map((day) => (day.isCurrentMonth && day.stats ? Math.abs(day.stats.pnl) : 0))
+    ...month.weeks.flat().map((day) => (day.isCurrentMonth && day.stats ? Math.abs(getStatsPnl(day.stats, pnlMode)) : 0))
   );
 
   return (
@@ -365,7 +403,7 @@ function MonthCalendar({ month, compact = false, onSelectDay }) {
       <div className="ui-title px-1 pb-2 text-center text-[10px] text-white/48">WK</div>
 
       {month.weeks.map((week, index) => {
-        const weekStats = getWeekStats(week);
+        const weekStats = getWeekStats(week, pnlMode);
 
         return (
           <Fragment key={`${month.label}-week-${index}`}>
@@ -382,9 +420,9 @@ function MonthCalendar({ month, compact = false, onSelectDay }) {
                 className={`min-h-[86px] rounded-[5px] border border-[var(--line)] p-2 text-left transition ${
                   compact ? "min-h-[62px]" : "sm:min-h-[104px]"
                 } ${day.isCurrentMonth && day.stats ? "cursor-pointer hover:brightness-110" : "cursor-default"} ${
-                  day.isCurrentMonth ? getDayTone(day.stats, true) : "opacity-40"
+                  day.isCurrentMonth ? getDayTone(day.stats, true, pnlMode) : "opacity-40"
                 }`}
-                style={day.isCurrentMonth ? getDayStyle(day.stats, maxMagnitude) : undefined}
+                style={day.isCurrentMonth ? getDayStyle(day.stats, maxMagnitude, pnlMode) : undefined}
               >
                 <div className="text-xs font-semibold text-white/80">{day.dayNumber}</div>
                 {day.isCurrentMonth && day.stats ? (
@@ -392,8 +430,8 @@ function MonthCalendar({ month, compact = false, onSelectDay }) {
                     <div className={compact ? "text-xs text-white/72" : "text-sm text-white/72"}>
                       {day.stats.trades} trade{day.stats.trades === 1 ? "" : "s"}
                     </div>
-                    <div className={`mt-1 font-semibold ${compact ? "text-base" : "text-lg"} ${getSummaryTone(day.stats.pnl)}`}>
-                      {formatCurrency(day.stats.pnl)}
+                    <div className={`mt-1 font-semibold ${compact ? "text-base" : "text-lg"} ${getSummaryTone(getStatsPnl(day.stats, pnlMode))}`}>
+                      {formatCurrency(getStatsPnl(day.stats, pnlMode))}
                     </div>
                   </div>
                 ) : day.isCurrentMonth ? (
@@ -429,7 +467,7 @@ function MetricRow({ label, value, tone = "text-white" }) {
   );
 }
 
-function MonthSummary({ month, compact = false }) {
+function MonthSummary({ month, compact = false, pnlMode }) {
   const summary = month.summary;
   const range = `${month.rangeStart} -> ${month.rangeEnd}`;
 
@@ -447,7 +485,7 @@ function MonthSummary({ month, compact = false }) {
           <div className={`mt-1 text-xl font-semibold ${getSummaryTone(summary.pnl)}`}>
             {formatCurrency(summary.pnl)}
           </div>
-          <div className="mt-1 text-[11px] text-white/44">gross</div>
+          <div className="mt-1 text-[11px] text-white/44">{pnlMode.toLowerCase()}</div>
         </div>
       </div>
 
@@ -457,8 +495,8 @@ function MonthSummary({ month, compact = false }) {
           <MetricRow label="Day win rate" value={formatPercent(summary.dayWinRate)} tone={getSummaryTone(summary.dayWinRate - 50)} />
           <MetricRow label="Avg win/day" value={formatCurrency(summary.avgWin)} tone="text-mint" />
           <MetricRow label="Avg loss/day" value={formatCurrency(-summary.avgLoss)} tone={summary.avgLoss ? "text-coral" : "text-white"} />
-          <MetricRow label="Biggest day" value={summary.biggestDay ? formatCurrency(summary.biggestDay.stats.pnl) : "$0.00"} tone="text-mint" />
-          <MetricRow label="Worst day" value={summary.worstDay ? formatCurrency(summary.worstDay.stats.pnl) : "$0.00"} tone={summary.worstDay?.stats.pnl < 0 ? "text-coral" : "text-white"} />
+          <MetricRow label="Biggest day" value={summary.biggestDay ? formatCurrency(getStatsPnl(summary.biggestDay.stats, pnlMode)) : "$0.00"} tone="text-mint" />
+          <MetricRow label="Worst day" value={summary.worstDay ? formatCurrency(getStatsPnl(summary.worstDay.stats, pnlMode)) : "$0.00"} tone={getStatsPnl(summary.worstDay?.stats, pnlMode) < 0 ? "text-coral" : "text-white"} />
           <MetricRow label="Max drawdown" value={formatCurrency(summary.maxDrawdown)} tone={summary.maxDrawdown < 0 ? "text-coral" : "text-white"} />
           <MetricRow label="Profit factor" value={summary.profitFactor.toFixed(2)} />
         </div>
@@ -476,17 +514,24 @@ function MonthSummary({ month, compact = false }) {
   );
 }
 
-function MonthPanel({ month, onSelectDay, compact = false }) {
+function MonthPanel({ month, onSelectDay, compact = false, pnlMode, onOpen }) {
   return (
     <Card
       title={`${month.label} · P&L by day`}
       subtitle="Color is scaled to the largest day in this month."
       className="calendar-panel dashboard-page-widget shadow-none"
       bodyClassName="gap-5"
+      action={
+        compact ? (
+          <button type="button" className="ui-button px-4 py-2 text-sm" onClick={onOpen}>
+            Open
+          </button>
+        ) : null
+      }
     >
       <div className={compact ? "grid gap-4" : "grid gap-5 2xl:grid-cols-[minmax(0,1.4fr)_minmax(360px,0.8fr)]"}>
-        <MonthCalendar month={month} compact={compact} onSelectDay={onSelectDay} />
-        <MonthSummary month={month} compact={compact} />
+        <MonthCalendar month={month} compact={compact} pnlMode={pnlMode} onSelectDay={onSelectDay} />
+        {!compact && <MonthSummary month={month} compact={compact} pnlMode={pnlMode} />}
       </div>
     </Card>
   );
@@ -498,6 +543,7 @@ function CalendarPage() {
   const currentMonthIndex = new Date().getMonth();
   const [selectedMonthIndex, setSelectedMonthIndex] = useState(currentMonthIndex);
   const [viewMode, setViewMode] = useState("MONTH");
+  const [pnlMode, setPnlMode] = useState("GROSS");
   const {
     data: trades,
     loading,
@@ -525,7 +571,7 @@ function CalendarPage() {
       const lastDate = new Date(targetYear, monthIndex + 1, 0);
       const weeks = createMonthGrid(targetYear, monthIndex, dailyStats);
       const monthDays = weeks.flat().filter((day) => day.isCurrentMonth);
-      const summary = calculateSummary(monthDays);
+      const summary = calculateSummary(monthDays, pnlMode);
 
       return {
         monthIndex,
@@ -544,7 +590,7 @@ function CalendarPage() {
       year: targetYear,
       months
     };
-  }, [trades]);
+  }, [trades, pnlMode]);
 
   const selectedMonth = calendarData.months[selectedMonthIndex] ?? calendarData.months[currentMonthIndex] ?? calendarData.months[0];
 
@@ -578,16 +624,18 @@ function CalendarPage() {
           calendarData={calendarData}
           selectedMonthIndex={selectedMonth?.monthIndex ?? 0}
           viewMode={viewMode}
+          pnlMode={pnlMode}
           onSelectedMonthChange={(monthIndex) => {
             setSelectedMonthIndex(monthIndex);
             setViewMode("MONTH");
           }}
           onViewModeChange={setViewMode}
+          onPnlModeChange={setPnlMode}
         />
       </Card>
 
       {viewMode === "MONTH" ? (
-        <MonthPanel month={selectedMonth} onSelectDay={(dayKey) => navigate(`/journal?day=${dayKey}`)} />
+        <MonthPanel month={selectedMonth} pnlMode={pnlMode} onSelectDay={(dayKey) => navigate(`/journal?day=${dayKey}`)} />
       ) : (
         <div className="grid gap-6 xl:grid-cols-2">
           {calendarData.months.map((month) => (
@@ -595,6 +643,11 @@ function CalendarPage() {
               key={month.label}
               month={month}
               compact
+              pnlMode={pnlMode}
+              onOpen={() => {
+                setSelectedMonthIndex(month.monthIndex);
+                setViewMode("MONTH");
+              }}
               onSelectDay={(dayKey) => navigate(`/journal?day=${dayKey}`)}
             />
           ))}

@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { formatCurrency, formatDate, formatDateTimeLocal } from "../utils/formatters";
 import { getTradeNetPnl, getTradePerSharePnl } from "../utils/tradePnl";
 import TradeReviewCharts from "./TradeReviewCharts";
@@ -151,6 +152,15 @@ function ActionButton({ label, children, className = "", onClick }) {
   );
 }
 
+function TradeCountBadge({ count }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-[4px] border border-white/10 bg-black/40 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.08em] text-white/62">
+      <span className="text-xs font-semibold text-white">{count}</span>
+      <span>{count === 1 ? "trade" : "trades"}</span>
+    </span>
+  );
+}
+
 function TradeTable({
   trades,
   groups,
@@ -200,6 +210,44 @@ function TradeTable({
       return next;
     });
   }
+
+  const chartModal = chartGroup
+    ? createPortal(
+        <div
+          className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/82 px-4 py-8 backdrop-blur-sm"
+          role="presentation"
+          onMouseDown={() => setChartGroup(null)}
+        >
+          <div
+            className="w-full max-w-7xl rounded-[6px] border border-[var(--line)] bg-[var(--black-0)] p-5 shadow-none"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`${chartGroup.symbol} chart`}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="ui-title text-lg text-white">{chartGroup.symbol} · {chartGroup.dayLabel}</h2>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <TradeCountBadge count={chartGroup.trades.length} />
+                  <span className="inline-flex items-center rounded-[4px] border border-white/10 bg-black/40 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.08em] text-white/62">
+                    {chartGroup.executionCount} execution{chartGroup.executionCount === 1 ? "" : "s"}
+                  </span>
+                </div>
+              </div>
+              <button type="button" className="ui-button-solid px-4 py-2 text-sm" onClick={() => setChartGroup(null)}>
+                Close
+              </button>
+            </div>
+            <TradeReviewCharts
+              trades={chartGroup.trades}
+              title={`${chartGroup.symbol} entries and exits`}
+            />
+          </div>
+        </div>,
+        document.body
+      )
+    : null;
 
   return (
     <>
@@ -276,7 +324,7 @@ function TradeTable({
                         >
                           <ChevronIcon open={isExpanded} />
                           <span>{group.symbol}</span>
-                          <span className="ui-chip px-2 py-1 text-[10px]">{group.trades.length}</span>
+                          <TradeCountBadge count={group.trades.length} />
                         </button>
                       </td>
                       <td className="px-4 py-4 text-white/84">{group.sideLabel}</td>
@@ -397,37 +445,7 @@ function TradeTable({
         </div>
       </div>
 
-      {chartGroup && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/76 p-4 backdrop-blur-sm"
-          role="presentation"
-          onMouseDown={() => setChartGroup(null)}
-        >
-          <div
-            className="max-h-[92vh] w-full max-w-7xl overflow-y-auto rounded-[6px] border border-[var(--line)] bg-[var(--black-0)] p-5 shadow-none"
-            role="dialog"
-            aria-modal="true"
-            aria-label={`${chartGroup.symbol} chart`}
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h2 className="ui-title text-lg text-white">{chartGroup.symbol} · {chartGroup.dayLabel}</h2>
-                <p className="mt-1 text-sm text-white/54">
-                  {chartGroup.trades.length} trade{chartGroup.trades.length === 1 ? "" : "s"} · {chartGroup.executionCount} execution{chartGroup.executionCount === 1 ? "" : "s"}
-                </p>
-              </div>
-              <button type="button" className="ui-button-solid px-4 py-2 text-sm" onClick={() => setChartGroup(null)}>
-                Close
-              </button>
-            </div>
-            <TradeReviewCharts
-              trades={chartGroup.trades}
-              title={`${chartGroup.symbol} entries and exits`}
-            />
-          </div>
-        </div>
-      )}
+      {chartModal}
     </>
   );
 }
