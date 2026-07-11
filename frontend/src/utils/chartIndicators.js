@@ -167,7 +167,34 @@ function calculateMacdSeries(bars) {
 }
 
 function buildExecutionMarkers(trade) {
-  return (trade.executions || [])
+  const executions = Array.isArray(trade.executions) ? trade.executions : [];
+  const fallbackExecutions = [];
+
+  if (executions.length === 0 && trade.entryDate && trade.entryPrice != null) {
+    fallbackExecutions.push({
+      id: `${trade.id}-entry`,
+      occurredAt: trade.entryDate,
+      quantity: trade.quantity,
+      price: trade.entryPrice,
+      action: trade.side === "SHORT" ? "SELL" : "BUY",
+      markerLabel: "Entry"
+    });
+
+    if (trade.exitDate && trade.exitPrice != null) {
+      fallbackExecutions.push({
+        id: `${trade.id}-exit`,
+        occurredAt: trade.exitDate,
+        quantity: trade.quantity,
+        price: trade.exitPrice,
+        action: trade.side === "SHORT" ? "BUY" : "SELL",
+        markerLabel: "Exit"
+      });
+    }
+  }
+
+  const markerExecutions = executions.length > 0 ? executions : fallbackExecutions;
+
+  return markerExecutions
     .map((execution, index) => {
       const timestamp = toChartUnixSeconds(execution.occurredAt);
 
@@ -187,8 +214,8 @@ function buildExecutionMarkers(trade) {
         : null;
 
       const isEntryMarker = index === 0;
-      const isExitMarker = index === trade.executions.length - 1 && trade.executions.length > 1;
-      const markerLabel = isEntryMarker ? "Entry" : isExitMarker ? "Exit" : "Fill";
+      const isExitMarker = index === markerExecutions.length - 1 && markerExecutions.length > 1;
+      const markerLabel = execution.markerLabel || (isEntryMarker ? "Entry" : isExitMarker ? "Exit" : "Fill");
       const markerColor = isEntryMarker
         ? ENTRY_MARKER_GREEN
         : execution.action === "BUY"

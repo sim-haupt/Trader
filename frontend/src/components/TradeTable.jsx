@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { formatCurrency, formatDate, formatDateTimeLocal } from "../utils/formatters";
 import { getTradeNetPnl, getTradePerSharePnl } from "../utils/tradePnl";
 import TradeReviewCharts from "./TradeReviewCharts";
@@ -168,6 +168,24 @@ function TradeTable({
   const [chartGroup, setChartGroup] = useState(null);
   const allSelected = visibleTrades.length > 0 && visibleTrades.every((trade) => selectedIds.includes(trade.id));
   const columnCount = (onToggleSelection ? 1 : 0) + 9 + (showActions ? 1 : 0);
+
+  useEffect(() => {
+    if (!chartGroup) {
+      return undefined;
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        setChartGroup(null);
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [chartGroup]);
 
   function toggleGroup(groupId) {
     setExpandedGroups((current) => {
@@ -380,8 +398,18 @@ function TradeTable({
       </div>
 
       {chartGroup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/76 p-4 backdrop-blur-sm">
-          <div className="max-h-[92vh] w-full max-w-7xl overflow-y-auto rounded-[6px] border border-[var(--line)] bg-[var(--black-0)] p-5 shadow-none">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/76 p-4 backdrop-blur-sm"
+          role="presentation"
+          onMouseDown={() => setChartGroup(null)}
+        >
+          <div
+            className="max-h-[92vh] w-full max-w-7xl overflow-y-auto rounded-[6px] border border-[var(--line)] bg-[var(--black-0)] p-5 shadow-none"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`${chartGroup.symbol} chart`}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="ui-title text-lg text-white">{chartGroup.symbol} · {chartGroup.dayLabel}</h2>
@@ -389,7 +417,7 @@ function TradeTable({
                   {chartGroup.trades.length} trade{chartGroup.trades.length === 1 ? "" : "s"} · {chartGroup.executionCount} execution{chartGroup.executionCount === 1 ? "" : "s"}
                 </p>
               </div>
-              <button type="button" className="ui-button px-4 py-2 text-sm" onClick={() => setChartGroup(null)}>
+              <button type="button" className="ui-button-solid px-4 py-2 text-sm" onClick={() => setChartGroup(null)}>
                 Close
               </button>
             </div>
