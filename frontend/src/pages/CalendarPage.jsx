@@ -389,10 +389,10 @@ function MonthCalendar({ month, compact = false, onSelectDay }) {
                 <div className="text-xs font-semibold text-white/80">{day.dayNumber}</div>
                 {day.isCurrentMonth && day.stats ? (
                   <div className={compact ? "mt-2" : "mt-3"}>
-                    <div className="text-[10px] text-white/68">
+                    <div className={compact ? "text-xs text-white/72" : "text-sm text-white/72"}>
                       {day.stats.trades} trade{day.stats.trades === 1 ? "" : "s"}
                     </div>
-                    <div className={`mt-1 font-semibold ${compact ? "text-xs" : "text-sm"} ${getSummaryTone(day.stats.pnl)}`}>
+                    <div className={`mt-1 font-semibold ${compact ? "text-base" : "text-lg"} ${getSummaryTone(day.stats.pnl)}`}>
                       {formatCurrency(day.stats.pnl)}
                     </div>
                   </div>
@@ -451,10 +451,6 @@ function MonthSummary({ month, compact = false }) {
         </div>
       </div>
 
-      <div className="mt-4 rounded-[5px] border border-coral/25 bg-coral/10 px-3 py-2 text-sm font-semibold text-coral">
-        Max drawdown {formatCurrency(summary.maxDrawdown)}
-      </div>
-
       <div className={`mt-4 grid gap-x-7 ${compact ? "grid-cols-1" : "md:grid-cols-2"}`}>
         <div>
           <MetricRow label="Win rate" value={formatPercent(summary.winRate)} tone={getSummaryTone(summary.winRate - 50)} />
@@ -463,6 +459,7 @@ function MonthSummary({ month, compact = false }) {
           <MetricRow label="Avg loss/day" value={formatCurrency(-summary.avgLoss)} tone={summary.avgLoss ? "text-coral" : "text-white"} />
           <MetricRow label="Biggest day" value={summary.biggestDay ? formatCurrency(summary.biggestDay.stats.pnl) : "$0.00"} tone="text-mint" />
           <MetricRow label="Worst day" value={summary.worstDay ? formatCurrency(summary.worstDay.stats.pnl) : "$0.00"} tone={summary.worstDay?.stats.pnl < 0 ? "text-coral" : "text-white"} />
+          <MetricRow label="Max drawdown" value={formatCurrency(summary.maxDrawdown)} tone={summary.maxDrawdown < 0 ? "text-coral" : "text-white"} />
           <MetricRow label="Profit factor" value={summary.profitFactor.toFixed(2)} />
         </div>
         <div>
