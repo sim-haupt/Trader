@@ -193,21 +193,21 @@ The broker-provided `Gross` and `Net` values are preserved. Independently calcul
 
 ### Exchange Rates
 
-The internal rate convention is:
+The application uses the existing market-data FX API (`/api/market-data/fx-rates`) to fetch and cache USD/EUR rates automatically. The internal rate convention is:
 
 ```text
-1 EUR = X USD
-EUR amount = USD amount / EURUSD rate
+1 USD = X EUR
+EUR amount = USD amount * USD/EUR rate
 ```
 
-Upload a CSV rate table with:
+Fetched rates store date, value, convention, source name and import timestamp. For a missing non-business date the default rule uses the most recent previous available rate and marks the fallback in audit/report data. The app does not invent or hard-code rates.
+
+The manual CSV importer remains available as a fallback API path. Its CSV columns are:
 
 ```text
-date,eur_usd
-2026-06-02,1.1400
+date,usd_eur
+2026-06-02,0.8765
 ```
-
-Rates store date, value, convention, source name and import timestamp. For a missing non-business date the default rule uses the most recent previous available rate and marks the fallback in audit/report data. The app does not invent or hard-code rates.
 
 ### German Tax Model
 

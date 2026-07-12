@@ -100,8 +100,6 @@ function TaxReportsPage() {
   const [filters, setFilters] = useState(defaultFilters);
   const [transactionFilters, setTransactionFilters] = useState({});
   const [uploadFile, setUploadFile] = useState(null);
-  const [rateFile, setRateFile] = useState(null);
-  const [rateSourceName, setRateSourceName] = useState("Manual ECB EUR/USD CSV");
   const [uploadMeta, setUploadMeta] = useState({ brokerName: "", brokerAccount: "", currency: "USD" });
   const [loading, setLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
@@ -179,26 +177,19 @@ function TaxReportsPage() {
     }
   }
 
-  async function handleRateUpload(event) {
+  async function handleRateFetch(event) {
     event.preventDefault();
 
-    if (!rateFile) {
-      notify({ title: "No rate file selected", description: "Upload a CSV with date and EUR/USD rate columns.", tone: "warning" });
-      return;
-    }
-
     try {
-      const imported = await taxReportService.uploadExchangeRates({ file: rateFile, sourceName: rateSourceName });
       const applied = await taxReportService.applyExchangeRates();
       notify({
         title: "Exchange rates applied",
-        description: `${imported.count} rates imported, ${applied.updated} trades updated, ${applied.missing} missing.`,
+        description: `${applied.updated} trades updated, ${applied.missing} missing.`,
         tone: applied.missing ? "warning" : "success"
       });
-      setRateFile(null);
       await loadAll();
     } catch (err) {
-      notify({ title: "Rate import failed", description: err.message, tone: "error" });
+      notify({ title: "Rate fetch failed", description: err.message, tone: "error" });
     }
   }
 
@@ -366,13 +357,11 @@ function TaxReportsPage() {
       {activeTab === "Step 3 Exchange rates" && (
         <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
           <Card title="EUR/USD RATE TABLE">
-            <form className="space-y-4" onSubmit={handleRateUpload}>
-              <input className="ui-input" type="file" accept=".csv" onChange={(event) => setRateFile(event.target.files?.[0] || null)} />
-              <input className="ui-input" placeholder="Source name or URL" value={rateSourceName} onChange={(event) => setRateSourceName(event.target.value)} />
-              <button className="ui-button-solid w-full" type="submit">Import rates and apply</button>
+            <form className="space-y-4" onSubmit={handleRateFetch}>
+              <button className="ui-button-solid w-full" type="submit">Fetch FX rates and apply</button>
             </form>
             <div className="ui-notice mt-4 text-white/70">
-              Required CSV columns: date and eur_usd. Convention: 1 EUR = X USD, therefore EUR amount = USD amount / EURUSD rate. Missing non-business days use the previous available rate and are marked in audit metadata.
+              Uses the existing market-data FX API and caches the returned USD/EUR rates for reproducible reports. Convention: 1 USD = X EUR, therefore EUR amount = USD amount × USD/EUR rate. Missing non-business days use the previous available rate and are marked in audit metadata.
             </div>
           </Card>
           <div className="grid gap-4 md:grid-cols-2">

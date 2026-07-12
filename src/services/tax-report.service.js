@@ -5,12 +5,13 @@ const { parse: parseCsv } = require("csv-parse/sync");
 const XLSX = require("xlsx");
 const prisma = require("../config/prisma");
 const ApiError = require("../utils/ApiError");
+const marketDataService = require("./market-data.service");
 
 const IMPORTER_KEY = "WARRIOR_COMPLETED_LONG_STOCK_TRADES_V2";
 const IMPORTER_VERSION = "2.0.0";
 const STORAGE_DIR = path.join(process.cwd(), "uploads", "tax-statements");
 const DEFAULT_TIME_ZONE = "America/New_York";
-const RATE_CONVENTION = "1 EUR = X USD";
+const RATE_CONVENTION = "1 USD = X EUR";
 const DEFAULT_TOLERANCE = "0.01";
 const MONEY_SCALE = 100000000n;
 const DISPLAY_SCALE = 10000n;
@@ -109,10 +110,10 @@ function multiplyScaled(quantity, price) {
   return (parseDecimalToScaled(quantity) * parseDecimalToScaled(price)) / MONEY_SCALE;
 }
 
-function divideUsdByEurUsd(usdAmount, eurUsdRate) {
-  const rate = parseDecimalToScaled(eurUsdRate);
+function convertUsdToEur(usdAmount, usdEurRate) {
+  const rate = parseDecimalToScaled(usdEurRate);
   if (!rate) return null;
-  return (parseDecimalToScaled(usdAmount) * MONEY_SCALE) / rate;
+  return (parseDecimalToScaled(usdAmount) * rate) / MONEY_SCALE;
 }
 
 function absScaled(value) {
@@ -438,7 +439,7 @@ async function getSettings(actor) {
     create: {
       userId: actor.id,
       taxpayerName: actor.name || null,
-      exchangeRateSource: "Manual ECB EUR/USD CSV",
+      exchangeRateSource: "Automatic USD/EUR FX API",
       exchangeRateFallbackRule: "previous_available",
       matchingMethod: "COMPLETED_ROUND_TRIP",
       reconciliationTolerance: DEFAULT_TOLERANCE
@@ -675,12 +676,12 @@ function parseRateCsv(file) {
   });
   return rows.map((row, index) => {
     const date = row.date || row.Date || row.DATE;
-    const rate = row.eur_usd || row.EURUSD || row.rate || row.Rate || row["1 EUR = X USD"];
+    const rate = row.usd_eur || row.USDEUR || row.rate || row.Rate || row["1 USD = X EUR"];
     if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date || ""))) {
       throw new ApiError(400, `Rate CSV row ${index + 2} is missing a YYYY-MM-DD date.`);
     }
     if (parseDecimalToScaled(rate) <= 0n) {
-      throw new ApiError(400, `Rate CSV row ${index + 2} is missing a positive EUR/USD rate.`);
+      throw new ApiError(400, `Rate CSV row ${index + 2} is missing a positive USD/EUR rate.`);
     }
     return { date, rate: decimalString(rate, 8) };
   });
@@ -689,13 +690,13 @@ function parseRateCsv(file) {
 async function importExchangeRates(actor, file, options = {}) {
   if (!file?.buffer) throw new ApiError(400, "Exchange-rate CSV is required.");
   const rates = parseRateCsv(file);
-  const source = options.sourceName || file.originalname || "Manual EUR/USD CSV";
+  const source = options.sourceName || file.originalname || "Manual USD/EUR CSV";
   for (const rate of rates) {
     await prisma.taxExchangeRate.upsert({
       where: {
         userId_currency_rateDate_source: {
           userId: actor.id,
-          currency: "EURUSD",
+          currency: "USD_EUR",
           rateDate: new Date(`${rate.date}T00:00:00Z`),
           source
         }
@@ -707,7 +708,7 @@ async function importExchangeRates(actor, file, options = {}) {
       },
       create: {
         userId: actor.id,
-        currency: "EURUSD",
+        currency: "USD_EUR",
         rateDate: new Date(`${rate.date}T00:00:00Z`),
         source,
         fallbackRule: RATE_CONVENTION,
@@ -720,12 +721,57 @@ async function importExchangeRates(actor, file, options = {}) {
   return { source, count: rates.length, convention: RATE_CONVENTION };
 }
 
+async function fetchAndCacheExchangeRates(actor, from, to) {
+  if (!from || !to) return { source: "Automatic USD/EUR FX API", count: 0, convention: RATE_CONVENTION };
+
+  const payload = await marketDataService.getUsdEurFxRates({ from, to });
+  const entries = Object.entries(payload?.rates || {}).filter(([, rate]) => Number(rate) > 0);
+  const source = "market-data/fx-rates frankfurter.dev USD/EUR";
+
+  for (const [date, rate] of entries) {
+    await prisma.taxExchangeRate.upsert({
+      where: {
+        userId_currency_rateDate_source: {
+          userId: actor.id,
+          currency: "USD_EUR",
+          rateDate: new Date(`${date}T00:00:00Z`),
+          source
+        }
+      },
+      update: {
+        rateToEur: decimalString(rate, 8),
+        fallbackRule: RATE_CONVENTION,
+        manualOverride: false
+      },
+      create: {
+        userId: actor.id,
+        currency: "USD_EUR",
+        rateDate: new Date(`${date}T00:00:00Z`),
+        source,
+        fallbackRule: RATE_CONVENTION,
+        rateToEur: decimalString(rate, 8),
+        manualOverride: false
+      }
+    });
+  }
+
+  await audit(actor, "TaxExchangeRate", null, "FETCH_RATES", null, {
+    source,
+    from,
+    to,
+    count: entries.length,
+    convention: RATE_CONVENTION
+  });
+
+  return { source, count: entries.length, convention: RATE_CONVENTION };
+}
+
 async function findRate(actor, tradeDate, settings) {
   if (!tradeDate) return { rate: null, rateDate: null, source: null, fallbackUsed: false };
   const rates = await prisma.taxExchangeRate.findMany({
     where: {
       userId: actor.id,
-      currency: "EURUSD",
+      currency: "USD_EUR",
       rateDate: { lte: tradeDate }
     },
     orderBy: { rateDate: "desc" },
@@ -745,6 +791,14 @@ async function findRate(actor, tradeDate, settings) {
 async function applyExchangeRates(actor) {
   const settings = await getSettings(actor);
   const trades = await prisma.taxCompletedTrade.findMany({ where: { userId: actor.id }, orderBy: [{ tradeDate: "asc" }, { sourceRow: "asc" }] });
+  const datedTrades = trades.filter((trade) => trade.tradeDate);
+  if (datedTrades.length) {
+    await fetchAndCacheExchangeRates(
+      actor,
+      formatDateKey(datedTrades[0].tradeDate),
+      formatDateKey(datedTrades[datedTrades.length - 1].tradeDate)
+    );
+  }
   let updated = 0;
   let missing = 0;
   for (const trade of trades) {
@@ -754,11 +808,11 @@ async function applyExchangeRates(actor) {
       await prisma.taxCompletedTrade.update({ where: { id: trade.id }, data: { status: "NEEDS_EXCHANGE_RATE", warning: "Missing EUR/USD exchange rate." } });
       continue;
     }
-    const acquisitionEur = divideUsdByEurUsd(String(trade.grossPurchaseValue), rate.rate);
-    const disposalEur = divideUsdByEurUsd(String(trade.grossSaleValue), rate.rate);
+    const acquisitionEur = convertUsdToEur(String(trade.grossPurchaseValue), rate.rate);
+    const disposalEur = convertUsdToEur(String(trade.grossSaleValue), rate.rate);
     const feesUsd = addScaled(String(trade.purchaseFees), String(trade.saleFees), String(trade.otherFees));
-    const feesEur = divideUsdByEurUsd(feesUsd, rate.rate);
-    const netEur = divideUsdByEurUsd(String(trade.realizedPnlOriginal), rate.rate);
+    const feesEur = convertUsdToEur(feesUsd, rate.rate);
+    const netEur = convertUsdToEur(String(trade.realizedPnlOriginal), rate.rate);
     await prisma.taxCompletedTrade.update({
       where: { id: trade.id },
       data: {
@@ -863,10 +917,10 @@ function summarizeRows(trades, selector) {
     };
     const grossUsd = Number(trade.grossSaleValue) - Number(trade.grossPurchaseValue);
     const netUsd = Number(trade.realizedPnlOriginal || 0);
-    const grossEur = trade.exchangeRateToEur ? (Number(trade.grossSaleValue) - Number(trade.grossPurchaseValue)) / Number(trade.exchangeRateToEur) : 0;
+    const grossEur = trade.exchangeRateToEur ? (Number(trade.grossSaleValue) - Number(trade.grossPurchaseValue)) * Number(trade.exchangeRateToEur) : 0;
     const netEur = Number(trade.realizedPnlEur || 0);
     const feesUsd = Number(trade.purchaseFees || 0) + Number(trade.saleFees || 0) + Number(trade.otherFees || 0);
-    const feesEur = trade.exchangeRateToEur ? feesUsd / Number(trade.exchangeRateToEur) : 0;
+    const feesEur = trade.exchangeRateToEur ? feesUsd * Number(trade.exchangeRateToEur) : 0;
     current.tradeCount += 1;
     current.quantity += Number(trade.buyQuantity || 0);
     current.netUsd += netUsd;
@@ -946,7 +1000,7 @@ async function buildReportData(actor, query = {}) {
     methodology: [
       "Nur abgeschlossene Long-Aktientrades wurden einbezogen.",
       "Jede importierte Zeile dieses Brokerformats wurde als abgeschlossener Intraday-Round-Trip behandelt; FIFO wurde fuer dieses Format nicht angewendet.",
-      `USD-Betraege werden mit der Konvention ${RATE_CONVENTION} umgerechnet: EUR = USD / EURUSD.`,
+      `USD-Betraege werden mit der Konvention ${RATE_CONVENTION} umgerechnet: EUR = USD * USD/EUR-Kurs.`,
       "Fehlende Nicht-Geschaeftstage verwenden standardmaessig den letzten vorherigen verfuegbaren offiziellen Kurs und werden im Audit markiert.",
       "Interne Berechnungen verwenden skalierte Dezimalwerte; gerundet wird erst fuer die Darstellung.",
       "Es wird keine Steuerfreibetrags-, Einkommensteuer-, Solidaritaetszuschlags- oder Kirchensteuerberechnung vorgenommen."
@@ -1021,10 +1075,10 @@ async function getOverview(actor, query = {}) {
 function tradeLedgerRow(trade) {
   const feesUsd = Number(trade.purchaseFees || 0) + Number(trade.saleFees || 0) + Number(trade.otherFees || 0);
   const rate = Number(trade.exchangeRateToEur || 0);
-  const acquisitionEur = rate ? Number(trade.grossPurchaseValue) / rate : "";
-  const disposalEur = rate ? Number(trade.grossSaleValue) / rate : "";
-  const feesEur = rate ? feesUsd / rate : "";
-  const grossEur = rate ? (Number(trade.grossSaleValue) - Number(trade.grossPurchaseValue)) / rate : "";
+  const acquisitionEur = rate ? Number(trade.grossPurchaseValue) * rate : "";
+  const disposalEur = rate ? Number(trade.grossSaleValue) * rate : "";
+  const feesEur = rate ? feesUsd * rate : "";
+  const grossEur = rate ? (Number(trade.grossSaleValue) - Number(trade.grossPurchaseValue)) * rate : "";
   return {
     source_row: trade.sourceRow,
     opened_at: trade.transactions?.[0]?.executionTime?.toISOString?.() || "",
