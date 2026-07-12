@@ -116,6 +116,19 @@ function convertUsdToEur(usdAmount, usdEurRate) {
   return (parseDecimalToScaled(usdAmount) * rate) / MONEY_SCALE;
 }
 
+function getUsdEurRateFromTrade(trade) {
+  const rawRate = Number(trade.exchangeRateToEur || 0);
+  if (!Number.isFinite(rawRate) || rawRate <= 0) return 0;
+
+  const source = String(trade.exchangeRateSource || "");
+  const usesOldEurUsdConvention =
+    source.includes("1 EUR = X USD") ||
+    /EUR\/USD CSV/i.test(source) ||
+    /EURUSD/i.test(source);
+
+  return usesOldEurUsdConvention ? 1 / rawRate : rawRate;
+}
+
 function absScaled(value) {
   const units = parseDecimalToScaled(value);
   return units < 0n ? -units : units;
@@ -655,6 +668,29 @@ async function importStatement(actor, file, options = {}) {
     }
   });
 
+  let exchangeRateResult = null;
+  if (importedTradeCount > 0) {
+    try {
+      exchangeRateResult = await applyExchangeRates(actor);
+    } catch (error) {
+      exchangeRateResult = {
+        updated: 0,
+        missing: importedTradeCount,
+        fetched: 0,
+        source: "Automatic USD/EUR FX API",
+        convention: RATE_CONVENTION,
+        error: error.message
+      };
+      await prisma.taxCompletedTrade.updateMany({
+        where: { statementId: statement.id, userId: actor.id, exchangeRateToEur: null },
+        data: {
+          status: "NEEDS_EXCHANGE_RATE",
+          warning: `Automatic FX rate fetch failed: ${error.message}`
+        }
+      });
+    }
+  }
+
   await audit(actor, "TaxStatement", updated.id, "IMPORT_STATEMENT", null, {
     originalFilename: file.originalname,
     fileHash,
@@ -662,10 +698,14 @@ async function importStatement(actor, file, options = {}) {
     acceptedTrades: importedTradeCount,
     rejectedRows: rejectedRowCount,
     duplicates: duplicateCount,
-    ignoredStructuralRows: parsed.ignoredRows.length
+    ignoredStructuralRows: parsed.ignoredRows.length,
+    exchangeRates: exchangeRateResult
   });
 
-  return updated;
+  return {
+    ...updated,
+    exchangeRateResult
+  };
 }
 
 function parseRateCsv(file) {
@@ -823,7 +863,7 @@ async function applyExchangeRates(actor) {
         exchangeRateSource: `${rate.source}; ${RATE_CONVENTION}${rate.fallbackUsed ? `; fallback ${rate.fallbackRule}` : ""}`,
         realizedPnlEur: decimalString(netEur),
         status: "MATCHED",
-        warning: rate.fallbackUsed ? `Exchange-rate fallback used: ${rate.fallbackRule}.` : trade.warning
+        warning: rate.fallbackUsed ? `Exchange-rate fallback used: ${rate.fallbackRule}.` : null
       }
     });
     await prisma.taxTransaction.updateMany({
@@ -926,10 +966,11 @@ function summarizeRows(trades, selector) {
     };
     const grossUsd = Number(trade.grossSaleValue) - Number(trade.grossPurchaseValue);
     const netUsd = Number(trade.realizedPnlOriginal || 0);
-    const grossEur = trade.exchangeRateToEur ? (Number(trade.grossSaleValue) - Number(trade.grossPurchaseValue)) * Number(trade.exchangeRateToEur) : 0;
-    const netEur = Number(trade.realizedPnlEur || 0);
+    const usdEurRate = getUsdEurRateFromTrade(trade);
+    const grossEur = usdEurRate ? grossUsd * usdEurRate : 0;
+    const netEur = usdEurRate ? netUsd * usdEurRate : 0;
     const feesUsd = Number(trade.purchaseFees || 0) + Number(trade.saleFees || 0) + Number(trade.otherFees || 0);
-    const feesEur = trade.exchangeRateToEur ? feesUsd * Number(trade.exchangeRateToEur) : 0;
+    const feesEur = usdEurRate ? feesUsd * usdEurRate : 0;
     current.tradeCount += 1;
     current.quantity += Number(trade.buyQuantity || 0);
     current.netUsd += netUsd;
@@ -1083,7 +1124,8 @@ async function getOverview(actor, query = {}) {
 
 function tradeLedgerRow(trade) {
   const feesUsd = Number(trade.purchaseFees || 0) + Number(trade.saleFees || 0) + Number(trade.otherFees || 0);
-  const rate = Number(trade.exchangeRateToEur || 0);
+  const rate = getUsdEurRateFromTrade(trade);
+  const netUsd = Number(trade.realizedPnlOriginal || 0);
   const acquisitionEur = rate ? Number(trade.grossPurchaseValue) * rate : "";
   const disposalEur = rate ? Number(trade.grossSaleValue) * rate : "";
   const feesEur = rate ? feesUsd * rate : "";
@@ -1107,7 +1149,7 @@ function tradeLedgerRow(trade) {
     disposal_value_eur: disposalEur,
     gross_pnl_eur: grossEur,
     fees_eur: feesEur,
-    net_pnl_eur: String(trade.realizedPnlEur || ""),
+    net_pnl_eur: rate ? netUsd * rate : "",
     validation_status: trade.status,
     source_statement: trade.statement?.originalFilename || ""
   };

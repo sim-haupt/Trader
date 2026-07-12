@@ -165,8 +165,8 @@ function TaxReportsPage() {
       });
       notify({
         title: "Statement imported",
-        description: `${statement.importedTradeCount} trades imported, ${statement.duplicateCount} duplicates skipped.`,
-        tone: statement.rejectedRowCount ? "warning" : "success"
+        description: `${statement.importedTradeCount} trades imported, ${statement.duplicateCount} duplicates skipped. ${statement.exchangeRateResult ? `${statement.exchangeRateResult.fetched || 0} FX rates fetched, ${statement.exchangeRateResult.updated || 0} trades updated.` : "No FX rates applied."}`,
+        tone: statement.rejectedRowCount || statement.exchangeRateResult?.missing ? "warning" : "success"
       });
       setUploadFile(null);
       await loadAll();
