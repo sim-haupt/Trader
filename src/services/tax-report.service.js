@@ -792,8 +792,10 @@ async function applyExchangeRates(actor) {
   const settings = await getSettings(actor);
   const trades = await prisma.taxCompletedTrade.findMany({ where: { userId: actor.id }, orderBy: [{ tradeDate: "asc" }, { sourceRow: "asc" }] });
   const datedTrades = trades.filter((trade) => trade.tradeDate);
+  let fetched = { source: "Automatic USD/EUR FX API", count: 0, convention: RATE_CONVENTION };
+
   if (datedTrades.length) {
-    await fetchAndCacheExchangeRates(
+    fetched = await fetchAndCacheExchangeRates(
       actor,
       formatDateKey(datedTrades[0].tradeDate),
       formatDateKey(datedTrades[datedTrades.length - 1].tradeDate)
@@ -805,7 +807,7 @@ async function applyExchangeRates(actor) {
     const rate = await findRate(actor, trade.tradeDate, settings);
     if (!rate.rate) {
       missing += 1;
-      await prisma.taxCompletedTrade.update({ where: { id: trade.id }, data: { status: "NEEDS_EXCHANGE_RATE", warning: "Missing EUR/USD exchange rate." } });
+      await prisma.taxCompletedTrade.update({ where: { id: trade.id }, data: { status: "NEEDS_EXCHANGE_RATE", warning: "Missing USD/EUR exchange rate." } });
       continue;
     }
     const acquisitionEur = convertUsdToEur(String(trade.grossPurchaseValue), rate.rate);
@@ -840,7 +842,14 @@ async function applyExchangeRates(actor) {
     updated += 1;
   }
   await audit(actor, "TaxExchangeRate", null, "APPLY_RATES", null, { updated, missing, convention: RATE_CONVENTION });
-  return { updated, missing, convention: RATE_CONVENTION };
+  return {
+    updated,
+    missing,
+    fetched: fetched.count,
+    source: fetched.source,
+    convention: RATE_CONVENTION,
+    message: trades.length ? null : "No completed tax trades found to apply rates to."
+  };
 }
 
 function buildPeriodWhere(actor, query = {}) {

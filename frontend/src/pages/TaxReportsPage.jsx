@@ -103,6 +103,7 @@ function TaxReportsPage() {
   const [uploadMeta, setUploadMeta] = useState({ brokerName: "", brokerAccount: "", currency: "USD" });
   const [loading, setLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [isFetchingRates, setIsFetchingRates] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [error, setError] = useState("");
 
@@ -177,19 +178,29 @@ function TaxReportsPage() {
     }
   }
 
-  async function handleRateFetch(event) {
-    event.preventDefault();
+  async function handleRateFetch() {
+    setIsFetchingRates(true);
+    setError("");
+    notify({
+      title: "Fetching FX rates",
+      description: "Pulling USD/EUR rates from the existing market-data API.",
+      tone: "info",
+      duration: 1800
+    });
 
     try {
       const applied = await taxReportService.applyExchangeRates();
       notify({
-        title: "Exchange rates applied",
-        description: `${applied.updated} trades updated, ${applied.missing} missing.`,
-        tone: applied.missing ? "warning" : "success"
+        title: applied.message ? "No trades updated" : "Exchange rates applied",
+        description: applied.message || `${applied.fetched || 0} rates fetched, ${applied.updated} trades updated, ${applied.missing} missing.`,
+        tone: applied.message || applied.missing ? "warning" : "success"
       });
       await loadAll();
     } catch (err) {
+      setError(err.message);
       notify({ title: "Rate fetch failed", description: err.message, tone: "error" });
+    } finally {
+      setIsFetchingRates(false);
     }
   }
 
@@ -357,9 +368,9 @@ function TaxReportsPage() {
       {activeTab === "Step 3 Exchange rates" && (
         <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
           <Card title="EUR/USD RATE TABLE">
-            <form className="space-y-4" onSubmit={handleRateFetch}>
-              <button className="ui-button-solid w-full" type="submit">Fetch FX rates and apply</button>
-            </form>
+            <button className="ui-button-solid w-full" type="button" onClick={handleRateFetch} disabled={isFetchingRates}>
+              {isFetchingRates ? "Fetching and applying..." : "Fetch FX rates and apply"}
+            </button>
             <div className="ui-notice mt-4 text-white/70">
               Uses the existing market-data FX API and caches the returned USD/EUR rates for reproducible reports. Convention: 1 USD = X EUR, therefore EUR amount = USD amount × USD/EUR rate. Missing non-business days use the previous available rate and are marked in audit metadata.
             </div>
