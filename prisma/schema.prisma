@@ -339,10 +339,10 @@ model TaxSetting {
   brokerName                 String   @default("International broker")
   brokerAccount              String?
   baseCurrency               String   @default("USD")
-  exchangeRateSource         String   @default("frankfurter.dev USD/EUR")
+  exchangeRateSource         String   @default("Manual ECB EUR/USD CSV")
   exchangeRateFallbackRule   String   @default("previous_available")
-  matchingMethod             String   @default("FIFO")
-  reconciliationTolerance    Decimal  @default(1.00) @db.Decimal(18, 4)
+  matchingMethod             String   @default("COMPLETED_ROUND_TRIP")
+  reconciliationTolerance    Decimal  @default(0.01) @db.Decimal(18, 4)
   reportLanguage             String   @default("de")
   rounding                   String   @default("2_decimals")
   taxAdviserNotes            String?

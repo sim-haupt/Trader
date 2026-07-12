@@ -21,6 +21,20 @@ const uploadStatement = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data: statement });
 });
 
+const uploadExchangeRates = asyncHandler(async (req, res) => {
+  if (!req.file) {
+    throw new ApiError(400, "Exchange-rate CSV is required.");
+  }
+
+  const result = await taxReportService.importExchangeRates(req.user, req.file, req.body || {});
+  res.status(201).json({ success: true, data: result });
+});
+
+const applyExchangeRates = asyncHandler(async (req, res) => {
+  const result = await taxReportService.applyExchangeRates(req.user);
+  res.status(200).json({ success: true, data: result });
+});
+
 const listStatements = asyncHandler(async (req, res) => {
   const statements = await taxReportService.listStatements(req.user);
   res.status(200).json({ success: true, data: statements });
@@ -74,6 +88,13 @@ const exportPdf = asyncHandler(async (req, res) => {
   res.send(pdf);
 });
 
+const exportEvidenceZip = asyncHandler(async (req, res) => {
+  const zip = await taxReportService.exportEvidenceZip(req.user, req.query || {});
+  res.setHeader("Content-Type", "application/zip");
+  res.setHeader("Content-Disposition", "attachment; filename=\"tax-evidence-package.zip\"");
+  res.send(zip);
+});
+
 const finalizeReport = asyncHandler(async (req, res) => {
   const report = await taxReportService.finalizeReport(req.user, req.body || {});
   res.status(201).json({ success: true, data: report });
@@ -83,6 +104,8 @@ module.exports = {
   getSettings,
   updateSettings,
   uploadStatement,
+  uploadExchangeRates,
+  applyExchangeRates,
   listStatements,
   downloadStatement,
   listTransactions,
@@ -92,5 +115,6 @@ module.exports = {
   exportTransactionsCsv,
   exportWorkbook,
   exportPdf,
+  exportEvidenceZip,
   finalizeReport
 };

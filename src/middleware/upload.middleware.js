@@ -28,13 +28,15 @@ const excelUpload = multer({
   fileFilter: (req, file, cb) => {
     const fileName = file.originalname.toLowerCase();
     const isExcel =
+      file.mimetype === "text/csv" ||
       file.mimetype === "application/vnd.ms-excel" ||
       file.mimetype === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+      fileName.endsWith(".csv") ||
       fileName.endsWith(".xls") ||
       fileName.endsWith(".xlsx");
 
     if (!isExcel) {
-      return cb(new ApiError(400, "Only Excel files are allowed"));
+      return cb(new ApiError(400, "Only CSV, XLS or XLSX files are allowed"));
     }
 
     cb(null, true);

@@ -7,10 +7,11 @@ import { formatCurrency, formatDate } from "../utils/formatters";
 import { useNotifications } from "../context/NotificationContext";
 
 const tabs = [
-  "Overview",
-  "Upload statements",
-  "Transactions",
-  "Generate report",
+  "Step 1 Upload",
+  "Step 2 Import preview",
+  "Step 3 Exchange rates",
+  "Step 4 Validation",
+  "Step 5 Generate report",
   "Settings"
 ];
 
@@ -91,7 +92,7 @@ function PeriodControls({ filters, onChange }) {
 
 function TaxReportsPage() {
   const { notify } = useNotifications();
-  const [activeTab, setActiveTab] = useState("Overview");
+  const [activeTab, setActiveTab] = useState("Step 1 Upload");
   const [settings, setSettings] = useState(null);
   const [statements, setStatements] = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -99,6 +100,8 @@ function TaxReportsPage() {
   const [filters, setFilters] = useState(defaultFilters);
   const [transactionFilters, setTransactionFilters] = useState({});
   const [uploadFile, setUploadFile] = useState(null);
+  const [rateFile, setRateFile] = useState(null);
+  const [rateSourceName, setRateSourceName] = useState("Manual ECB EUR/USD CSV");
   const [uploadMeta, setUploadMeta] = useState({ brokerName: "", brokerAccount: "", currency: "USD" });
   const [loading, setLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
@@ -176,6 +179,29 @@ function TaxReportsPage() {
     }
   }
 
+  async function handleRateUpload(event) {
+    event.preventDefault();
+
+    if (!rateFile) {
+      notify({ title: "No rate file selected", description: "Upload a CSV with date and EUR/USD rate columns.", tone: "warning" });
+      return;
+    }
+
+    try {
+      const imported = await taxReportService.uploadExchangeRates({ file: rateFile, sourceName: rateSourceName });
+      const applied = await taxReportService.applyExchangeRates();
+      notify({
+        title: "Exchange rates applied",
+        description: `${imported.count} rates imported, ${applied.updated} trades updated, ${applied.missing} missing.`,
+        tone: applied.missing ? "warning" : "success"
+      });
+      setRateFile(null);
+      await loadAll();
+    } catch (err) {
+      notify({ title: "Rate import failed", description: err.message, tone: "error" });
+    }
+  }
+
   async function saveSettings(event) {
     event.preventDefault();
     setIsSavingSettings(true);
@@ -208,6 +234,8 @@ function TaxReportsPage() {
     to: filters.to,
     account: filters.account
   }), [filters]);
+  const latestMetadata = statements[0]?.sourceMetadata || {};
+  const reconciliation = overview?.reconciliation || {};
 
   if (loading) {
     return (
@@ -238,40 +266,46 @@ function TaxReportsPage() {
         </div>
       </Card>
 
-      {activeTab === "Overview" && (
+      {activeTab === "Step 2 Import preview" && (
         <div className="space-y-6">
-          <Card title="REPORTING PERIOD">
-            <PeriodControls filters={filters} onChange={setFilters} />
-          </Card>
-
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <Stat label="Uploaded statements" value={summary.uploadedStatements || 0} />
-            <Stat label="Trading days" value={summary.tradingDays || 0} />
-            <Stat label="Completed trades" value={summary.completedTrades || 0} />
-            <Stat label="Report status" value={summary.reportStatus || "BLOCKED"} tone={summary.reportStatus === "READY" ? "text-mint" : "text-warning"} />
-            <Stat label="Gross profit" value={eur(summary.grossProfitEur)} tone="text-mint" />
-            <Stat label="Gross loss" value={eur(summary.grossLossEur)} tone="text-coral" />
-            <Stat label="Net realized result" value={eur(summary.netRealizedEur)} tone={Number(summary.netRealizedEur || 0) >= 0 ? "text-mint" : "text-coral"} />
-            <Stat label="Commissions" value={usd(summary.commissionsOriginal)} />
-            <Stat label="Other fees" value={usd(summary.otherFeesOriginal)} />
+            <Stat label="Accepted trades" value={summary.completedTrades || 0} />
+            <Stat label="Rejected rows" value={summary.rejectedRows || 0} tone={summary.rejectedRows ? "text-coral" : "text-white"} />
+            <Stat label="Ignored rows" value={Object.values(latestMetadata.structuralRows || {}).reduce((sum, value) => sum + Number(value || 0), 0)} />
             <Stat label="Profitable trades" value={summary.profitableTrades || 0} />
             <Stat label="Losing trades" value={summary.losingTrades || 0} />
-            <Stat label="Unmatched transactions" value={summary.unmatchedTransactions || 0} tone={summary.unmatchedTransactions ? "text-coral" : "text-white"} />
-            <Stat label="Possible duplicates" value={summary.possibleDuplicates || 0} tone={summary.possibleDuplicates ? "text-warning" : "text-white"} />
-            <Stat label="Missing exchange rates" value={summary.missingExchangeRates || 0} tone={summary.missingExchangeRates ? "text-coral" : "text-white"} />
-            <Stat label="Broker reconciliation diff" value={usd(summary.brokerReconciliationDifference)} tone={Math.abs(Number(summary.brokerReconciliationDifference || 0)) > 1 ? "text-warning" : "text-white"} />
+            <Stat label="Break-even trades" value={summary.breakEvenTrades || 0} />
+            <Stat label="Distinct symbols" value={summary.distinctSymbols || 0} />
+            <Stat label="Total shares" value={summary.totalQuantityBought || 0} />
+            <Stat label="Broker gross USD" value={usd(reconciliation.sumBrokerGrossUsd)} />
+            <Stat label="Total fees USD" value={usd(reconciliation.sumFeeColumnsUsd)} />
+            <Stat label="Broker net USD" value={usd(reconciliation.sumBrokerNetUsd)} />
+            <Stat label="Date range" value={`${summary.earliestTradeDate || "-"} → ${summary.latestTradeDate || "-"}`} />
           </div>
+
+          <Card title="IMPORT PREVIEW">
+            <div className="grid gap-3 text-sm text-white/72 md:grid-cols-2">
+              <div>Broker format: <span className="text-white">{latestMetadata.detectedBrokerFormat || "-"}</span></div>
+              <div>File type: <span className="text-white">{latestMetadata.fileFormat || "-"}</span></div>
+              <div>Parsed rows: <span className="text-white">{latestMetadata.parsedRowCount || 0}</span></div>
+              <div>Currency: <span className="text-white">{latestMetadata.currency || "USD"}</span></div>
+              <div>Directions: <span className="text-white">{(latestMetadata.directionsFound || []).join(", ") || "-"}</span></div>
+              <div>Instrument types: <span className="text-white">{(latestMetadata.instrumentTypesFound || []).join(", ") || "-"}</span></div>
+            </div>
+            <div className="ui-notice mt-4 text-white/70">{latestMetadata.importerAssumption || "Each accepted source row is treated as a completed long stock round-trip trade."}</div>
+          </Card>
         </div>
       )}
 
-      {activeTab === "Upload statements" && (
+      {activeTab === "Step 1 Upload" && (
         <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
           <Card title="UPLOAD STATEMENT">
             <form className="space-y-4" onSubmit={handleUpload}>
               <input
                 className="ui-input"
                 type="file"
-                accept=".xls,.xlsx"
+                accept=".csv,.xls,.xlsx"
                 onChange={(event) => setUploadFile(event.target.files?.[0] || null)}
               />
               <input className="ui-input" placeholder="Broker name" value={uploadMeta.brokerName} onChange={(event) => setUploadMeta((current) => ({ ...current, brokerName: event.target.value }))} />
@@ -283,6 +317,9 @@ function TaxReportsPage() {
                 {isUploading ? "Importing..." : "Upload and import"}
               </button>
             </form>
+            <div className="ui-notice mt-4 text-white/70">
+              Supported inputs: CSV, XLS and XLSX. File type is detected from the signature where practical. Macro execution is not supported.
+            </div>
           </Card>
 
           <Card title="UPLOADED STATEMENTS">
@@ -326,8 +363,35 @@ function TaxReportsPage() {
         </div>
       )}
 
-      {activeTab === "Transactions" && (
+      {activeTab === "Step 3 Exchange rates" && (
+        <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
+          <Card title="EUR/USD RATE TABLE">
+            <form className="space-y-4" onSubmit={handleRateUpload}>
+              <input className="ui-input" type="file" accept=".csv" onChange={(event) => setRateFile(event.target.files?.[0] || null)} />
+              <input className="ui-input" placeholder="Source name or URL" value={rateSourceName} onChange={(event) => setRateSourceName(event.target.value)} />
+              <button className="ui-button-solid w-full" type="submit">Import rates and apply</button>
+            </form>
+            <div className="ui-notice mt-4 text-white/70">
+              Required CSV columns: date and eur_usd. Convention: 1 EUR = X USD, therefore EUR amount = USD amount / EURUSD rate. Missing non-business days use the previous available rate and are marked in audit metadata.
+            </div>
+          </Card>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Stat label="Missing exchange rates" value={summary.missingExchangeRates || 0} tone={summary.missingExchangeRates ? "text-coral" : "text-white"} />
+            <Stat label="Net realized USD" value={usd(summary.netRealizedUsd)} tone={Number(summary.netRealizedUsd || 0) >= 0 ? "text-mint" : "text-coral"} />
+            <Stat label="Net realized EUR" value={eur(summary.netRealizedEur)} tone={Number(summary.netRealizedEur || 0) >= 0 ? "text-mint" : "text-coral"} />
+            <Stat label="Report status" value={summary.reportStatus || "BLOCKED"} tone={summary.reportStatus === "READY" ? "text-mint" : "text-warning"} />
+          </div>
+        </div>
+      )}
+
+      {activeTab === "Step 4 Validation" && (
         <Card title="IMPORTED TRANSACTIONS">
+          <div className="mb-4 grid gap-4 md:grid-cols-4">
+            <Stat label="Reconciliation" value={reconciliation.status || "Review required"} tone={reconciliation.status === "Passed" ? "text-mint" : "text-warning"} />
+            <Stat label="Net difference USD" value={usd(reconciliation.netDifferenceUsd)} tone={Math.abs(Number(reconciliation.netDifferenceUsd || 0)) > 0.01 ? "text-warning" : "text-white"} />
+            <Stat label="Rows above tolerance" value={reconciliation.rowsWithDiscrepanciesAboveTolerance || 0} />
+            <Stat label="Rejected rows" value={summary.rejectedRows || 0} tone={summary.rejectedRows ? "text-coral" : "text-white"} />
+          </div>
           <div className="mb-4 grid gap-3 md:grid-cols-5">
             <input className="ui-input" type="date" value={transactionFilters.from || ""} onChange={(event) => setTransactionFilters((current) => ({ ...current, from: event.target.value }))} />
             <input className="ui-input" type="date" value={transactionFilters.to || ""} onChange={(event) => setTransactionFilters((current) => ({ ...current, to: event.target.value }))} />
@@ -353,7 +417,7 @@ function TaxReportsPage() {
                   <th className="px-4 py-3">Statement</th>
                   <th className="px-4 py-3">Row</th>
                   <th className="px-4 py-3">Symbol</th>
-                  <th className="px-4 py-3">Side</th>
+                  <th className="px-4 py-3">Validation</th>
                   <th className="px-4 py-3">Qty</th>
                   <th className="px-4 py-3">Price</th>
                   <th className="px-4 py-3">Net</th>
@@ -369,7 +433,7 @@ function TaxReportsPage() {
                     <td className="px-4 py-3 text-white/70">{transaction.statement?.originalFilename}</td>
                     <td className="px-4 py-3 text-white/70">{transaction.sourceRow}</td>
                     <td className="px-4 py-3 text-white">{transaction.stockSymbol || "-"}</td>
-                    <td className="px-4 py-3 text-white/70">{transaction.side || "-"}</td>
+                    <td className="px-4 py-3 text-white/70">{transaction.invalidReason || "Accepted"}</td>
                     <td className="px-4 py-3 text-white/70">{transaction.quantity || "-"}</td>
                     <td className="px-4 py-3 text-white/70">{transaction.pricePerShare || "-"}</td>
                     <td className="px-4 py-3 text-white/70">{transaction.netAmount || "-"}</td>
@@ -392,7 +456,7 @@ function TaxReportsPage() {
         </Card>
       )}
 
-      {activeTab === "Generate report" && (
+      {activeTab === "Step 5 Generate report" && (
         <div className="space-y-6">
           <Card title="REPORT SELECTION">
             <PeriodControls filters={filters} onChange={setFilters} />
@@ -400,6 +464,7 @@ function TaxReportsPage() {
               <button className="ui-button-solid" type="button" onClick={() => taxReportService.downloadPdf(reportParams)}>Download PDF</button>
               <button className="ui-button" type="button" onClick={() => taxReportService.downloadWorkbook(reportParams)}>Download XLSX</button>
               <button className="ui-button" type="button" onClick={() => taxReportService.downloadTransactionsCsv(reportParams)}>Download CSV</button>
+              <button className="ui-button" type="button" onClick={() => taxReportService.downloadEvidenceZip(reportParams)}>Download ZIP evidence package</button>
               <button
                 className="ui-button"
                 type="button"
@@ -422,6 +487,7 @@ function TaxReportsPage() {
               <Stat label="Net result EUR" value={eur(summary.netRealizedEur)} tone={Number(summary.netRealizedEur || 0) >= 0 ? "text-mint" : "text-coral"} />
               <Stat label="Completed trades" value={summary.completedTrades || 0} />
               <Stat label="Status" value={summary.reportStatus || "BLOCKED"} tone={summary.reportStatus === "READY" ? "text-mint" : "text-warning"} />
+              <Stat label="Tax category" value="Aktienveräußerung" />
             </div>
             <div className="ui-notice mt-4 text-white/70">
               Monthly and custom date-range reports are interim reports unless they cover a complete calendar year.
@@ -443,8 +509,9 @@ function TaxReportsPage() {
               <option value="previous_available">Most recent previous available rate</option>
               <option value="manual_required">Manual rate required</option>
             </select>
-            <select className="ui-input" value={settings.matchingMethod || "FIFO"} onChange={(event) => setSettings((current) => ({ ...current, matchingMethod: event.target.value }))}>
-              <option value="FIFO">FIFO</option>
+            <select className="ui-input" value={settings.matchingMethod || "COMPLETED_ROUND_TRIP"} onChange={(event) => setSettings((current) => ({ ...current, matchingMethod: event.target.value }))}>
+              <option value="COMPLETED_ROUND_TRIP">Completed round-trip rows</option>
+              <option value="FIFO">FIFO for future raw execution importers</option>
             </select>
             <input className="ui-input" type="number" step="0.01" placeholder="Reconciliation tolerance" value={settings.reconciliationTolerance || ""} onChange={(event) => setSettings((current) => ({ ...current, reconciliationTolerance: event.target.value }))} />
             <select className="ui-input" value={settings.reportLanguage || "de"} onChange={(event) => setSettings((current) => ({ ...current, reportLanguage: event.target.value }))}>

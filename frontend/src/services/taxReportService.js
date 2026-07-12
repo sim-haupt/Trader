@@ -42,6 +42,18 @@ const taxReportService = {
     return extractData(await api.post("/tax-reports/statements/upload", formData));
   },
 
+  async uploadExchangeRates({ file, sourceName }) {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (sourceName) formData.append("sourceName", sourceName);
+
+    return extractData(await api.post("/tax-reports/exchange-rates/upload", formData));
+  },
+
+  async applyExchangeRates() {
+    return extractData(await api.post("/tax-reports/exchange-rates/apply"));
+  },
+
   async getStatements() {
     return extractData(await api.get("/tax-reports/statements"));
   },
@@ -80,6 +92,10 @@ const taxReportService = {
 
   downloadPdf(filters = {}) {
     return downloadFile("/tax-reports/export/report.pdf", "tax-report.pdf", filters);
+  },
+
+  downloadEvidenceZip(filters = {}) {
+    return downloadFile("/tax-reports/export/evidence.zip", "tax-evidence-package.zip", filters);
   }
 };
 
