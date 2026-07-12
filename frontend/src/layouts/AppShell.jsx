@@ -11,9 +11,9 @@ const navigationItems = [
   { label: "Dashboard", path: "/dashboard", icon: "M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" },
   { label: "Calendar", path: "/calendar", icon: "M7 2v3M17 2v3M4 8h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" },
   { label: "Reports", path: "/reports", icon: "M4 19V9M10 19V5M16 19v-8M22 19V3" },
-  { label: "Tax reports", path: "/tax-reports", icon: "M6 3h9l3 3v15H6V3zm8 0v4h4M8 11h8M8 15h8M8 19h5" },
   { label: "Trades", path: "/trades", icon: "M4 18h16M5 15l4-4 3 3 7-8" },
   { label: "Journal", path: "/journal", icon: "M7 4h10a2 2 0 0 1 2 2v12H7a2 2 0 0 0-2 2V6a2 2 0 0 1 2-2zm0 0a2 2 0 0 0-2 2v14" },
+  { label: "Tax reports", path: "/tax-reports", icon: "M6 3h9l3 3v15H6V3zm8 0v4h4M8 11h8M8 15h8M8 19h5" },
   { label: "Settings", path: "/settings", icon: "M12 3l2.4 2.2 3.2-.6.9 3.1 3 1.2-1.3 3 1.3 3-3 1.2-.9 3.1-3.2-.6L12 21l-2.4-2.2-3.2.6-.9-3.1-3-1.2 1.3-3-1.3-3 3-1.2.9-3.1 3.2.6zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" }
 ];
 

@@ -15,9 +15,7 @@ const tabs = [
 
 const defaultFilters = {
   from: "",
-  to: "",
-  periodType: "custom",
-  account: "all"
+  to: ""
 };
 
 function eur(value) {
@@ -51,38 +49,16 @@ function Stat({ label, value, tone = "text-white" }) {
 
 function PeriodControls({ filters, onChange }) {
   return (
-    <div className="grid gap-3 md:grid-cols-[1fr_180px_180px]">
+    <div className="grid gap-3">
       <div className="min-w-0">
         <label className="mb-2 block text-xs font-medium text-white/72">Date range</label>
         <DateRangePicker
           from={filters.from}
           to={filters.to}
-          onChange={({ from, to }) => onChange({ ...filters, from, to, periodType: "custom" })}
+          onChange={({ from, to }) => onChange({ ...filters, from, to })}
           placeholder="From - To"
           buttonClassName="!py-3 !w-full"
         />
-      </div>
-      <div className="min-w-0">
-        <label className="mb-2 block text-xs font-medium text-white/72">Report type</label>
-        <select
-          className="ui-input min-h-[48px]"
-          value={filters.periodType}
-          onChange={(event) => onChange({ ...filters, periodType: event.target.value })}
-        >
-          <option value="month">One month</option>
-          <option value="year">Calendar year</option>
-          <option value="custom">Custom range</option>
-        </select>
-      </div>
-      <div className="min-w-0">
-        <label className="mb-2 block text-xs font-medium text-white/72">Account</label>
-        <select
-          className="ui-input min-h-[48px]"
-          value={filters.account}
-          onChange={(event) => onChange({ ...filters, account: event.target.value })}
-        >
-          <option value="all">All accounts</option>
-        </select>
       </div>
     </div>
   );
@@ -200,10 +176,8 @@ function TaxReportsPage() {
 
   const summary = overview?.summary || {};
   const reportParams = useMemo(() => ({
-    periodType: filters.periodType,
     from: filters.from,
-    to: filters.to,
-    account: filters.account
+    to: filters.to
   }), [filters]);
   const latestMetadata = statements[0]?.sourceMetadata || {};
   const reconciliation = overview?.reconciliation || {};

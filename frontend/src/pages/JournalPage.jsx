@@ -987,9 +987,7 @@ function JournalDayCard({
               </div>
 
               <div>
-                <SummaryRow label="Costs" value={formatCostCurrency(day.totalCosts)} tone={day.totalCosts ? "text-coral" : "text-white"} />
-                <SummaryRow label="Trade commissions" value={formatCostCurrency(day.totalTradeCommissions)} tone={day.totalTradeCommissions ? "text-coral" : "text-white"} />
-                <SummaryRow label="Broker fees" value={formatCostCurrency(day.totalFees)} tone={day.totalFees ? "text-coral" : "text-white"} />
+                <SummaryRow label="Fees / commissions" value={formatCostCurrency(day.totalCosts)} tone={day.totalCosts ? "text-coral" : "text-white"} />
                 <SummaryRow label="Costs EUR" value={day.fxRate ? formatCostCurrency(day.totalCostsEur, "EUR") : "Unavailable"} tone={day.totalCostsEur ? "text-coral" : "text-white"} />
                 <SummaryRow label="USD/EUR rate" value={formatFxRate(day.fxRate)} />
               </div>
@@ -1152,6 +1150,8 @@ function JournalDayCard({
             trades={day.trades}
             onSelectTrade={(trade) => onOpenTrade(trade.id)}
             showActions={false}
+            showChartAction
+            showDayDividers={false}
           />
         ) : (
           <div className="ui-table-shell px-4 py-5 text-sm text-white/40">

@@ -167,6 +167,9 @@ function TradeTable({
   onDelete,
   onSelectTrade,
   showActions = true,
+  showChartAction = showActions,
+  showTradeActions = showActions,
+  showDayDividers = true,
   selectedIds = [],
   onToggleSelection,
   onToggleAll
@@ -176,7 +179,8 @@ function TradeTable({
   const [expandedGroups, setExpandedGroups] = useState(() => new Set());
   const [chartGroup, setChartGroup] = useState(null);
   const allSelected = visibleTrades.length > 0 && visibleTrades.every((trade) => selectedIds.includes(trade.id));
-  const columnCount = (onToggleSelection ? 1 : 0) + 9 + (showActions ? 1 : 0);
+  const hasActionColumn = showChartAction || showTradeActions;
+  const columnCount = (onToggleSelection ? 1 : 0) + 9 + (hasActionColumn ? 1 : 0);
 
   useEffect(() => {
     if (!chartGroup) {
@@ -274,7 +278,7 @@ function TradeTable({
                 <th className="px-4 py-4">EXECUTIONS</th>
                 <th className="px-4 py-4">P&amp;L</th>
                 <th className="px-4 py-4">P&amp;L / SHARE</th>
-                {showActions && <th className="px-4 py-4">ACTIONS</th>}
+                {hasActionColumn && <th className="px-4 py-4">ACTIONS</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--line)] bg-transparent">
@@ -282,7 +286,7 @@ function TradeTable({
                 const groupSelected = group.trades.every((trade) => selectedIds.includes(trade.id));
                 const currentDate = group.dayLabel;
                 const previousDate = index > 0 ? tradeGroups[index - 1].dayLabel : null;
-                const startsNewDay = currentDate !== previousDate;
+                const startsNewDay = showDayDividers && currentDate !== previousDate;
                 const isExpanded = expandedGroups.has(group.id);
 
                 return (
@@ -341,11 +345,13 @@ function TradeTable({
                       <td className={`px-4 py-4 font-semibold ${group.perSharePnl >= 0 ? "text-mint" : "text-coral"}`}>
                         {formatCurrency(group.perSharePnl)}
                       </td>
-                      {showActions && (
+                      {hasActionColumn && (
                         <td className="px-4 py-4">
-                          <ActionButton label={`Open ${group.symbol} chart`} onClick={() => setChartGroup(group)}>
-                            <ChartIcon />
-                          </ActionButton>
+                          {showChartAction ? (
+                            <ActionButton label={`Open ${group.symbol} chart`} onClick={() => setChartGroup(group)}>
+                              <ChartIcon />
+                            </ActionButton>
+                          ) : null}
                         </td>
                       )}
                     </tr>
@@ -406,31 +412,33 @@ function TradeTable({
                             <td className={`px-4 py-3 font-semibold ${perSharePnl >= 0 ? "text-mint" : "text-coral"}`}>
                               {formatCurrency(perSharePnl)}
                             </td>
-                            {showActions && (
+                            {hasActionColumn && (
                               <td className="px-4 py-3">
-                                <div className="flex items-center gap-2">
-                                  <ActionButton
-                                    label={`Edit ${trade.symbol} trade`}
-                                    onClick={(event) => {
-                                      event.stopPropagation();
-                                      onEdit(trade);
-                                    }}
-                                  >
-                                    <EditIcon />
-                                  </ActionButton>
-                                  <button
-                                    type="button"
-                                    onClick={(event) => {
-                                      event.stopPropagation();
-                                      onDelete(trade);
-                                    }}
-                                    className="inline-flex h-9 w-9 items-center justify-center rounded-[6px] border border-coral/35 bg-coral/10 p-0 text-coral transition hover:bg-coral/15"
-                                    aria-label={`Delete ${trade.symbol} trade`}
-                                    title="Delete trade"
-                                  >
-                                    <TrashIcon />
-                                  </button>
-                                </div>
+                                {showTradeActions ? (
+                                  <div className="flex items-center gap-2">
+                                    <ActionButton
+                                      label={`Edit ${trade.symbol} trade`}
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        onEdit?.(trade);
+                                      }}
+                                    >
+                                      <EditIcon />
+                                    </ActionButton>
+                                    <button
+                                      type="button"
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        onDelete?.(trade);
+                                      }}
+                                      className="inline-flex h-9 w-9 items-center justify-center rounded-[6px] border border-coral/35 bg-coral/10 p-0 text-coral transition hover:bg-coral/15"
+                                      aria-label={`Delete ${trade.symbol} trade`}
+                                      title="Delete trade"
+                                    >
+                                      <TrashIcon />
+                                    </button>
+                                  </div>
+                                ) : null}
                               </td>
                             )}
                           </tr>
