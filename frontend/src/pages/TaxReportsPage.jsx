@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import Card from "../components/ui/Card";
 import LoadingState from "../components/ui/LoadingState";
 import EmptyState from "../components/ui/EmptyState";
+import DateRangePicker from "../components/ui/DateRangePicker";
 import taxReportService from "../services/taxReportService";
 import { formatCurrency, formatDate } from "../utils/formatters";
 import { useNotifications } from "../context/NotificationContext";
@@ -48,47 +49,48 @@ function Stat({ label, value, tone = "text-white" }) {
   );
 }
 
-function Disclaimer({ text }) {
+function PeriodControls({ filters, onChange }) {
   return (
-    <div className="ui-notice border-warning/20 bg-warning/10 text-white/76">
-      {text}
+    <div className="grid gap-3 md:grid-cols-[1fr_180px_180px]">
+      <div className="min-w-0">
+        <label className="mb-2 block text-xs font-medium text-white/72">Date range</label>
+        <DateRangePicker
+          from={filters.from}
+          to={filters.to}
+          onChange={({ from, to }) => onChange({ ...filters, from, to, periodType: "custom" })}
+          placeholder="From - To"
+          buttonClassName="!py-3 !w-full"
+        />
+      </div>
+      <div className="min-w-0">
+        <label className="mb-2 block text-xs font-medium text-white/72">Report type</label>
+        <select
+          className="ui-input min-h-[48px]"
+          value={filters.periodType}
+          onChange={(event) => onChange({ ...filters, periodType: event.target.value })}
+        >
+          <option value="month">One month</option>
+          <option value="year">Calendar year</option>
+          <option value="custom">Custom range</option>
+        </select>
+      </div>
+      <div className="min-w-0">
+        <label className="mb-2 block text-xs font-medium text-white/72">Account</label>
+        <select
+          className="ui-input min-h-[48px]"
+          value={filters.account}
+          onChange={(event) => onChange({ ...filters, account: event.target.value })}
+        >
+          <option value="all">All accounts</option>
+        </select>
+      </div>
     </div>
   );
 }
 
-function PeriodControls({ filters, onChange }) {
-  return (
-    <div className="grid gap-3 md:grid-cols-[180px_1fr_1fr_180px]">
-      <select
-        className="ui-input"
-        value={filters.periodType}
-        onChange={(event) => onChange({ ...filters, periodType: event.target.value })}
-      >
-        <option value="month">One month</option>
-        <option value="year">Calendar year</option>
-        <option value="custom">Custom range</option>
-      </select>
-      <input
-        className="ui-input"
-        type="date"
-        value={filters.from}
-        onChange={(event) => onChange({ ...filters, from: event.target.value })}
-      />
-      <input
-        className="ui-input"
-        type="date"
-        value={filters.to}
-        onChange={(event) => onChange({ ...filters, to: event.target.value })}
-      />
-      <select
-        className="ui-input"
-        value={filters.account}
-        onChange={(event) => onChange({ ...filters, account: event.target.value })}
-      >
-        <option value="all">All accounts</option>
-      </select>
-    </div>
-  );
+function formatPrice(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number.toFixed(2) : "-";
 }
 
 function TaxReportsPage() {
@@ -106,6 +108,7 @@ function TaxReportsPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
   const [error, setError] = useState("");
 
   async function loadAll() {
@@ -196,8 +199,6 @@ function TaxReportsPage() {
   }
 
   const summary = overview?.summary || {};
-  const disclaimer = settings?.disclaimer || overview?.disclaimer || "";
-
   const reportParams = useMemo(() => ({
     periodType: filters.periodType,
     from: filters.from,
@@ -218,13 +219,12 @@ function TaxReportsPage() {
   return (
     <div className="tax-reports-page space-y-6">
       {error ? <div className="ui-notice border-coral/20 bg-coral/10 text-coral">{error}</div> : null}
-      <Disclaimer text={disclaimer} />
 
       <Card
         title="TAX REPORTS"
         action={
-          <button className="ui-button-solid px-4 py-2 text-sm" type="button" onClick={() => setIsUploadOpen(true)}>
-            Upload statement
+          <button className="ui-button-solid px-4 py-2 text-sm" type="button" onClick={() => setIsReportOpen(true)}>
+            Generate report
           </button>
         }
       >
@@ -278,6 +278,32 @@ function TaxReportsPage() {
         </div>
       )}
 
+      {isReportOpen && (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/80 px-4" onMouseDown={() => setIsReportOpen(false)}>
+          <div className="w-full max-w-[620px]" onMouseDown={(event) => event.stopPropagation()}>
+            <Card
+              title="GENERATE REPORT"
+              action={
+                <button className="ui-button px-3 py-1.5 text-xs" type="button" onClick={() => setIsReportOpen(false)}>
+                  Close
+                </button>
+              }
+            >
+              <PeriodControls filters={filters} onChange={setFilters} />
+              <div className="mt-5 grid gap-3 md:grid-cols-2">
+                <button className="ui-button-solid" type="button" onClick={() => taxReportService.downloadPdf(reportParams)}>Download PDF</button>
+                <button className="ui-button" type="button" onClick={() => taxReportService.downloadWorkbook(reportParams)}>Download XLSX</button>
+                <button className="ui-button" type="button" onClick={() => taxReportService.downloadTransactionsCsv(reportParams)}>Download CSV</button>
+                <button className="ui-button" type="button" onClick={() => taxReportService.downloadEvidenceZip(reportParams)}>Download ZIP evidence package</button>
+              </div>
+              <div className="ui-notice mt-4 text-white/70">
+                Current status: {summary.reportStatus || "BLOCKED"}. Monthly and custom date-range reports are interim reports unless they cover a complete calendar year.
+              </div>
+            </Card>
+          </div>
+        </div>
+      )}
+
       {activeTab === "Overview" && (
         <div className="space-y-6">
           <Card title="REPORTING PERIOD">
@@ -310,7 +336,14 @@ function TaxReportsPage() {
             <Stat label="Date range" value={`${summary.earliestTradeDate || "-"} → ${summary.latestTradeDate || "-"}`} />
           </div>
 
-          <Card title="UPLOADED STATEMENTS">
+          <Card
+            title="UPLOADED STATEMENTS"
+            action={
+              <button className="ui-button-solid px-4 py-2 text-sm" type="button" onClick={() => setIsUploadOpen(true)}>
+                Upload statement
+              </button>
+            }
+          >
             {statements.length === 0 ? (
               <EmptyState title="No statements uploaded" description="Use Upload statement to import a broker trade-history file." />
             ) : (
@@ -360,24 +393,26 @@ function TaxReportsPage() {
             </div>
             <div className="ui-notice mt-4 text-white/70">{latestMetadata.importerAssumption || "Each accepted source row is treated as a completed long stock round-trip trade."}</div>
           </Card>
-
-          <Card title="REPORT EXPORTS">
-            <div className="flex flex-wrap gap-3">
-              <button className="ui-button-solid" type="button" onClick={() => taxReportService.downloadPdf(reportParams)}>Download PDF</button>
-              <button className="ui-button" type="button" onClick={() => taxReportService.downloadWorkbook(reportParams)}>Download XLSX</button>
-              <button className="ui-button" type="button" onClick={() => taxReportService.downloadTransactionsCsv(reportParams)}>Download CSV</button>
-              <button className="ui-button" type="button" onClick={() => taxReportService.downloadEvidenceZip(reportParams)}>Download ZIP evidence package</button>
-            </div>
-          </Card>
         </div>
       )}
 
       {activeTab === "Preview" && (
         <Card title="IMPORTED TRANSACTIONS">
-          <div className="mb-4 grid gap-3 md:grid-cols-3">
-            <input className="ui-input" type="date" value={transactionFilters.from || ""} onChange={(event) => setTransactionFilters((current) => ({ ...current, from: event.target.value }))} />
-            <input className="ui-input" type="date" value={transactionFilters.to || ""} onChange={(event) => setTransactionFilters((current) => ({ ...current, to: event.target.value }))} />
-            <input className="ui-input" placeholder="Symbol" value={transactionFilters.symbol || ""} onChange={(event) => setTransactionFilters((current) => ({ ...current, symbol: event.target.value }))} />
+          <div className="mb-4 grid gap-3 md:grid-cols-[1fr_220px]">
+            <div className="min-w-0">
+              <label className="mb-2 block text-xs font-medium text-white/72">Date range</label>
+              <DateRangePicker
+                from={transactionFilters.from || ""}
+                to={transactionFilters.to || ""}
+                onChange={({ from, to }) => setTransactionFilters((current) => ({ ...current, from, to }))}
+                placeholder="From - To"
+                buttonClassName="!py-3 !w-full"
+              />
+            </div>
+            <div className="min-w-0">
+              <label className="mb-2 block text-xs font-medium text-white/72">Symbol</label>
+              <input className="ui-input min-h-[48px]" placeholder="Symbol" value={transactionFilters.symbol || ""} onChange={(event) => setTransactionFilters((current) => ({ ...current, symbol: event.target.value }))} />
+            </div>
           </div>
 
           <div className="ui-table-shell overflow-x-auto">
@@ -405,7 +440,7 @@ function TaxReportsPage() {
                     <td className="px-4 py-3 text-white/70">{transaction.statement?.originalFilename}</td>
                     <td className="px-4 py-3 text-white">{transaction.stockSymbol || "-"}</td>
                     <td className="px-4 py-3 text-white/70">{transaction.quantity || "-"}</td>
-                    <td className="px-4 py-3 text-white/70">{transaction.pricePerShare || "-"}</td>
+                    <td className="px-4 py-3 text-white/70">{formatPrice(transaction.pricePerShare)}</td>
                     <td className="px-4 py-3 text-white/70">{transaction.exchangeRateToEur || "missing"}</td>
                     <td className="px-4 py-3 text-white/70">{usd(numberValue(transaction.commission) + numberValue(transaction.otherFees))}</td>
                     <td className="px-4 py-3 text-white/70">{transaction.eurFees ? eur(transaction.eurFees) : "-"}</td>
