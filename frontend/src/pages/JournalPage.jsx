@@ -15,6 +15,7 @@ import {
 import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
 import Filters from "../components/Filters";
+import TradeTable from "../components/TradeTable";
 import LoadingState from "../components/ui/LoadingState";
 import RichTextEditor from "../components/ui/RichTextEditor";
 import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
@@ -780,6 +781,15 @@ function EditIcon() {
   );
 }
 
+function SummaryRow({ label, value, tone = "text-white" }) {
+  return (
+    <div className="flex items-center justify-between gap-4 border-b border-[var(--line)] py-2 last:border-b-0">
+      <span className="text-sm text-white/58">{label}</span>
+      <span className={`text-right text-sm font-semibold ${tone}`}>{value}</span>
+    </div>
+  );
+}
+
 function JournalDayCard({
   day,
   noteDraft,
@@ -954,24 +964,40 @@ function JournalDayCard({
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="ui-metric-tile">
-              <div className="ui-title text-[10px] text-white/52">Total Trades</div>
-              <div className="mt-2 text-2xl font-semibold text-white">{day.totalTrades}</div>
-            </div>
-            <div className="ui-metric-tile">
-              <div className="ui-title text-[10px] text-white/52">Total Volume</div>
-              <div className="mt-2 text-2xl font-semibold text-white">{Math.round(day.totalVolume).toLocaleString()}</div>
-            </div>
-            <div className="ui-metric-tile">
-              <div className="ui-title text-[10px] text-white/52">Win %</div>
-              <div className={`mt-2 text-2xl font-semibold ${hasTrades ? winRateClass : "text-white"}`}>
-                {hasTrades ? `${day.winRate.toFixed(1)}%` : "No trades"}
+          <div className="ui-metric-tile">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-semibold text-white">Summary</h3>
+                <div className="mt-1 text-sm text-white/58">
+                  {day.totalTrades.toLocaleString("en-US")} trades · {Math.round(day.totalVolume).toLocaleString("en-US")} shares · {day.dayKey}
+                </div>
+              </div>
+              <div className={`text-right text-xl font-semibold ${positive ? "text-mint" : negative ? "text-coral" : "text-white"}`}>
+                {formatCurrency(day.totalPnl)}
               </div>
             </div>
-            <div className="ui-metric-tile sm:col-span-3">
+
+            <div className="mt-5 grid gap-x-10 gap-y-0 md:grid-cols-2">
+              <div>
+                <SummaryRow label="Win rate" value={hasTrades ? `${day.winRate.toFixed(1)}%` : "No trades"} tone={hasTrades ? winRateClass : "text-white"} />
+                <SummaryRow label="Winners / losers" value={`${day.wins} / ${day.losses}`} />
+                <SummaryRow label="Avg P&L / share" value={formatCurrency(day.averagePerShare)} tone={averagePerSharePositive ? "text-mint" : averagePerShareNegative ? "text-coral" : "text-white"} />
+                <SummaryRow label="Net P&L" value={formatCurrency(day.totalNetPnl)} tone={day.totalNetPnl >= 0 ? "text-mint" : "text-coral"} />
+                <SummaryRow label="P&L EUR" value={day.fxRate ? formatEuroCurrency(day.totalPnlEur) : "Unavailable"} tone={day.fxRate ? (Number(day.totalPnlEur || 0) >= 0 ? "text-mint" : "text-coral") : "text-white/54"} />
+              </div>
+
+              <div>
+                <SummaryRow label="Costs" value={formatCostCurrency(day.totalCosts)} tone={day.totalCosts ? "text-coral" : "text-white"} />
+                <SummaryRow label="Trade commissions" value={formatCostCurrency(day.totalTradeCommissions)} tone={day.totalTradeCommissions ? "text-coral" : "text-white"} />
+                <SummaryRow label="Broker fees" value={formatCostCurrency(day.totalFees)} tone={day.totalFees ? "text-coral" : "text-white"} />
+                <SummaryRow label="Costs EUR" value={day.fxRate ? formatCostCurrency(day.totalCostsEur, "EUR") : "Unavailable"} tone={day.totalCostsEur ? "text-coral" : "text-white"} />
+                <SummaryRow label="USD/EUR rate" value={formatFxRate(day.fxRate)} />
+              </div>
+            </div>
+
+            <div className="mt-5 border-t border-[var(--line)] pt-4">
               <div className="flex items-center justify-between gap-2">
-                <div className="ui-title text-[10px] text-white/52">Commissions</div>
+                <div className="ui-title text-[10px] text-white/52">Commissions breakdown</div>
                 {!isEditingCosts ? (
                   <button
                     type="button"
@@ -1040,11 +1066,7 @@ function JournalDayCard({
                     ))}
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => onCancelEditingCosts(day.dayKey)}
-                      className="ui-button px-3 py-1.5 text-[11px]"
-                    >
+                    <button type="button" onClick={() => onCancelEditingCosts(day.dayKey)} className="ui-button px-3 py-1.5 text-[11px]">
                       Cancel
                     </button>
                     <button
@@ -1058,42 +1080,10 @@ function JournalDayCard({
                   </div>
                 </div>
               ) : (
-                <>
-                  <div className="mt-2 text-2xl font-semibold text-white">{formatCostCurrency(day.totalCosts)}</div>
-                  <div className="mt-2 text-xs text-white/48">
-                    {JOURNAL_COMMISSION_FIELDS.map((field) => `${field.label} ${formatCostCents(day[field.key])}`).join(" · ")}
-                  </div>
-                </>
+                <div className="mt-2 text-xs text-white/48">
+                  {JOURNAL_COMMISSION_FIELDS.map((field) => `${field.label} ${formatCostCents(day[field.key])}`).join(" · ")}
+                </div>
               )}
-            </div>
-            <div className="ui-metric-tile sm:col-span-3">
-              <div className="ui-title text-[10px] text-white/52">USD to EUR FX Rate</div>
-              <div className="mt-3 grid gap-3 text-xs text-white/54 sm:grid-cols-3">
-                <span className="min-w-0">
-                  Rate:{" "}
-                  <span className="font-medium text-white">{formatFxRate(day.fxRate)}</span>
-                </span>
-                <span className="min-w-0">
-                  Comm/Fees EUR:{" "}
-                  <span className="font-medium text-white">
-                    {day.fxRate ? formatCostCurrency(day.totalCostsEur, "EUR") : "Unavailable"}
-                  </span>
-                </span>
-                <span className="min-w-0">
-                  P&amp;L EUR:{" "}
-                  <span
-                    className={`font-medium ${
-                      day.fxRate
-                        ? Number(day.totalPnlEur || 0) >= 0
-                          ? "text-mint"
-                          : "text-coral"
-                        : "text-white/54"
-                    }`}
-                  >
-                    {day.fxRate ? formatEuroCurrency(day.totalPnlEur) : "Unavailable"}
-                  </span>
-                </span>
-              </div>
             </div>
           </div>
         </div>
@@ -1157,84 +1147,17 @@ function JournalDayCard({
           )}
         </div>
 
-        <div className="ui-table-shell overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="ui-widget-heading-bg text-left text-white/56">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Time</th>
-                  <th className="px-4 py-3 font-medium">Symbol</th>
-                  <th className="px-4 py-3 font-medium">Volume</th>
-                  <th className="px-4 py-3 font-medium">Execs</th>
-                  <th className="px-4 py-3 font-medium">P&amp;L</th>
-                  <th className="px-4 py-3 font-medium">P&amp;L / Share</th>
-                  <th className="px-4 py-3 font-medium">Setup</th>
-                  <th className="px-4 py-3 font-medium">Tags</th>
-                </tr>
-              </thead>
-              <tbody>
-                {day.trades.length > 0 ? (
-                  day.trades.map((trade) => (
-                    <tr
-                      key={trade.id}
-                      className="cursor-pointer border-t border-[var(--line)] bg-[rgba(255,255,255,0.05)] text-white/82 transition hover:bg-white/[0.08]"
-                      onClick={() => onOpenTrade(trade.id)}
-                    >
-                      <td className="px-4 py-3 whitespace-nowrap">{trade.entryTimeLabel}</td>
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-white">{trade.symbol}</div>
-                      </td>
-                      <td className="px-4 py-3">{Math.round(Number(trade.quantity || 0)).toLocaleString()}</td>
-                      <td className="px-4 py-3">{trade.execCount}</td>
-                      <td className={`px-4 py-3 font-medium ${trade.dayPnl > 0 ? "text-mint" : trade.dayPnl < 0 ? "text-coral" : "text-white/70"}`}>
-                        {formatCurrency(trade.dayPnl)}
-                      </td>
-                      <td
-                        className={`px-4 py-3 font-medium ${
-                          Number(trade.quantity || 0) === 0
-                            ? "text-white/70"
-                            : trade.dayPnl / Math.abs(Number(trade.quantity || 0)) > 0
-                              ? "text-mint"
-                              : trade.dayPnl / Math.abs(Number(trade.quantity || 0)) < 0
-                                ? "text-coral"
-                                : "text-white/70"
-                        }`}
-                      >
-                        {formatCurrency(
-                          Number(trade.quantity || 0) === 0
-                            ? 0
-                            : trade.dayPnl / Math.abs(Number(trade.quantity || 0))
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-white/54">
-                        {trade.setup ? <span className="ui-chip">{trade.setup}</span> : <span className="text-white/26">—</span>}
-                      </td>
-                      <td className="px-4 py-3">
-                        {trade.parsedTags.length > 0 ? (
-                          <div className="flex flex-wrap gap-2">
-                            {trade.parsedTags.map((tag) => (
-                              <span key={`${trade.id}-${tag}`} className="ui-chip">
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-white/26">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr className="border-t border-[var(--line)] bg-[rgba(255,255,255,0.05)]">
-                    <td colSpan={8} className="px-4 py-5 text-sm text-white/40">
-                      No trades logged for this day.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+        {day.trades.length > 0 ? (
+          <TradeTable
+            trades={day.trades}
+            onSelectTrade={(trade) => onOpenTrade(trade.id)}
+            showActions={false}
+          />
+        ) : (
+          <div className="ui-table-shell px-4 py-5 text-sm text-white/40">
+            No trades logged for this day.
           </div>
-        </div>
+        )}
       </div>
     </Card>
   );
