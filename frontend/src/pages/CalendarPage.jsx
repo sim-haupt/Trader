@@ -14,8 +14,9 @@ import {
   getTradeNetPnl,
   getTradePerSharePnl
 } from "../utils/tradePnl";
+import { isUsMarketDay } from "../utils/marketCalendar";
 
-const weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const weekdayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const VIEW_MODES = [
   { key: "MONTH", label: "Month" },
   { key: "YEAR", label: "Year" }
@@ -126,10 +127,12 @@ function buildDailyStats(trades) {
 function createMonthGrid(year, monthIndex, dailyStats) {
   const firstDay = new Date(year, monthIndex, 1);
   const startDay = new Date(firstDay);
-  startDay.setDate(1 - firstDay.getDay());
+  const firstDayMondayOffset = (firstDay.getDay() + 6) % 7;
+  startDay.setDate(1 - firstDayMondayOffset);
   const lastDay = new Date(year, monthIndex + 1, 0);
   const endDay = new Date(lastDay);
-  endDay.setDate(lastDay.getDate() + (6 - lastDay.getDay()));
+  const lastDayMondayOffset = (lastDay.getDay() + 6) % 7;
+  endDay.setDate(lastDay.getDate() + (6 - lastDayMondayOffset));
 
   const weeks = [];
   let cursor = new Date(startDay);
@@ -146,6 +149,7 @@ function createMonthGrid(year, monthIndex, dailyStats) {
         dayKey,
         dayNumber: currentDate.getDate(),
         isCurrentMonth: currentDate.getMonth() === monthIndex,
+        isMarketDay: isUsMarketDay(dayKey),
         stats: dailyStats.get(dayKey) || null
       });
 
@@ -449,7 +453,9 @@ function MonthCalendar({ month, compact = false, pnlMode, onSelectDay }) {
                     </div>
                   </div>
                 ) : day.isCurrentMonth ? (
-                  <div className="mt-2 text-[10px] italic text-white/32">no data</div>
+                  <div className="mt-2 text-[10px] font-medium text-white/34">
+                    {day.isMarketDay ? "No trades" : "Market closed"}
+                  </div>
                 ) : null}
               </button>
             ))}
