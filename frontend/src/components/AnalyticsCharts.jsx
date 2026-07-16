@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Area,
@@ -13,6 +13,7 @@ import {
   YAxis
 } from "recharts";
 import Card from "./ui/Card";
+import PnlBarCumulativeChart, { ChartViewSwitch } from "./PnlBarCumulativeChart";
 import { formatCurrency, formatPercent } from "../utils/formatters";
 
 const CHART_GREEN = "#34e0a1";
@@ -420,6 +421,11 @@ function AnalyticsCharts({
   analytics
 }) {
   const navigate = useNavigate();
+  const [chartViews, setChartViews] = useState({
+    cumulative: "BARS",
+    drawdown: "BARS",
+    grossDaily: "BARS"
+  });
   const {
     summary,
     equityCurve,
@@ -437,6 +443,27 @@ function AnalyticsCharts({
   } = analytics;
   const pnlLabel = pnlType === "GROSS" ? "GROSS" : "NET";
   const cumulativePnlColor = summary.totalPnl < 0 ? CHART_RED : CHART_GREEN;
+  const cumulativeBars = useMemo(() => {
+    let previous = 0;
+
+    return equityCurve.map((point) => {
+      const equity = Number(point.equity || 0);
+      const pnl = Number((equity - previous).toFixed(2));
+      previous = equity;
+
+      return {
+        ...point,
+        pnl,
+        equity
+      };
+    });
+  }, [equityCurve]);
+  const updateChartView = (key, value) => {
+    setChartViews((current) => ({
+      ...current,
+      [key]: value
+    }));
+  };
 
   const widgets = useMemo(
     () => [
@@ -453,23 +480,36 @@ function AnalyticsCharts({
               <MiniMetric label="WEEK" value={formatCurrency(summary.totalWeekPnl)} tone={toneForValue(summary.totalWeekPnl)} shadow />
               <MiniMetric label="TODAY" value={formatCurrency(summary.totalTodayPnl)} tone={toneForValue(summary.totalTodayPnl)} shadow />
             </div>
+            <div className="mb-3 flex justify-end">
+              <ChartViewSwitch value={chartViews.cumulative} onChange={(value) => updateChartView("cumulative", value)} />
+            </div>
             <div className="h-[420px] pb-4">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={equityCurve} margin={STANDARD_CHART_MARGIN}>
-                  <defs>
-                    <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={cumulativePnlColor} stopOpacity={0.22} />
-                      <stop offset="55%" stopColor={cumulativePnlColor} stopOpacity={0.08} />
-                      <stop offset="100%" stopColor={cumulativePnlColor} stopOpacity={0.01} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
-                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                  <Tooltip contentStyle={tooltipStyle()} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
-                  <Area type="monotone" dataKey="equity" stroke={cumulativePnlColor} strokeWidth={3} fill="url(#equityGradient)" />
-                </AreaChart>
-              </ResponsiveContainer>
+              {chartViews.cumulative === "BARS" ? (
+                <PnlBarCumulativeChart
+                  data={cumulativeBars}
+                  dailyKey="pnl"
+                  cumulativeKey="equity"
+                  labelKey="date"
+                  barSize={16}
+                />
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={equityCurve} margin={STANDARD_CHART_MARGIN}>
+                    <defs>
+                      <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={cumulativePnlColor} stopOpacity={0.22} />
+                        <stop offset="55%" stopColor={cumulativePnlColor} stopOpacity={0.08} />
+                        <stop offset="100%" stopColor={cumulativePnlColor} stopOpacity={0.01} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
+                    <Tooltip contentStyle={tooltipStyle()} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
+                    <Area type="monotone" dataKey="equity" stroke={cumulativePnlColor} strokeWidth={3} fill="url(#equityGradient)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </>
         )
@@ -600,22 +640,37 @@ function AnalyticsCharts({
               <MiniMetric label="MAX DRAWDOWN" value={formatCurrency(summary.maxDrawdown)} tone={toneForValue(summary.maxDrawdown)} shadow />
               <MiniMetric label="CURRENT DRAWDOWN" value={formatCurrency(summary.currentDrawdown)} tone={toneForValue(summary.currentDrawdown)} shadow />
             </div>
+            <div className="mb-3 flex justify-end">
+              <ChartViewSwitch value={chartViews.drawdown} onChange={(value) => updateChartView("drawdown", value)} />
+            </div>
             <div className="h-[220px] pb-4">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={drawdownCurve} margin={STANDARD_CHART_MARGIN}>
-                  <defs>
-                    <linearGradient id="drawdownGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#ff6b6b" stopOpacity={0.22} />
-                      <stop offset="100%" stopColor="#ff6b6b" stopOpacity={0.02} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
-                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                  <Tooltip contentStyle={tooltipStyle()} />
-                  <Area type="monotone" dataKey="drawdown" stroke="#ff6b6b" strokeWidth={2.5} fill="url(#drawdownGradient)" />
-                </AreaChart>
-              </ResponsiveContainer>
+              {chartViews.drawdown === "BARS" ? (
+                <PnlBarCumulativeChart
+                  data={drawdownCurve}
+                  dailyKey="drawdown"
+                  cumulativeKey="drawdown"
+                  labelKey="date"
+                  dailyLabel="Drawdown"
+                  cumulativeLabel="Current"
+                  barSize={16}
+                />
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={drawdownCurve} margin={STANDARD_CHART_MARGIN}>
+                    <defs>
+                      <linearGradient id="drawdownGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#ff6b6b" stopOpacity={0.22} />
+                        <stop offset="100%" stopColor="#ff6b6b" stopOpacity={0.02} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} />
+                    <Tooltip contentStyle={tooltipStyle()} />
+                    <Area type="monotone" dataKey="drawdown" stroke="#ff6b6b" strokeWidth={2.5} fill="url(#drawdownGradient)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </>
         )
@@ -625,20 +680,34 @@ function AnalyticsCharts({
         title: `${pnlLabel} DAILY P&L (30 DAYS)`,
         defaultSpan: 2,
         body: (
-          <div className="h-[320px] pb-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={grossDailyThirtyDays} margin={STANDARD_CHART_MARGIN}>
-                <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} minTickGap={18} />
-                <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-                <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<ChartTooltipContent />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
-                <Bar dataKey="grossPnl" barSize={20}>
-                  {grossDailyThirtyDays.map((entry) => (
-                    <Cell key={entry.date} fill={entry.grossPnl >= 0 ? CHART_GREEN : CHART_RED} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="pb-4">
+            <div className="mb-3 flex justify-end">
+              <ChartViewSwitch value={chartViews.grossDaily} onChange={(value) => updateChartView("grossDaily", value)} />
+            </div>
+            <div className="h-[284px]">
+              {chartViews.grossDaily === "BARS" ? (
+                <PnlBarCumulativeChart
+                  data={grossDailyThirtyDays}
+                  dailyKey="grossPnl"
+                  labelKey="label"
+                  barSize={16}
+                />
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={grossDailyThirtyDays} margin={STANDARD_CHART_MARGIN}>
+                    <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+                    <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} minTickGap={18} />
+                    <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} tick={{ fill: "#c6cedb", fontSize: 11 }} />
+                    <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<ChartTooltipContent />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
+                    <Bar dataKey="grossPnl" barSize={20}>
+                      {grossDailyThirtyDays.map((entry) => (
+                        <Cell key={entry.date} fill={entry.grossPnl >= 0 ? CHART_GREEN : CHART_RED} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
           </div>
         )
       },
@@ -751,10 +820,12 @@ function AnalyticsCharts({
       performanceByTimeOfDaySummary,
       hourlyPerformance,
       grossDailyThirtyDays,
+      cumulativeBars,
       winRateThirtyDays,
       dailyVolumeThirtyDays,
       lastThirtyTrades,
       cumulativePnlColor,
+      chartViews,
       navigate,
       pnlLabel
     ]

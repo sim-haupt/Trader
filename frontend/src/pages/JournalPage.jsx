@@ -15,6 +15,7 @@ import {
 import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
 import Filters from "../components/Filters";
+import PnlBarCumulativeChart, { ChartViewSwitch } from "../components/PnlBarCumulativeChart";
 import TradeTable from "../components/TradeTable";
 import LoadingState from "../components/ui/LoadingState";
 import RichTextEditor from "../components/ui/RichTextEditor";
@@ -813,6 +814,7 @@ function JournalDayCard({
   onOpenTrade,
   onExportTrades
 }) {
+  const [chartView, setChartView] = useState("BARS");
   const positive = day.totalPnl >= 0;
   const negative = day.totalPnl < 0;
   const hasTrades = day.totalTrades > 0;
@@ -821,6 +823,23 @@ function JournalDayCard({
   const winRateClass =
     day.winRate < 50 ? "text-coral" : day.winRate <= 65 ? "text-gold" : "text-mint";
   const signedChartData = useMemo(() => buildSignedChartSeries(day.chartData), [day.chartData]);
+  const barChartData = useMemo(() => {
+    let previous = 0;
+
+    return day.chartData
+      .filter((point) => point.symbol)
+      .map((point) => {
+        const cumulativePnl = Number(point.pnl || 0);
+        const dailyPnl = Number((cumulativePnl - previous).toFixed(2));
+        previous = cumulativePnl;
+
+        return {
+          ...point,
+          dailyPnl,
+          cumulativePnl
+        };
+      });
+  }, [day.chartData]);
 
   return (
     <Card
@@ -864,103 +883,117 @@ function JournalDayCard({
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)]">
           <div className="ui-surface-subtle overflow-hidden">
             <div className="ui-widget-heading-bg border-b border-[var(--line)] px-4 py-4">
-              <div className="ui-title text-[10px] text-white/72">Day Running P&amp;L</div>
+              <div className="flex items-center justify-between gap-3">
+                <div className="ui-title text-[10px] text-white/72">Day Running P&amp;L</div>
+                <ChartViewSwitch value={chartView} onChange={setChartView} />
+              </div>
             </div>
             <div className="h-[290px] pb-4">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={signedChartData.data} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
-                  <defs>
-                    <linearGradient id={`journal-day-pnl-fill-positive-${day.dayKey}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="rgba(52, 224, 161, 0.34)" />
-                      <stop offset="65%" stopColor="rgba(52, 224, 161, 0.12)" />
-                      <stop offset="100%" stopColor="rgba(52, 224, 161, 0.02)" />
-                    </linearGradient>
-                    <linearGradient id={`journal-day-pnl-fill-negative-${day.dayKey}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="rgba(255, 95, 122, 0.28)" />
-                      <stop offset="65%" stopColor="rgba(255, 95, 122, 0.12)" />
-                      <stop offset="100%" stopColor="rgba(255, 95, 122, 0.02)" />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
-                  <XAxis
-                    type="number"
-                    dataKey="timeValue"
-                    domain={["dataMin", "dataMax"]}
-                    tickFormatter={formatAxisTime}
-                    tick={{ fill: "#bcc4d4", fontSize: 12 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    tickFormatter={(value) => `$${value}`}
-                    tick={{ fill: "#bcc4d4", fontSize: 12 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <Tooltip
-                    content={<JournalChartTooltip />}
-                    offset={14}
-                    allowEscapeViewBox={{ x: true, y: true }}
-                    wrapperStyle={{ zIndex: 20 }}
-                  />
-                  <ReferenceLine
-                    y={0}
-                    stroke="#ffffff"
-                    strokeOpacity={0.72}
-                    strokeWidth={1.5}
-                    strokeDasharray="6 6"
-                    ifOverflow="extendDomain"
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="positivePnl"
-                    stroke="none"
-                    fill={`url(#journal-day-pnl-fill-positive-${day.dayKey})`}
-                    fillOpacity={1}
-                    isAnimationActive={false}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="negativePnl"
-                    stroke="none"
-                    fill={`url(#journal-day-pnl-fill-negative-${day.dayKey})`}
-                    fillOpacity={1}
-                    isAnimationActive={false}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="positivePnl"
-                    stroke="#34e0a1"
-                    strokeWidth={3}
-                    dot={false}
-                    isAnimationActive={false}
-                    activeDot={false}
-                    connectNulls={false}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="negativePnl"
-                    stroke="#ff5f7a"
-                    strokeWidth={3}
-                    dot={false}
-                    isAnimationActive={false}
-                    activeDot={false}
-                    connectNulls={false}
-                  />
-                  {day.chartData
-                    .filter((point) => point.symbol)
-                    .map((point) => (
-                      <ReferenceDot
-                        key={point.id}
-                        x={new Date(point.timestamp).getTime()}
-                        y={point.pnl}
-                        r={point.isSelected ? 6 : 5}
-                        fill={point.pnl > 0 ? "#34e0a1" : point.pnl < 0 ? "#ff5f7a" : "#ededed"}
-                        stroke="transparent"
-                      />
-                    ))}
-                </LineChart>
-              </ResponsiveContainer>
+              {chartView === "BARS" ? (
+                <PnlBarCumulativeChart
+                  data={barChartData}
+                  dailyKey="dailyPnl"
+                  cumulativeKey="cumulativePnl"
+                  labelKey="label"
+                  labelFormatter={(point) => `${point?.label || ""}${point?.symbol ? ` · ${point.symbol}` : ""}`}
+                  barSize={18}
+                />
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={signedChartData.data} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
+                    <defs>
+                      <linearGradient id={`journal-day-pnl-fill-positive-${day.dayKey}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="rgba(52, 224, 161, 0.34)" />
+                        <stop offset="65%" stopColor="rgba(52, 224, 161, 0.12)" />
+                        <stop offset="100%" stopColor="rgba(52, 224, 161, 0.02)" />
+                      </linearGradient>
+                      <linearGradient id={`journal-day-pnl-fill-negative-${day.dayKey}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="rgba(255, 95, 122, 0.28)" />
+                        <stop offset="65%" stopColor="rgba(255, 95, 122, 0.12)" />
+                        <stop offset="100%" stopColor="rgba(255, 95, 122, 0.02)" />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+                    <XAxis
+                      type="number"
+                      dataKey="timeValue"
+                      domain={["dataMin", "dataMax"]}
+                      tickFormatter={formatAxisTime}
+                      tick={{ fill: "#bcc4d4", fontSize: 12 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tickFormatter={(value) => `$${value}`}
+                      tick={{ fill: "#bcc4d4", fontSize: 12 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip
+                      content={<JournalChartTooltip />}
+                      offset={14}
+                      allowEscapeViewBox={{ x: true, y: true }}
+                      wrapperStyle={{ zIndex: 20 }}
+                    />
+                    <ReferenceLine
+                      y={0}
+                      stroke="#ffffff"
+                      strokeOpacity={0.72}
+                      strokeWidth={1.5}
+                      strokeDasharray="6 6"
+                      ifOverflow="extendDomain"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="positivePnl"
+                      stroke="none"
+                      fill={`url(#journal-day-pnl-fill-positive-${day.dayKey})`}
+                      fillOpacity={1}
+                      isAnimationActive={false}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="negativePnl"
+                      stroke="none"
+                      fill={`url(#journal-day-pnl-fill-negative-${day.dayKey})`}
+                      fillOpacity={1}
+                      isAnimationActive={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="positivePnl"
+                      stroke="#34e0a1"
+                      strokeWidth={3}
+                      dot={false}
+                      isAnimationActive={false}
+                      activeDot={false}
+                      connectNulls={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="negativePnl"
+                      stroke="#ff5f7a"
+                      strokeWidth={3}
+                      dot={false}
+                      isAnimationActive={false}
+                      activeDot={false}
+                      connectNulls={false}
+                    />
+                    {day.chartData
+                      .filter((point) => point.symbol)
+                      .map((point) => (
+                        <ReferenceDot
+                          key={point.id}
+                          x={new Date(point.timestamp).getTime()}
+                          y={point.pnl}
+                          r={point.isSelected ? 6 : 5}
+                          fill={point.pnl > 0 ? "#34e0a1" : point.pnl < 0 ? "#ff5f7a" : "#ededed"}
+                          stroke="transparent"
+                        />
+                      ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
 
