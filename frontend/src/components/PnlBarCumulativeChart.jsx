@@ -12,8 +12,8 @@ import {
 } from "recharts";
 import { formatCurrency } from "../utils/formatters";
 
-const BAR_GREEN = "#22b58f";
-const BAR_RED = "#b44b4b";
+const BAR_GREEN = "#34e0a1";
+const BAR_RED = "#ff5f7a";
 
 function asNumber(value) {
   const number = Number(value);

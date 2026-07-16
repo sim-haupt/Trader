@@ -355,9 +355,11 @@ function getHeatmapTileStyle(trade, maxWin, maxLoss) {
   };
 }
 
-function TradeHeatmap({ trades, onOpenTrade }) {
-  const maxWin = Math.max(0, ...trades.map((trade) => Math.max(0, Number(trade.pnl || 0))));
-  const maxLoss = Math.max(0, ...trades.map((trade) => Math.max(0, Math.abs(Math.min(0, Number(trade.pnl || 0))))));
+function TradeHeatmap({ trades, scale, onOpenTrade }) {
+  const visibleMaxWin = Math.max(0, ...trades.map((trade) => Math.max(0, Number(trade.pnl || 0))));
+  const visibleMaxLoss = Math.max(0, ...trades.map((trade) => Math.max(0, Math.abs(Math.min(0, Number(trade.pnl || 0))))));
+  const maxWin = Number(scale?.maxWin || 0) || visibleMaxWin;
+  const maxLoss = Number(scale?.maxLoss || 0) || visibleMaxLoss;
   const slots = Array.from({ length: 30 }, (_, index) => trades[index] || null);
 
   return (
@@ -436,6 +438,7 @@ function AnalyticsCharts({
     performanceByPrice,
     hourlyPerformance,
     grossDailyThirtyDays,
+    lastThirtyTradeScale,
     winRateThirtyDays,
     dailyVolumeThirtyDays,
     lastThirtyTrades = [],
@@ -806,6 +809,7 @@ function AnalyticsCharts({
         body: (
           <TradeHeatmap
             trades={lastThirtyTrades}
+            scale={lastThirtyTradeScale}
             onOpenTrade={(tradeId) => navigate(`/trades/${tradeId}`)}
           />
         )
@@ -821,6 +825,7 @@ function AnalyticsCharts({
       hourlyPerformance,
       grossDailyThirtyDays,
       cumulativeBars,
+      lastThirtyTradeScale,
       winRateThirtyDays,
       dailyVolumeThirtyDays,
       lastThirtyTrades,

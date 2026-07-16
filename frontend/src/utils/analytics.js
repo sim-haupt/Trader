@@ -223,6 +223,32 @@ function buildLastThirtyTrades(processedTrades) {
   });
 }
 
+function buildLastThirtyTradeScale(processedTrades, endDayKey) {
+  const dayKeys = new Set(getLastMarketDayKeys(endDayKey, 30));
+  const scale = processedTrades.reduce(
+    (current, item) => {
+      const dayKey = getLocalDayKey(item.entryDate);
+
+      if (!dayKeys.has(dayKey)) {
+        return current;
+      }
+
+      const pnl = Number(item.pnl || 0);
+
+      return {
+        maxWin: Math.max(current.maxWin, pnl > 0 ? pnl : 0),
+        maxLoss: Math.max(current.maxLoss, pnl < 0 ? Math.abs(pnl) : 0)
+      };
+    },
+    { maxWin: 0, maxLoss: 0 }
+  );
+
+  return {
+    maxWin: Number(scale.maxWin.toFixed(2)),
+    maxLoss: Number(scale.maxLoss.toFixed(2))
+  };
+}
+
 function buildTimeOfDaySummary(performanceByTimeOfDay) {
   const totalAbsolute = performanceByTimeOfDay.reduce(
     (sum, entry) => sum + Math.abs(entry.pnl),
@@ -534,6 +560,7 @@ export function buildAnalytics(trades, options = {}) {
     hourlyPerformance: buildHourlyPerformance(processedTrades),
     performanceByPrice: buildPriceBuckets(processedTrades),
     lastThirtyTrades: buildLastThirtyTrades(processedTrades),
+    lastThirtyTradeScale: buildLastThirtyTradeScale(processedTrades, currentMarketDayKey),
     grossDailyThirtyDays: buildLastThirtyDayPnl(processedTrades, currentMarketDayKey),
     winRateThirtyDays,
     dailyVolumeThirtyDays,

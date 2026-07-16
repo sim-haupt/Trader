@@ -281,23 +281,24 @@ function getSummaryTone(value) {
   return "text-white";
 }
 
-function getAlpha(value, maxMagnitude) {
-  if (!value || !maxMagnitude) {
+function getAlpha(value, maxValue) {
+  if (!value || !maxValue) {
     return 0;
   }
 
-  return Math.min(0.9, 0.22 + (Math.abs(value) / maxMagnitude) * 0.56);
+  return Math.min(0.9, 0.22 + (Math.abs(value) / maxValue) * 0.56);
 }
 
-function getDayStyle(stats, maxMagnitude, pnlMode) {
+function getDayStyle(stats, monthScale, pnlMode) {
   if (!stats) {
     return undefined;
   }
 
   const pnl = getStatsPnl(stats, pnlMode);
-  const alpha = getAlpha(pnl, maxMagnitude);
 
   if (pnl > 0) {
+    const alpha = getAlpha(pnl, monthScale.maxWin);
+
     return {
       background: `linear-gradient(180deg, rgba(52,224,161,${alpha}), rgba(52,224,161,${alpha * 0.42}))`,
       borderColor: "rgba(52, 224, 161, 0.24)"
@@ -305,6 +306,8 @@ function getDayStyle(stats, maxMagnitude, pnlMode) {
   }
 
   if (pnl < 0) {
+    const alpha = getAlpha(pnl, monthScale.maxLoss);
+
     return {
       background: `linear-gradient(180deg, rgba(255,95,122,${alpha}), rgba(255,95,122,${alpha * 0.4}))`,
       borderColor: "rgba(255, 95, 122, 0.24)"
@@ -388,9 +391,20 @@ function CalendarToolbar({
 }
 
 function MonthCalendar({ month, compact = false, pnlMode, onSelectDay }) {
-  const maxMagnitude = Math.max(
-    1,
-    ...month.weeks.flat().map((day) => (day.isCurrentMonth && day.stats ? Math.abs(getStatsPnl(day.stats, pnlMode)) : 0))
+  const monthScale = month.weeks.flat().reduce(
+    (scale, day) => {
+      if (!day.isCurrentMonth || !day.stats) {
+        return scale;
+      }
+
+      const pnl = getStatsPnl(day.stats, pnlMode);
+
+      return {
+        maxWin: Math.max(scale.maxWin, pnl > 0 ? pnl : 0),
+        maxLoss: Math.max(scale.maxLoss, pnl < 0 ? Math.abs(pnl) : 0)
+      };
+    },
+    { maxWin: 1, maxLoss: 1 }
   );
 
   return (
@@ -422,7 +436,7 @@ function MonthCalendar({ month, compact = false, pnlMode, onSelectDay }) {
                 } ${day.isCurrentMonth && day.stats ? "cursor-pointer hover:brightness-110" : "cursor-default"} ${
                   day.isCurrentMonth ? getDayTone(day.stats, true, pnlMode) : "opacity-40"
                 }`}
-                style={day.isCurrentMonth ? getDayStyle(day.stats, maxMagnitude, pnlMode) : undefined}
+                style={day.isCurrentMonth ? getDayStyle(day.stats, monthScale, pnlMode) : undefined}
               >
                 <div className="text-xs font-semibold text-white/80">{day.dayNumber}</div>
                 {day.isCurrentMonth && day.stats ? (
