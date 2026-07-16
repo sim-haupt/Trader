@@ -78,11 +78,11 @@ export default function PnlBarCumulativeChart({
   height = "100%",
   xTickFormatter,
   valueFormatter = formatCurrency,
-  yAxisWidth = 72,
+  yAxisWidth,
   labelFormatter,
   dailyLabel = "Daily",
   cumulativeLabel = "Cumulative",
-  barSize = 18
+  barSize = 20
 }) {
   const preparedData = useMemo(() => {
     let running = 0;
@@ -134,13 +134,12 @@ export default function PnlBarCumulativeChart({
           offset={14}
           allowEscapeViewBox={{ x: true, y: true }}
         />
-        <ReferenceLine y={0} stroke="rgba(255,255,255,0.56)" strokeDasharray="5 5" />
-        <Bar dataKey="__cumulative" barSize={barSize} radius={[3, 3, 0, 0]} isAnimationActive={false}>
+        <ReferenceLine y={0} stroke="rgba(255,255,255,0.24)" />
+        <Bar dataKey="__cumulative" barSize={barSize} isAnimationActive={false}>
           {preparedData.map((entry, index) => (
             <Cell
               key={`${entry.__label}-${index}`}
               fill={entry.__cumulative >= 0 ? BAR_GREEN : BAR_RED}
-              fillOpacity={0.86}
             />
           ))}
         </Bar>

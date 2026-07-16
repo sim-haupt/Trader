@@ -896,7 +896,6 @@ function JournalDayCard({
                   cumulativeKey="cumulativePnl"
                   labelKey="label"
                   labelFormatter={(point) => `${point?.label || ""}${point?.symbol ? ` · ${point.symbol}` : ""}`}
-                  barSize={18}
                 />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">

@@ -307,45 +307,34 @@ function getHeatmapTileStyle(trade, maxWin, maxLoss) {
     };
   }
 
-  const pnl = Number(trade.pnl || 0);
+  const pnl = Number(trade.perSharePnl || 0);
+
+  if (Math.abs(pnl) < 0.005) {
+    return {
+      background: "rgba(255,255,255,0.08)",
+      borderColor: "rgba(229,231,235,0.22)"
+    };
+  }
 
   if (pnl > 0) {
-    const intensity = maxWin ? pnl / maxWin : 0;
-    const level = intensity > 0.66 ? 2 : intensity > 0.33 ? 1 : 0;
-    const backgrounds = [
-      "rgba(52,224,161,0.14)",
-      "rgba(52,224,161,0.28)",
-      "rgba(52,224,161,0.48)"
-    ];
-    const borders = [
-      "rgba(52,224,161,0.32)",
-      "rgba(52,224,161,0.48)",
-      "rgba(52,224,161,0.72)"
-    ];
+    const intensity = Math.min(1, maxWin ? pnl / maxWin : 0);
+    const backgroundAlpha = 0.08 + intensity * 0.42;
+    const borderAlpha = 0.22 + intensity * 0.5;
 
     return {
-      background: backgrounds[level],
-      borderColor: borders[level]
+      background: `rgba(52,224,161,${backgroundAlpha})`,
+      borderColor: `rgba(52,224,161,${borderAlpha})`
     };
   }
 
   if (pnl < 0) {
-    const intensity = maxLoss ? Math.abs(pnl) / maxLoss : 0;
-    const level = intensity > 0.66 ? 2 : intensity > 0.33 ? 1 : 0;
-    const backgrounds = [
-      "rgba(255,95,122,0.14)",
-      "rgba(255,95,122,0.28)",
-      "rgba(255,95,122,0.48)"
-    ];
-    const borders = [
-      "rgba(255,95,122,0.32)",
-      "rgba(255,95,122,0.48)",
-      "rgba(255,95,122,0.72)"
-    ];
+    const intensity = Math.min(1, maxLoss ? Math.abs(pnl) / maxLoss : 0);
+    const backgroundAlpha = 0.08 + intensity * 0.42;
+    const borderAlpha = 0.22 + intensity * 0.5;
 
     return {
-      background: backgrounds[level],
-      borderColor: borders[level]
+      background: `rgba(255,95,122,${backgroundAlpha})`,
+      borderColor: `rgba(255,95,122,${borderAlpha})`
     };
   }
 
@@ -356,8 +345,8 @@ function getHeatmapTileStyle(trade, maxWin, maxLoss) {
 }
 
 function TradeHeatmap({ trades, scale, onOpenTrade }) {
-  const visibleMaxWin = Math.max(0, ...trades.map((trade) => Math.max(0, Number(trade.pnl || 0))));
-  const visibleMaxLoss = Math.max(0, ...trades.map((trade) => Math.max(0, Math.abs(Math.min(0, Number(trade.pnl || 0))))));
+  const visibleMaxWin = Math.max(0, ...trades.map((trade) => Math.max(0, Number(trade.perSharePnl || 0))));
+  const visibleMaxLoss = Math.max(0, ...trades.map((trade) => Math.max(0, Math.abs(Math.min(0, Number(trade.perSharePnl || 0))))));
   const maxWin = Number(scale?.maxWin || 0) || visibleMaxWin;
   const maxLoss = Number(scale?.maxLoss || 0) || visibleMaxLoss;
   const slots = Array.from({ length: 30 }, (_, index) => trades[index] || null);
@@ -493,7 +482,6 @@ function AnalyticsCharts({
                   dailyKey="pnl"
                   cumulativeKey="equity"
                   labelKey="date"
-                  barSize={16}
                 />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
@@ -655,7 +643,6 @@ function AnalyticsCharts({
                   labelKey="date"
                   dailyLabel="Drawdown"
                   cumulativeLabel="Current"
-                  barSize={16}
                 />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
@@ -693,7 +680,6 @@ function AnalyticsCharts({
                   data={grossDailyThirtyDays}
                   dailyKey="grossPnl"
                   labelKey="label"
-                  barSize={16}
                 />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">

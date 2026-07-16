@@ -233,7 +233,7 @@ function buildLastThirtyTradeScale(processedTrades, endDayKey) {
         return current;
       }
 
-      const pnl = Number(item.pnl || 0);
+      const pnl = Number(item.perSharePnl || 0);
 
       return {
         maxWin: Math.max(current.maxWin, pnl > 0 ? pnl : 0),
@@ -244,8 +244,8 @@ function buildLastThirtyTradeScale(processedTrades, endDayKey) {
   );
 
   return {
-    maxWin: Number(scale.maxWin.toFixed(2)),
-    maxLoss: Number(scale.maxLoss.toFixed(2))
+    maxWin: Number(scale.maxWin.toFixed(4)),
+    maxLoss: Number(scale.maxLoss.toFixed(4))
   };
 }
 
