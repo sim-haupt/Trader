@@ -413,9 +413,9 @@ function AnalyticsCharts({
 }) {
   const navigate = useNavigate();
   const [chartViews, setChartViews] = useState({
-    cumulative: "BARS",
-    drawdown: "BARS",
-    grossDaily: "BARS"
+    cumulative: "CURVE",
+    drawdown: "CURVE",
+    grossDaily: "CURVE"
   });
   const {
     summary,

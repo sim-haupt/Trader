@@ -286,7 +286,7 @@ function getAlpha(value, maxValue) {
     return 0;
   }
 
-  return Math.min(0.9, 0.22 + (Math.abs(value) / maxValue) * 0.56);
+  return Math.min(0.58, 0.1 + (Math.abs(value) / maxValue) * 0.34);
 }
 
 function getDayStyle(stats, monthScale, pnlMode) {
@@ -300,8 +300,8 @@ function getDayStyle(stats, monthScale, pnlMode) {
     const alpha = getAlpha(pnl, monthScale.maxWin);
 
     return {
-      background: `linear-gradient(180deg, rgba(52,224,161,${alpha}), rgba(52,224,161,${alpha * 0.42}))`,
-      borderColor: "rgba(52, 224, 161, 0.24)"
+      background: `linear-gradient(180deg, rgba(52,224,161,${alpha}), rgba(52,224,161,${alpha * 0.34}))`,
+      borderColor: `rgba(52, 224, 161, ${Math.min(0.36, 0.12 + alpha * 0.3)})`
     };
   }
 
@@ -309,8 +309,8 @@ function getDayStyle(stats, monthScale, pnlMode) {
     const alpha = getAlpha(pnl, monthScale.maxLoss);
 
     return {
-      background: `linear-gradient(180deg, rgba(255,95,122,${alpha}), rgba(255,95,122,${alpha * 0.4}))`,
-      borderColor: "rgba(255, 95, 122, 0.24)"
+      background: `linear-gradient(180deg, rgba(255,95,122,${alpha}), rgba(255,95,122,${alpha * 0.32}))`,
+      borderColor: `rgba(255, 95, 122, ${Math.min(0.36, 0.12 + alpha * 0.3)})`
     };
   }
 
