@@ -446,6 +446,29 @@ function CalendarChartTooltip({ active, payload, label, mode = "currency" }) {
   );
 }
 
+function getZeroGradientOffset(data, dataKey) {
+  const values = data
+    .map((point) => Number(point?.[dataKey]))
+    .filter((value) => Number.isFinite(value));
+
+  if (!values.length) {
+    return "50%";
+  }
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+
+  if (min >= 0) {
+    return "100%";
+  }
+
+  if (max <= 0) {
+    return "0%";
+  }
+
+  return `${(max / (max - min)) * 100}%`;
+}
+
 function CalendarToolbar({
   calendarData,
   selectedMonthIndex,
@@ -709,6 +732,8 @@ function MonthCharts({ month, pnlMode, selectedWeekIndex = null }) {
     selectedWeekIndex === null || selectedWeekIndex === undefined
       ? "Monthly"
       : `Week ${selectedWeekIndex + 1}`;
+  const cumulativeZeroOffset = getZeroGradientOffset(chartData, "cumulativePnl");
+  const perShareZeroOffset = getZeroGradientOffset(chartData, "perSharePnl");
 
   if (chartData.length === 0) {
     return null;
@@ -727,6 +752,14 @@ function MonthCharts({ month, pnlMode, selectedWeekIndex = null }) {
         <div className="h-[290px] pb-4">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
+              <defs>
+                <linearGradient id="calendar-cumulative-line-gradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#34e0a1" />
+                  <stop offset={cumulativeZeroOffset} stopColor="#34e0a1" />
+                  <stop offset={cumulativeZeroOffset} stopColor="#ff5f7a" />
+                  <stop offset="100%" stopColor="#ff5f7a" />
+                </linearGradient>
+              </defs>
               <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
               <XAxis
                 dataKey="label"
@@ -749,22 +782,17 @@ function MonthCharts({ month, pnlMode, selectedWeekIndex = null }) {
               <ReferenceLine y={0} stroke="rgba(255,255,255,0.24)" />
               <Line
                 type="monotone"
-                dataKey="positiveCumulativePnl"
-                stroke="#34e0a1"
+                dataKey="cumulativePnl"
+                stroke="url(#calendar-cumulative-line-gradient)"
                 strokeWidth={2.5}
-                dot={{ r: 3, strokeWidth: 0, fill: "#34e0a1" }}
-                activeDot={{ r: 5, strokeWidth: 0, fill: "#34e0a1" }}
-                connectNulls={false}
-                isAnimationActive={false}
-              />
-              <Line
-                type="monotone"
-                dataKey="negativeCumulativePnl"
-                stroke="#ff5f7a"
-                strokeWidth={2.5}
-                dot={{ r: 3, strokeWidth: 0, fill: "#ff5f7a" }}
-                activeDot={{ r: 5, strokeWidth: 0, fill: "#ff5f7a" }}
-                connectNulls={false}
+                dot={(props) => {
+                  const value = Number(props.payload?.cumulativePnl || 0);
+                  return <circle cx={props.cx} cy={props.cy} r={3} fill={value >= 0 ? "#34e0a1" : "#ff5f7a"} />;
+                }}
+                activeDot={(props) => {
+                  const value = Number(props.payload?.cumulativePnl || 0);
+                  return <circle cx={props.cx} cy={props.cy} r={5} fill={value >= 0 ? "#34e0a1" : "#ff5f7a"} />;
+                }}
                 isAnimationActive={false}
               />
             </LineChart>
@@ -781,6 +809,14 @@ function MonthCharts({ month, pnlMode, selectedWeekIndex = null }) {
         <div className="h-[290px] pb-4">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
+              <defs>
+                <linearGradient id="calendar-per-share-line-gradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#34e0a1" />
+                  <stop offset={perShareZeroOffset} stopColor="#34e0a1" />
+                  <stop offset={perShareZeroOffset} stopColor="#ff5f7a" />
+                  <stop offset="100%" stopColor="#ff5f7a" />
+                </linearGradient>
+              </defs>
               <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
               <XAxis
                 dataKey="label"
@@ -804,22 +840,17 @@ function MonthCharts({ month, pnlMode, selectedWeekIndex = null }) {
               <ReferenceLine y={0} stroke="rgba(255,255,255,0.24)" />
               <Line
                 type="monotone"
-                dataKey="positivePerSharePnl"
-                stroke="#34e0a1"
+                dataKey="perSharePnl"
+                stroke="url(#calendar-per-share-line-gradient)"
                 strokeWidth={2.5}
-                dot={{ r: 3, strokeWidth: 0, fill: "#34e0a1" }}
-                activeDot={{ r: 5, strokeWidth: 0, fill: "#34e0a1" }}
-                connectNulls={false}
-                isAnimationActive={false}
-              />
-              <Line
-                type="monotone"
-                dataKey="negativePerSharePnl"
-                stroke="#ff5f7a"
-                strokeWidth={2.5}
-                dot={{ r: 3, strokeWidth: 0, fill: "#ff5f7a" }}
-                activeDot={{ r: 5, strokeWidth: 0, fill: "#ff5f7a" }}
-                connectNulls={false}
+                dot={(props) => {
+                  const value = Number(props.payload?.perSharePnl || 0);
+                  return <circle cx={props.cx} cy={props.cy} r={3} fill={value >= 0 ? "#34e0a1" : "#ff5f7a"} />;
+                }}
+                activeDot={(props) => {
+                  const value = Number(props.payload?.perSharePnl || 0);
+                  return <circle cx={props.cx} cy={props.cy} r={5} fill={value >= 0 ? "#34e0a1" : "#ff5f7a"} />;
+                }}
                 isAnimationActive={false}
               />
             </LineChart>
