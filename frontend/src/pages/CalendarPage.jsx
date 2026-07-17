@@ -1,10 +1,10 @@
 import { Fragment, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Bar,
-  BarChart,
   CartesianGrid,
-  Cell,
+  Line,
+  LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -13,7 +13,6 @@ import {
 import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
 import LoadingState from "../components/ui/LoadingState";
-import PnlBarCumulativeChart from "../components/PnlBarCumulativeChart";
 import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 import tradeService from "../services/tradeService";
 import { useAuth } from "../context/AuthContext";
@@ -584,13 +583,13 @@ function MonthCalendar({
               }}
               className={`flex min-h-[86px] flex-col justify-center rounded-[5px] border p-2 text-center transition sm:min-h-[104px] ${
                 isSelectedWeek
-                  ? "border-mint bg-mint/10 shadow-[inset_0_0_0_1px_rgba(52,224,161,0.24)]"
+                  ? "border-white/32 bg-white/[0.14] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16)]"
                   : "border-[var(--line)] bg-white/[0.07]"
               } ${weekButtonEnabled ? "cursor-pointer hover:border-white/24 hover:bg-white/[0.1]" : "cursor-default"}`}
               aria-pressed={weekButtonEnabled ? isSelectedWeek : undefined}
               title={weekButtonEnabled ? (isSelectedWeek ? "Show full month" : `Show week ${index + 1}`) : undefined}
             >
-              <div className="ui-title text-[9px] text-mint">WK {index + 1}</div>
+              <div className={`ui-title text-[9px] ${isSelectedWeek ? "text-white/76" : "text-white/52"}`}>WK {index + 1}</div>
               <div className={`mt-1 text-sm font-semibold ${getSummaryTone(weekStats.pnl)}`}>
                 {formatCurrency(weekStats.pnl)}
               </div>
@@ -722,15 +721,39 @@ function MonthCharts({ month, pnlMode, selectedWeekIndex = null }) {
           </div>
         </div>
         <div className="h-[290px] pb-4">
-          <PnlBarCumulativeChart
-            data={chartData}
-            dailyKey="dailyPnl"
-            cumulativeKey="cumulativePnl"
-            labelKey="label"
-            dailyLabel="Day"
-            cumulativeLabel="Month"
-            labelFormatter={(point) => point?.dayKey || point?.label}
-          />
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
+              <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+              <XAxis
+                dataKey="label"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#c6cedb", fontSize: 11 }}
+                minTickGap={18}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#c6cedb", fontSize: 11 }}
+                tickFormatter={(value) => `$${Number(value || 0).toFixed(0)}`}
+              />
+              <Tooltip
+                content={<CalendarChartTooltip />}
+                offset={14}
+                allowEscapeViewBox={{ x: true, y: true }}
+              />
+              <ReferenceLine y={0} stroke="rgba(255,255,255,0.24)" />
+              <Line
+                type="monotone"
+                dataKey="cumulativePnl"
+                stroke="#c6cedb"
+                strokeWidth={2.5}
+                dot={{ r: 3, strokeWidth: 0, fill: "#c6cedb" }}
+                activeDot={{ r: 5, strokeWidth: 0, fill: "#ededed" }}
+                isAnimationActive={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
@@ -743,7 +766,7 @@ function MonthCharts({ month, pnlMode, selectedWeekIndex = null }) {
         </div>
         <div className="h-[290px] pb-4">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
+            <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
               <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
               <XAxis
                 dataKey="label"
@@ -764,15 +787,17 @@ function MonthCharts({ month, pnlMode, selectedWeekIndex = null }) {
                 offset={14}
                 allowEscapeViewBox={{ x: true, y: true }}
               />
-              <Bar dataKey="perSharePnl" barSize={20} isAnimationActive={false}>
-                {chartData.map((entry) => (
-                  <Cell
-                    key={entry.dayKey}
-                    fill={entry.perSharePnl >= 0 ? "#34e0a1" : "#ff5f7a"}
-                  />
-                ))}
-              </Bar>
-            </BarChart>
+              <ReferenceLine y={0} stroke="rgba(255,255,255,0.24)" />
+              <Line
+                type="monotone"
+                dataKey="perSharePnl"
+                stroke="#c6cedb"
+                strokeWidth={2.5}
+                dot={{ r: 3, strokeWidth: 0, fill: "#c6cedb" }}
+                activeDot={{ r: 5, strokeWidth: 0, fill: "#ededed" }}
+                isAnimationActive={false}
+              />
+            </LineChart>
           </ResponsiveContainer>
         </div>
       </div>
