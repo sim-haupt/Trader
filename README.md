@@ -130,6 +130,10 @@ Bearer <token>
 
 The `Tax reports` area imports broker trade-history files and generates German tax-support documentation for a private individual trading US stocks through a foreign broker. It runs locally in this application and does not send broker statements to an external AI provider.
 
+## Advanced Reports
+
+The Reports area includes an Advanced tab for expectancy, setup contribution, drawdown, behavioral, session, cost, and conditional-performance analytics. Developer formulas, source-field requirements, timezone rules, and known missing-data limitations are documented in [`docs/advanced-reports.md`](docs/advanced-reports.md).
+
 ### Supported Broker Format
 
 The first importer is built for the supplied completed round-trip trade-history workbook:
