@@ -54,19 +54,26 @@ function asNumber(value) {
   return Number.isNaN(numericValue) ? 0 : numericValue;
 }
 
-function formatMetricMinutes(value) {
-  const minutes = Number(value || 0);
+function formatMetricSeconds(value) {
+  const seconds = Number(value || 0);
 
-  if (!minutes) {
-    return "0m";
+  if (!seconds) {
+    return "0s";
   }
 
+  if (seconds < 60) {
+    return `${Math.round(seconds)}s`;
+  }
+
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.round(seconds % 60);
+
   if (minutes < 60) {
-    return `${Math.round(minutes)}m`;
+    return remainingSeconds ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
   }
 
   const hours = Math.floor(minutes / 60);
-  const remainingMinutes = Math.round(minutes % 60);
+  const remainingMinutes = minutes % 60;
   return remainingMinutes ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
 }
 
@@ -108,6 +115,8 @@ function buildDailyStats(trades) {
       holdMinutes: 0,
       winningHoldMinutes: 0,
       losingHoldMinutes: 0,
+      winningPnl: 0,
+      losingPnl: 0,
       largestWin: 0,
       largestLoss: 0
     };
@@ -126,9 +135,11 @@ function buildDailyStats(trades) {
 
     if (grossPnl > 0) {
       existing.wins += 1;
+      existing.winningPnl = Number((existing.winningPnl + grossPnl).toFixed(2));
       existing.winningHoldMinutes += getHoldMinutes(trade, date);
     } else if (grossPnl < 0) {
       existing.losses += 1;
+      existing.losingPnl = Number((existing.losingPnl + grossPnl).toFixed(2));
       existing.losingHoldMinutes += getHoldMinutes(trade, date);
     }
 
@@ -205,8 +216,10 @@ function calculateSummary(monthDays, pnlMode) {
         holdMinutes: sum.holdMinutes + stats.holdMinutes,
         winningHoldMinutes: sum.winningHoldMinutes + stats.winningHoldMinutes,
         losingHoldMinutes: sum.losingHoldMinutes + stats.losingHoldMinutes,
-        largestWin: Math.max(sum.largestWin, pnl),
-        largestLoss: Math.min(sum.largestLoss, pnl)
+        winningPnl: sum.winningPnl + stats.winningPnl,
+        losingPnl: sum.losingPnl + stats.losingPnl,
+        largestWin: Math.max(sum.largestWin, stats.largestWin),
+        largestLoss: Math.min(sum.largestLoss, stats.largestLoss)
       };
     },
     {
@@ -223,6 +236,8 @@ function calculateSummary(monthDays, pnlMode) {
       holdMinutes: 0,
       winningHoldMinutes: 0,
       losingHoldMinutes: 0,
+      winningPnl: 0,
+      losingPnl: 0,
       largestWin: 0,
       largestLoss: 0
     }
@@ -232,8 +247,10 @@ function calculateSummary(monthDays, pnlMode) {
   const losingDays = activeDays.filter((day) => getStatsPnl(day.stats, pnlMode) < 0);
   const dailyWins = winningDays.reduce((sum, day) => sum + getStatsPnl(day.stats, pnlMode), 0);
   const dailyLosses = losingDays.reduce((sum, day) => sum + Math.abs(getStatsPnl(day.stats, pnlMode)), 0);
-  const avgWin = totals.wins ? dailyWins / Math.max(winningDays.length, 1) : 0;
-  const avgLoss = losingDays.length ? dailyLosses / losingDays.length : 0;
+  const avgWinningDay = winningDays.length ? dailyWins / winningDays.length : 0;
+  const avgLosingDay = losingDays.length ? dailyLosses / losingDays.length : 0;
+  const avgWinner = totals.wins ? totals.winningPnl / totals.wins : 0;
+  const avgLoser = totals.losses ? totals.losingPnl / totals.losses : 0;
   let runningPnl = 0;
   let peakPnl = 0;
   let maxDrawdown = 0;
@@ -253,17 +270,28 @@ function calculateSummary(monthDays, pnlMode) {
     netPerShareTotal: Number(totals.netPerShareTotal.toFixed(4)),
     commissions: Number(totals.commissions.toFixed(2)),
     fees: Number(totals.fees.toFixed(2)),
+    totalFees: Number((totals.commissions + totals.fees).toFixed(2)),
+    winningPnl: Number(totals.winningPnl.toFixed(2)),
+    losingPnl: Number(totals.losingPnl.toFixed(2)),
     sessions: activeDays.length,
     winRate: totals.trades ? (totals.wins / totals.trades) * 100 : 0,
     dayWinRate: activeDays.length ? (winningDays.length / activeDays.length) * 100 : 0,
-    avgWin: Number(avgWin.toFixed(2)),
-    avgLoss: Number(avgLoss.toFixed(2)),
+    greenDays: winningDays.length,
+    redDays: losingDays.length,
+    avgWinner: Number(avgWinner.toFixed(2)),
+    avgLoser: Number(avgLoser.toFixed(2)),
+    avgWinningDay: Number(avgWinningDay.toFixed(2)),
+    avgLosingDay: Number(avgLosingDay.toFixed(2)),
     avgTrade: totals.trades ? Number((totals.pnl / totals.trades).toFixed(2)) : 0,
+    avgPnlPerSession: activeDays.length ? Number((totals.pnl / activeDays.length).toFixed(2)) : 0,
+    avgTradesPerSession: activeDays.length ? Number((totals.trades / activeDays.length).toFixed(1)) : 0,
     avgSharesPerDay: activeDays.length ? Number((totals.volume / activeDays.length).toFixed(0)) : 0,
     expectancy: totals.trades ? Number((totals.pnl / totals.trades).toFixed(2)) : 0,
     expectancyPerShare: totals.volume ? Number((totals.pnl / totals.volume).toFixed(4)) : 0,
-    profitFactor: dailyLosses ? Number((dailyWins / dailyLosses).toFixed(2)) : dailyWins > 0 ? dailyWins : 0,
+    profitFactor: Math.abs(totals.losingPnl) ? Number((totals.winningPnl / Math.abs(totals.losingPnl)).toFixed(2)) : totals.winningPnl > 0 ? totals.winningPnl : 0,
     averageHoldMinutes: totals.trades ? totals.holdMinutes / totals.trades : 0,
+    averageHoldSeconds: totals.trades ? (totals.holdMinutes * 60) / totals.trades : 0,
+    feesPerTrade: totals.trades ? Number(((totals.commissions + totals.fees) / totals.trades).toFixed(2)) : 0,
     averageWinningHoldMinutes: totals.wins ? totals.winningHoldMinutes / totals.wins : 0,
     averageLosingHoldMinutes: totals.losses ? totals.losingHoldMinutes / totals.losses : 0,
     maxDrawdown: Number(maxDrawdown.toFixed(2)),
@@ -558,8 +586,10 @@ function MetricRow({ label, value, tone = "text-white" }) {
 }
 
 function MonthSummary({ month, compact = false, pnlMode }) {
-  const summary = pnlMode === "NET" ? month.netSummary : month.grossSummary;
+  const summary = month.grossSummary;
+  const netSummary = month.netSummary;
   const range = `${month.rangeStart} -> ${month.rangeEnd}`;
+  const fees = summary.totalFees;
 
   return (
     <div className="ui-surface-subtle h-full p-4">
@@ -567,37 +597,59 @@ function MonthSummary({ month, compact = false, pnlMode }) {
         <div>
           <h3 className="text-lg font-semibold text-white">Summary</h3>
           <p className="mt-1 text-sm text-white/58">
-            {summary.trades.toLocaleString("en-US")} trades · {summary.sessions} sessions · {range}
+            {summary.trades.toLocaleString("en-US")} trades · {summary.sessions} sessions
           </p>
+          <p className="mt-1 text-xs text-white/38">{range}</p>
         </div>
         <div className="text-right">
-          <div className="ui-title text-[10px] text-white/44">P&L</div>
-          <div className={`mt-1 text-xl font-semibold ${getSummaryTone(summary.pnl)}`}>
-            {formatCurrency(summary.pnl)}
+          <div className="ui-title text-[10px] text-white/44">Net P&L</div>
+          <div className={`mt-1 text-xl font-semibold ${getSummaryTone(netSummary.netPnl)}`}>
+            {formatCurrency(netSummary.netPnl)}
           </div>
-          <div className="mt-1 text-[11px] text-white/44">{pnlMode.toLowerCase()}</div>
+          <div className="mt-1 text-[11px] text-white/44">Gross {formatCurrency(summary.pnl)}</div>
         </div>
       </div>
 
-      <div className={`mt-4 grid gap-x-7 ${compact ? "grid-cols-1" : "md:grid-cols-2"}`}>
+      <div className={`mt-5 grid gap-5 ${compact ? "grid-cols-1" : "md:grid-cols-2"}`}>
         <div>
-          <MetricRow label="Win rate" value={formatPercent(summary.winRate)} tone={getSummaryTone(summary.winRate - 50)} />
-          <MetricRow label="Day win rate" value={formatPercent(summary.dayWinRate)} tone={getSummaryTone(summary.dayWinRate - 50)} />
-          <MetricRow label="Avg win/day" value={formatCurrency(summary.avgWin)} tone="text-mint" />
-          <MetricRow label="Avg loss/day" value={formatCurrency(-summary.avgLoss)} tone={summary.avgLoss ? "text-coral" : "text-white"} />
-          <MetricRow label="Biggest day" value={summary.biggestDay ? formatCurrency(getStatsPnl(summary.biggestDay.stats, pnlMode)) : "$0.00"} tone="text-mint" />
-          <MetricRow label="Worst day" value={summary.worstDay ? formatCurrency(getStatsPnl(summary.worstDay.stats, pnlMode)) : "$0.00"} tone={getStatsPnl(summary.worstDay?.stats, pnlMode) < 0 ? "text-coral" : "text-white"} />
-          <MetricRow label="Max drawdown" value={formatCurrency(summary.maxDrawdown)} tone={summary.maxDrawdown < 0 ? "text-coral" : "text-white"} />
+          <div className="ui-title mb-2 text-[10px] text-white/42">RESULTS</div>
+          <MetricRow label="Gross P&L" value={formatCurrency(summary.pnl)} tone={getSummaryTone(summary.pnl)} />
+          <MetricRow label="Fees" value={formatCurrency(-Math.abs(fees))} tone={fees ? "text-coral" : "text-white"} />
+          <MetricRow label="Net P&L" value={formatCurrency(netSummary.netPnl)} tone={getSummaryTone(netSummary.netPnl)} />
+          <MetricRow label="Avg P&L/session" value={formatCurrency(summary.avgPnlPerSession)} tone={getSummaryTone(summary.avgPnlPerSession)} />
+          <MetricRow label="Avg trade" value={formatCurrency(summary.avgTrade)} tone={getSummaryTone(summary.avgTrade)} />
           <MetricRow label="Profit factor" value={summary.profitFactor.toFixed(2)} />
         </div>
+
         <div>
-          <MetricRow label="Avg trade" value={formatCurrency(summary.avgTrade)} tone={getSummaryTone(summary.avgTrade)} />
-          <MetricRow label="Expectancy" value={formatCurrency(summary.expectancy)} tone={getSummaryTone(summary.expectancy)} />
-          <MetricRow label="Expectancy / share" value={formatCurrency(summary.expectancyPerShare)} tone={getSummaryTone(summary.expectancyPerShare)} />
+          <div className="ui-title mb-2 text-[10px] text-white/42">TRADES</div>
+          <MetricRow label="Win rate" value={formatPercent(summary.winRate)} tone={getSummaryTone(summary.winRate - 50)} />
+          <MetricRow label="Winning trades" value={summary.wins.toLocaleString("en-US")} tone="text-mint" />
+          <MetricRow label="Losing trades" value={summary.losses.toLocaleString("en-US")} tone="text-coral" />
+          <MetricRow label="Avg winner" value={formatCurrency(summary.avgWinner)} tone={summary.avgWinner ? "text-mint" : "text-white"} />
+          <MetricRow label="Avg loser" value={formatCurrency(summary.avgLoser)} tone={summary.avgLoser ? "text-coral" : "text-white"} />
+          <MetricRow label="Best trade" value={formatCurrency(summary.largestWin)} tone={summary.largestWin > 0 ? "text-mint" : "text-white"} />
+          <MetricRow label="Worst trade" value={formatCurrency(summary.largestLoss)} tone={summary.largestLoss < 0 ? "text-coral" : "text-white"} />
+        </div>
+
+        <div>
+          <div className="ui-title mb-2 text-[10px] text-white/42">SESSIONS</div>
+          <MetricRow label="Day win rate" value={formatPercent(summary.dayWinRate)} tone={getSummaryTone(summary.dayWinRate - 50)} />
+          <MetricRow label="Green / red days" value={`${summary.greenDays} / ${summary.redDays}`} />
+          <MetricRow label="Avg winning day" value={formatCurrency(summary.avgWinningDay)} tone={summary.avgWinningDay ? "text-mint" : "text-white"} />
+          <MetricRow label="Avg losing day" value={formatCurrency(-summary.avgLosingDay)} tone={summary.avgLosingDay ? "text-coral" : "text-white"} />
+          <MetricRow label="Best day" value={summary.biggestDay ? formatCurrency(getStatsPnl(summary.biggestDay.stats, "GROSS")) : "$0.00"} tone="text-mint" />
+          <MetricRow label="Worst day" value={summary.worstDay ? formatCurrency(getStatsPnl(summary.worstDay.stats, "GROSS")) : "$0.00"} tone={getStatsPnl(summary.worstDay?.stats, "GROSS") < 0 ? "text-coral" : "text-white"} />
+          <MetricRow label="Max drawdown" value={formatCurrency(summary.maxDrawdown)} tone={summary.maxDrawdown < 0 ? "text-coral" : "text-white"} />
+        </div>
+
+        <div>
+          <div className="ui-title mb-2 text-[10px] text-white/42">ACTIVITY</div>
+          <MetricRow label="Avg trades/session" value={summary.avgTradesPerSession.toFixed(1)} />
           <MetricRow label="Total shares" value={Math.round(summary.volume).toLocaleString("en-US")} />
-          <MetricRow label="Avg shares/day" value={summary.avgSharesPerDay.toLocaleString("en-US")} />
-          <MetricRow label="Avg hold" value={formatMetricMinutes(summary.averageHoldMinutes)} />
-          <MetricRow label="Fees" value={formatCurrency(summary.commissions + summary.fees)} tone={summary.commissions + summary.fees ? "text-coral" : "text-white"} />
+          <MetricRow label="Avg shares/session" value={summary.avgSharesPerDay.toLocaleString("en-US")} />
+          <MetricRow label="Avg hold" value={formatMetricSeconds(summary.averageHoldSeconds)} />
+          <MetricRow label="Fees/trade" value={formatCurrency(-Math.abs(summary.feesPerTrade))} tone={summary.feesPerTrade ? "text-coral" : "text-white"} />
         </div>
       </div>
     </div>
