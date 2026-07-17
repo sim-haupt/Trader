@@ -537,7 +537,7 @@ function MonthCalendar({ month, compact = false, pnlMode, onSelectDay }) {
                   compact ? "min-h-[62px]" : "sm:min-h-[104px]"
                 } ${day.isCurrentMonth && day.stats ? "cursor-pointer hover:brightness-110" : "cursor-default"} ${
                   day.isCurrentMonth ? getDayTone(day.stats, true, pnlMode) : "opacity-40"
-                }`}
+                } ${day.isCurrentMonth && !day.isMarketDay && !day.stats ? "opacity-55 saturate-50" : ""}`}
                 style={day.isCurrentMonth ? getDayStyle(day.stats, monthScale, pnlMode) : undefined}
               >
                 <div className="text-xs font-semibold text-white/80">{day.dayNumber}</div>
@@ -588,7 +588,6 @@ function MetricRow({ label, value, tone = "text-white" }) {
 function MonthSummary({ month, compact = false, pnlMode }) {
   const summary = month.grossSummary;
   const netSummary = month.netSummary;
-  const range = `${month.rangeStart} -> ${month.rangeEnd}`;
   const fees = summary.totalFees;
 
   return (
@@ -599,14 +598,15 @@ function MonthSummary({ month, compact = false, pnlMode }) {
           <p className="mt-1 text-sm text-white/58">
             {summary.trades.toLocaleString("en-US")} trades · {summary.sessions} sessions
           </p>
-          <p className="mt-1 text-xs text-white/38">{range}</p>
         </div>
         <div className="text-right">
-          <div className="ui-title text-[10px] text-white/44">Net P&L</div>
-          <div className={`mt-1 text-xl font-semibold ${getSummaryTone(netSummary.netPnl)}`}>
-            {formatCurrency(netSummary.netPnl)}
+          <div className="ui-title text-[10px] text-white/44">Gross P&L</div>
+          <div className={`mt-1 text-xl font-semibold ${getSummaryTone(summary.pnl)}`}>
+            {formatCurrency(summary.pnl)}
           </div>
-          <div className="mt-1 text-[11px] text-white/44">Gross {formatCurrency(summary.pnl)}</div>
+          <div className={`mt-1 text-[11px] font-semibold ${getSummaryTone(netSummary.netPnl)}`}>
+            Net {formatCurrency(netSummary.netPnl)}
+          </div>
         </div>
       </div>
 
@@ -624,8 +624,7 @@ function MonthSummary({ month, compact = false, pnlMode }) {
         <div>
           <div className="ui-title mb-2 text-[10px] text-white/42">TRADES</div>
           <MetricRow label="Win rate" value={formatPercent(summary.winRate)} tone={getSummaryTone(summary.winRate - 50)} />
-          <MetricRow label="Winning trades" value={summary.wins.toLocaleString("en-US")} tone="text-mint" />
-          <MetricRow label="Losing trades" value={summary.losses.toLocaleString("en-US")} tone="text-coral" />
+          <MetricRow label="Winning / losing trades" value={`${summary.wins.toLocaleString("en-US")} / ${summary.losses.toLocaleString("en-US")}`} />
           <MetricRow label="Avg winner" value={formatCurrency(summary.avgWinner)} tone={summary.avgWinner ? "text-mint" : "text-white"} />
           <MetricRow label="Avg loser" value={formatCurrency(summary.avgLoser)} tone={summary.avgLoser ? "text-coral" : "text-white"} />
           <MetricRow label="Best trade" value={formatCurrency(summary.largestWin)} tone={summary.largestWin > 0 ? "text-mint" : "text-white"} />
@@ -634,7 +633,6 @@ function MonthSummary({ month, compact = false, pnlMode }) {
 
         <div>
           <div className="ui-title mb-2 text-[10px] text-white/42">SESSIONS</div>
-          <MetricRow label="Day win rate" value={formatPercent(summary.dayWinRate)} tone={getSummaryTone(summary.dayWinRate - 50)} />
           <MetricRow label="Green / red days" value={`${summary.greenDays} / ${summary.redDays}`} />
           <MetricRow label="Avg winning day" value={formatCurrency(summary.avgWinningDay)} tone={summary.avgWinningDay ? "text-mint" : "text-white"} />
           <MetricRow label="Avg losing day" value={formatCurrency(-summary.avgLosingDay)} tone={summary.avgLosingDay ? "text-coral" : "text-white"} />
