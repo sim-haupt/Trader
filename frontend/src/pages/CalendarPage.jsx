@@ -1,8 +1,19 @@
 import { Fragment, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
+} from "recharts";
 import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
 import LoadingState from "../components/ui/LoadingState";
+import PnlBarCumulativeChart from "../components/PnlBarCumulativeChart";
 import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 import tradeService from "../services/tradeService";
 import { useAuth } from "../context/AuthContext";
@@ -79,6 +90,7 @@ function buildDailyStats(trades) {
     const netPnl = getTradeNetPnl(trade);
     const quantity = Math.abs(asNumber(trade.quantity));
     const perSharePnl = getTradePerSharePnl(trade, grossPnl);
+    const netPerSharePnl = getTradePerSharePnl(trade, netPnl);
     const commission = getEffectiveTradeCommission(trade);
     const fees = getTradeFeeDisplayValue(trade);
     const existing = dailyMap.get(dayKey) || {
@@ -87,6 +99,7 @@ function buildDailyStats(trades) {
       netPnl: 0,
       volume: 0,
       perShareTotal: 0,
+      netPerShareTotal: 0,
       trades: 0,
       wins: 0,
       losses: 0,
@@ -103,6 +116,7 @@ function buildDailyStats(trades) {
     existing.netPnl = Number((existing.netPnl + netPnl).toFixed(2));
     existing.volume = Number((existing.volume + quantity).toFixed(2));
     existing.perShareTotal = Number((existing.perShareTotal + perSharePnl).toFixed(4));
+    existing.netPerShareTotal = Number((existing.netPerShareTotal + netPerSharePnl).toFixed(4));
     existing.trades += 1;
     existing.commissions = Number((existing.commissions + commission).toFixed(4));
     existing.fees = Number((existing.fees + fees).toFixed(4));
@@ -182,6 +196,7 @@ function calculateSummary(monthDays, pnlMode) {
         netPnl: sum.netPnl + stats.netPnl,
         volume: sum.volume + stats.volume,
         perShareTotal: sum.perShareTotal + stats.perShareTotal,
+        netPerShareTotal: sum.netPerShareTotal + stats.netPerShareTotal,
         trades: sum.trades + stats.trades,
         wins: sum.wins + stats.wins,
         losses: sum.losses + stats.losses,
@@ -199,6 +214,7 @@ function calculateSummary(monthDays, pnlMode) {
       netPnl: 0,
       volume: 0,
       perShareTotal: 0,
+      netPerShareTotal: 0,
       trades: 0,
       wins: 0,
       losses: 0,
@@ -234,6 +250,7 @@ function calculateSummary(monthDays, pnlMode) {
     netPnl: Number(totals.netPnl.toFixed(2)),
     volume: Number(totals.volume.toFixed(2)),
     perShareTotal: Number(totals.perShareTotal.toFixed(4)),
+    netPerShareTotal: Number(totals.netPerShareTotal.toFixed(4)),
     commissions: Number(totals.commissions.toFixed(2)),
     fees: Number(totals.fees.toFixed(2)),
     sessions: activeDays.length,
@@ -334,6 +351,59 @@ function getWeekStats(week, pnlMode) {
       };
     },
     { pnl: 0, trades: 0 }
+  );
+}
+
+function getStatsPerShare(stats, pnlMode) {
+  if (!stats) {
+    return 0;
+  }
+
+  return pnlMode === "NET"
+    ? Number(stats.netPerShareTotal || 0)
+    : Number(stats.perShareTotal || 0);
+}
+
+function buildMonthChartSeries(month, pnlMode) {
+  let cumulativePnl = 0;
+
+  return month.weeks
+    .flat()
+    .filter((day) => day.isCurrentMonth && day.stats)
+    .sort((left, right) => left.dayKey.localeCompare(right.dayKey))
+    .map((day) => {
+      const dailyPnl = getStatsPnl(day.stats, pnlMode);
+      cumulativePnl = Number((cumulativePnl + dailyPnl).toFixed(2));
+
+      return {
+        dayKey: day.dayKey,
+        label: String(day.dayNumber),
+        dailyPnl,
+        cumulativePnl,
+        perSharePnl: Number(getStatsPerShare(day.stats, pnlMode).toFixed(4)),
+        trades: day.stats.trades
+      };
+    });
+}
+
+function CalendarChartTooltip({ active, payload, label, mode = "currency" }) {
+  if (!active || !payload?.length) {
+    return null;
+  }
+
+  const point = payload[0]?.payload;
+  const value = Number(payload[0]?.value ?? 0);
+  const tone = value > 0 ? "text-mint" : value < 0 ? "text-coral" : "text-white";
+  const formattedValue = mode === "perShare" ? formatCurrency(value) : formatCurrency(value);
+
+  return (
+    <div className="rounded-[6px] border border-[var(--line)] bg-[#050505] px-3 py-2 text-xs text-phosphor shadow-[0_8px_30px_rgba(0,0,0,0.35)]">
+      <div className="font-semibold text-white">{point?.dayKey || label}</div>
+      <div className={`mt-1 font-semibold ${tone}`}>{formattedValue}</div>
+      <div className="mt-1 text-white/48">
+        {point?.trades || 0} trade{point?.trades === 1 ? "" : "s"}
+      </div>
+    </div>
   );
 }
 
@@ -534,6 +604,83 @@ function MonthSummary({ month, compact = false, pnlMode }) {
   );
 }
 
+function MonthCharts({ month, pnlMode }) {
+  const chartData = useMemo(() => buildMonthChartSeries(month, pnlMode), [month, pnlMode]);
+
+  if (chartData.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="grid gap-5 xl:grid-cols-2">
+      <div className="ui-surface-subtle overflow-hidden">
+        <div className="ui-widget-heading-bg border-b border-[var(--line)] px-4 py-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="ui-title text-[10px] text-white/72">Monthly Cumulative P&amp;L</div>
+              <p className="mt-1 text-xs text-white/44">Running {pnlMode.toLowerCase()} P&amp;L by trading day.</p>
+            </div>
+          </div>
+        </div>
+        <div className="h-[290px] pb-4">
+          <PnlBarCumulativeChart
+            data={chartData}
+            dailyKey="dailyPnl"
+            cumulativeKey="cumulativePnl"
+            labelKey="label"
+            dailyLabel="Day"
+            cumulativeLabel="Month"
+            labelFormatter={(point) => point?.dayKey || point?.label}
+          />
+        </div>
+      </div>
+
+      <div className="ui-surface-subtle overflow-hidden">
+        <div className="ui-widget-heading-bg border-b border-[var(--line)] px-4 py-4">
+          <div>
+            <div className="ui-title text-[10px] text-white/72">Daily P&amp;L / Share</div>
+            <p className="mt-1 text-xs text-white/44">Same per-share aggregation shown on Journal day cards.</p>
+          </div>
+        </div>
+        <div className="h-[290px] pb-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 16 }}>
+              <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+              <XAxis
+                dataKey="label"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#c6cedb", fontSize: 11 }}
+                minTickGap={18}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#c6cedb", fontSize: 11 }}
+                tickFormatter={(value) => `$${Number(value || 0).toFixed(2)}`}
+              />
+              <Tooltip
+                cursor={{ fill: "rgba(255,255,255,0.03)" }}
+                content={<CalendarChartTooltip mode="perShare" />}
+                offset={14}
+                allowEscapeViewBox={{ x: true, y: true }}
+              />
+              <Bar dataKey="perSharePnl" barSize={20} isAnimationActive={false}>
+                {chartData.map((entry) => (
+                  <Cell
+                    key={entry.dayKey}
+                    fill={entry.perSharePnl >= 0 ? "#34e0a1" : "#ff5f7a"}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MonthPanel({ month, onSelectDay, compact = false, pnlMode, onOpen }) {
   return (
     <Card
@@ -553,6 +700,7 @@ function MonthPanel({ month, onSelectDay, compact = false, pnlMode, onOpen }) {
         <MonthCalendar month={month} compact={compact} pnlMode={pnlMode} onSelectDay={onSelectDay} />
         {!compact && <MonthSummary month={month} compact={compact} pnlMode={pnlMode} />}
       </div>
+      {!compact && <MonthCharts month={month} pnlMode={pnlMode} />}
     </Card>
   );
 }
