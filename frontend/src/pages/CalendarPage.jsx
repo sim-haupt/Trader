@@ -407,6 +407,7 @@ function buildMonthChartSeries(month, pnlMode, selectedWeekIndex = null) {
     .sort((left, right) => left.dayKey.localeCompare(right.dayKey))
     .map((day) => {
       const dailyPnl = getStatsPnl(day.stats, pnlMode);
+      const perSharePnl = Number(getStatsPerShare(day.stats, pnlMode).toFixed(4));
       cumulativePnl = Number((cumulativePnl + dailyPnl).toFixed(2));
 
       return {
@@ -414,7 +415,11 @@ function buildMonthChartSeries(month, pnlMode, selectedWeekIndex = null) {
         label: String(day.dayNumber),
         dailyPnl,
         cumulativePnl,
-        perSharePnl: Number(getStatsPerShare(day.stats, pnlMode).toFixed(4)),
+        positiveCumulativePnl: cumulativePnl >= 0 ? cumulativePnl : null,
+        negativeCumulativePnl: cumulativePnl < 0 ? cumulativePnl : null,
+        perSharePnl,
+        positivePerSharePnl: perSharePnl >= 0 ? perSharePnl : null,
+        negativePerSharePnl: perSharePnl < 0 ? perSharePnl : null,
         trades: day.stats.trades
       };
     });
@@ -716,7 +721,6 @@ function MonthCharts({ month, pnlMode, selectedWeekIndex = null }) {
           <div className="flex items-center justify-between gap-3">
             <div>
               <div className="ui-title text-[10px] text-white/72">{periodLabel} Cumulative P&amp;L</div>
-              <p className="mt-1 text-xs text-white/44">Running {pnlMode.toLowerCase()} P&amp;L by trading day.</p>
             </div>
           </div>
         </div>
@@ -745,11 +749,22 @@ function MonthCharts({ month, pnlMode, selectedWeekIndex = null }) {
               <ReferenceLine y={0} stroke="rgba(255,255,255,0.24)" />
               <Line
                 type="monotone"
-                dataKey="cumulativePnl"
-                stroke="#c6cedb"
+                dataKey="positiveCumulativePnl"
+                stroke="#34e0a1"
                 strokeWidth={2.5}
-                dot={{ r: 3, strokeWidth: 0, fill: "#c6cedb" }}
-                activeDot={{ r: 5, strokeWidth: 0, fill: "#ededed" }}
+                dot={{ r: 3, strokeWidth: 0, fill: "#34e0a1" }}
+                activeDot={{ r: 5, strokeWidth: 0, fill: "#34e0a1" }}
+                connectNulls={false}
+                isAnimationActive={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="negativeCumulativePnl"
+                stroke="#ff5f7a"
+                strokeWidth={2.5}
+                dot={{ r: 3, strokeWidth: 0, fill: "#ff5f7a" }}
+                activeDot={{ r: 5, strokeWidth: 0, fill: "#ff5f7a" }}
+                connectNulls={false}
                 isAnimationActive={false}
               />
             </LineChart>
@@ -761,7 +776,6 @@ function MonthCharts({ month, pnlMode, selectedWeekIndex = null }) {
         <div className="ui-widget-heading-bg border-b border-[var(--line)] px-4 py-4">
           <div>
             <div className="ui-title text-[10px] text-white/72">Daily P&amp;L / Share</div>
-            <p className="mt-1 text-xs text-white/44">{periodLabel} per-share aggregation from Journal day cards.</p>
           </div>
         </div>
         <div className="h-[290px] pb-4">
@@ -790,11 +804,22 @@ function MonthCharts({ month, pnlMode, selectedWeekIndex = null }) {
               <ReferenceLine y={0} stroke="rgba(255,255,255,0.24)" />
               <Line
                 type="monotone"
-                dataKey="perSharePnl"
-                stroke="#c6cedb"
+                dataKey="positivePerSharePnl"
+                stroke="#34e0a1"
                 strokeWidth={2.5}
-                dot={{ r: 3, strokeWidth: 0, fill: "#c6cedb" }}
-                activeDot={{ r: 5, strokeWidth: 0, fill: "#ededed" }}
+                dot={{ r: 3, strokeWidth: 0, fill: "#34e0a1" }}
+                activeDot={{ r: 5, strokeWidth: 0, fill: "#34e0a1" }}
+                connectNulls={false}
+                isAnimationActive={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="negativePerSharePnl"
+                stroke="#ff5f7a"
+                strokeWidth={2.5}
+                dot={{ r: 3, strokeWidth: 0, fill: "#ff5f7a" }}
+                activeDot={{ r: 5, strokeWidth: 0, fill: "#ff5f7a" }}
+                connectNulls={false}
                 isAnimationActive={false}
               />
             </LineChart>
