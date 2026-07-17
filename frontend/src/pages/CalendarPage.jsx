@@ -392,12 +392,19 @@ function getStatsPerShare(stats, pnlMode) {
     : Number(stats.perShareTotal || 0);
 }
 
-function buildMonthChartSeries(month, pnlMode) {
+function getMonthPeriodDays(month, selectedWeekIndex = null) {
+  if (selectedWeekIndex !== null && selectedWeekIndex !== undefined) {
+    return (month.weeks[selectedWeekIndex] || []).filter((day) => day.isCurrentMonth);
+  }
+
+  return month.weeks.flat().filter((day) => day.isCurrentMonth);
+}
+
+function buildMonthChartSeries(month, pnlMode, selectedWeekIndex = null) {
   let cumulativePnl = 0;
 
-  return month.weeks
-    .flat()
-    .filter((day) => day.isCurrentMonth && day.stats)
+  return getMonthPeriodDays(month, selectedWeekIndex)
+    .filter((day) => day.stats)
     .sort((left, right) => left.dayKey.localeCompare(right.dayKey))
     .map((day) => {
       const dailyPnl = getStatsPnl(day.stats, pnlMode);
@@ -492,7 +499,14 @@ function CalendarToolbar({
   );
 }
 
-function MonthCalendar({ month, compact = false, pnlMode, onSelectDay }) {
+function MonthCalendar({
+  month,
+  compact = false,
+  pnlMode,
+  onSelectDay,
+  selectedWeekIndex = null,
+  onWeekToggle
+}) {
   const monthScale = month.weeks.flat().reduce(
     (scale, day) => {
       if (!day.isCurrentMonth || !day.stats) {
@@ -520,6 +534,8 @@ function MonthCalendar({ month, compact = false, pnlMode, onSelectDay }) {
 
       {month.weeks.map((week, index) => {
         const weekStats = getWeekStats(week, pnlMode);
+        const isSelectedWeek = selectedWeekIndex === index;
+        const weekButtonEnabled = !compact && typeof onWeekToggle === "function";
 
         return (
           <Fragment key={`${month.label}-week-${index}`}>
@@ -558,7 +574,22 @@ function MonthCalendar({ month, compact = false, pnlMode, onSelectDay }) {
               </button>
             ))}
 
-            <div className="flex min-h-[86px] flex-col justify-center rounded-[5px] border border-[var(--line)] bg-white/[0.025] p-2 text-center sm:min-h-[104px]">
+            <button
+              type="button"
+              disabled={!weekButtonEnabled}
+              onClick={() => {
+                if (weekButtonEnabled) {
+                  onWeekToggle(isSelectedWeek ? null : index);
+                }
+              }}
+              className={`flex min-h-[86px] flex-col justify-center rounded-[5px] border p-2 text-center transition sm:min-h-[104px] ${
+                isSelectedWeek
+                  ? "border-mint bg-mint/10 shadow-[inset_0_0_0_1px_rgba(52,224,161,0.24)]"
+                  : "border-[var(--line)] bg-white/[0.07]"
+              } ${weekButtonEnabled ? "cursor-pointer hover:border-white/24 hover:bg-white/[0.1]" : "cursor-default"}`}
+              aria-pressed={weekButtonEnabled ? isSelectedWeek : undefined}
+              title={weekButtonEnabled ? (isSelectedWeek ? "Show full month" : `Show week ${index + 1}`) : undefined}
+            >
               <div className="ui-title text-[9px] text-mint">WK {index + 1}</div>
               <div className={`mt-1 text-sm font-semibold ${getSummaryTone(weekStats.pnl)}`}>
                 {formatCurrency(weekStats.pnl)}
@@ -568,7 +599,7 @@ function MonthCalendar({ month, compact = false, pnlMode, onSelectDay }) {
                   {weekStats.trades} trade{weekStats.trades === 1 ? "" : "s"}
                 </div>
               )}
-            </div>
+            </button>
           </Fragment>
         );
       })}
@@ -585,16 +616,27 @@ function MetricRow({ label, value, tone = "text-white" }) {
   );
 }
 
-function MonthSummary({ month, compact = false, pnlMode }) {
-  const summary = month.grossSummary;
-  const netSummary = month.netSummary;
+function MonthSummary({ month, compact = false, pnlMode, selectedWeekIndex = null }) {
+  const periodDays = useMemo(
+    () => getMonthPeriodDays(month, selectedWeekIndex),
+    [month, selectedWeekIndex]
+  );
+  const summary = useMemo(
+    () => (selectedWeekIndex === null || selectedWeekIndex === undefined ? month.grossSummary : calculateSummary(periodDays, "GROSS")),
+    [month.grossSummary, periodDays, selectedWeekIndex]
+  );
+  const netSummary = useMemo(
+    () => (selectedWeekIndex === null || selectedWeekIndex === undefined ? month.netSummary : calculateSummary(periodDays, "NET")),
+    [month.netSummary, periodDays, selectedWeekIndex]
+  );
   const fees = summary.totalFees;
+  const heading = selectedWeekIndex === null || selectedWeekIndex === undefined ? "Summary" : `Week ${selectedWeekIndex + 1} Summary`;
 
   return (
     <div className="ui-surface-subtle h-full p-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="text-lg font-semibold text-white">Summary</h3>
+          <h3 className="text-lg font-semibold text-white">{heading}</h3>
           <p className="mt-1 text-sm text-white/58">
             {summary.trades.toLocaleString("en-US")} trades · {summary.sessions} sessions
           </p>
@@ -654,8 +696,15 @@ function MonthSummary({ month, compact = false, pnlMode }) {
   );
 }
 
-function MonthCharts({ month, pnlMode }) {
-  const chartData = useMemo(() => buildMonthChartSeries(month, pnlMode), [month, pnlMode]);
+function MonthCharts({ month, pnlMode, selectedWeekIndex = null }) {
+  const chartData = useMemo(
+    () => buildMonthChartSeries(month, pnlMode, selectedWeekIndex),
+    [month, pnlMode, selectedWeekIndex]
+  );
+  const periodLabel =
+    selectedWeekIndex === null || selectedWeekIndex === undefined
+      ? "Monthly"
+      : `Week ${selectedWeekIndex + 1}`;
 
   if (chartData.length === 0) {
     return null;
@@ -667,7 +716,7 @@ function MonthCharts({ month, pnlMode }) {
         <div className="ui-widget-heading-bg border-b border-[var(--line)] px-4 py-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="ui-title text-[10px] text-white/72">Monthly Cumulative P&amp;L</div>
+              <div className="ui-title text-[10px] text-white/72">{periodLabel} Cumulative P&amp;L</div>
               <p className="mt-1 text-xs text-white/44">Running {pnlMode.toLowerCase()} P&amp;L by trading day.</p>
             </div>
           </div>
@@ -689,7 +738,7 @@ function MonthCharts({ month, pnlMode }) {
         <div className="ui-widget-heading-bg border-b border-[var(--line)] px-4 py-4">
           <div>
             <div className="ui-title text-[10px] text-white/72">Daily P&amp;L / Share</div>
-            <p className="mt-1 text-xs text-white/44">Same per-share aggregation shown on Journal day cards.</p>
+            <p className="mt-1 text-xs text-white/44">{periodLabel} per-share aggregation from Journal day cards.</p>
           </div>
         </div>
         <div className="h-[290px] pb-4">
@@ -731,11 +780,28 @@ function MonthCharts({ month, pnlMode }) {
   );
 }
 
-function MonthPanel({ month, onSelectDay, compact = false, pnlMode, onOpen }) {
+function MonthPanel({
+  month,
+  onSelectDay,
+  compact = false,
+  pnlMode,
+  onOpen,
+  selectedWeekIndex = null,
+  onWeekToggle
+}) {
+  const titlePrefix =
+    !compact && selectedWeekIndex !== null && selectedWeekIndex !== undefined
+      ? `${month.label} · Week ${selectedWeekIndex + 1}`
+      : month.label;
+
   return (
     <Card
-      title={`${month.label} · P&L by day`}
-      subtitle="Color is scaled to the largest day in this month."
+      title={`${titlePrefix} · P&L by day`}
+      subtitle={
+        selectedWeekIndex !== null && selectedWeekIndex !== undefined
+          ? "Week metrics are selected. Click the highlighted week tile to return to the full month."
+          : "Color is scaled to the largest day in this month."
+      }
       className="calendar-panel dashboard-page-widget shadow-none"
       bodyClassName="gap-5"
       action={
@@ -747,10 +813,24 @@ function MonthPanel({ month, onSelectDay, compact = false, pnlMode, onOpen }) {
       }
     >
       <div className={compact ? "grid gap-4" : "grid gap-5 2xl:grid-cols-[minmax(0,1.4fr)_minmax(360px,0.8fr)]"}>
-        <MonthCalendar month={month} compact={compact} pnlMode={pnlMode} onSelectDay={onSelectDay} />
-        {!compact && <MonthSummary month={month} compact={compact} pnlMode={pnlMode} />}
+        <MonthCalendar
+          month={month}
+          compact={compact}
+          pnlMode={pnlMode}
+          onSelectDay={onSelectDay}
+          selectedWeekIndex={selectedWeekIndex}
+          onWeekToggle={onWeekToggle}
+        />
+        {!compact && (
+          <MonthSummary
+            month={month}
+            compact={compact}
+            pnlMode={pnlMode}
+            selectedWeekIndex={selectedWeekIndex}
+          />
+        )}
       </div>
-      {!compact && <MonthCharts month={month} pnlMode={pnlMode} />}
+      {!compact && <MonthCharts month={month} pnlMode={pnlMode} selectedWeekIndex={selectedWeekIndex} />}
     </Card>
   );
 }
@@ -760,6 +840,7 @@ function CalendarPage() {
   const { user } = useAuth();
   const currentMonthIndex = new Date().getMonth();
   const [selectedMonthIndex, setSelectedMonthIndex] = useState(currentMonthIndex);
+  const [selectedWeekIndex, setSelectedWeekIndex] = useState(null);
   const [viewMode, setViewMode] = useState("MONTH");
   const [pnlMode, setPnlMode] = useState("GROSS");
   const {
@@ -847,15 +928,25 @@ function CalendarPage() {
           pnlMode={pnlMode}
           onSelectedMonthChange={(monthIndex) => {
             setSelectedMonthIndex(monthIndex);
+            setSelectedWeekIndex(null);
             setViewMode("MONTH");
           }}
-          onViewModeChange={setViewMode}
+          onViewModeChange={(nextViewMode) => {
+            setSelectedWeekIndex(null);
+            setViewMode(nextViewMode);
+          }}
           onPnlModeChange={setPnlMode}
         />
       </Card>
 
       {viewMode === "MONTH" ? (
-        <MonthPanel month={selectedMonth} pnlMode={pnlMode} onSelectDay={(dayKey) => navigate(`/journal?day=${dayKey}`)} />
+        <MonthPanel
+          month={selectedMonth}
+          pnlMode={pnlMode}
+          selectedWeekIndex={selectedWeekIndex}
+          onWeekToggle={setSelectedWeekIndex}
+          onSelectDay={(dayKey) => navigate(`/journal?day=${dayKey}`)}
+        />
       ) : (
         <div className="grid gap-6 xl:grid-cols-2">
           {calendarData.months.map((month) => (
@@ -866,6 +957,7 @@ function CalendarPage() {
               pnlMode={pnlMode}
               onOpen={() => {
                 setSelectedMonthIndex(month.monthIndex);
+                setSelectedWeekIndex(null);
                 setViewMode("MONTH");
               }}
               onSelectDay={(dayKey) => navigate(`/journal?day=${dayKey}`)}
