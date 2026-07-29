@@ -2213,7 +2213,7 @@ function ReportsPage() {
     peek: () => tradeService.peekTrades(),
     load: () => tradeService.getTrades(),
     initialValue: [],
-    deps: [user?.activeAccountScope]
+    deps: [user?.activeAccountScope, user?.liveDataStartDate]
   });
   const { data: tags = [] } = useCachedAsyncResource({
     peek: () => tagService.peekTags(),
@@ -2231,7 +2231,7 @@ function ReportsPage() {
     peek: () => journalService.peekJournalDays(),
     load: () => journalService.getJournalDays(),
     initialValue: [],
-    deps: [user?.activeAccountScope]
+    deps: [user?.activeAccountScope, user?.liveDataStartDate]
   });
 
   const activeRange = RANGE_OPTIONS.find((item) => item.key === rangeKey) || RANGE_OPTIONS[0];

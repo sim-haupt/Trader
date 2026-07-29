@@ -77,7 +77,7 @@ function AppShell() {
       tagService.getTags(),
       setupService.getSetups()
     ]);
-  }, [user?.id, user?.activeAccountScope]);
+  }, [user?.id, user?.activeAccountScope, user?.liveDataStartDate]);
 
   async function handleAccountScopeToggle() {
     const nextScope = isLiveAccount ? "SIMULATOR" : "LIVE";

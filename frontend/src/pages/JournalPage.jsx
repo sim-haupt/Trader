@@ -1228,14 +1228,14 @@ function JournalPage() {
     peek: () => tradeService.peekAllTrades(),
     load: () => tradeService.getAllTrades(),
     initialValue: [],
-    deps: [user?.activeAccountScope]
+    deps: [user?.activeAccountScope, user?.liveDataStartDate]
   });
 
   const journalDaysResource = useCachedAsyncResource({
     peek: () => journalService.peekJournalDays(),
     load: () => journalService.getJournalDays(),
     initialValue: [],
-    deps: [user?.activeAccountScope]
+    deps: [user?.activeAccountScope, user?.liveDataStartDate]
   });
 
   const tagsResource = useCachedAsyncResource({
@@ -1321,7 +1321,7 @@ function JournalPage() {
     const defaultStartCandidate =
       earliestTradeDayKey < earliestNoteDayKey ? earliestTradeDayKey : earliestNoteDayKey;
     const defaultStart = accountStartKey
-      ? accountStartKey < defaultStartCandidate
+      ? accountStartKey > defaultStartCandidate
         ? accountStartKey
         : defaultStartCandidate
       : defaultStartCandidate;

@@ -174,6 +174,31 @@ function parseTradeDateBoundary(value, boundary) {
   return parseNewYorkLocalDateTime(stringValue);
 }
 
+function getLiveDataStartBoundary(actor) {
+  if (getActorAccountScope(actor) !== "LIVE" || !actor?.liveDataStartDate) {
+    return null;
+  }
+
+  const dayKey =
+    actor.liveDataStartDate instanceof Date
+      ? actor.liveDataStartDate.toISOString().slice(0, 10)
+      : String(actor.liveDataStartDate).slice(0, 10);
+
+  return parseTradeDateBoundary(dayKey, "start");
+}
+
+function applyEntryDateLowerBound(where, lowerBound) {
+  if (!lowerBound) {
+    return;
+  }
+
+  where.entryDate = where.entryDate || {};
+
+  if (!where.entryDate.gte || lowerBound > where.entryDate.gte) {
+    where.entryDate.gte = lowerBound;
+  }
+}
+
 function buildTradeWhere(actor, filters = {}) {
   const where = {};
 
@@ -216,16 +241,26 @@ function buildTradeWhere(actor, filters = {}) {
     }
   }
 
+  if (!hasGlobalTradeScope(actor, filters)) {
+    applyEntryDateLowerBound(where, getLiveDataStartBoundary(actor));
+  }
+
   return where;
 }
 
 async function findAccessibleTrade(actor, tradeId) {
+  const where = {
+    id: tradeId,
+    accountScope: getActorAccountScope(actor),
+    ...(actor.role === "ADMIN" ? {} : { userId: actor.id })
+  };
+
+  if (actor.role !== "ADMIN") {
+    applyEntryDateLowerBound(where, getLiveDataStartBoundary(actor));
+  }
+
   const trade = await prisma.trade.findFirst({
-    where: {
-      id: tradeId,
-      accountScope: getActorAccountScope(actor),
-      ...(actor.role === "ADMIN" ? {} : { userId: actor.id })
-    }
+    where
   });
 
   if (!trade) {
@@ -369,7 +404,8 @@ async function getPublicWidgetSummary(userId, filters = {}) {
     where: { id: userId },
     select: {
       id: true,
-      activeAccountScope: true
+      activeAccountScope: true,
+      liveDataStartDate: true
     }
   });
 
@@ -381,7 +417,8 @@ async function getPublicWidgetSummary(userId, filters = {}) {
     {
       id: user.id,
       role: "USER",
-      activeAccountScope: user.activeAccountScope
+      activeAccountScope: user.activeAccountScope,
+      liveDataStartDate: user.liveDataStartDate
     },
     filters
   );
@@ -393,12 +430,18 @@ async function getTradeTags(actor) {
 }
 
 async function getTradeById(actor, tradeId) {
+  const where = {
+    id: tradeId,
+    accountScope: getActorAccountScope(actor),
+    ...(actor.role === "ADMIN" ? {} : { userId: actor.id })
+  };
+
+  if (actor.role !== "ADMIN") {
+    applyEntryDateLowerBound(where, getLiveDataStartBoundary(actor));
+  }
+
   let trade = await prisma.trade.findFirst({
-    where: {
-      id: tradeId,
-      accountScope: getActorAccountScope(actor),
-      ...(actor.role === "ADMIN" ? {} : { userId: actor.id })
-    },
+    where,
     include: tradeDetailInclude
   });
 
@@ -410,11 +453,7 @@ async function getTradeById(actor, tradeId) {
     try {
       await refreshTradeImportContext(trade);
       trade = await prisma.trade.findFirst({
-        where: {
-          id: tradeId,
-          accountScope: getActorAccountScope(actor),
-          ...(actor.role === "ADMIN" ? {} : { userId: actor.id })
-        },
+        where,
         include: tradeDetailInclude
       });
     } catch (error) {

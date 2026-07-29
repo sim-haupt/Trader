@@ -22,7 +22,10 @@ function syncUserState(current, user) {
     return current;
   }
 
-  if (current?.user?.activeAccountScope !== user?.activeAccountScope) {
+  if (
+    current?.user?.activeAccountScope !== user?.activeAccountScope ||
+    current?.user?.liveDataStartDate !== user?.liveDataStartDate
+  ) {
     clearAppDataCaches();
   }
 

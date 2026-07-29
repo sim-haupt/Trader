@@ -176,7 +176,7 @@ function TradesPage() {
 
   useEffect(() => {
     loadTrades(filters);
-  }, [filters, user?.activeAccountScope]);
+  }, [filters, user?.activeAccountScope, user?.liveDataStartDate]);
 
   useEffect(() => {
     if (currentPage > totalPages) {

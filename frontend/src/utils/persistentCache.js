@@ -7,8 +7,10 @@ function getNamespace() {
   const auth = readStoredAuth();
   const userId = auth?.user?.id || "anonymous";
   const accountScope = auth?.user?.activeAccountScope || "SIMULATOR";
+  const liveDataStartDate =
+    accountScope === "LIVE" && auth?.user?.liveDataStartDate ? auth.user.liveDataStartDate : "none";
 
-  return `${CACHE_PREFIX}:${userId}:${accountScope}`;
+  return `${CACHE_PREFIX}:${userId}:${accountScope}:${liveDataStartDate}`;
 }
 
 function hasStorage() {

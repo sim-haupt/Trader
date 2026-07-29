@@ -46,13 +46,13 @@ function DashboardPage() {
     peek: () => tradeService.peekTrades(),
     load: () => tradeService.getTrades(),
     initialValue: [],
-    deps: [user?.activeAccountScope]
+    deps: [user?.activeAccountScope, user?.liveDataStartDate]
   });
   const { data: journalDays = [] } = useCachedAsyncResource({
     peek: () => journalService.peekJournalDays(),
     load: () => journalService.getJournalDays(),
     initialValue: [],
-    deps: [user?.activeAccountScope]
+    deps: [user?.activeAccountScope, user?.liveDataStartDate]
   });
 
   const activeRange = RANGE_OPTIONS.find((option) => option.key === rangeKey) || RANGE_OPTIONS[0];

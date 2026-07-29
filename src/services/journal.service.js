@@ -8,6 +8,16 @@ function normalizeDayKeys(dayKeys) {
   return [...new Set((dayKeys || []).map((dayKey) => String(dayKey || "").trim()).filter(Boolean))];
 }
 
+function getLiveDataStartDayKey(actor) {
+  if ((actor.activeAccountScope || "SIMULATOR") !== "LIVE" || !actor.liveDataStartDate) {
+    return null;
+  }
+
+  return actor.liveDataStartDate instanceof Date
+    ? actor.liveDataStartDate.toISOString().slice(0, 10)
+    : String(actor.liveDataStartDate).slice(0, 10);
+}
+
 function roundCurrencyMillis(value) {
   const numericValue = Number(value || 0);
   return Number.isFinite(numericValue) ? Number(numericValue.toFixed(3)) : 0;
@@ -170,10 +180,13 @@ async function fetchUsdEurRate(dayKey) {
 }
 
 async function listJournalDays(actor) {
+  const liveDataStartDayKey = getLiveDataStartDayKey(actor);
+
   return prisma.journalDay.findMany({
     where: {
       ...(actor.role === "ADMIN" ? {} : { userId: actor.id }),
-      accountScope: actor.activeAccountScope || "SIMULATOR"
+      accountScope: actor.activeAccountScope || "SIMULATOR",
+      ...(liveDataStartDayKey ? { dayKey: { gte: liveDataStartDayKey } } : {})
     },
     orderBy: { dayKey: "desc" }
   });

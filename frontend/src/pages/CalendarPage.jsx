@@ -932,7 +932,7 @@ function CalendarPage() {
     peek: () => tradeService.peekTrades(),
     load: () => tradeService.getTrades(),
     initialValue: [],
-    deps: [user?.activeAccountScope]
+    deps: [user?.activeAccountScope, user?.liveDataStartDate]
   });
 
   const calendarData = useMemo(() => {
