@@ -138,7 +138,10 @@ const importTrades = asyncHandler(async (req, res) => {
 });
 
 const importTradesFromText = asyncHandler(async (req, res) => {
-  const result = await importService.importTradesFromText(req.user, req.validatedBody.text);
+  const result = await importService.importTradesFromText(req.user, req.validatedBody.text, {
+    csvFormat: req.validatedBody.csvFormat,
+    tradeDate: req.validatedBody.tradeDate
+  });
 
   res.status(200).json({
     success: true,

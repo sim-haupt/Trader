@@ -100,7 +100,9 @@ const deleteAllTradesSchema = z.object({
 });
 
 const tradeTextImportSchema = z.object({
-  text: z.string().trim().min(1)
+  text: z.string().trim().min(1),
+  csvFormat: z.enum(["das", "warrior"]).optional(),
+  tradeDate: z.string().refine(isValidDateString, "tradeDate must be a valid date").optional()
 });
 
 const executionImportSchema = z.object({

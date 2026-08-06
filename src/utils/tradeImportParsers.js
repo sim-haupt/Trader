@@ -201,7 +201,7 @@ function sanitizeTradeText(text) {
     .trim();
 }
 
-function parseTradeTextLine(line) {
+function parseCommaTradeTextLine(line) {
   const columns = line
     .split(",")
     .map((column) => column.trim())
@@ -223,7 +223,41 @@ function parseTradeTextLine(line) {
   };
 }
 
-function parseTradeText(text) {
+function parseDasTradeTextLine(line, options = {}) {
+  const columns = line.split(/\s+/).map((column) => column.trim()).filter(Boolean);
+
+  if (columns.length < 5) {
+    return null;
+  }
+
+  const hasDateColumn = /^\d{1,2}\/\d{1,2}\/\d{2,4}$|^\d{4}-\d{2}-\d{2}$/.test(columns[0]);
+  const [date, time, symbol, action, price, quantity] = hasDateColumn
+    ? columns
+    : [options.tradeDate, columns[0], columns[1], columns[2], columns[3], columns[4]];
+
+  return {
+    date,
+    time,
+    symbol: String(symbol || "").trim().toUpperCase(),
+    quantity: Number(quantity),
+    price: Number(price),
+    action: normalizeDasAction(action)
+  };
+}
+
+function parseTradeTextLine(line, options = {}) {
+  if (line.includes(",")) {
+    return parseCommaTradeTextLine(line);
+  }
+
+  if (options.csvFormat === "das") {
+    return parseDasTradeTextLine(line, options);
+  }
+
+  return null;
+}
+
+function parseTradeText(text, options = {}) {
   const sanitizedText = sanitizeTradeText(text);
 
   if (!sanitizedText) {
@@ -234,7 +268,7 @@ function parseTradeText(text) {
     .split(/\r\n|\n|\r/)
     .map((line) => line.trim())
     .filter(Boolean)
-    .map(parseTradeTextLine)
+    .map((line) => parseTradeTextLine(line, options))
     .filter(Boolean);
 }
 
@@ -511,8 +545,8 @@ function parseTradesFromDasCsvRows(rows) {
   };
 }
 
-function parseTradesFromText(text) {
-  const rows = parseTradeText(text);
+function parseTradesFromText(text, options = {}) {
+  const rows = parseTradeText(text, options);
 
   const invalidRows = [];
   const validFills = [];

@@ -75,6 +75,7 @@ function TradesPage() {
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(() => !tradeService.peekTrades(initialFilters));
+  const [csvFormat, setCsvFormat] = useState("das");
   const isImportMode = searchParams.get("mode") === "import";
 
   async function loadTrades(activeFilters = filters) {
@@ -445,12 +446,15 @@ function TradesPage() {
     }
   }
 
-  async function handleTextImport(text) {
+  async function handleTextImport(text, options = {}) {
     setIsUploading(true);
     setError("");
 
     try {
-      const result = await tradeService.importTradesFromText(text);
+      const result = await tradeService.importTradesFromText(text, {
+        csvFormat,
+        ...options
+      });
       notify({
         title: "Text import complete",
         description: `Imported ${result.insertedCount} trades${
@@ -864,7 +868,12 @@ function TradesPage() {
           <div className="grid items-stretch gap-6 xl:grid-cols-[1.05fr_1.35fr]">
             <div className="flex h-full flex-col gap-6">
               <Card title="CSV IMPORT" className="flex-1" bodyClassName="flex h-full flex-col">
-                <UploadCSV onUpload={handleUpload} isUploading={isUploading} />
+                <UploadCSV
+                  onUpload={handleUpload}
+                  isUploading={isUploading}
+                  csvFormat={csvFormat}
+                  onCsvFormatChange={setCsvFormat}
+                />
                 <div className="ui-notice mt-4 border-dashed border-[#e5e7eb42] text-white/72">
                   Supported CSVs: <span className="text-phosphor">DAS Trader executions and Warrior Trading exports with Open Datetime / Entry Price / Exit Price columns</span>
                   <br />
@@ -873,7 +882,11 @@ function TradesPage() {
               </Card>
 
               <Card title="TEXT IMPORT" className="flex-1" bodyClassName="flex h-full flex-col">
-                <TradeTextImport onImport={handleTextImport} isImporting={isUploading} />
+                <TradeTextImport
+                  onImport={handleTextImport}
+                  isImporting={isUploading}
+                  csvFormat={csvFormat}
+                />
               </Card>
             </div>
 

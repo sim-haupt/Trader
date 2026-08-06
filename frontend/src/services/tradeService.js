@@ -303,8 +303,8 @@ const tradeService = {
     return response.data.data;
   },
 
-  async importTradesFromText(text) {
-    const response = await api.post("/trades/import-text", { text });
+  async importTradesFromText(text, options = {}) {
+    const response = await api.post("/trades/import-text", { text, ...options });
     clearTradeCaches();
     return response.data.data;
   }

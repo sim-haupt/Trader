@@ -324,8 +324,11 @@ async function persistImportedTrades(actor, sourceName, validTrades, invalidRows
   };
 }
 
-async function importTradesFromText(actor, text) {
-  const parsed = parseTradesFromText(text);
+async function importTradesFromText(actor, text, options = {}) {
+  const parsed = parseTradesFromText(text, {
+    csvFormat: normalizeCsvFormat(options.csvFormat),
+    tradeDate: options.tradeDate
+  });
 
   if (parsed.totalRows === 0) {
     throw new ApiError(400, "Trade text is empty");

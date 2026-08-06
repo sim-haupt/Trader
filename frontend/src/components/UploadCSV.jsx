@@ -1,8 +1,7 @@
 import { useState } from "react";
 
-function UploadCSV({ onUpload, isUploading }) {
+function UploadCSV({ onUpload, isUploading, csvFormat, onCsvFormatChange }) {
   const [file, setFile] = useState(null);
-  const [csvFormat, setCsvFormat] = useState("das");
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -17,7 +16,7 @@ function UploadCSV({ onUpload, isUploading }) {
   }
 
   function selectCsvFormat(nextFormat) {
-    setCsvFormat((currentFormat) => (currentFormat === nextFormat ? currentFormat : nextFormat));
+    onCsvFormatChange(nextFormat);
   }
 
   return (
