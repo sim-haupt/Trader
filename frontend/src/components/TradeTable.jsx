@@ -76,6 +76,10 @@ function summarizeGroup(trades) {
   const netPnl = trades.reduce((sum, trade) => sum + getTradeNetPnl(trade), 0);
   const quantity = trades.reduce((sum, trade) => sum + Math.abs(Number(trade.quantity || 0)), 0);
   const executionCount = trades.reduce((sum, trade) => sum + getExecutionCount(trade), 0);
+  const perSharePnl = trades.reduce((sum, trade) => {
+    const pnl = getTradeNetPnl(trade);
+    return sum + getTradePerSharePnl(trade, pnl);
+  }, 0);
   const sides = uniqueList(trades.map((trade) => trade.side));
 
   return {
@@ -83,7 +87,7 @@ function summarizeGroup(trades) {
     quantity,
     executionCount,
     sideLabel: sides.length === 1 ? sides[0] : "Mixed",
-    perSharePnl: executionCount ? Number((netPnl / executionCount).toFixed(4)) : 0
+    perSharePnl: Number(perSharePnl.toFixed(4))
   };
 }
 
