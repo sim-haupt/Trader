@@ -266,7 +266,7 @@ function renderOverlay({ overlayEl, chart, candleSeries, bars, markers, dayStamp
     markerWrap.style.left = `${x}px`;
     markerWrap.style.top = `${markerTop}px`;
     markerWrap.style.transform = "translate(-50%, -50%)";
-    markerWrap.style.pointerEvents = "auto";
+    markerWrap.style.pointerEvents = "none";
 
     const line = document.createElement("div");
     line.className = "absolute rounded-full";
@@ -277,7 +277,7 @@ function renderOverlay({ overlayEl, chart, candleSeries, bars, markers, dayStamp
     line.style.transform = "translateY(-50%)";
     line.style.background = markerColor;
     line.style.boxShadow = `0 0 0 1px rgba(5,5,5,0.92), 0 0 12px ${markerColor}99`;
-    line.style.cursor = "pointer";
+    line.style.pointerEvents = "none";
 
     const endCap = document.createElement("div");
     endCap.className = "absolute rounded-full";
@@ -288,6 +288,7 @@ function renderOverlay({ overlayEl, chart, candleSeries, bars, markers, dayStamp
     endCap.style.transform = "translate(-50%, -50%)";
     endCap.style.background = markerColor;
     endCap.style.boxShadow = `0 0 10px ${markerColor}`;
+    endCap.style.pointerEvents = "none";
 
     const sideLabel = document.createElement("div");
     sideLabel.className = "absolute text-[9px] font-black";
@@ -296,6 +297,7 @@ function renderOverlay({ overlayEl, chart, candleSeries, bars, markers, dayStamp
     sideLabel.style.transform = "translateY(-50%)";
     sideLabel.style.color = markerColor;
     sideLabel.style.textShadow = "0 1px 4px rgba(0,0,0,0.88)";
+    sideLabel.style.pointerEvents = "none";
     sideLabel.textContent = isBuy ? "B" : "S";
 
     const label = document.createElement("div");
@@ -374,7 +376,25 @@ function PremiumChart({
         borderColor: "rgba(229,231,235,0.14)",
         timeVisible: true,
         secondsVisible: false,
+        fixLeftEdge: false,
+        fixRightEdge: false,
+        lockVisibleTimeRangeOnResize: false,
+        rightBarStaysOnScroll: false,
         tickMarkFormatter: formatChartTick
+      },
+      handleScroll: {
+        mouseWheel: true,
+        pressedMouseMove: true,
+        horzTouchDrag: true,
+        vertTouchDrag: false
+      },
+      handleScale: {
+        axisPressedMouseMove: {
+          time: true,
+          price: true
+        },
+        mouseWheel: true,
+        pinch: true
       },
       localization: {
         locale: "en-US",
