@@ -18,10 +18,10 @@ import {
 } from "../utils/chartIndicators";
 import LoadingState from "./ui/LoadingState";
 
-const BUY_MARKER_GREEN = "#00ff66";
-const SELL_MARKER_RED = "#ff2d2d";
-const CHART_GREEN = BUY_MARKER_GREEN;
-const CHART_RED = SELL_MARKER_RED;
+const CHART_GREEN = "#00d084";
+const CHART_RED = "#ff4d5e";
+const BUY_MARKER_GREEN = "#39ff14";
+const SELL_MARKER_RED = "#ff1f3d";
 const CHART_TZ = "America/New_York";
 const DAY_STAMP_FORMATTER = new Intl.DateTimeFormat("en-CA", {
   timeZone: CHART_TZ,
