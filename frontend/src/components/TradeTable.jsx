@@ -77,17 +77,13 @@ function summarizeGroup(trades) {
   const quantity = trades.reduce((sum, trade) => sum + Math.abs(Number(trade.quantity || 0)), 0);
   const executionCount = trades.reduce((sum, trade) => sum + getExecutionCount(trade), 0);
   const sides = uniqueList(trades.map((trade) => trade.side));
-  const setups = uniqueList(trades.map((trade) => trade.setup));
-  const tags = uniqueList(trades.flatMap((trade) => String(trade.tags || "").split(",").map((tag) => tag.trim())));
 
   return {
     netPnl: Number(netPnl.toFixed(4)),
     quantity,
     executionCount,
     sideLabel: sides.length === 1 ? sides[0] : "Mixed",
-    setupLabel: setups.length === 1 ? setups[0] : setups.length > 1 ? "Mixed" : "",
-    tags,
-    perSharePnl: quantity ? Number((netPnl / quantity).toFixed(4)) : 0
+    perSharePnl: executionCount ? Number((netPnl / executionCount).toFixed(4)) : 0
   };
 }
 
@@ -332,10 +328,10 @@ function TradeTable({
                       </td>
                       <td className="px-4 py-4 text-white/84">{group.sideLabel}</td>
                       <td className="px-4 py-4 text-white/84">
-                        {group.setupLabel ? <span className="ui-chip ui-setup-pill">{group.setupLabel}</span> : <span className="text-sm text-white/36">-</span>}
+                        <span className="text-sm text-white/36">-</span>
                       </td>
                       <td className="px-4 py-4 text-white/84">
-                        <TagsCell tags={group.tags} tradeId={group.id} />
+                        <span className="text-sm text-white/36">-</span>
                       </td>
                       <td className="px-4 py-4 text-white/84">{Number(group.quantity.toFixed(2)).toLocaleString("en-US")}</td>
                       <td className="px-4 py-4 text-white/84">{group.executionCount || "-"}</td>

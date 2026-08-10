@@ -363,19 +363,19 @@ strong {
   }
 
   .ui-setup-pill {
-    border-color: rgba(52, 224, 161, 0.26);
-    background: rgba(52, 224, 161, 0.1);
-    color: #bdf7de;
+    border-color: rgba(87, 205, 255, 0.28);
+    background: rgba(87, 205, 255, 0.11);
+    color: #c8efff;
   }
 
   .ui-setup-pill:hover {
-    border-color: rgba(52, 224, 161, 0.44);
-    background: rgba(52, 224, 161, 0.16);
+    border-color: rgba(87, 205, 255, 0.46);
+    background: rgba(87, 205, 255, 0.17);
   }
 
   .ui-setup-pill[data-active="true"] {
-    border-color: rgba(52, 224, 161, 0.64);
-    background: rgba(52, 224, 161, 0.22);
+    border-color: rgba(87, 205, 255, 0.68);
+    background: rgba(87, 205, 255, 0.24);
     color: #ffffff;
   }
 
