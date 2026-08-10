@@ -245,6 +245,20 @@ function getInitialLogicalRange(bars, markers) {
   };
 }
 
+function getCandlePixelWidth(chart, time) {
+  const center = chart.timeScale().timeToCoordinate(time);
+  const previous = chart.timeScale().timeToCoordinate(time - 60);
+  const next = chart.timeScale().timeToCoordinate(time + 60);
+  const rawWidth =
+    center != null && next != null
+      ? Math.abs(next - center)
+      : previous != null && center != null
+        ? Math.abs(center - previous)
+        : 8;
+
+  return Math.max(3, Math.round(rawWidth * 0.72));
+}
+
 function renderOverlay({ overlayEl, chart, candleSeries, bars, markers, dayStamp }) {
   if (!overlayEl) {
     return;
@@ -302,6 +316,7 @@ function renderOverlay({ overlayEl, chart, candleSeries, bars, markers, dayStamp
     const yOffset = stackIndex * 7 * direction;
     const markerTop = y + yOffset;
     const markerColor = isBuy ? BUY_MARKER_GREEN : SELL_MARKER_RED;
+    const lineWidth = getCandlePixelWidth(chart, snappedTime);
 
     const markerWrap = document.createElement("div");
     markerWrap.className = "absolute z-20";
@@ -312,34 +327,34 @@ function renderOverlay({ overlayEl, chart, candleSeries, bars, markers, dayStamp
 
     const line = document.createElement("div");
     line.className = "absolute rounded-full";
-    line.style.left = "-18px";
+    line.style.left = `${-(lineWidth / 2)}px`;
     line.style.top = "0";
-    line.style.width = "36px";
+    line.style.width = `${lineWidth}px`;
     line.style.height = "3px";
     line.style.transform = "translateY(-50%)";
     line.style.background = markerColor;
     line.style.boxShadow = `0 0 0 1px rgba(5,5,5,0.92), 0 0 12px ${markerColor}99`;
-    line.style.pointerEvents = "none";
+    line.style.pointerEvents = "auto";
 
     const endCap = document.createElement("div");
     endCap.className = "absolute rounded-full";
-    endCap.style.left = isBuy ? "-22px" : "18px";
+    endCap.style.left = `${isBuy ? -(lineWidth / 2) - 4 : lineWidth / 2 + 4}px`;
     endCap.style.top = "0";
     endCap.style.width = "7px";
     endCap.style.height = "7px";
     endCap.style.transform = "translate(-50%, -50%)";
     endCap.style.background = markerColor;
     endCap.style.boxShadow = `0 0 10px ${markerColor}`;
-    endCap.style.pointerEvents = "none";
+    endCap.style.pointerEvents = "auto";
 
     const sideLabel = document.createElement("div");
     sideLabel.className = "absolute text-[9px] font-black";
-    sideLabel.style.left = isBuy ? "-32px" : "26px";
+    sideLabel.style.left = `${isBuy ? -(lineWidth / 2) - 14 : lineWidth / 2 + 9}px`;
     sideLabel.style.top = "0";
     sideLabel.style.transform = "translateY(-50%)";
     sideLabel.style.color = markerColor;
     sideLabel.style.textShadow = "0 1px 4px rgba(0,0,0,0.88)";
-    sideLabel.style.pointerEvents = "none";
+    sideLabel.style.pointerEvents = "auto";
     sideLabel.textContent = isBuy ? "B" : "S";
 
     const label = document.createElement("div");
@@ -357,14 +372,19 @@ function renderOverlay({ overlayEl, chart, candleSeries, bars, markers, dayStamp
     label.style.pointerEvents = "none";
     label.textContent = marker.text;
 
-    markerWrap.addEventListener("mouseenter", () => {
+    const showLabel = () => {
       label.style.opacity = "1";
       label.style.visibility = "visible";
-    });
+    };
 
-    markerWrap.addEventListener("mouseleave", () => {
+    const hideLabel = () => {
       label.style.opacity = "0";
       label.style.visibility = "hidden";
+    };
+
+    [line, endCap, sideLabel].forEach((node) => {
+      node.addEventListener("mouseenter", showLabel);
+      node.addEventListener("mouseleave", hideLabel);
     });
 
     markerWrap.appendChild(line);
