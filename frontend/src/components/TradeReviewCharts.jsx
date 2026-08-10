@@ -18,8 +18,10 @@ import {
 } from "../utils/chartIndicators";
 import LoadingState from "./ui/LoadingState";
 
-const CHART_GREEN = "#089981";
-const CHART_RED = "#f23645";
+const BUY_MARKER_GREEN = "#00ff66";
+const SELL_MARKER_RED = "#ff2d2d";
+const CHART_GREEN = BUY_MARKER_GREEN;
+const CHART_RED = SELL_MARKER_RED;
 const CHART_TZ = "America/New_York";
 const DAY_STAMP_FORMATTER = new Intl.DateTimeFormat("en-CA", {
   timeZone: CHART_TZ,
@@ -253,9 +255,11 @@ function renderOverlay({ overlayEl, chart, candleSeries, bars, markers, dayStamp
     const stackIndex = markerStacks.get(stackKey) ?? 0;
     markerStacks.set(stackKey, stackIndex + 1);
 
-    const direction = marker.shape === "arrowUp" ? 1 : -1;
-    const yOffset = stackIndex * 16 * direction;
+    const isBuy = marker.shape === "arrowUp";
+    const direction = isBuy ? 1 : -1;
+    const yOffset = stackIndex * 24 * direction;
     const markerTop = y + yOffset;
+    const markerColor = isBuy ? BUY_MARKER_GREEN : SELL_MARKER_RED;
 
     const markerWrap = document.createElement("div");
     markerWrap.className = "absolute z-20";
@@ -265,34 +269,47 @@ function renderOverlay({ overlayEl, chart, candleSeries, bars, markers, dayStamp
     markerWrap.style.pointerEvents = "auto";
 
     const pin = document.createElement("div");
-    pin.className = "absolute";
+    pin.className = "absolute flex items-center justify-center rounded-full border text-[10px] font-black";
     pin.style.left = "0";
     pin.style.top = "0";
-    pin.style.width = "0";
-    pin.style.height = "0";
+    pin.style.width = "22px";
+    pin.style.height = "22px";
     pin.style.transform = "translate(-50%, -50%)";
-    pin.style.filter = "drop-shadow(0 4px 10px rgba(0,0,0,0.45))";
+    pin.style.background = markerColor;
+    pin.style.borderColor = "rgba(255,255,255,0.92)";
+    pin.style.color = "#020202";
+    pin.style.boxShadow = `0 0 0 3px ${markerColor}33, 0 0 18px ${markerColor}88, 0 8px 18px rgba(0,0,0,0.48)`;
     pin.style.cursor = "pointer";
+    pin.textContent = isBuy ? "B" : "S";
 
-    if (marker.shape === "arrowUp") {
-      pin.style.borderLeft = "8px solid transparent";
-      pin.style.borderRight = "8px solid transparent";
-      pin.style.borderBottom = `14px solid ${marker.color}`;
-    } else {
-      pin.style.borderLeft = "8px solid transparent";
-      pin.style.borderRight = "8px solid transparent";
-      pin.style.borderTop = `14px solid ${marker.color}`;
-    }
+    const stem = document.createElement("div");
+    stem.className = "absolute pointer-events-none";
+    stem.style.left = "-1px";
+    stem.style.top = isBuy ? "-22px" : "11px";
+    stem.style.width = "2px";
+    stem.style.height = "20px";
+    stem.style.background = markerColor;
+    stem.style.boxShadow = `0 0 10px ${markerColor}`;
+
+    const tip = document.createElement("div");
+    tip.className = "absolute pointer-events-none";
+    tip.style.left = "0";
+    tip.style.top = isBuy ? "-26px" : "31px";
+    tip.style.width = "7px";
+    tip.style.height = "7px";
+    tip.style.transform = "translate(-50%, -50%) rotate(45deg)";
+    tip.style.background = markerColor;
+    tip.style.boxShadow = `0 0 12px ${markerColor}`;
 
     const label = document.createElement("div");
     label.className =
       "absolute whitespace-nowrap rounded-[6px] border px-2.5 py-1 text-[10px] font-semibold tracking-[0.03em] backdrop-blur";
-    label.style.left = "12px";
-    label.style.top = `${marker.shape === "arrowUp" ? -24 : 6}px`;
-    label.style.color = marker.color;
+    label.style.left = "16px";
+    label.style.top = `${isBuy ? -36 : 14}px`;
+    label.style.color = markerColor;
     label.style.background = "rgba(5,5,5,0.94)";
-    label.style.borderColor = `${marker.color}66`;
-    label.style.boxShadow = "0 8px 24px rgba(0,0,0,0.28)";
+    label.style.borderColor = `${markerColor}88`;
+    label.style.boxShadow = `0 8px 24px rgba(0,0,0,0.32), 0 0 18px ${markerColor}22`;
     label.style.opacity = "0";
     label.style.visibility = "hidden";
     label.style.transition = "opacity 120ms ease";
@@ -309,6 +326,8 @@ function renderOverlay({ overlayEl, chart, candleSeries, bars, markers, dayStamp
       label.style.visibility = "hidden";
     });
 
+    markerWrap.appendChild(stem);
+    markerWrap.appendChild(tip);
     markerWrap.appendChild(pin);
     markerWrap.appendChild(label);
     fragment.appendChild(markerWrap);

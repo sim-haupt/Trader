@@ -3,10 +3,8 @@ function asNumber(value) {
   return Number.isFinite(numericValue) ? numericValue : 0;
 }
 
-const CHART_GREEN = "#089981";
-const CHART_RED = "#f23645";
-const ENTRY_MARKER_BLUE = "#3b82f6";
-const EXIT_MARKER_DARK_RED = "#7f1d1d";
+const CHART_GREEN = "#00ff66";
+const CHART_RED = "#ff2d2d";
 
 function parseTimezoneOffsetMs(date, timeZone) {
   const formatter = new Intl.DateTimeFormat("en-US", {
@@ -217,13 +215,7 @@ function buildExecutionMarkers(trade) {
       const isEntryMarker = index === 0;
       const isExitMarker = index === markerExecutions.length - 1 && markerExecutions.length > 1;
       const markerLabel = execution.markerLabel || (isEntryMarker ? "Entry" : isExitMarker ? "Exit" : "Fill");
-      const markerColor = markerLabel === "Entry"
-        ? ENTRY_MARKER_BLUE
-        : markerLabel === "Exit"
-          ? EXIT_MARKER_DARK_RED
-          : execution.action === "BUY"
-            ? CHART_GREEN
-            : CHART_RED;
+      const markerColor = execution.action === "BUY" ? CHART_GREEN : CHART_RED;
 
       return {
         time: Math.floor(timestamp / 60) * 60,
