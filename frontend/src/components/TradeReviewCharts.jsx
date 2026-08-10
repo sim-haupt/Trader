@@ -203,6 +203,48 @@ function nearestBarTime(bars, rawTime) {
   return match;
 }
 
+function getInitialLogicalRange(bars, markers) {
+  if (!bars.length) {
+    return null;
+  }
+
+  const markerTimes = markers
+    .map((marker) => marker.rawTime || marker.time)
+    .filter((time) => Number.isFinite(time));
+
+  if (!markerTimes.length) {
+    return {
+      from: Math.max(0, bars.length - 180),
+      to: bars.length - 1
+    };
+  }
+
+  const markerIndexes = markerTimes.map((time) => {
+    let closestIndex = 0;
+    let closestDistance = Infinity;
+
+    bars.forEach((bar, index) => {
+      const distance = Math.abs(Number(bar.time) - time);
+
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = index;
+      }
+    });
+
+    return closestIndex;
+  });
+
+  const minIndex = Math.min(...markerIndexes);
+  const maxIndex = Math.max(...markerIndexes);
+  const padding = Math.max(35, Math.round((maxIndex - minIndex + 1) * 0.65));
+
+  return {
+    from: Math.max(0, minIndex - padding),
+    to: Math.min(bars.length - 1, maxIndex + padding)
+  };
+}
+
 function renderOverlay({ overlayEl, chart, candleSeries, bars, markers, dayStamp }) {
   if (!overlayEl) {
     return;
@@ -341,9 +383,7 @@ function PremiumChart({
   candleBars,
   actualBars,
   markers,
-  dayStamp,
-  sessionStart,
-  sessionEnd
+  dayStamp
 }) {
   const mainRef = useRef(null);
   const macdRef = useRef(null);
@@ -391,7 +431,7 @@ function PremiumChart({
       handleScale: {
         axisPressedMouseMove: {
           time: true,
-          price: true
+          price: false
         },
         mouseWheel: true,
         pinch: true
@@ -472,6 +512,8 @@ function PremiumChart({
 
     const macdChart = createChart(macdRef.current, {
       ...chartOptions,
+      handleScroll: false,
+      handleScale: false,
       width: macdRef.current.clientWidth,
       height: getChartHeights(macdRef.current.clientWidth).macd,
       rightPriceScale: {
@@ -518,33 +560,19 @@ function PremiumChart({
         dayStamp
       });
 
-    let isSyncingRange = false;
-
-    const syncMacdRange = (range) => {
-      if (range && !isSyncingRange) {
-        isSyncingRange = true;
-        macdChart.timeScale().setVisibleRange(range);
-        isSyncingRange = false;
-      }
-    };
-
-    const syncMainRange = (range) => {
-      if (range && !isSyncingRange) {
-        isSyncingRange = true;
-        mainChart.timeScale().setVisibleRange(range);
-        isSyncingRange = false;
+    const syncMacdLogicalRange = (range) => {
+      if (range) {
+        macdChart.timeScale().setVisibleLogicalRange(range);
       }
     };
 
     mainChart.timeScale().subscribeVisibleLogicalRangeChange(refreshOverlay);
-    mainChart.timeScale().subscribeVisibleTimeRangeChange(syncMacdRange);
-    macdChart.timeScale().subscribeVisibleTimeRangeChange(syncMainRange);
+    mainChart.timeScale().subscribeVisibleLogicalRangeChange(syncMacdLogicalRange);
 
-    const first = sessionStart ?? candleBars[0]?.time;
-    const last = sessionEnd ?? candleBars[candleBars.length - 1]?.time;
-    if (first && last) {
-      mainChart.timeScale().setVisibleRange({ from: first, to: last });
-      macdChart.timeScale().setVisibleRange({ from: first, to: last });
+    const initialLogicalRange = getInitialLogicalRange(candleBars, markers);
+    if (initialLogicalRange) {
+      mainChart.timeScale().setVisibleLogicalRange(initialLogicalRange);
+      macdChart.timeScale().setVisibleLogicalRange(initialLogicalRange);
     } else {
       mainChart.timeScale().fitContent();
       macdChart.timeScale().fitContent();
@@ -572,12 +600,11 @@ function PremiumChart({
       cancelAnimationFrame(rafId);
       resizeObserver.disconnect();
       mainChart.timeScale().unsubscribeVisibleLogicalRangeChange(refreshOverlay);
-      mainChart.timeScale().unsubscribeVisibleTimeRangeChange(syncMacdRange);
-      macdChart.timeScale().unsubscribeVisibleTimeRangeChange(syncMainRange);
+      mainChart.timeScale().unsubscribeVisibleLogicalRangeChange(syncMacdLogicalRange);
       mainChart.remove();
       macdChart.remove();
     };
-  }, [actualBars, candleBars, markers, dayStamp, sessionEnd, sessionStart]);
+  }, [actualBars, candleBars, markers, dayStamp]);
 
   return (
     <div className="space-y-3">
@@ -697,8 +724,6 @@ function TradeReviewCharts({ trade, trades, title = "Execution Review" }) {
       actualBars={timeline.actualBars}
       markers={markers}
       dayStamp={range.dayStamp}
-      sessionStart={timeline.sessionStart}
-      sessionEnd={timeline.sessionEnd}
     />
   );
 }
