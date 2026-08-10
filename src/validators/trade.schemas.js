@@ -65,7 +65,12 @@ const bulkUpdateTradesSchema = z
     tagsMode: z.enum(["append", "replace"]).optional()
   })
   .superRefine((data, context) => {
-    if (!data.tags && !data.notes && data.setup === undefined && data.strategy === undefined) {
+    if (
+      data.tags === undefined &&
+      !data.notes &&
+      data.setup === undefined &&
+      data.strategy === undefined
+    ) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         message: "At least one of tags, setup or notes is required"

@@ -128,7 +128,7 @@ function TagsCell({ tags, tradeId = "group" }) {
   }
 
   return (
-    <div className="flex max-w-[18rem] flex-wrap gap-2">
+    <div className="flex max-w-[18rem] flex-wrap gap-1.5">
       {tags.map((tag) => (
         <span key={`${tradeId}-${tag}`} className="ui-chip">
           {tag}
@@ -332,7 +332,7 @@ function TradeTable({
                       </td>
                       <td className="px-4 py-4 text-white/84">{group.sideLabel}</td>
                       <td className="px-4 py-4 text-white/84">
-                        {group.setupLabel ? <span className="ui-chip">{group.setupLabel}</span> : <span className="text-sm text-white/36">-</span>}
+                        {group.setupLabel ? <span className="ui-chip ui-setup-pill">{group.setupLabel}</span> : <span className="text-sm text-white/36">-</span>}
                       </td>
                       <td className="px-4 py-4 text-white/84">
                         <TagsCell tags={group.tags} tradeId={group.id} />
@@ -399,7 +399,7 @@ function TradeTable({
                             </td>
                             <td className="px-4 py-3 text-white/64">{trade.side}</td>
                             <td className="px-4 py-3 text-white/64">
-                              {trade.setup ? <span className="ui-chip">{trade.setup}</span> : <span className="text-sm text-white/36">-</span>}
+                              {trade.setup ? <span className="ui-chip ui-setup-pill">{trade.setup}</span> : <span className="text-sm text-white/36">-</span>}
                             </td>
                             <td className="px-4 py-3 text-white/64">
                               <TagsCell tags={tags} tradeId={trade.id} />

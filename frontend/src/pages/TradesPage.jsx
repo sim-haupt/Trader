@@ -60,6 +60,7 @@ function TradesPage() {
   const [selectedIds, setSelectedIds] = useState([]);
   const [bulkTags, setBulkTags] = useState("");
   const [bulkTagsMode, setBulkTagsMode] = useState("append");
+  const [bulkSetupMode, setBulkSetupMode] = useState("keep");
   const [availableTags, setAvailableTags] = useState(() => tagService.peekTags() || []);
   const [availableSetups, setAvailableSetups] = useState(
     () => setupService.peekSetups() || []
@@ -210,6 +211,7 @@ function TradesPage() {
   function resetBulkForm() {
     setBulkTags("");
     setBulkTagsMode("append");
+    setBulkSetupMode("keep");
     setBulkSetup("");
   }
 
@@ -222,13 +224,8 @@ function TradesPage() {
     [bulkTags]
   );
 
-  const selectableBulkTags = useMemo(() => {
-    const current = new Set(selectedBulkTags.map((tag) => tag.toLowerCase()));
-
-    return availableTags.filter((tag) => !current.has(tag.name.toLowerCase()));
-  }, [availableTags, selectedBulkTags]);
-
   function addBulkTag(tagName) {
+    setBulkTagsMode((current) => (current === "clear" ? "append" : current));
     setBulkTags((current) => {
       const tags = String(current || "")
         .split(",")
@@ -334,6 +331,8 @@ function TradesPage() {
 
   async function handleBulkUpdate() {
     const trimmedTags = bulkTags.trim();
+    const hasTagChange = bulkTagsMode === "clear" || Boolean(trimmedTags);
+    const hasSetupChange = bulkSetupMode === "clear" || (bulkSetupMode === "set" && Boolean(bulkSetup));
 
     if (selectedIds.length === 0) {
       setError("Select at least one trade first.");
@@ -341,7 +340,7 @@ function TradesPage() {
       return;
     }
 
-    if (!trimmedTags && !bulkSetup) {
+    if (!hasTagChange && !hasSetupChange) {
       setError("Select tags or a setup before applying bulk changes.");
       notify({
         title: "Nothing to apply",
@@ -355,12 +354,21 @@ function TradesPage() {
     setError("");
 
     try {
-      const result = await tradeService.bulkUpdateTrades({
+      const payload = {
         tradeIds: selectedIds,
-        tags: trimmedTags,
-        tagsMode: bulkTagsMode,
-        setup: bulkSetup || undefined
-      });
+        ...(hasTagChange
+          ? {
+              tags: bulkTagsMode === "clear" ? "" : trimmedTags,
+              tagsMode: bulkTagsMode === "clear" ? "replace" : bulkTagsMode
+            }
+          : {}),
+        ...(hasSetupChange
+          ? {
+              setup: bulkSetupMode === "clear" ? "" : bulkSetup
+            }
+          : {})
+      };
+      const result = await tradeService.bulkUpdateTrades(payload);
 
       notify({
         title: "Trades updated",
@@ -945,158 +953,131 @@ function TradesPage() {
           ) : (
             <div className="relative z-0 space-y-4">
               {selectedIds.length > 0 && (
-                <div className="ui-panel p-5 shadow-none">
+                <div className="ui-panel p-4 shadow-none">
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="ui-chip rounded-[6px] px-3 py-1.5 text-xs uppercase tracking-[0.14em] text-white/80">
-                        {selectedIds.length} selected
-                      </div>
-                      <div className="text-sm text-white/56">
-                        {selectedIds.length === 1 ? "1 trade ready for bulk actions" : `${selectedIds.length} trades ready for bulk actions`}
-                      </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="ui-chip ui-chip-count">{selectedIds.length} selected</span>
+                      <button
+                        type="button"
+                        onClick={clearSelection}
+                        className="ui-button px-3 py-1.5 text-xs"
+                      >
+                        Clear
+                      </button>
                     </div>
                     <button
                       type="button"
-                      onClick={clearSelection}
-                      className="ui-button px-3 py-2 text-xs"
+                      onClick={handleBulkDelete}
+                      disabled={isBulkDeleting}
+                      className="ui-button-danger px-3 py-1.5 text-xs disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      Clear Selection
+                      {isBulkDeleting ? "Deleting..." : "Delete Selected"}
                     </button>
                   </div>
 
-                  <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1.8fr)_minmax(240px,0.9fr)]">
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/42">
-                          Setup
-                        </div>
-                        {bulkSetup ? (
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setBulkSetup("")}
-                              className="ui-surface-subtle inline-flex items-center gap-2 px-3 py-1.5 text-xs text-white/82"
-                            >
-                              <span>{bulkSetup}</span>
-                              <span className="text-white/48">x</span>
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="ui-surface-subtle px-4 py-3 text-sm text-white/48">
-                            No setup selected
-                          </div>
-                        )}
-
-                        {availableSetups.length > 0 ? (
-                          <div className="flex flex-wrap gap-2">
-                            {availableSetups
-                              .filter((setup) => setup.name !== bulkSetup)
-                              .map((setup) => (
-                                <button
-                                  key={setup.id}
-                                  type="button"
-                                  onClick={() => setBulkSetup(setup.name)}
-                                  className="ui-button px-3 py-1.5 text-xs"
-                                >
-                                  {setup.name}
-                                </button>
-                              ))}
-                          </div>
-                        ) : (
-                          <div className="text-xs text-white/48">
-                            No saved setups available. Add them from Settings.
-                          </div>
-                        )}
+                  <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] xl:items-start">
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/42">Tags</span>
+                        {["append", "replace", "clear"].map((mode) => (
+                          <button
+                            key={mode}
+                            type="button"
+                            onClick={() => {
+                              setBulkTagsMode(mode);
+                              if (mode === "clear") {
+                                setBulkTags("");
+                              }
+                            }}
+                            className="ui-choice-pill"
+                            data-active={bulkTagsMode === mode}
+                          >
+                            {mode === "append" ? "Add" : mode === "replace" ? "Replace" : "Clear"}
+                          </button>
+                        ))}
                       </div>
-
-                      {selectedBulkTags.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {selectedBulkTags.map((tag) => (
-                            <button
-                              key={tag}
-                              type="button"
-                              onClick={() => removeBulkTag(tag)}
-                              className="ui-surface-subtle inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white/88 transition hover:bg-white/[0.05]"
-                            >
-                              <span>{tag}</span>
-                              <span className="text-white/45">×</span>
-                            </button>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="ui-surface-subtle px-4 py-3 text-sm text-white/48">
-                          Choose one or more saved tags to apply to the selected trades.
-                        </div>
-                      )}
-
-                      {selectableBulkTags.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {selectableBulkTags.map((tag) => (
-                            <button
-                              key={tag.id}
-                              type="button"
-                              onClick={() => addBulkTag(tag.name)}
-                              className="ui-button px-3 py-1.5 text-xs"
-                            >
-                              {tag.name}
-                            </button>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-xs text-white/48">
-                          No saved tags available. Add them from Settings.
+                      {bulkTagsMode !== "clear" && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {availableTags.map((tag) => {
+                            const selected = selectedBulkTags.some(
+                              (selectedTag) => selectedTag.toLowerCase() === tag.name.toLowerCase()
+                            );
+                            return (
+                              <button
+                                key={tag.id}
+                                type="button"
+                                onClick={() => (selected ? removeBulkTag(tag.name) : addBulkTag(tag.name))}
+                                className="ui-chip-removable"
+                                data-active={selected}
+                              >
+                                <span>{tag.name}</span>
+                                {selected && <span className="ui-chip-remove-icon">×</span>}
+                              </button>
+                            );
+                          })}
+                          {availableTags.length === 0 && (
+                            <span className="text-xs text-white/48">No saved tags available.</span>
+                          )}
                         </div>
                       )}
                     </div>
 
-                    <div className="ui-surface-subtle flex h-full flex-col justify-between gap-4 p-4">
-                      <div className="space-y-4">
-                        <div>
-                          <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/42">
-                            Tag Action
-                          </div>
-                          <div className="ui-segment grid grid-cols-2 gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setBulkTagsMode("append")}
-                              data-active={bulkTagsMode === "append"}
-                            >
-                              Append Tags
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setBulkTagsMode("replace")}
-                              data-active={bulkTagsMode === "replace"}
-                            >
-                              Replace Tags
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="ui-inset-box px-4 py-3 text-sm leading-6 text-white/68">
-                          Delete will permanently remove the selected trades.
-                        </div>
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/42">Setup</span>
+                        {[
+                          { value: "keep", label: "Keep" },
+                          { value: "set", label: "Set" },
+                          { value: "clear", label: "Clear" }
+                        ].map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => setBulkSetupMode(option.value)}
+                            className="ui-choice-pill"
+                            data-active={bulkSetupMode === option.value}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
                       </div>
-
-                      <div className="grid gap-3">
-                        <button
-                          type="button"
-                          onClick={handleBulkUpdate}
-                          disabled={isBulkSaving}
-                          className="ui-button-solid w-full justify-center text-sm disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          {isBulkSaving ? "Saving..." : "Apply Tags"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleBulkDelete}
-                          disabled={isBulkDeleting}
-                          className="w-full rounded-[6px] border border-coral/35 bg-coral/10 px-4 py-3 text-sm font-semibold text-coral transition hover:bg-coral/15 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          {isBulkDeleting ? "Deleting..." : "Delete"}
-                        </button>
-                      </div>
+                      {bulkSetupMode === "set" && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {availableSetups.map((setup) => (
+                            <button
+                              key={setup.id}
+                              type="button"
+                              onClick={() => setBulkSetup(setup.name)}
+                              className="ui-chip-removable ui-setup-pill"
+                              data-active={bulkSetup === setup.name}
+                            >
+                              <span>{setup.name}</span>
+                              {bulkSetup === setup.name && <span className="ui-chip-remove-icon">✓</span>}
+                            </button>
+                          ))}
+                          {availableSetups.length === 0 && (
+                            <span className="text-xs text-white/48">No saved setups available.</span>
+                          )}
+                        </div>
+                      )}
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={handleBulkUpdate}
+                      disabled={
+                        isBulkSaving ||
+                        (
+                          bulkTagsMode !== "clear" &&
+                          !bulkTags.trim() &&
+                          bulkSetupMode !== "clear" &&
+                          !(bulkSetupMode === "set" && bulkSetup)
+                        )
+                      }
+                      className="ui-button-solid min-h-[38px] px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isBulkSaving ? "Applying..." : "Apply Changes"}
+                    </button>
                   </div>
                 </div>
               )}

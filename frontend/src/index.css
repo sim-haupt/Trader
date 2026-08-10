@@ -312,26 +312,28 @@ strong {
   }
 
   .ui-chip {
-    background: var(--black-1);
-    color: #ededed;
-    border-color: rgba(255, 255, 255, 0.52);
-    padding: 6px 10px;
-    font-size: 0.74rem;
-    font-weight: 500;
+    background: rgba(132, 183, 255, 0.14);
+    color: #cfe2ff;
+    border-color: rgba(132, 183, 255, 0.28);
+    padding: 3px 8px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    line-height: 1.25;
   }
 
   .ui-chip-removable {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
     border-radius: var(--radius-sm);
-    border: 1px solid rgba(255, 255, 255, 0.52);
-    background: var(--black-1);
-    color: #ededed;
-    padding: 6px 10px;
-    font-size: 0.74rem;
-    font-weight: 500;
+    border: 1px solid rgba(132, 183, 255, 0.26);
+    background: rgba(132, 183, 255, 0.1);
+    color: #cfe2ff;
+    padding: 4px 8px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.2;
     white-space: nowrap;
     transition:
       border-color 120ms ease,
@@ -340,13 +342,74 @@ strong {
       opacity 120ms ease;
   }
 
+  .ui-chip-count {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.18);
+    color: rgba(255, 255, 255, 0.76);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
   .ui-chip-removable:hover {
-    border-color: rgba(255, 255, 255, 0.68);
-    background: var(--black-2);
+    border-color: rgba(132, 183, 255, 0.44);
+    background: rgba(132, 183, 255, 0.16);
+  }
+
+  .ui-chip-removable[data-active="true"],
+  .ui-chip-removable[aria-pressed="true"] {
+    border-color: rgba(132, 183, 255, 0.68);
+    background: rgba(132, 183, 255, 0.22);
+    color: #ffffff;
+  }
+
+  .ui-setup-pill {
+    border-color: rgba(52, 224, 161, 0.26);
+    background: rgba(52, 224, 161, 0.1);
+    color: #bdf7de;
+  }
+
+  .ui-setup-pill:hover {
+    border-color: rgba(52, 224, 161, 0.44);
+    background: rgba(52, 224, 161, 0.16);
+  }
+
+  .ui-setup-pill[data-active="true"] {
+    border-color: rgba(52, 224, 161, 0.64);
+    background: rgba(52, 224, 161, 0.22);
+    color: #ffffff;
+  }
+
+  .ui-choice-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.62);
+    padding: 4px 8px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    line-height: 1.2;
+    transition:
+      border-color 120ms ease,
+      background-color 120ms ease,
+      color 120ms ease;
+  }
+
+  .ui-choice-pill:hover {
+    border-color: rgba(255, 255, 255, 0.24);
+    color: rgba(255, 255, 255, 0.86);
+  }
+
+  .ui-choice-pill[data-active="true"] {
+    border-color: rgba(255, 255, 255, 0.42);
+    background: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
   }
 
   .ui-chip-remove-icon {
-    color: rgba(255, 255, 255, 0.56);
+    color: rgba(255, 255, 255, 0.68);
     flex: 0 0 auto;
   }
 

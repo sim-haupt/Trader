@@ -136,12 +136,6 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
     [form.tags]
   );
 
-  const selectableTags = useMemo(() => {
-    const active = new Set(selectedTags.map((tag) => tag.toLowerCase()));
-
-    return availableTags.filter((tag) => !active.has(tag.name.toLowerCase()));
-  }, [availableTags, selectedTags]);
-
   const selectedSetup = useMemo(() => String(form.setup || "").trim(), [form.setup]);
 
   function handleAddTag(tagName) {
@@ -285,43 +279,35 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
 
       <div className="md:col-span-2">
         <FormField label="Setup">
-          <div className="space-y-3">
-            {selectedSetup ? (
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={handleRemoveSetup}
-                  className="ui-chip-removable"
-                >
-                  <span>{selectedSetup}</span>
-                  <RemoveIcon />
-                </button>
-              </div>
-            ) : (
-              <div className="ui-inset-box px-4 py-3 text-sm text-white/54">
-                No setup selected
-              </div>
-            )}
-
+          <div className="space-y-2">
             {availableSetups.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {availableSetups
-                  .filter((setup) => setup.name !== selectedSetup)
-                  .map((setup) => (
+              <div className="flex flex-wrap gap-1.5">
+                {availableSetups.map((setup) => {
+                  const selected = setup.name === selectedSetup;
+
+                  return (
                     <button
                       key={setup.id}
                       type="button"
-                      onClick={() => handleSelectSetup(setup.name)}
-                      className="ui-button px-3 py-1.5 text-xs"
+                      onClick={() => (selected ? handleRemoveSetup() : handleSelectSetup(setup.name))}
+                      className="ui-chip-removable ui-setup-pill"
+                      data-active={selected}
                     >
-                      {setup.name}
+                      <span>{setup.name}</span>
+                      {selected && <RemoveIcon />}
                     </button>
-                  ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="text-xs text-white/48">
                 No saved setups available. Add them from Settings.
               </div>
+            )}
+            {selectedSetup && (
+              <button type="button" onClick={handleRemoveSetup} className="text-xs font-medium text-white/56 transition hover:text-white">
+                Clear setup
+              </button>
             )}
           </div>
         </FormField>
@@ -329,44 +315,41 @@ function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
 
       <div className="md:col-span-2">
         <FormField label="Tags">
-          <div className="space-y-3">
-            {selectedTags.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {selectedTags.map((tag) => (
-                  <button
-                    key={tag}
-                    type="button"
-                    onClick={() => handleRemoveTag(tag)}
-                    className="ui-chip-removable"
-                  >
-                    <span>{tag}</span>
-                    <RemoveIcon />
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="ui-inset-box px-4 py-3 text-sm text-white/54">
-                No tags selected
-              </div>
-            )}
+          <div className="space-y-2">
+            {availableTags.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {availableTags.map((tag) => {
+                  const selected = selectedTags.some(
+                    (selectedTag) => selectedTag.toLowerCase() === tag.name.toLowerCase()
+                  );
 
-            {selectableTags.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {selectableTags.map((tag) => (
-                  <button
-                    key={tag.id}
-                    type="button"
-                    onClick={() => handleAddTag(tag.name)}
-                    className="ui-button px-3 py-1.5 text-xs"
-                  >
-                    {tag.name}
-                  </button>
-                ))}
+                  return (
+                    <button
+                      key={tag.id}
+                      type="button"
+                      onClick={() => (selected ? handleRemoveTag(tag.name) : handleAddTag(tag.name))}
+                      className="ui-chip-removable"
+                      data-active={selected}
+                    >
+                      <span>{tag.name}</span>
+                      {selected && <RemoveIcon />}
+                    </button>
+                  );
+                })}
               </div>
             ) : (
               <div className="text-xs text-white/48">
                 No saved tags available. Add them from Settings.
               </div>
+            )}
+            {selectedTags.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setForm((current) => ({ ...current, tags: "" }))}
+                className="text-xs font-medium text-white/56 transition hover:text-white"
+              >
+                Clear tags
+              </button>
             )}
           </div>
         </FormField>
