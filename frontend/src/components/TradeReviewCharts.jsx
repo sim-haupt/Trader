@@ -257,7 +257,7 @@ function renderOverlay({ overlayEl, chart, candleSeries, bars, markers, dayStamp
 
     const isBuy = marker.shape === "arrowUp";
     const direction = isBuy ? 1 : -1;
-    const yOffset = stackIndex * 24 * direction;
+    const yOffset = stackIndex * 7 * direction;
     const markerTop = y + yOffset;
     const markerColor = isBuy ? BUY_MARKER_GREEN : SELL_MARKER_RED;
 
@@ -268,44 +268,41 @@ function renderOverlay({ overlayEl, chart, candleSeries, bars, markers, dayStamp
     markerWrap.style.transform = "translate(-50%, -50%)";
     markerWrap.style.pointerEvents = "auto";
 
-    const pin = document.createElement("div");
-    pin.className = "absolute flex items-center justify-center rounded-full border text-[10px] font-black";
-    pin.style.left = "0";
-    pin.style.top = "0";
-    pin.style.width = "22px";
-    pin.style.height = "22px";
-    pin.style.transform = "translate(-50%, -50%)";
-    pin.style.background = markerColor;
-    pin.style.borderColor = "rgba(255,255,255,0.92)";
-    pin.style.color = "#020202";
-    pin.style.boxShadow = `0 0 0 3px ${markerColor}33, 0 0 18px ${markerColor}88, 0 8px 18px rgba(0,0,0,0.48)`;
-    pin.style.cursor = "pointer";
-    pin.textContent = isBuy ? "B" : "S";
+    const line = document.createElement("div");
+    line.className = "absolute rounded-full";
+    line.style.left = "-18px";
+    line.style.top = "0";
+    line.style.width = "36px";
+    line.style.height = "3px";
+    line.style.transform = "translateY(-50%)";
+    line.style.background = markerColor;
+    line.style.boxShadow = `0 0 0 1px rgba(5,5,5,0.92), 0 0 12px ${markerColor}99`;
+    line.style.cursor = "pointer";
 
-    const stem = document.createElement("div");
-    stem.className = "absolute pointer-events-none";
-    stem.style.left = "-1px";
-    stem.style.top = isBuy ? "-22px" : "11px";
-    stem.style.width = "2px";
-    stem.style.height = "20px";
-    stem.style.background = markerColor;
-    stem.style.boxShadow = `0 0 10px ${markerColor}`;
+    const endCap = document.createElement("div");
+    endCap.className = "absolute rounded-full";
+    endCap.style.left = isBuy ? "-22px" : "18px";
+    endCap.style.top = "0";
+    endCap.style.width = "7px";
+    endCap.style.height = "7px";
+    endCap.style.transform = "translate(-50%, -50%)";
+    endCap.style.background = markerColor;
+    endCap.style.boxShadow = `0 0 10px ${markerColor}`;
 
-    const tip = document.createElement("div");
-    tip.className = "absolute pointer-events-none";
-    tip.style.left = "0";
-    tip.style.top = isBuy ? "-26px" : "31px";
-    tip.style.width = "7px";
-    tip.style.height = "7px";
-    tip.style.transform = "translate(-50%, -50%) rotate(45deg)";
-    tip.style.background = markerColor;
-    tip.style.boxShadow = `0 0 12px ${markerColor}`;
+    const sideLabel = document.createElement("div");
+    sideLabel.className = "absolute text-[9px] font-black";
+    sideLabel.style.left = isBuy ? "-32px" : "26px";
+    sideLabel.style.top = "0";
+    sideLabel.style.transform = "translateY(-50%)";
+    sideLabel.style.color = markerColor;
+    sideLabel.style.textShadow = "0 1px 4px rgba(0,0,0,0.88)";
+    sideLabel.textContent = isBuy ? "B" : "S";
 
     const label = document.createElement("div");
     label.className =
       "absolute whitespace-nowrap rounded-[6px] border px-2.5 py-1 text-[10px] font-semibold tracking-[0.03em] backdrop-blur";
-    label.style.left = "16px";
-    label.style.top = `${isBuy ? -36 : 14}px`;
+    label.style.left = "24px";
+    label.style.top = `${isBuy ? -30 : 10}px`;
     label.style.color = markerColor;
     label.style.background = "rgba(5,5,5,0.94)";
     label.style.borderColor = `${markerColor}88`;
@@ -326,9 +323,9 @@ function renderOverlay({ overlayEl, chart, candleSeries, bars, markers, dayStamp
       label.style.visibility = "hidden";
     });
 
-    markerWrap.appendChild(stem);
-    markerWrap.appendChild(tip);
-    markerWrap.appendChild(pin);
+    markerWrap.appendChild(line);
+    markerWrap.appendChild(endCap);
+    markerWrap.appendChild(sideLabel);
     markerWrap.appendChild(label);
     fragment.appendChild(markerWrap);
   }
