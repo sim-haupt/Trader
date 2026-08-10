@@ -451,7 +451,7 @@ function PremiumChart({
       handleScale: {
         axisPressedMouseMove: {
           time: true,
-          price: false
+          price: true
         },
         mouseWheel: true,
         pinch: true
