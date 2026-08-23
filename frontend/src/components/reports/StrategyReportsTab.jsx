@@ -75,14 +75,11 @@ function finalizeBucket(bucket) {
   const averageWinner = bucket.wins ? bucket.winningPnl / bucket.wins : 0;
   const averageLoser = bucket.losses ? bucket.losingPnl / bucket.losses : 0;
   const profitFactor = Math.abs(bucket.losingPnl) > 0 ? bucket.winningPnl / Math.abs(bucket.losingPnl) : bucket.winningPnl > 0 ? Infinity : 0;
-  const sampleScore = Math.min(1, bucket.trades / MIN_SAMPLE_SIZE);
-  const qualityScore = expectancy * sampleScore;
 
   return {
     ...bucket,
     totalPnl: Number(bucket.totalPnl.toFixed(2)),
     expectancy: Number(expectancy.toFixed(2)),
-    qualityScore: Number(qualityScore.toFixed(2)),
     winRate: Number(winRate.toFixed(1)),
     averageWinner: Number(averageWinner.toFixed(2)),
     averageLoser: Number(averageLoser.toFixed(2)),
@@ -123,17 +120,21 @@ function buildStrategyAnalytics(trades, options) {
     addTradeToBucket(comboBuckets.get(comboLabel), trade, pnl);
   }
 
-  const sortByEffectiveness = (rows) =>
+  const compareEffectiveness = (left, right) =>
+    right.winRate - left.winRate || right.totalPnl - left.totalPnl || right.trades - left.trades;
+
+  const rankBuckets = (rows) =>
     rows
       .map(finalizeBucket)
-      .sort((left, right) => right.qualityScore - left.qualityScore || right.totalPnl - left.totalPnl || right.trades - left.trades);
+      .sort(compareEffectiveness);
 
-  const setups = sortByEffectiveness(Array.from(setupBuckets.values()));
-  const tags = sortByEffectiveness(Array.from(tagBuckets.values()));
-  const combinations = sortByEffectiveness(Array.from(comboBuckets.values()));
-  const qualified = [...setups, ...tags, ...combinations].filter((row) => row.trades >= MIN_SAMPLE_SIZE);
-  const best = qualified[0] || combinations[0] || setups[0] || tags[0] || null;
-  const worst = [...qualified].sort((left, right) => left.expectancy - right.expectancy)[0] || null;
+  const setups = rankBuckets(Array.from(setupBuckets.values()));
+  const tags = rankBuckets(Array.from(tagBuckets.values()));
+  const combinations = rankBuckets(Array.from(comboBuckets.values()));
+  const allRows = [...setups, ...tags, ...combinations].sort(compareEffectiveness);
+  const qualified = allRows.filter((row) => row.trades >= MIN_SAMPLE_SIZE);
+  const best = qualified[0] || allRows[0] || null;
+  const worst = [...qualified].sort((left, right) => left.winRate - right.winRate || left.totalPnl - right.totalPnl)[0] || null;
   const totalPnl = trades.reduce(
     (sum, trade) => sum + getTradePnlByType(trade, options.pnlType, options.defaultCommission, options.defaultFees),
     0
@@ -161,11 +162,11 @@ function StrategyTooltip({ active, payload }) {
   return (
     <div className="rounded-[6px] border border-[var(--line)] bg-black px-3 py-2">
       <div className="max-w-[260px] text-xs font-medium text-white/72">{row.label}</div>
-      <div className={`mt-1 text-sm font-semibold ${row.expectancy >= 0 ? "text-mint" : "text-coral"}`}>
-        Expectancy {formatCurrency(row.expectancy)}
+      <div className="mt-1 text-sm font-semibold text-mint">
+        Win rate {formatPercent(row.winRate)}
       </div>
       <div className="mt-1 text-xs text-white/52">
-        {row.trades} trades | {formatPercent(row.winRate)} win | {formatCurrency(row.totalPnl)} total
+        {row.trades} trades | {formatCurrency(row.totalPnl)} total | {formatCurrency(row.expectancy)} expectancy
       </div>
     </div>
   );
@@ -191,12 +192,12 @@ function EffectivenessChart({ title, data }) {
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} layout="vertical" margin={{ top: 8, right: 12, left: 8, bottom: 16 }}>
               <CartesianGrid stroke="rgba(255,255,255,0.05)" horizontal={false} />
-              <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} tickFormatter={(value) => `$${value}`} />
+              <XAxis type="number" domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} tickFormatter={(value) => `${value}%`} />
               <YAxis type="category" dataKey="label" axisLine={false} tickLine={false} width={132} interval={0} tick={{ fill: "#c6cedb", fontSize: 11 }} />
               <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<StrategyTooltip />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
-              <Bar dataKey="expectancy" radius={[0, 6, 6, 0]} barSize={18}>
+              <Bar dataKey="winRate" radius={[0, 6, 6, 0]} barSize={18}>
                 {chartData.map((row) => (
-                  <Cell key={row.label} fill={row.expectancy >= 0 ? GREEN : RED} opacity={row.trades >= MIN_SAMPLE_SIZE ? 1 : 0.45} />
+                  <Cell key={row.label} fill={row.totalPnl >= 0 ? GREEN : RED} opacity={row.trades >= MIN_SAMPLE_SIZE ? 1 : 0.45} />
                 ))}
               </Bar>
             </BarChart>
@@ -235,14 +236,14 @@ function PnlWinRateChart({ data }) {
   );
 }
 
-function StrategyTable({ rows }) {
+function StrategyTable({ title, rows }) {
   return (
-    <Card title="STRATEGY DETAIL">
+    <Card title={title}>
       <div className="overflow-x-auto rounded-[6px] border border-[var(--line)] bg-black">
         <table className="min-w-full text-left text-sm">
           <thead className="border-b border-white/10 text-xs uppercase tracking-[0.12em] text-white/42">
             <tr>
-              {["Strategy", "Type", "Trades", "Win %", "Expectancy", "Total P&L", "Profit factor", "Avg win", "Avg loss", "Sample"].map((label) => (
+              {["Strategy", "Trades", "Win %", "Total P&L", "Expectancy", "Profit factor", "Avg win", "Avg loss", "Sample"].map((label) => (
                 <th key={label} className="whitespace-nowrap px-4 py-3 font-semibold">{label}</th>
               ))}
             </tr>
@@ -251,11 +252,10 @@ function StrategyTable({ rows }) {
             {rows.slice(0, 16).map((row) => (
               <tr key={`${row.type}-${row.label}`} className="border-b border-white/10 last:border-b-0">
                 <td className="max-w-[280px] truncate px-4 py-3 font-semibold text-white/82">{row.label}</td>
-                <td className="whitespace-nowrap px-4 py-3 text-white/56">{row.type}</td>
                 <td className="whitespace-nowrap px-4 py-3 text-white/72">{row.trades}</td>
-                <td className="whitespace-nowrap px-4 py-3 text-white/72">{formatPercent(row.winRate)}</td>
-                <td className={`whitespace-nowrap px-4 py-3 font-semibold ${row.expectancy >= 0 ? "text-mint" : "text-coral"}`}>{formatCurrency(row.expectancy)}</td>
+                <td className="whitespace-nowrap px-4 py-3 font-semibold text-mint">{formatPercent(row.winRate)}</td>
                 <td className={`whitespace-nowrap px-4 py-3 font-semibold ${row.totalPnl >= 0 ? "text-mint" : "text-coral"}`}>{formatCurrency(row.totalPnl)}</td>
+                <td className={`whitespace-nowrap px-4 py-3 font-semibold ${row.expectancy >= 0 ? "text-mint" : "text-coral"}`}>{formatCurrency(row.expectancy)}</td>
                 <td className="whitespace-nowrap px-4 py-3 text-white/72">{row.profitFactor === null ? "No losses" : row.profitFactor.toFixed(2)}</td>
                 <td className="whitespace-nowrap px-4 py-3 text-mint">{formatCurrency(row.averageWinner)}</td>
                 <td className="whitespace-nowrap px-4 py-3 text-coral">{formatCurrency(row.averageLoser)}</td>
@@ -274,8 +274,6 @@ function StrategyReportsTab({ trades, pnlType = "GROSS", defaultCommission = 0, 
     () => buildStrategyAnalytics(trades, { pnlType, defaultCommission, defaultFees }),
     [trades, pnlType, defaultCommission, defaultFees]
   );
-  const detailRows = [...analytics.combinations, ...analytics.setups, ...analytics.tags]
-    .sort((left, right) => right.qualityScore - left.qualityScore || right.totalPnl - left.totalPnl);
 
   if (!trades.length) {
     return <EmptyState title="No strategy data" description="Add setups and tags to trades to see strategy effectiveness." />;
@@ -284,20 +282,24 @@ function StrategyReportsTab({ trades, pnlType = "GROSS", defaultCommission = 0, 
   return (
     <div className="space-y-5">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Best strategy" value={analytics.best?.label || "Unavailable"} detail={analytics.best ? `${analytics.best.type} | ${analytics.best.trades} trades | ${formatCurrency(analytics.best.expectancy)} expectancy` : "Needs more tagged trades"} tone="text-mint" />
-        <MetricCard label="Weakest qualified" value={analytics.worst?.label || "Unavailable"} detail={analytics.worst ? `${analytics.worst.type} | ${analytics.worst.trades} trades | ${formatCurrency(analytics.worst.expectancy)} expectancy` : "No qualified sample yet"} tone="text-coral" />
+        <MetricCard label="Best strategy" value={analytics.best?.label || "Unavailable"} detail={analytics.best ? `${analytics.best.type} | ${analytics.best.trades} trades | ${formatPercent(analytics.best.winRate)} win | ${formatCurrency(analytics.best.totalPnl)}` : "Needs more tagged trades"} tone="text-mint" />
+        <MetricCard label="Weakest qualified" value={analytics.worst?.label || "Unavailable"} detail={analytics.worst ? `${analytics.worst.type} | ${analytics.worst.trades} trades | ${formatPercent(analytics.worst.winRate)} win | ${formatCurrency(analytics.worst.totalPnl)}` : "No qualified sample yet"} tone="text-coral" />
         <MetricCard label="Tagged strategy P&L" value={formatCurrency(analytics.totalPnl)} detail="Filtered report P&L across strategy-tagged trades" tone={analytics.totalPnl >= 0 ? "text-mint" : "text-coral"} />
         <MetricCard label="Top combo concentration" value={formatPercent(analytics.concentration)} detail="Share of filtered P&L from the strongest setup/tag combination" />
       </div>
 
       <div className="grid gap-5 xl:grid-cols-3">
-        <EffectivenessChart title="SETUP EXPECTANCY" data={analytics.setups} />
-        <EffectivenessChart title="TAG EXPECTANCY" data={analytics.tags} />
-        <EffectivenessChart title="SETUP + TAG EXPECTANCY" data={analytics.combinations} />
+        <EffectivenessChart title="SETUP WIN RATE" data={analytics.setups} />
+        <EffectivenessChart title="TAG WIN RATE" data={analytics.tags} />
+        <EffectivenessChart title="SETUP + TAG WIN RATE" data={analytics.combinations} />
       </div>
 
       <PnlWinRateChart data={analytics.combinations} />
-      <StrategyTable rows={detailRows} />
+      <div className="grid gap-5">
+        <StrategyTable title="SETUP DETAIL" rows={analytics.setups} />
+        <StrategyTable title="TAG DETAIL" rows={analytics.tags} />
+        <StrategyTable title="SETUP + TAG DETAIL" rows={analytics.combinations} />
+      </div>
     </div>
   );
 }
