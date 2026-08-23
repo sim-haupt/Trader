@@ -17,6 +17,7 @@ import {
 } from "recharts";
 import Card from "../components/ui/Card";
 import AdvancedReportsTab from "../components/reports/AdvancedReportsTab";
+import StrategyReportsTab from "../components/reports/StrategyReportsTab";
 import PnlBarCumulativeChart, { ChartViewSwitch } from "../components/PnlBarCumulativeChart";
 import CustomSelect from "../components/ui/CustomSelect";
 import DateRangePicker from "../components/ui/DateRangePicker";
@@ -43,6 +44,7 @@ const TAB_ITEMS = [
   "Overview",
   "Detailed",
   "Advanced",
+  "Strategy",
   "Win vs Loss Days",
   "Drawdown",
   "Compare"
@@ -2579,6 +2581,13 @@ function ReportsPage() {
       ) : activeTab === "Advanced" ? (
         <AdvancedReportsTab
           trades={filteredTrades}
+          defaultCommission={user?.defaultCommission ?? 0}
+          defaultFees={user?.defaultFees ?? 0}
+        />
+      ) : activeTab === "Strategy" ? (
+        <StrategyReportsTab
+          trades={filteredTrades}
+          pnlType={pnlType}
           defaultCommission={user?.defaultCommission ?? 0}
           defaultFees={user?.defaultFees ?? 0}
         />
