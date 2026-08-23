@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -21,6 +21,14 @@ const RED = "#ff5f7a";
 const BLUE = "#84b7ff";
 const YELLOW = "#ffd84d";
 const MIN_SAMPLE_SIZE = 3;
+
+function compareEffectiveness(left, right) {
+  return right.winRate - left.winRate || right.totalPnl - left.totalPnl || right.trades - left.trades;
+}
+
+function comparePnl(left, right) {
+  return right.totalPnl - left.totalPnl || right.winRate - left.winRate || right.trades - left.trades;
+}
 
 function splitTags(value) {
   return String(value || "")
@@ -120,9 +128,6 @@ function buildStrategyAnalytics(trades, options) {
     addTradeToBucket(comboBuckets.get(comboLabel), trade, pnl);
   }
 
-  const compareEffectiveness = (left, right) =>
-    right.winRate - left.winRate || right.totalPnl - left.totalPnl || right.trades - left.trades;
-
   const rankBuckets = (rows) =>
     rows
       .map(finalizeBucket)
@@ -131,28 +136,28 @@ function buildStrategyAnalytics(trades, options) {
   const setups = rankBuckets(Array.from(setupBuckets.values()));
   const tags = rankBuckets(Array.from(tagBuckets.values()));
   const combinations = rankBuckets(Array.from(comboBuckets.values()));
-  const allRows = [...setups, ...tags, ...combinations].sort(compareEffectiveness);
-  const qualified = allRows.filter((row) => row.trades >= MIN_SAMPLE_SIZE);
-  const best = qualified[0] || allRows[0] || null;
-  const worst = [...qualified].sort((left, right) => left.winRate - right.winRate || left.totalPnl - right.totalPnl)[0] || null;
-  const totalPnl = trades.reduce(
-    (sum, trade) => sum + getTradePnlByType(trade, options.pnlType, options.defaultCommission, options.defaultFees),
-    0
-  );
-  const topComboPnl = combinations[0]?.totalPnl || 0;
+  const bestSetup = setups.find((row) => row.trades >= MIN_SAMPLE_SIZE) || setups[0] || null;
+  const bestTag = tags.find((row) => row.trades >= MIN_SAMPLE_SIZE) || tags[0] || null;
+  const bestCombination = combinations.find((row) => row.trades >= MIN_SAMPLE_SIZE) || combinations[0] || null;
+  const weakestCombination =
+    combinations
+      .filter((row) => row.trades >= MIN_SAMPLE_SIZE)
+      .sort((left, right) => left.winRate - right.winRate || left.totalPnl - right.totalPnl)[0] ||
+    combinations.slice().sort((left, right) => left.winRate - right.winRate || left.totalPnl - right.totalPnl)[0] ||
+    null;
 
   return {
     setups,
     tags,
     combinations,
-    best,
-    worst,
-    totalPnl: Number(totalPnl.toFixed(2)),
-    concentration: totalPnl ? Math.abs((topComboPnl / totalPnl) * 100) : 0
+    bestSetup,
+    bestTag,
+    bestCombination,
+    weakestCombination
   };
 }
 
-function StrategyTooltip({ active, payload }) {
+function StrategyTooltip({ active, payload, mode = "winRate" }) {
   if (!active || !payload?.length) {
     return null;
   }
@@ -162,12 +167,32 @@ function StrategyTooltip({ active, payload }) {
   return (
     <div className="rounded-[6px] border border-[var(--line)] bg-black px-3 py-2">
       <div className="max-w-[260px] text-xs font-medium text-white/72">{row.label}</div>
-      <div className="mt-1 text-sm font-semibold text-mint">
-        Win rate {formatPercent(row.winRate)}
+      <div className={`mt-1 text-sm font-semibold ${mode === "pnl" ? (row.totalPnl >= 0 ? "text-mint" : "text-coral") : "text-mint"}`}>
+        {mode === "pnl" ? `P&L ${formatCurrency(row.totalPnl)}` : `Win rate ${formatPercent(row.winRate)}`}
       </div>
       <div className="mt-1 text-xs text-white/52">
         {row.trades} trades | {formatCurrency(row.totalPnl)} total | {formatCurrency(row.expectancy)} expectancy
       </div>
+    </div>
+  );
+}
+
+function MetricSwitch({ value, onChange }) {
+  return (
+    <div className="ui-segment">
+      {[
+        { label: "Win Rate", value: "winRate" },
+        { label: "P&L", value: "pnl" }
+      ].map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          data-active={value === option.value}
+          onClick={() => onChange(option.value)}
+        >
+          {option.label}
+        </button>
+      ))}
     </div>
   );
 }
@@ -183,21 +208,38 @@ function MetricCard({ label, value, detail, tone = "text-white" }) {
 }
 
 function EffectivenessChart({ title, data }) {
-  const chartData = data.slice(0, 10);
+  const [metric, setMetric] = useState("winRate");
+  const chartData = useMemo(
+    () => [...data].sort(metric === "pnl" ? comparePnl : compareEffectiveness),
+    [data, metric]
+  );
+  const dataKey = metric === "pnl" ? "totalPnl" : "winRate";
+  const chartHeight = Math.max(330, chartData.length * 34 + 72);
 
   return (
-    <Card title={title}>
-      <div className="h-[330px] pb-4">
+    <Card title={title} action={<MetricSwitch value={metric} onChange={setMetric} />}>
+      <div className="pb-4" style={{ height: `${chartHeight}px` }}>
         {chartData.length ? (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} layout="vertical" margin={{ top: 8, right: 12, left: 8, bottom: 16 }}>
               <CartesianGrid stroke="rgba(255,255,255,0.05)" horizontal={false} />
-              <XAxis type="number" domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fill: "#c6cedb", fontSize: 11 }} tickFormatter={(value) => `${value}%`} />
+              <XAxis
+                type="number"
+                domain={metric === "winRate" ? [0, 100] : undefined}
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#c6cedb", fontSize: 11 }}
+                tickFormatter={(value) => (metric === "winRate" ? `${value}%` : `$${value}`)}
+              />
               <YAxis type="category" dataKey="label" axisLine={false} tickLine={false} width={132} interval={0} tick={{ fill: "#c6cedb", fontSize: 11 }} />
-              <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<StrategyTooltip />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
-              <Bar dataKey="winRate" radius={[0, 6, 6, 0]} barSize={18}>
+              <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} content={<StrategyTooltip mode={metric} />} offset={14} allowEscapeViewBox={{ x: true, y: true }} />
+              <Bar dataKey={dataKey} radius={[0, 6, 6, 0]} barSize={18}>
                 {chartData.map((row) => (
-                  <Cell key={row.label} fill={row.totalPnl >= 0 ? GREEN : RED} opacity={row.trades >= MIN_SAMPLE_SIZE ? 1 : 0.45} />
+                  <Cell
+                    key={row.label}
+                    fill={metric === "pnl" ? (row.totalPnl >= 0 ? GREEN : RED) : row.totalPnl >= 0 ? BLUE : RED}
+                    opacity={row.trades >= MIN_SAMPLE_SIZE ? 1 : 0.45}
+                  />
                 ))}
               </Bar>
             </BarChart>
@@ -282,10 +324,30 @@ function StrategyReportsTab({ trades, pnlType = "GROSS", defaultCommission = 0, 
   return (
     <div className="space-y-5">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Best strategy" value={analytics.best?.label || "Unavailable"} detail={analytics.best ? `${analytics.best.type} | ${analytics.best.trades} trades | ${formatPercent(analytics.best.winRate)} win | ${formatCurrency(analytics.best.totalPnl)}` : "Needs more tagged trades"} tone="text-mint" />
-        <MetricCard label="Weakest qualified" value={analytics.worst?.label || "Unavailable"} detail={analytics.worst ? `${analytics.worst.type} | ${analytics.worst.trades} trades | ${formatPercent(analytics.worst.winRate)} win | ${formatCurrency(analytics.worst.totalPnl)}` : "No qualified sample yet"} tone="text-coral" />
-        <MetricCard label="Tagged strategy P&L" value={formatCurrency(analytics.totalPnl)} detail="Filtered report P&L across strategy-tagged trades" tone={analytics.totalPnl >= 0 ? "text-mint" : "text-coral"} />
-        <MetricCard label="Top combo concentration" value={formatPercent(analytics.concentration)} detail="Share of filtered P&L from the strongest setup/tag combination" />
+        <MetricCard
+          label="Best strategy"
+          value={analytics.bestCombination?.label || "Unavailable"}
+          detail={analytics.bestCombination ? `${analytics.bestCombination.trades} trades | ${formatPercent(analytics.bestCombination.winRate)} win | ${formatCurrency(analytics.bestCombination.totalPnl)}` : "Needs setup + tag data"}
+          tone="text-mint"
+        />
+        <MetricCard
+          label="Weakest strategy"
+          value={analytics.weakestCombination?.label || "Unavailable"}
+          detail={analytics.weakestCombination ? `${analytics.weakestCombination.trades} trades | ${formatPercent(analytics.weakestCombination.winRate)} win | ${formatCurrency(analytics.weakestCombination.totalPnl)}` : "No setup + tag sample yet"}
+          tone="text-coral"
+        />
+        <MetricCard
+          label="Best setup"
+          value={analytics.bestSetup?.label || "Unavailable"}
+          detail={analytics.bestSetup ? `${analytics.bestSetup.trades} trades | ${formatPercent(analytics.bestSetup.winRate)} win | ${formatCurrency(analytics.bestSetup.totalPnl)}` : "Needs setup data"}
+          tone="text-mint"
+        />
+        <MetricCard
+          label="Best tag"
+          value={analytics.bestTag?.label || "Unavailable"}
+          detail={analytics.bestTag ? `${analytics.bestTag.trades} trades | ${formatPercent(analytics.bestTag.winRate)} win | ${formatCurrency(analytics.bestTag.totalPnl)}` : "Needs tag data"}
+          tone="text-mint"
+        />
       </div>
 
       <div className="grid gap-5 xl:grid-cols-3">
