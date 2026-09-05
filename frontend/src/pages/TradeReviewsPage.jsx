@@ -46,6 +46,22 @@ function CloseIcon() {
   );
 }
 
+function EditIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+      <path d="M4 20h4l11-11-4-4L4 16v4zM13 7l4 4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function DeleteIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+      <path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function TradeReviewsPage() {
   const { notify, confirm } = useNotifications();
   const [images, setImages] = useState([]);
@@ -66,7 +82,10 @@ function TradeReviewsPage() {
   const [error, setError] = useState("");
   const [activeIndex, setActiveIndex] = useState(null);
   const [imageZoom, setImageZoom] = useState(1);
+  const [imagePan, setImagePan] = useState({ x: 0, y: 0 });
+  const [isDraggingImage, setIsDraggingImage] = useState(false);
   const touchStartXRef = useRef(null);
+  const dragStartRef = useRef(null);
 
   async function loadImages(activeTags = selectedTags) {
     setError("");
@@ -140,6 +159,8 @@ function TradeReviewsPage() {
 
   useEffect(() => {
     setImageZoom(1);
+    setImagePan({ x: 0, y: 0 });
+    setIsDraggingImage(false);
   }, [activeIndex]);
 
   function toggleTag(name) {
@@ -293,6 +314,42 @@ function TradeReviewsPage() {
     });
   }
 
+  function startImageDrag(event) {
+    if (imageZoom <= 1) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDraggingImage(true);
+    dragStartRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      panX: imagePan.x,
+      panY: imagePan.y
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function moveImageDrag(event) {
+    if (!dragStartRef.current) {
+      return;
+    }
+
+    event.preventDefault();
+    const nextX = dragStartRef.current.panX + event.clientX - dragStartRef.current.startX;
+    const nextY = dragStartRef.current.panY + event.clientY - dragStartRef.current.startY;
+    setImagePan({ x: nextX, y: nextY });
+  }
+
+  function endImageDrag(event) {
+    if (dragStartRef.current?.pointerId === event.pointerId) {
+      dragStartRef.current = null;
+      setIsDraggingImage(false);
+    }
+  }
+
   function closeUploadModal() {
     if (uploading) {
       return;
@@ -358,26 +415,45 @@ function TradeReviewsPage() {
                 key={image.id}
                 className="overflow-hidden rounded-[6px] border border-[var(--line)] bg-black text-left transition hover:border-white/28"
               >
-                <button
-                  type="button"
-                  onClick={() => setActiveIndex(index)}
-                  className="group block w-full text-left"
-                >
-                  <div className="aspect-[4/3] bg-white/[0.03]">
-                    <img
-                      src={getTradeReviewImageUrl(image.imageUrl)}
-                      alt={image.originalName}
-                      className="h-full w-full object-cover transition duration-200 group-hover:scale-[1.015]"
-                      loading="lazy"
-                    />
+                <div className="group relative">
+                  <button
+                    type="button"
+                    onClick={() => setActiveIndex(index)}
+                    className="block w-full text-left"
+                  >
+                    <div className="aspect-[4/3] bg-white/[0.03]">
+                      <img
+                        src={getTradeReviewImageUrl(image.imageUrl)}
+                        alt={image.originalName}
+                        className="h-full w-full object-cover transition duration-200 group-hover:scale-[1.015]"
+                        loading="lazy"
+                      />
+                    </div>
+                  </button>
+                  <div className="absolute right-2 top-2 flex gap-2">
+                    <button
+                      type="button"
+                      className="flex h-9 w-9 items-center justify-center rounded-[6px] border border-white/14 bg-black/80 text-white shadow-none transition hover:bg-[#1f1f1f]"
+                      aria-label="Edit review image"
+                      onClick={() => startEditingImage(image)}
+                    >
+                      <EditIcon />
+                    </button>
+                    {editingId === image.id ? (
+                      <button
+                        type="button"
+                        className="flex h-9 w-9 items-center justify-center rounded-[6px] border border-[var(--danger)]/40 bg-black/80 text-[var(--danger)] shadow-none transition hover:bg-[var(--danger-soft)]"
+                        aria-label="Delete review image"
+                        onClick={() => handleDeleteImage(image)}
+                        disabled={deletingId === image.id}
+                      >
+                        <DeleteIcon />
+                      </button>
+                    ) : null}
                   </div>
-                </button>
-                <div className="space-y-3 p-4">
-                  <div className="flex items-center justify-between gap-3 text-xs text-white/42">
-                    <span className="truncate">{image.originalName}</span>
-                    <span className="shrink-0">{formatDate(image.createdAt)}</span>
-                  </div>
-                  {editingId === image.id ? (
+                </div>
+                {editingId === image.id ? (
+                  <div className="space-y-3 p-4">
                     <div className="space-y-3">
                       <div>
                         <label htmlFor={`review-tags-${image.id}`} className="ui-title text-[10px] text-white/44">
@@ -417,34 +493,8 @@ function TradeReviewsPage() {
                         </button>
                       </div>
                     </div>
-                  ) : (
-                    <>
-                      {image.tags?.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {image.tags.map((tag) => (
-                            <span key={tag.id} className="ui-chip">{tag.name}</span>
-                          ))}
-                        </div>
-                      ) : null}
-                      {image.notes ? (
-                        <p className="line-clamp-2 text-sm leading-6 text-white/58">{image.notes}</p>
-                      ) : null}
-                      <div className="flex flex-wrap gap-2 pt-1">
-                        <button type="button" className="ui-button px-3 py-2 text-sm" onClick={() => startEditingImage(image)}>
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          className="ui-button-danger px-3 py-2 text-sm"
-                          onClick={() => handleDeleteImage(image)}
-                          disabled={deletingId === image.id}
-                        >
-                          {deletingId === image.id ? "Deleting..." : "Delete"}
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
+                  </div>
+                ) : null}
               </div>
             ))}
           </div>
@@ -534,6 +584,11 @@ function TradeReviewsPage() {
         <div
           className="fixed inset-0 z-[160] flex flex-col bg-black/95"
           onTouchStart={(event) => {
+            if (imageZoom > 1 && event.target.closest("[data-lightbox-content]")) {
+              touchStartXRef.current = null;
+              return;
+            }
+
             touchStartXRef.current = event.touches[0].clientX;
           }}
           onTouchEnd={handleTouchEnd}
@@ -544,7 +599,14 @@ function TradeReviewsPage() {
               <p className="mt-1 text-xs text-white/44">{activeIndex + 1} of {images.length} · {Math.round(imageZoom * 100)}%</p>
             </div>
             <div className="flex items-center gap-2">
-              <button type="button" className="ui-button px-3 py-2" onClick={() => setImageZoom(1)}>
+              <button
+                type="button"
+                className="ui-button px-3 py-2"
+                onClick={() => {
+                  setImageZoom(1);
+                  setImagePan({ x: 0, y: 0 });
+                }}
+              >
                 Reset Zoom
               </button>
               <button type="button" className="ui-button px-3 py-2" onClick={() => handleDeleteImage(activeImage)} disabled={deletingId === activeImage.id}>
@@ -573,18 +635,32 @@ function TradeReviewsPage() {
             <div className="flex min-h-0 flex-col items-center justify-center gap-4">
               <div
                 data-lightbox-content
-                className="flex max-h-[78vh] max-w-full items-center justify-center overflow-hidden"
+                className={`flex max-h-[78vh] max-w-full touch-none items-center justify-center overflow-hidden ${
+                  imageZoom > 1 ? (isDraggingImage ? "cursor-grabbing" : "cursor-grab") : ""
+                }`}
                 onWheel={handleImageWheel}
+                onPointerDown={startImageDrag}
+                onPointerMove={moveImageDrag}
+                onPointerUp={endImageDrag}
+                onPointerCancel={endImageDrag}
               >
                 <img
                   src={getTradeReviewImageUrl(activeImage.imageUrl)}
                   alt={activeImage.originalName}
-                  className="max-h-[78vh] max-w-full object-contain transition-transform duration-100"
-                  style={{ transform: `scale(${imageZoom})` }}
+                  draggable="false"
+                  className={`max-h-[78vh] max-w-full select-none object-contain ${
+                    isDraggingImage ? "" : "transition-transform duration-100"
+                  }`}
+                  style={{
+                    transform: `translate(${imagePan.x}px, ${imagePan.y}px) scale(${imageZoom})`
+                  }}
                 />
               </div>
-              {(activeImage.tags?.length > 0 || activeImage.notes) ? (
+              {(activeImage.tags?.length > 0 || activeImage.notes || activeImage.createdAt) ? (
                 <div data-lightbox-content className="w-full max-w-5xl rounded-[6px] border border-white/10 bg-black px-4 py-3">
+                  {activeImage.createdAt ? (
+                    <p className="mb-3 text-xs text-white/44">{formatDate(activeImage.createdAt)}</p>
+                  ) : null}
                   {activeImage.tags?.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
                       {activeImage.tags.map((tag) => (
