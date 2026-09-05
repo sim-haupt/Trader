@@ -41,7 +41,7 @@ function getPageMeta(pathname) {
     return { title: "Trade Review", description: "Execution detail, notes, and chart context." };
   }
   if (pathname.startsWith("/trade-reviews")) {
-    return { title: "", description: "" };
+    return { title: "Trades reviews", description: "" };
   }
   if (pathname.startsWith("/trades")) {
     return { title: "Trades", description: "Import, filter, and review your full trade history." };
