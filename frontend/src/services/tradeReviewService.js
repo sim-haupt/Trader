@@ -21,7 +21,7 @@ export function getTradeReviewImageUrl(imageUrl) {
     return "";
   }
 
-  if (/^https?:\/\//i.test(imageUrl)) {
+  if (/^(https?:|data:)/i.test(imageUrl)) {
     return imageUrl;
   }
 

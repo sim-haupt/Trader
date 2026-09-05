@@ -1,4 +1,3 @@
-const fs = require("fs/promises");
 const path = require("path");
 const prisma = require("../config/prisma");
 const ApiError = require("../utils/ApiError");
@@ -33,6 +32,19 @@ function mapReviewImage(image) {
     ...image,
     tags: image.tags?.map((item) => item.tag) || []
   };
+}
+
+function buildStoredFilename(originalName) {
+  const extension = path.extname(originalName || "").toLowerCase();
+  const safeExtension = [".jpg", ".jpeg", ".png", ".webp", ".gif"].includes(extension)
+    ? extension
+    : ".png";
+
+  return `${Date.now()}-${Math.round(Math.random() * 1e9)}${safeExtension}`;
+}
+
+function buildDataUrl(file) {
+  return `data:${file.mimetype};base64,${file.buffer.toString("base64")}`;
 }
 
 async function ensureReviewTags(userId, names) {
@@ -116,11 +128,11 @@ async function createReviewImage(actor, file, payload) {
     data: {
       userId: actor.id,
       accountScope: actor.activeAccountScope,
-      filename: file.filename,
+      filename: buildStoredFilename(file.originalname),
       originalName: file.originalname,
       mimeType: file.mimetype,
       size: file.size,
-      imageUrl: `/uploads/trade-reviews/${file.filename}`,
+      imageUrl: buildDataUrl(file),
       notes: String(payload.notes || "").trim() || null,
       tags: {
         create: tags.map((tag) => ({
@@ -212,9 +224,6 @@ async function deleteReviewImage(actor, imageId) {
       id: image.id
     }
   });
-
-  const uploadPath = path.join(process.cwd(), "uploads", "trade-reviews", image.filename);
-  await fs.unlink(uploadPath).catch(() => {});
 
   return { message: "Trade review image deleted successfully" };
 }

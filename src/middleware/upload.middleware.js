@@ -1,6 +1,4 @@
 const multer = require("multer");
-const fs = require("fs");
-const path = require("path");
 const ApiError = require("../utils/ApiError");
 
 const csvUpload = multer({
@@ -45,22 +43,8 @@ const excelUpload = multer({
   }
 });
 
-const tradeReviewUploadDir = path.join(process.cwd(), "uploads", "trade-reviews");
-fs.mkdirSync(tradeReviewUploadDir, { recursive: true });
-
 const imageUpload = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => {
-      cb(null, tradeReviewUploadDir);
-    },
-    filename: (req, file, cb) => {
-      const extension = path.extname(file.originalname || "").toLowerCase();
-      const safeExtension = [".jpg", ".jpeg", ".png", ".webp", ".gif"].includes(extension)
-        ? extension
-        : ".png";
-      cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${safeExtension}`);
-    }
-  }),
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 12 * 1024 * 1024
   },
