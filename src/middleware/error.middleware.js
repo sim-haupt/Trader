@@ -27,7 +27,7 @@ function errorHandler(err, req, res, next) {
 
   if (err instanceof multer.MulterError) {
     statusCode = 400;
-    message = err.code === "LIMIT_FILE_SIZE" ? "CSV file is too large" : err.message;
+    message = err.code === "LIMIT_FILE_SIZE" ? "File is too large" : err.message;
   }
 
   if (err instanceof SyntaxError && err.status === 400 && "body" in err) {

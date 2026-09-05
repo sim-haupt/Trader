@@ -6,6 +6,7 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import DashboardPage from "./pages/DashboardPage";
 import TradesPage from "./pages/TradesPage";
+import TradeReviewsPage from "./pages/TradeReviewsPage";
 import TradeDetailPage from "./pages/TradeDetailPage";
 import AdminPage from "./pages/AdminPage";
 import CalendarPage from "./pages/CalendarPage";
@@ -33,6 +34,7 @@ function App() {
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/tax-reports" element={<TaxReportsPage />} />
         <Route path="/trades" element={<TradesPage />} />
+        <Route path="/trade-reviews" element={<TradeReviewsPage />} />
         <Route path="/trades/:id" element={<TradeDetailPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/journal" element={<JournalPage />} />

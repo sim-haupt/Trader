@@ -6,12 +6,14 @@ import journalService from "../services/journalService";
 import setupService from "../services/setupService";
 import tagService from "../services/tagService";
 import tradeService from "../services/tradeService";
+import tradeReviewService from "../services/tradeReviewService";
 
 const navigationItems = [
   { label: "Dashboard", path: "/dashboard", icon: "M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" },
   { label: "Calendar", path: "/calendar", icon: "M7 2v3M17 2v3M4 8h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" },
   { label: "Reports", path: "/reports", icon: "M4 19V9M10 19V5M16 19v-8M22 19V3" },
   { label: "Trades", path: "/trades", icon: "M4 18h16M5 15l4-4 3 3 7-8" },
+  { label: "Trades reviews", path: "/trade-reviews", icon: "M4 5h16v14H4V5zm3 3h3v3H7V8zm0 6h3v2H7v-2zm6-6h4m-4 4h4m-4 4h4" },
   { label: "Journal", path: "/journal", icon: "M7 4h10a2 2 0 0 1 2 2v12H7a2 2 0 0 0-2 2V6a2 2 0 0 1 2-2zm0 0a2 2 0 0 0-2 2v14" },
   { label: "Tax reports", path: "/tax-reports", icon: "M6 3h9l3 3v15H6V3zm8 0v4h4M8 11h8M8 15h8M8 19h5" },
   { label: "Settings", path: "/settings", icon: "M12 3l2.4 2.2 3.2-.6.9 3.1 3 1.2-1.3 3 1.3 3-3 1.2-.9 3.1-3.2-.6L12 21l-2.4-2.2-3.2.6-.9-3.1-3-1.2 1.3-3-1.3-3 3-1.2.9-3.1 3.2.6zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" }
@@ -37,6 +39,9 @@ function getPageMeta(pathname) {
   }
   if (pathname.startsWith("/trades/")) {
     return { title: "Trade Review", description: "Execution detail, notes, and chart context." };
+  }
+  if (pathname.startsWith("/trade-reviews")) {
+    return { title: "Trades reviews", description: "Screenshot gallery for visual trade notes and review tags." };
   }
   if (pathname.startsWith("/trades")) {
     return { title: "Trades", description: "Import, filter, and review your full trade history." };
@@ -73,6 +78,7 @@ function AppShell() {
     void Promise.allSettled([
       tradeService.getTrades(),
       tradeService.getAllTrades(),
+      tradeReviewService.getTags(),
       journalService.getJournalDays(),
       tagService.getTags(),
       setupService.getSetups()
