@@ -332,7 +332,7 @@ function TradeReviewsPage() {
         </div>
 
         {loading ? (
-          <LoadingState message="Loading review images..." />
+          <LoadingState label="Loading review images..." />
         ) : images.length === 0 ? (
           <EmptyState
             title="No review images yet"
