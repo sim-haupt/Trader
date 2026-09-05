@@ -28,6 +28,15 @@ const createReviewImage = asyncHandler(async (req, res) => {
   });
 });
 
+const updateReviewImage = asyncHandler(async (req, res) => {
+  const image = await tradeReviewService.updateReviewImage(req.user, req.params.id, req.body);
+
+  res.status(200).json({
+    success: true,
+    data: image
+  });
+});
+
 const deleteReviewImage = asyncHandler(async (req, res) => {
   const result = await tradeReviewService.deleteReviewImage(req.user, req.params.id);
 
@@ -41,5 +50,6 @@ module.exports = {
   listReviewImages,
   listReviewTags,
   createReviewImage,
+  updateReviewImage,
   deleteReviewImage
 };

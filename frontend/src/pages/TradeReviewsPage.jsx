@@ -54,12 +54,18 @@ function TradeReviewsPage() {
   const [file, setFile] = useState(null);
   const [tagInput, setTagInput] = useState("");
   const [notes, setNotes] = useState("");
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState("");
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [editTags, setEditTags] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
   const [error, setError] = useState("");
   const [activeIndex, setActiveIndex] = useState(null);
+  const [imageZoom, setImageZoom] = useState(1);
   const touchStartXRef = useRef(null);
 
   async function loadImages(activeTags = selectedTags) {
@@ -130,6 +136,11 @@ function TradeReviewsPage() {
 
   const activeImage = activeIndex === null ? null : images[activeIndex];
   const pendingTags = useMemo(() => splitTags(tagInput), [tagInput]);
+  const pendingEditTags = useMemo(() => splitTags(editTags), [editTags]);
+
+  useEffect(() => {
+    setImageZoom(1);
+  }, [activeIndex]);
 
   function toggleTag(name) {
     setSelectedTags((current) =>
@@ -157,6 +168,42 @@ function TradeReviewsPage() {
     });
   }
 
+  function startEditingImage(image) {
+    setEditingId(image.id);
+    setEditTags((image.tags || []).map((tag) => tag.name).join(", "));
+    setEditNotes(image.notes || "");
+  }
+
+  function cancelEditingImage() {
+    setEditingId(null);
+    setEditTags("");
+    setEditNotes("");
+  }
+
+  async function handleSaveImageEdits(image) {
+    setSavingEdit(true);
+    setError("");
+
+    try {
+      const updatedImage = await tradeReviewService.updateImage(image.id, {
+        tags: pendingEditTags,
+        notes: editNotes
+      });
+
+      setImages((current) =>
+        current.map((item) => (item.id === updatedImage.id ? updatedImage : item))
+      );
+      notify({ title: "Review updated", description: "Notes and tags were saved.", tone: "success" });
+      cancelEditingImage();
+      await loadTags();
+    } catch (err) {
+      setError(err.message);
+      notify({ title: "Could not update review", description: err.message, tone: "error" });
+    } finally {
+      setSavingEdit(false);
+    }
+  }
+
   async function handleUpload(event) {
     event.preventDefault();
 
@@ -177,6 +224,7 @@ function TradeReviewsPage() {
       setFile(null);
       setTagInput("");
       setNotes("");
+      setIsUploadOpen(false);
       notify({ title: "Review image uploaded", description: "The trade image is now in your gallery.", tone: "success" });
       await Promise.all([loadImages(selectedTags), loadTags()]);
     } catch (err) {
@@ -234,6 +282,28 @@ function TradeReviewsPage() {
     }
   }
 
+  function handleImageWheel(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const direction = event.deltaY < 0 ? 1 : -1;
+    setImageZoom((current) => {
+      const nextZoom = current + direction * 0.12;
+      return Math.min(4, Math.max(0.5, Number(nextZoom.toFixed(2))));
+    });
+  }
+
+  function closeUploadModal() {
+    if (uploading) {
+      return;
+    }
+
+    setIsUploadOpen(false);
+    setFile(null);
+    setTagInput("");
+    setNotes("");
+  }
+
   return (
     <div className="space-y-6">
       {error ? (
@@ -242,75 +312,18 @@ function TradeReviewsPage() {
         </div>
       ) : null}
 
-      <Card title="Upload Review Image" subtitle="Add chart screenshots with a separate review-tag set and private notes.">
-        <form className="grid gap-5 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)]" onSubmit={handleUpload}>
-          <label className="flex min-h-[260px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-[6px] border border-dashed border-white/18 bg-white/[0.03] text-center transition hover:bg-white/[0.05]">
-            {previewUrl ? (
-              <img src={previewUrl} alt="Selected trade review preview" className="h-full max-h-[360px] w-full object-contain" />
-            ) : (
-              <span className="px-6">
-                <span className="block text-sm font-semibold text-white">Choose image</span>
-                <span className="mt-2 block text-sm leading-6 text-white/48">PNG, JPG, WebP, or GIF up to 12 MB</span>
-              </span>
-            )}
-            <input
-              type="file"
-              accept="image/png,image/jpeg,image/webp,image/gif"
-              className="sr-only"
-              onChange={(event) => setFile(event.target.files?.[0] || null)}
-            />
-          </label>
-
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="review-tags" className="ui-title text-[11px] text-white/54">
-                Review Tags
-              </label>
-              <input
-                id="review-tags"
-                value={tagInput}
-                onChange={(event) => setTagInput(event.target.value)}
-                className="ui-input mt-2"
-                placeholder="breakout, entry timing, risk"
-              />
-              {pendingTags.length > 0 ? (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {pendingTags.map((tag) => (
-                    <span key={tag} className="ui-chip">{tag}</span>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-
-            <div>
-              <label htmlFor="review-notes" className="ui-title text-[11px] text-white/54">
-                Notes
-              </label>
-              <textarea
-                id="review-notes"
-                value={notes}
-                onChange={(event) => setNotes(event.target.value)}
-                className="ui-input mt-2 min-h-[130px] resize-y"
-                placeholder="What happened on this trade?"
-              />
-            </div>
-
-            <button type="submit" disabled={uploading} className="ui-button-solid px-4 py-2.5 text-sm">
-              {uploading ? "Uploading..." : "Upload Image"}
+      <Card
+        action={
+          <div className="flex flex-wrap gap-2">
+            {selectedTags.length > 0 ? (
+              <button type="button" className="ui-button px-3 py-2 text-sm" onClick={() => setSelectedTags([])}>
+                Clear Filters
+              </button>
+            ) : null}
+            <button type="button" className="ui-button-solid px-4 py-2.5 text-sm" onClick={() => setIsUploadOpen(true)}>
+              Upload Image
             </button>
           </div>
-        </form>
-      </Card>
-
-      <Card
-        title="Trade Reviews Gallery"
-        subtitle="Filter uploaded trade screenshots by review tags."
-        action={
-          selectedTags.length > 0 ? (
-            <button type="button" className="ui-button px-3 py-2 text-sm" onClick={() => setSelectedTags([])}>
-              Clear Filters
-            </button>
-          ) : null
         }
       >
         <div className="mb-5 flex flex-wrap gap-2">
@@ -327,7 +340,7 @@ function TradeReviewsPage() {
               </button>
             ))
           ) : (
-            <span className="text-sm text-white/48">Review tags will appear after your first upload.</span>
+            null
           )}
         </div>
 
@@ -341,41 +354,181 @@ function TradeReviewsPage() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {images.map((image, index) => (
-              <button
+              <div
                 key={image.id}
-                type="button"
-                onClick={() => setActiveIndex(index)}
-                className="group overflow-hidden rounded-[6px] border border-[var(--line)] bg-black text-left transition hover:border-white/28"
+                className="overflow-hidden rounded-[6px] border border-[var(--line)] bg-black text-left transition hover:border-white/28"
               >
-                <div className="aspect-[4/3] bg-white/[0.03]">
-                  <img
-                    src={getTradeReviewImageUrl(image.imageUrl)}
-                    alt={image.originalName}
-                    className="h-full w-full object-cover transition duration-200 group-hover:scale-[1.015]"
-                    loading="lazy"
-                  />
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveIndex(index)}
+                  className="group block w-full text-left"
+                >
+                  <div className="aspect-[4/3] bg-white/[0.03]">
+                    <img
+                      src={getTradeReviewImageUrl(image.imageUrl)}
+                      alt={image.originalName}
+                      className="h-full w-full object-cover transition duration-200 group-hover:scale-[1.015]"
+                      loading="lazy"
+                    />
+                  </div>
+                </button>
                 <div className="space-y-3 p-4">
                   <div className="flex items-center justify-between gap-3 text-xs text-white/42">
                     <span className="truncate">{image.originalName}</span>
                     <span className="shrink-0">{formatDate(image.createdAt)}</span>
                   </div>
-                  {image.tags?.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {image.tags.map((tag) => (
-                        <span key={tag.id} className="ui-chip">{tag.name}</span>
-                      ))}
+                  {editingId === image.id ? (
+                    <div className="space-y-3">
+                      <div>
+                        <label htmlFor={`review-tags-${image.id}`} className="ui-title text-[10px] text-white/44">
+                          Review Tags
+                        </label>
+                        <input
+                          id={`review-tags-${image.id}`}
+                          value={editTags}
+                          onChange={(event) => setEditTags(event.target.value)}
+                          className="ui-input mt-2"
+                          placeholder="breakout, risk, replay"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor={`review-notes-${image.id}`} className="ui-title text-[10px] text-white/44">
+                          Notes
+                        </label>
+                        <textarea
+                          id={`review-notes-${image.id}`}
+                          value={editNotes}
+                          onChange={(event) => setEditNotes(event.target.value)}
+                          className="ui-input mt-2 min-h-[100px] resize-y"
+                          placeholder="Add notes for this review image"
+                        />
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          className="ui-button-solid px-3 py-2 text-sm"
+                          disabled={savingEdit}
+                          onClick={() => handleSaveImageEdits(image)}
+                        >
+                          {savingEdit ? "Saving..." : "Save"}
+                        </button>
+                        <button type="button" className="ui-button px-3 py-2 text-sm" onClick={cancelEditingImage}>
+                          Cancel
+                        </button>
+                      </div>
                     </div>
-                  ) : null}
-                  {image.notes ? (
-                    <p className="line-clamp-2 text-sm leading-6 text-white/58">{image.notes}</p>
-                  ) : null}
+                  ) : (
+                    <>
+                      {image.tags?.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {image.tags.map((tag) => (
+                            <span key={tag.id} className="ui-chip">{tag.name}</span>
+                          ))}
+                        </div>
+                      ) : null}
+                      {image.notes ? (
+                        <p className="line-clamp-2 text-sm leading-6 text-white/58">{image.notes}</p>
+                      ) : null}
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        <button type="button" className="ui-button px-3 py-2 text-sm" onClick={() => startEditingImage(image)}>
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="ui-button-danger px-3 py-2 text-sm"
+                          onClick={() => handleDeleteImage(image)}
+                          disabled={deletingId === image.id}
+                        >
+                          {deletingId === image.id ? "Deleting..." : "Delete"}
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         )}
       </Card>
+
+      {isUploadOpen ? (
+        <div
+          className="fixed inset-0 z-[155] flex items-center justify-center bg-black/80 px-4 py-6"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              closeUploadModal();
+            }
+          }}
+        >
+          <div className="w-full max-w-5xl rounded-[6px] border border-[var(--line)] bg-[var(--surface-1)]">
+            <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] px-5 py-4">
+              <div className="text-sm font-semibold text-white">Upload Image</div>
+              <button type="button" className="ui-button px-3 py-2" aria-label="Close upload popup" onClick={closeUploadModal}>
+                <CloseIcon />
+              </button>
+            </div>
+            <form className="grid gap-5 p-5 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)]" onSubmit={handleUpload}>
+              <label className="flex min-h-[260px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-[6px] border border-dashed border-white/18 bg-white/[0.03] text-center transition hover:bg-white/[0.05]">
+                {previewUrl ? (
+                  <img src={previewUrl} alt="Selected trade review preview" className="h-full max-h-[360px] w-full object-contain" />
+                ) : (
+                  <span className="px-6 text-sm font-semibold text-white">Choose image</span>
+                )}
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  className="sr-only"
+                  onChange={(event) => setFile(event.target.files?.[0] || null)}
+                />
+              </label>
+
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="review-tags" className="ui-title text-[11px] text-white/54">
+                    Review Tags
+                  </label>
+                  <input
+                    id="review-tags"
+                    value={tagInput}
+                    onChange={(event) => setTagInput(event.target.value)}
+                    className="ui-input mt-2"
+                    placeholder="breakout, entry timing, risk"
+                  />
+                  {pendingTags.length > 0 ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {pendingTags.map((tag) => (
+                        <span key={tag} className="ui-chip">{tag}</span>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+
+                <div>
+                  <label htmlFor="review-notes" className="ui-title text-[11px] text-white/54">
+                    Notes
+                  </label>
+                  <textarea
+                    id="review-notes"
+                    value={notes}
+                    onChange={(event) => setNotes(event.target.value)}
+                    className="ui-input mt-2 min-h-[130px] resize-y"
+                    placeholder="What happened on this trade?"
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <button type="submit" disabled={uploading} className="ui-button-solid px-4 py-2.5 text-sm">
+                    {uploading ? "Uploading..." : "Upload Image"}
+                  </button>
+                  <button type="button" disabled={uploading} className="ui-button px-4 py-2.5 text-sm" onClick={closeUploadModal}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
 
       {activeImage ? (
         <div
@@ -388,9 +541,12 @@ function TradeReviewsPage() {
           <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-white">{activeImage.originalName}</p>
-              <p className="mt-1 text-xs text-white/44">{activeIndex + 1} of {images.length}</p>
+              <p className="mt-1 text-xs text-white/44">{activeIndex + 1} of {images.length} · {Math.round(imageZoom * 100)}%</p>
             </div>
             <div className="flex items-center gap-2">
+              <button type="button" className="ui-button px-3 py-2" onClick={() => setImageZoom(1)}>
+                Reset Zoom
+              </button>
               <button type="button" className="ui-button px-3 py-2" onClick={() => handleDeleteImage(activeImage)} disabled={deletingId === activeImage.id}>
                 {deletingId === activeImage.id ? "Deleting..." : "Delete"}
               </button>
@@ -400,18 +556,35 @@ function TradeReviewsPage() {
             </div>
           </div>
 
-          <div className="relative grid min-h-0 flex-1 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 p-3 sm:p-5">
+          <div
+            className="relative grid min-h-0 flex-1 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 p-3 sm:p-5"
+            onClick={(event) => {
+              if (
+                !event.target.closest("[data-lightbox-content]") &&
+                !event.target.closest("button")
+              ) {
+                setActiveIndex(null);
+              }
+            }}
+          >
             <button type="button" className="ui-button h-12 w-12 p-0" aria-label="Previous image" onClick={showPreviousImage}>
               <ArrowIcon direction="left" />
             </button>
             <div className="flex min-h-0 flex-col items-center justify-center gap-4">
-              <img
-                src={getTradeReviewImageUrl(activeImage.imageUrl)}
-                alt={activeImage.originalName}
-                className="max-h-[78vh] max-w-full object-contain"
-              />
+              <div
+                data-lightbox-content
+                className="flex max-h-[78vh] max-w-full items-center justify-center overflow-hidden"
+                onWheel={handleImageWheel}
+              >
+                <img
+                  src={getTradeReviewImageUrl(activeImage.imageUrl)}
+                  alt={activeImage.originalName}
+                  className="max-h-[78vh] max-w-full object-contain transition-transform duration-100"
+                  style={{ transform: `scale(${imageZoom})` }}
+                />
+              </div>
               {(activeImage.tags?.length > 0 || activeImage.notes) ? (
-                <div className="w-full max-w-5xl rounded-[6px] border border-white/10 bg-black px-4 py-3">
+                <div data-lightbox-content className="w-full max-w-5xl rounded-[6px] border border-white/10 bg-black px-4 py-3">
                   {activeImage.tags?.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
                       {activeImage.tags.map((tag) => (

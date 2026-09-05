@@ -144,6 +144,57 @@ async function createReviewImage(actor, file, payload) {
   return mapReviewImage(image);
 }
 
+async function updateReviewImage(actor, imageId, payload) {
+  const existingImage = await prisma.tradeReviewImage.findFirst({
+    where: {
+      id: imageId,
+      userId: actor.id
+    }
+  });
+
+  if (!existingImage) {
+    throw new ApiError(404, "Trade review image was not found");
+  }
+
+  const tagNames = parseTags(payload.tags);
+  const tags = await ensureReviewTags(actor.id, tagNames);
+
+  const image = await prisma.$transaction(async (tx) => {
+    await tx.tradeReviewImageTag.deleteMany({
+      where: {
+        imageId: existingImage.id
+      }
+    });
+
+    return tx.tradeReviewImage.update({
+      where: {
+        id: existingImage.id
+      },
+      data: {
+        notes: String(payload.notes || "").trim() || null,
+        tags: {
+          create: tags.map((tag) => ({
+            tag: {
+              connect: {
+                id: tag.id
+              }
+            }
+          }))
+        }
+      },
+      include: {
+        tags: {
+          include: {
+            tag: true
+          }
+        }
+      }
+    });
+  });
+
+  return mapReviewImage(image);
+}
+
 async function deleteReviewImage(actor, imageId) {
   const image = await prisma.tradeReviewImage.findFirst({
     where: {
@@ -172,5 +223,6 @@ module.exports = {
   listReviewImages,
   listReviewTags,
   createReviewImage,
+  updateReviewImage,
   deleteReviewImage
 };

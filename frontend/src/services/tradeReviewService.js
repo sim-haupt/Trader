@@ -56,6 +56,15 @@ const tradeReviewService = {
     return response.data.data;
   },
 
+  async updateImage(id, { tags, notes }) {
+    const response = await api.put(`/trade-reviews/${id}`, {
+      tags: tags || [],
+      notes: notes || ""
+    });
+
+    return response.data.data;
+  },
+
   async deleteImage(id) {
     const response = await api.delete(`/trade-reviews/${id}`);
     return response.data.data;

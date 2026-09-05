@@ -41,7 +41,7 @@ function getPageMeta(pathname) {
     return { title: "Trade Review", description: "Execution detail, notes, and chart context." };
   }
   if (pathname.startsWith("/trade-reviews")) {
-    return { title: "Trades reviews", description: "Screenshot gallery for visual trade notes and review tags." };
+    return { title: "", description: "" };
   }
   if (pathname.startsWith("/trades")) {
     return { title: "Trades", description: "Import, filter, and review your full trade history." };
@@ -205,8 +205,12 @@ function AppShell() {
           <header className="top-status">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="min-w-0">
-                <p className="text-[1.05rem] font-semibold tracking-[-0.03em] text-white">{pageMeta.title}</p>
-                <p className="mt-1 text-sm text-white/36">{pageMeta.description}</p>
+                {pageMeta.title ? (
+                  <p className="text-[1.05rem] font-semibold tracking-[-0.03em] text-white">{pageMeta.title}</p>
+                ) : null}
+                {pageMeta.description ? (
+                  <p className="mt-1 text-sm text-white/36">{pageMeta.description}</p>
+                ) : null}
               </div>
 
               <div className="flex flex-wrap items-center gap-2 xl:hidden">
