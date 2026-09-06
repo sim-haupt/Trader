@@ -27,6 +27,23 @@ function parseTags(value) {
   return [...new Set(String(value).split(",").map(normalizeTagName).filter(Boolean))];
 }
 
+function parseJsonArray(value) {
+  if (!value) {
+    return [];
+  }
+
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    return [];
+  }
+}
+
 function mapReviewImage(image, options = {}) {
   const { imageUrl, ...metadata } = image;
   const mapped = {
@@ -166,45 +183,52 @@ async function listReviewTags(actor) {
   });
 }
 
-async function createReviewImage(actor, file, payload) {
-  if (!file) {
-    throw new ApiError(400, "Image file is required");
+async function createReviewImages(actor, files, payload) {
+  const uploadFiles = Array.isArray(files) ? files : [];
+
+  if (uploadFiles.length === 0) {
+    throw new ApiError(400, "At least one image file is required");
   }
 
   const tagNames = parseTags(payload.tags);
   const tags = await ensureReviewTags(actor.id, tagNames);
+  const thumbnails = parseJsonArray(payload.thumbnails);
 
-  const image = await prisma.tradeReviewImage.create({
-    data: {
-      userId: actor.id,
-      accountScope: actor.activeAccountScope,
-      filename: buildStoredFilename(file.originalname),
-      originalName: file.originalname,
-      mimeType: file.mimetype,
-      size: file.size,
-      imageUrl: buildDataUrl(file),
-      thumbnailUrl: normalizeThumbnail(payload.thumbnail),
-      notes: String(payload.notes || "").trim() || null,
-      tags: {
-        create: tags.map((tag) => ({
-          tag: {
-            connect: {
-              id: tag.id
+  const images = await prisma.$transaction(
+    uploadFiles.map((file, index) =>
+      prisma.tradeReviewImage.create({
+        data: {
+          userId: actor.id,
+          accountScope: actor.activeAccountScope,
+          filename: buildStoredFilename(file.originalname),
+          originalName: file.originalname,
+          mimeType: file.mimetype,
+          size: file.size,
+          imageUrl: buildDataUrl(file),
+          thumbnailUrl: normalizeThumbnail(thumbnails[index] || payload.thumbnail),
+          notes: String(payload.notes || "").trim() || null,
+          tags: {
+            create: tags.map((tag) => ({
+              tag: {
+                connect: {
+                  id: tag.id
+                }
+              }
+            }))
+          }
+        },
+        include: {
+          tags: {
+            include: {
+              tag: true
             }
           }
-        }))
-      }
-    },
-    include: {
-      tags: {
-        include: {
-          tag: true
         }
-      }
-    }
-  });
+      })
+    )
+  );
 
-  return mapReviewImage(image);
+  return images.map(mapReviewImage);
 }
 
 async function updateReviewImage(actor, imageId, payload) {
@@ -284,7 +308,7 @@ module.exports = {
   listReviewImages,
   listReviewTags,
   getReviewImage,
-  createReviewImage,
+  createReviewImages,
   updateReviewImage,
   deleteReviewImage
 };

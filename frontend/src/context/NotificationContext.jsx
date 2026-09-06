@@ -73,7 +73,7 @@ export function NotificationProvider({ children }) {
     <NotificationContext.Provider value={value}>
       {children}
 
-      <div className="pointer-events-none fixed right-5 top-5 z-[140] flex w-[min(420px,calc(100vw-24px))] flex-col gap-3">
+      <div className="pointer-events-none fixed right-5 top-5 z-[220] flex w-[min(420px,calc(100vw-24px))] flex-col gap-3">
         {toasts.map((toast) => (
           <div
             key={toast.id}
@@ -101,7 +101,7 @@ export function NotificationProvider({ children }) {
       </div>
 
       {confirmState ? (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 px-4">
+        <div className="fixed inset-0 z-[230] flex items-center justify-center bg-black/80 px-4">
           <div className={`w-full max-w-[460px] rounded-[6px] border p-6 ${toneStyles(confirmState.tone)}`}>
             <div className="text-lg font-semibold text-white">{confirmState.title}</div>
             {confirmState.description ? (

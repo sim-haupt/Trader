@@ -12,7 +12,7 @@ router.use(authenticate);
 router.get("/", validate(tradeReviewQuerySchema, "query"), tradeReviewController.listReviewImages);
 router.get("/tags", tradeReviewController.listReviewTags);
 router.get("/:id", tradeReviewController.getReviewImage);
-router.post("/", imageUpload.single("image"), tradeReviewController.createReviewImage);
+router.post("/", imageUpload.array("images", 20), tradeReviewController.createReviewImages);
 router.put("/:id", tradeReviewController.updateReviewImage);
 router.delete("/:id", tradeReviewController.deleteReviewImage);
 

@@ -271,11 +271,11 @@ function TradeReviewsPage() {
   const [images, setImages] = useState([]);
   const [tags, setTags] = useState([]);
   const [selectedTags, setSelectedTags] = useState([]);
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
   const [uploadTags, setUploadTags] = useState([]);
   const [notes, setNotes] = useState("");
   const [isUploadOpen, setIsUploadOpen] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState("");
+  const [previewUrls, setPreviewUrls] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
@@ -327,16 +327,18 @@ function TradeReviewsPage() {
   }, [selectedTags.join("|")]);
 
   useEffect(() => {
-    if (!file) {
-      setPreviewUrl("");
+    if (files.length === 0) {
+      setPreviewUrls([]);
       return undefined;
     }
 
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
+    const urls = files.map((file) => URL.createObjectURL(file));
+    setPreviewUrls(urls);
 
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
+    return () => {
+      urls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [files]);
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -514,8 +516,8 @@ function TradeReviewsPage() {
   async function handleUpload(event) {
     event.preventDefault();
 
-    if (!file) {
-      setError("Choose an image before uploading.");
+    if (files.length === 0) {
+      setError("Choose at least one image before uploading.");
       return;
     }
 
@@ -523,18 +525,22 @@ function TradeReviewsPage() {
     setError("");
 
     try {
-      const thumbnail = await createImageThumbnail(file);
-      await tradeReviewService.uploadImage({
-        file,
+      const thumbnails = await Promise.all(files.map((uploadFile) => createImageThumbnail(uploadFile)));
+      await tradeReviewService.uploadImages({
+        files,
         tags: uploadTags,
         notes,
-        thumbnail
+        thumbnails
       });
-      setFile(null);
+      setFiles([]);
       setUploadTags([]);
       setNotes("");
       setIsUploadOpen(false);
-      notify({ title: "Review image uploaded", description: "The trade image is now in your gallery.", tone: "success" });
+      notify({
+        title: files.length === 1 ? "Review image uploaded" : "Review images uploaded",
+        description: `${files.length} ${files.length === 1 ? "image is" : "images are"} now in your gallery.`,
+        tone: "success"
+      });
       await Promise.all([loadImages(selectedTags), loadTags()]);
     } catch (err) {
       setError(err.message);
@@ -685,7 +691,7 @@ function TradeReviewsPage() {
     }
 
     setIsUploadOpen(false);
-    setFile(null);
+    setFiles([]);
     setUploadTags([]);
     setNotes("");
   }
@@ -933,16 +939,26 @@ function TradeReviewsPage() {
             </div>
             <form className="grid gap-5 p-5 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)]" onSubmit={handleUpload}>
               <label className="flex min-h-[260px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-[6px] border border-dashed border-white/18 bg-white/[0.03] text-center transition hover:bg-white/[0.05]">
-                {previewUrl ? (
-                  <img src={previewUrl} alt="Selected trade review preview" className="h-full max-h-[360px] w-full object-contain" />
+                {previewUrls.length > 0 ? (
+                  <span className="grid max-h-[360px] w-full grid-cols-2 gap-2 overflow-y-auto p-3">
+                    {previewUrls.map((url, index) => (
+                      <img
+                        key={url}
+                        src={url}
+                        alt={`Selected trade review preview ${index + 1}`}
+                        className="aspect-[4/3] w-full rounded-[6px] border border-[var(--line)] object-cover"
+                      />
+                    ))}
+                  </span>
                 ) : (
-                  <span className="px-6 text-sm font-semibold text-white">Choose image</span>
+                  <span className="px-6 text-sm font-semibold text-white">Choose images</span>
                 )}
                 <input
                   type="file"
                   accept="image/png,image/jpeg,image/webp,image/gif"
+                  multiple
                   className="sr-only"
-                  onChange={(event) => setFile(event.target.files?.[0] || null)}
+                  onChange={(event) => setFiles(Array.from(event.target.files || []))}
                 />
               </label>
 
@@ -1023,6 +1039,15 @@ function TradeReviewsPage() {
               <p className="mt-1 text-xs text-white/44">{activeIndex + 1} of {images.length} · {Math.round(imageZoom * 100)}%</p>
             </div>
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="ui-button inline-flex h-9 w-9 items-center justify-center rounded-[6px] p-0 text-white/70 hover:text-white"
+                aria-label="Edit review image"
+                title="Edit review image"
+                onClick={() => startEditingImage(activeImage)}
+              >
+                <EditIcon />
+              </button>
               <button
                 type="button"
                 className="ui-button px-3 py-2"

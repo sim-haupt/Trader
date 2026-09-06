@@ -28,12 +28,12 @@ const getReviewImage = asyncHandler(async (req, res) => {
   });
 });
 
-const createReviewImage = asyncHandler(async (req, res) => {
-  const image = await tradeReviewService.createReviewImage(req.user, req.file, req.body);
+const createReviewImages = asyncHandler(async (req, res) => {
+  const images = await tradeReviewService.createReviewImages(req.user, req.files, req.body);
 
   res.status(201).json({
     success: true,
-    data: image
+    data: images
   });
 });
 
@@ -59,7 +59,7 @@ module.exports = {
   listReviewImages,
   listReviewTags,
   getReviewImage,
-  createReviewImage,
+  createReviewImages,
   updateReviewImage,
   deleteReviewImage
 };

@@ -50,13 +50,15 @@ const tradeReviewService = {
     return response.data.data;
   },
 
-  async uploadImage({ file, tags, notes, thumbnail }) {
+  async uploadImages({ files, tags, notes, thumbnails }) {
     const formData = new FormData();
-    formData.append("image", file);
+    (files || []).forEach((file) => {
+      formData.append("images", file);
+    });
     formData.append("tags", JSON.stringify(tags || []));
     formData.append("notes", notes || "");
-    if (thumbnail) {
-      formData.append("thumbnail", thumbnail);
+    if (thumbnails?.length) {
+      formData.append("thumbnails", JSON.stringify(thumbnails));
     }
 
     const response = await api.post("/trade-reviews", formData);
