@@ -761,7 +761,7 @@ function TradeReviewsPage() {
             {images.map((image, index) => (
               <div
                 key={image.id}
-                className="overflow-hidden rounded-[6px] border border-white/12 bg-black text-left transition-colors duration-200 hover:border-[rgba(132,183,255,0.68)]"
+                className="overflow-hidden rounded-[6px] border border-[var(--line)] bg-black text-left transition-colors duration-200 hover:border-[rgba(132,183,255,0.68)]"
               >
                 <div className="group relative">
                   <button
@@ -798,7 +798,7 @@ function TradeReviewsPage() {
                   </div>
                 </div>
                 {image.tags?.length > 0 ? (
-                  <div className="flex flex-wrap gap-2 p-4">
+                  <div className="flex flex-wrap gap-2 border-t border-[var(--line)] bg-white/[0.045] p-4">
                     {image.tags.map((tag) => (
                       <span key={tag.id} className="ui-chip">{tag.name}</span>
                     ))}
