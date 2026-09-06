@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
 import LoadingState from "../components/ui/LoadingState";
@@ -365,7 +366,7 @@ function TradeReviewsPage() {
 
   const activeImage = activeIndex === null ? null : images[activeIndex];
   const editingImage = editingId ? images.find((image) => image.id === editingId) : null;
-  const activeImageUrl = activeImage ? fullImagesById[activeImage.id] || activeImage.thumbnailUrl || "" : "";
+  const activeImageUrl = activeImage ? fullImagesById[activeImage.id] || "" : "";
   const editingImageUrl = editingImage ? fullImagesById[editingImage.id] || editingImage.thumbnailUrl || "" : "";
 
   useEffect(() => {
@@ -378,6 +379,28 @@ function TradeReviewsPage() {
     if (activeImage) {
       void loadFullImage(activeImage);
     }
+  }, [activeImage?.id]);
+
+  useEffect(() => {
+    if (!activeImage) {
+      return undefined;
+    }
+
+    const originalOverflow = document.body.style.overflow;
+    const originalOverscrollBehavior = document.body.style.overscrollBehavior;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    const originalHtmlOverscrollBehavior = document.documentElement.style.overscrollBehavior;
+    document.body.style.overflow = "hidden";
+    document.body.style.overscrollBehavior = "none";
+    document.documentElement.style.overflow = "hidden";
+    document.documentElement.style.overscrollBehavior = "none";
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.overscrollBehavior = originalOverscrollBehavior;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      document.documentElement.style.overscrollBehavior = originalHtmlOverscrollBehavior;
+    };
   }, [activeImage?.id]);
 
   useEffect(() => {
@@ -761,7 +784,7 @@ function TradeReviewsPage() {
             {images.map((image, index) => (
               <div
                 key={image.id}
-                className="overflow-hidden rounded-[6px] border border-[var(--line)] bg-black text-left transition-colors duration-200 hover:border-[rgba(132,183,255,0.68)]"
+                className="overflow-hidden rounded-[6px] border border-[var(--line)] bg-black text-left transition-colors duration-200 hover:bg-white/[0.065]"
               >
                 <div className="group relative">
                   <button
@@ -1020,9 +1043,14 @@ function TradeReviewsPage() {
         </div>
       ) : null}
 
-      {activeImage ? (
+      {activeImage ? createPortal(
         <div
-          className="fixed inset-0 z-[160] flex flex-col bg-black/95"
+          className="fixed inset-0 z-[210] flex h-dvh w-dvw flex-col overflow-hidden bg-black"
+          onWheel={(event) => {
+            if (!event.target.closest("[data-image-viewport]")) {
+              event.preventDefault();
+            }
+          }}
           onTouchStart={(event) => {
             if (imageZoom > 1 && event.target.closest("[data-lightbox-content]")) {
               touchStartXRef.current = null;
@@ -1084,6 +1112,7 @@ function TradeReviewsPage() {
             </button>
             <div className="flex min-h-0 flex-col items-center justify-center gap-4">
               <div
+                data-image-viewport
                 ref={imageViewportRef}
                 className={`flex h-[78vh] w-full max-w-full touch-none items-center justify-center overflow-hidden ${
                   imageZoom > 1 ? (isDraggingImage ? "cursor-grabbing" : "cursor-grab") : ""
@@ -1140,7 +1169,8 @@ function TradeReviewsPage() {
               <ArrowIcon direction="right" />
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       ) : null}
     </div>
   );
