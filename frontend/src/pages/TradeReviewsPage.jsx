@@ -291,6 +291,9 @@ function TradeReviewsPage() {
   const [isDraggingImage, setIsDraggingImage] = useState(false);
   const touchStartXRef = useRef(null);
   const dragStartRef = useRef(null);
+  const imageViewportRef = useRef(null);
+  const imageElementRef = useRef(null);
+  const suppressBackdropClickRef = useRef(false);
 
   async function loadImages(activeTags = selectedTags) {
     setError("");
@@ -374,6 +377,32 @@ function TradeReviewsPage() {
       void loadFullImage(activeImage);
     }
   }, [activeImage?.id]);
+
+  useEffect(() => {
+    function handleResize() {
+      setImagePan((current) => clampImagePan(current, imageZoom));
+    }
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [imageZoom]);
+
+  function clampImagePan(pan, zoom) {
+    const viewport = imageViewportRef.current;
+    const image = imageElementRef.current;
+
+    if (!viewport || !image || zoom <= 1) {
+      return { x: 0, y: 0 };
+    }
+
+    const maxX = Math.max(0, (image.clientWidth * zoom - viewport.clientWidth) / 2);
+    const maxY = Math.max(0, (image.clientHeight * zoom - viewport.clientHeight) / 2);
+
+    return {
+      x: Math.min(maxX, Math.max(-maxX, pan.x)),
+      y: Math.min(maxY, Math.max(-maxY, pan.y))
+    };
+  }
 
   function toggleTag(name) {
     setSelectedTags((current) =>
@@ -567,15 +596,41 @@ function TradeReviewsPage() {
     event.preventDefault();
     event.stopPropagation();
 
-    const direction = event.deltaY < 0 ? 1 : -1;
-    setImageZoom((current) => {
-      const nextZoom = current + direction * 0.12;
-      return Math.min(4, Math.max(0.5, Number(nextZoom.toFixed(2))));
+    const viewport = imageViewportRef.current;
+    if (!viewport) {
+      return;
+    }
+
+    const rect = viewport.getBoundingClientRect();
+    const cursorOffset = {
+      x: event.clientX - rect.left - rect.width / 2,
+      y: event.clientY - rect.top - rect.height / 2
+    };
+
+    setImageZoom((currentZoom) => {
+      const zoomFactor = event.deltaY < 0 ? 1.12 : 1 / 1.12;
+      const nextZoom = Math.min(5, Math.max(1, Number((currentZoom * zoomFactor).toFixed(3))));
+
+      setImagePan((currentPan) => {
+        if (nextZoom <= 1) {
+          return { x: 0, y: 0 };
+        }
+
+        const ratio = nextZoom / currentZoom;
+        const nextPan = {
+          x: cursorOffset.x - (cursorOffset.x - currentPan.x) * ratio,
+          y: cursorOffset.y - (cursorOffset.y - currentPan.y) * ratio
+        };
+
+        return clampImagePan(nextPan, nextZoom);
+      });
+
+      return nextZoom;
     });
   }
 
   function startImageDrag(event) {
-    if (imageZoom <= 1) {
+    if (imageZoom <= 1 || !imageElementRef.current?.contains(event.target)) {
       return;
     }
 
@@ -587,7 +642,8 @@ function TradeReviewsPage() {
       startX: event.clientX,
       startY: event.clientY,
       panX: imagePan.x,
-      panY: imagePan.y
+      panY: imagePan.y,
+      hasMoved: false
     };
     event.currentTarget.setPointerCapture(event.pointerId);
   }
@@ -600,11 +656,24 @@ function TradeReviewsPage() {
     event.preventDefault();
     const nextX = dragStartRef.current.panX + event.clientX - dragStartRef.current.startX;
     const nextY = dragStartRef.current.panY + event.clientY - dragStartRef.current.startY;
-    setImagePan({ x: nextX, y: nextY });
+    const distance = Math.hypot(event.clientX - dragStartRef.current.startX, event.clientY - dragStartRef.current.startY);
+
+    if (distance > 3) {
+      dragStartRef.current.hasMoved = true;
+      suppressBackdropClickRef.current = true;
+    }
+
+    setImagePan(clampImagePan({ x: nextX, y: nextY }, imageZoom));
   }
 
   function endImageDrag(event) {
     if (dragStartRef.current?.pointerId === event.pointerId) {
+      if (dragStartRef.current.hasMoved) {
+        window.setTimeout(() => {
+          suppressBackdropClickRef.current = false;
+        }, 0);
+      }
+
       dragStartRef.current = null;
       setIsDraggingImage(false);
     }
@@ -973,6 +1042,10 @@ function TradeReviewsPage() {
           <div
             className="relative grid min-h-0 flex-1 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 p-3 sm:p-5"
             onClick={(event) => {
+              if (suppressBackdropClickRef.current) {
+                return;
+              }
+
               if (
                 !event.target.closest("[data-lightbox-content]") &&
                 !event.target.closest("button")
@@ -986,8 +1059,8 @@ function TradeReviewsPage() {
             </button>
             <div className="flex min-h-0 flex-col items-center justify-center gap-4">
               <div
-                data-lightbox-content
-                className={`flex max-h-[78vh] max-w-full touch-none items-center justify-center overflow-hidden ${
+                ref={imageViewportRef}
+                className={`flex h-[78vh] w-full max-w-full touch-none items-center justify-center overflow-hidden ${
                   imageZoom > 1 ? (isDraggingImage ? "cursor-grabbing" : "cursor-grab") : ""
                 }`}
                 onWheel={handleImageWheel}
@@ -998,6 +1071,8 @@ function TradeReviewsPage() {
               >
                 {activeImageUrl ? (
                   <img
+                    data-lightbox-content
+                    ref={imageElementRef}
                     src={getTradeReviewImageUrl(activeImageUrl)}
                     alt={activeImage.originalName}
                     draggable="false"
@@ -1008,9 +1083,14 @@ function TradeReviewsPage() {
                     style={{
                       transform: `translate(${imagePan.x}px, ${imagePan.y}px) scale(${imageZoom})`
                     }}
+                    onLoad={() => {
+                      setImagePan((current) => clampImagePan(current, imageZoom));
+                    }}
                   />
                 ) : (
-                  <LoadingState label="Loading image..." />
+                  <div data-lightbox-content>
+                    <LoadingState label="Loading image..." />
+                  </div>
                 )}
               </div>
               {(activeImage.tags?.length > 0 || activeImage.notes || activeImage.createdAt) ? (
