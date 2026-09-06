@@ -27,11 +27,18 @@ function parseTags(value) {
   return [...new Set(String(value).split(",").map(normalizeTagName).filter(Boolean))];
 }
 
-function mapReviewImage(image) {
-  return {
-    ...image,
+function mapReviewImage(image, options = {}) {
+  const { imageUrl, ...metadata } = image;
+  const mapped = {
+    ...metadata,
     tags: image.tags?.map((item) => item.tag) || []
   };
+
+  if (options.includeImage) {
+    mapped.imageUrl = imageUrl;
+  }
+
+  return mapped;
 }
 
 function buildStoredFilename(originalName) {
@@ -45,6 +52,16 @@ function buildStoredFilename(originalName) {
 
 function buildDataUrl(file) {
   return `data:${file.mimetype};base64,${file.buffer.toString("base64")}`;
+}
+
+function normalizeThumbnail(value) {
+  const thumbnail = String(value || "").trim();
+
+  if (!thumbnail || thumbnail.length > 750_000 || !thumbnail.startsWith("data:image/")) {
+    return null;
+  }
+
+  return thumbnail;
 }
 
 async function ensureReviewTags(userId, names) {
@@ -94,7 +111,18 @@ async function listReviewImages(actor, filters = {}) {
 
   const images = await prisma.tradeReviewImage.findMany({
     where,
-    include: {
+    select: {
+      id: true,
+      userId: true,
+      accountScope: true,
+      filename: true,
+      originalName: true,
+      mimeType: true,
+      size: true,
+      thumbnailUrl: true,
+      notes: true,
+      createdAt: true,
+      updatedAt: true,
       tags: {
         include: {
           tag: true
@@ -107,6 +135,28 @@ async function listReviewImages(actor, filters = {}) {
   });
 
   return images.map(mapReviewImage);
+}
+
+async function getReviewImage(actor, imageId) {
+  const image = await prisma.tradeReviewImage.findFirst({
+    where: {
+      id: imageId,
+      userId: actor.id
+    },
+    include: {
+      tags: {
+        include: {
+          tag: true
+        }
+      }
+    }
+  });
+
+  if (!image) {
+    throw new ApiError(404, "Trade review image was not found");
+  }
+
+  return mapReviewImage(image, { includeImage: true });
 }
 
 async function listReviewTags(actor) {
@@ -133,6 +183,7 @@ async function createReviewImage(actor, file, payload) {
       mimeType: file.mimetype,
       size: file.size,
       imageUrl: buildDataUrl(file),
+      thumbnailUrl: normalizeThumbnail(payload.thumbnail),
       notes: String(payload.notes || "").trim() || null,
       tags: {
         create: tags.map((tag) => ({
@@ -184,6 +235,7 @@ async function updateReviewImage(actor, imageId, payload) {
       },
       data: {
         notes: String(payload.notes || "").trim() || null,
+        ...(payload.thumbnail ? { thumbnailUrl: normalizeThumbnail(payload.thumbnail) } : {}),
         tags: {
           create: tags.map((tag) => ({
             tag: {
@@ -231,6 +283,7 @@ async function deleteReviewImage(actor, imageId) {
 module.exports = {
   listReviewImages,
   listReviewTags,
+  getReviewImage,
   createReviewImage,
   updateReviewImage,
   deleteReviewImage

@@ -45,21 +45,30 @@ const tradeReviewService = {
     return response.data.data ?? [];
   },
 
-  async uploadImage({ file, tags, notes }) {
+  async getImage(id) {
+    const response = await api.get(`/trade-reviews/${id}`);
+    return response.data.data;
+  },
+
+  async uploadImage({ file, tags, notes, thumbnail }) {
     const formData = new FormData();
     formData.append("image", file);
     formData.append("tags", JSON.stringify(tags || []));
     formData.append("notes", notes || "");
+    if (thumbnail) {
+      formData.append("thumbnail", thumbnail);
+    }
 
     const response = await api.post("/trade-reviews", formData);
 
     return response.data.data;
   },
 
-  async updateImage(id, { tags, notes }) {
+  async updateImage(id, { tags, notes, thumbnail }) {
     const response = await api.put(`/trade-reviews/${id}`, {
       tags: tags || [],
-      notes: notes || ""
+      notes: notes || "",
+      ...(thumbnail ? { thumbnail } : {})
     });
 
     return response.data.data;
