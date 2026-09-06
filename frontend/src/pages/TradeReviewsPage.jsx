@@ -761,7 +761,7 @@ function TradeReviewsPage() {
             {images.map((image, index) => (
               <div
                 key={image.id}
-                className="overflow-hidden rounded-[6px] border border-white/22 bg-black text-left transition-colors duration-200 hover:border-[rgba(132,183,255,0.68)]"
+                className="overflow-hidden rounded-[6px] border border-white/12 bg-black text-left transition-colors duration-200 hover:border-[rgba(132,183,255,0.68)]"
               >
                 <div className="group relative">
                   <button
