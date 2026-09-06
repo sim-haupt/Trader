@@ -62,6 +62,95 @@ function DeleteIcon() {
   );
 }
 
+function MultiTagSelect({ tags, selectedTags, onToggle }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const rootRef = useRef(null);
+  const selectedLabel =
+    selectedTags.length > 0
+      ? `${selectedTags.length} selected`
+      : "Select";
+
+  useEffect(() => {
+    function handlePointerDown(event) {
+      if (rootRef.current && !rootRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  return (
+    <div ref={rootRef} className={`relative ${isOpen ? "z-[90]" : "z-0"}`}>
+      <button
+        type="button"
+        onClick={() => setIsOpen((current) => !current)}
+        className="ui-input flex min-h-[48px] w-full items-center justify-between gap-3 py-3 text-left shadow-none"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+      >
+        <span className={selectedTags.length > 0 ? "text-[var(--text)]" : "text-[var(--text-muted)]"}>
+          {selectedLabel}
+        </span>
+        <svg
+          viewBox="0 0 20 20"
+          fill="none"
+          className={`h-4 w-4 shrink-0 text-[var(--text-muted)] transition-transform ${isOpen ? "rotate-180" : ""}`}
+          aria-hidden="true"
+        >
+          <path d="M5 7.5 10 12.5 15 7.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      {isOpen ? (
+        <div className="ui-popover absolute left-0 top-[calc(100%+10px)] z-50 min-w-full overflow-hidden p-1" role="listbox">
+          <div className="max-h-72 overflow-y-auto">
+            {tags.length > 0 ? (
+              tags.map((tag) => {
+                const active = selectedTags.includes(tag.name);
+
+                return (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    onClick={() => onToggle(tag.name)}
+                    className={`flex w-full items-center justify-between rounded-[6px] px-3 py-2.5 text-sm transition ${
+                      active
+                        ? "border border-[var(--line)] bg-[#1f1f1f] text-[var(--text)]"
+                        : "text-[var(--text-muted)] hover:bg-[#1f1f1f] hover:text-[var(--text)]"
+                    }`}
+                  >
+                    <span>{tag.name}</span>
+                    {active ? (
+                      <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
+                        <path d="m4.5 10.5 3.5 3.5 7-8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    ) : null}
+                  </button>
+                );
+              })
+            ) : (
+              <div className="px-3 py-2.5 text-sm text-[var(--text-muted)]">No tags</div>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function TradeReviewsPage() {
   const { notify, confirm } = useNotifications();
   const [images, setImages] = useState([]);
@@ -154,6 +243,7 @@ function TradeReviewsPage() {
   }, [activeIndex, images.length]);
 
   const activeImage = activeIndex === null ? null : images[activeIndex];
+  const editingImage = editingId ? images.find((image) => image.id === editingId) : null;
   const pendingTags = useMemo(() => splitTags(tagInput), [tagInput]);
   const pendingEditTags = useMemo(() => splitTags(editTags), [editTags]);
 
@@ -190,6 +280,7 @@ function TradeReviewsPage() {
   }
 
   function startEditingImage(image) {
+    setActiveIndex(null);
     setEditingId(image.id);
     setEditTags((image.tags || []).map((tag) => tag.name).join(", "));
     setEditNotes(image.notes || "");
@@ -202,6 +293,10 @@ function TradeReviewsPage() {
   }
 
   async function handleSaveImageEdits(image) {
+    if (!image) {
+      return;
+    }
+
     setSavingEdit(true);
     setError("");
 
@@ -275,6 +370,7 @@ function TradeReviewsPage() {
       await tradeReviewService.deleteImage(image.id);
       notify({ title: "Image deleted", description: "The gallery has been updated.", tone: "success" });
       setActiveIndex(null);
+      cancelEditingImage();
       await Promise.all([loadImages(selectedTags), loadTags()]);
     } catch (err) {
       setError(err.message);
@@ -370,35 +466,44 @@ function TradeReviewsPage() {
       ) : null}
 
       <Card
+        title="Gallery"
         action={
           <div className="flex flex-wrap gap-2">
-            {selectedTags.length > 0 ? (
-              <button type="button" className="ui-button px-3 py-2 text-sm" onClick={() => setSelectedTags([])}>
-                Clear Filters
-              </button>
-            ) : null}
             <button type="button" className="ui-button-solid px-4 py-2.5 text-sm" onClick={() => setIsUploadOpen(true)}>
               Upload Image
             </button>
           </div>
         }
       >
-        <div className="mb-5 flex flex-wrap gap-2">
-          {tags.length > 0 ? (
-            tags.map((tag) => (
-              <button
-                key={tag.id}
-                type="button"
-                aria-pressed={selectedTags.includes(tag.name)}
-                onClick={() => toggleTag(tag.name)}
-                className="ui-chip-removable"
-              >
-                {tag.name}
+        <div className="mb-5 space-y-3">
+          <div className="grid gap-3 md:grid-cols-[minmax(0,220px)_auto] md:items-end md:justify-start">
+            <div className="min-w-0 md:w-[220px]">
+              <label className="mb-2 block text-xs font-medium text-white/72">Tags</label>
+              <MultiTagSelect tags={tags} selectedTags={selectedTags} onToggle={toggleTag} />
+            </div>
+            {selectedTags.length > 0 ? (
+              <button type="button" className="ui-button min-h-[48px] px-4 py-3 text-sm" onClick={() => setSelectedTags([])}>
+                Reset
               </button>
-            ))
-          ) : (
-            null
-          )}
+            ) : null}
+          </div>
+
+          {selectedTags.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {selectedTags.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  className="ui-chip-removable"
+                  onClick={() => toggleTag(tag)}
+                  title={`Remove ${tag}`}
+                >
+                  <span>{tag}</span>
+                  <span aria-hidden="true">x</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         {loading ? (
@@ -413,7 +518,7 @@ function TradeReviewsPage() {
             {images.map((image, index) => (
               <div
                 key={image.id}
-                className="overflow-hidden rounded-[6px] border border-[var(--line)] bg-black text-left transition hover:border-white/28"
+                className="overflow-hidden rounded-[6px] border border-[var(--line)] bg-black text-left transition-colors duration-300 hover:border-mint/70"
               >
                 <div className="group relative">
                   <button
@@ -425,9 +530,10 @@ function TradeReviewsPage() {
                       <img
                         src={getTradeReviewImageUrl(image.imageUrl)}
                         alt={image.originalName}
-                        className="h-full w-full object-cover transition duration-200 group-hover:scale-[1.015]"
+                        className="h-full w-full object-cover"
                         loading="lazy"
                       />
+                      <span className="pointer-events-none absolute inset-0 rounded-[6px] border border-mint/0 transition duration-300 group-hover:animate-pulse group-hover:border-mint/70" />
                     </div>
                   </button>
                   <div className="absolute right-2 top-2 flex gap-2">
@@ -439,60 +545,13 @@ function TradeReviewsPage() {
                     >
                       <EditIcon />
                     </button>
-                    {editingId === image.id ? (
-                      <button
-                        type="button"
-                        className="flex h-9 w-9 items-center justify-center rounded-[6px] border border-[var(--danger)]/40 bg-black/80 text-[var(--danger)] shadow-none transition hover:bg-[var(--danger-soft)]"
-                        aria-label="Delete review image"
-                        onClick={() => handleDeleteImage(image)}
-                        disabled={deletingId === image.id}
-                      >
-                        <DeleteIcon />
-                      </button>
-                    ) : null}
                   </div>
                 </div>
-                {editingId === image.id ? (
-                  <div className="space-y-3 p-4">
-                    <div className="space-y-3">
-                      <div>
-                        <label htmlFor={`review-tags-${image.id}`} className="ui-title text-[10px] text-white/44">
-                          Review Tags
-                        </label>
-                        <input
-                          id={`review-tags-${image.id}`}
-                          value={editTags}
-                          onChange={(event) => setEditTags(event.target.value)}
-                          className="ui-input mt-2"
-                          placeholder="breakout, risk, replay"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor={`review-notes-${image.id}`} className="ui-title text-[10px] text-white/44">
-                          Notes
-                        </label>
-                        <textarea
-                          id={`review-notes-${image.id}`}
-                          value={editNotes}
-                          onChange={(event) => setEditNotes(event.target.value)}
-                          className="ui-input mt-2 min-h-[100px] resize-y"
-                          placeholder="Add notes for this review image"
-                        />
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          className="ui-button-solid px-3 py-2 text-sm"
-                          disabled={savingEdit}
-                          onClick={() => handleSaveImageEdits(image)}
-                        >
-                          {savingEdit ? "Saving..." : "Save"}
-                        </button>
-                        <button type="button" className="ui-button px-3 py-2 text-sm" onClick={cancelEditingImage}>
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
+                {image.tags?.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 p-4">
+                    {image.tags.map((tag) => (
+                      <span key={tag.id} className="ui-chip">{tag.name}</span>
+                    ))}
                   </div>
                 ) : null}
               </div>
@@ -500,6 +559,101 @@ function TradeReviewsPage() {
           </div>
         )}
       </Card>
+
+      {editingImage ? (
+        <div
+          className="fixed inset-0 z-[156] flex items-center justify-center bg-black/80 px-4 py-6"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              cancelEditingImage();
+            }
+          }}
+        >
+          <div className="w-full max-w-5xl rounded-[6px] border border-[var(--line)] bg-[var(--surface-1)]">
+            <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] px-5 py-4">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-white">{editingImage.originalName}</p>
+                {editingImage.createdAt ? (
+                  <p className="mt-1 text-xs text-white/44">{formatDate(editingImage.createdAt)}</p>
+                ) : null}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-[6px] border border-[var(--danger)]/40 bg-black/80 text-[var(--danger)] shadow-none transition hover:bg-[var(--danger-soft)]"
+                  aria-label="Delete review image"
+                  onClick={() => handleDeleteImage(editingImage)}
+                  disabled={deletingId === editingImage.id}
+                >
+                  <DeleteIcon />
+                </button>
+                <button type="button" className="ui-button px-3 py-2" aria-label="Close edit popup" onClick={cancelEditingImage}>
+                  <CloseIcon />
+                </button>
+              </div>
+            </div>
+
+            <div className="grid gap-5 p-5 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)]">
+              <div className="flex min-h-[260px] items-center justify-center overflow-hidden rounded-[6px] border border-[var(--line)] bg-black">
+                <img
+                  src={getTradeReviewImageUrl(editingImage.imageUrl)}
+                  alt={editingImage.originalName}
+                  className="h-full max-h-[420px] w-full object-contain"
+                />
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor={`review-tags-edit-${editingImage.id}`} className="ui-title text-[11px] text-white/54">
+                    Review Tags
+                  </label>
+                  <input
+                    id={`review-tags-edit-${editingImage.id}`}
+                    value={editTags}
+                    onChange={(event) => setEditTags(event.target.value)}
+                    className="ui-input mt-2"
+                    placeholder="breakout, risk, replay"
+                  />
+                  {pendingEditTags.length > 0 ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {pendingEditTags.map((tag) => (
+                        <span key={tag} className="ui-chip">{tag}</span>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+
+                <div>
+                  <label htmlFor={`review-notes-edit-${editingImage.id}`} className="ui-title text-[11px] text-white/54">
+                    Notes
+                  </label>
+                  <textarea
+                    id={`review-notes-edit-${editingImage.id}`}
+                    value={editNotes}
+                    onChange={(event) => setEditNotes(event.target.value)}
+                    className="ui-input mt-2 min-h-[160px] resize-y"
+                    placeholder="Add notes for this review image"
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="ui-button-solid px-4 py-2.5 text-sm"
+                    disabled={savingEdit}
+                    onClick={() => handleSaveImageEdits(editingImage)}
+                  >
+                    {savingEdit ? "Saving..." : "Save"}
+                  </button>
+                  <button type="button" disabled={savingEdit} className="ui-button px-4 py-2.5 text-sm" onClick={cancelEditingImage}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {isUploadOpen ? (
         <div
@@ -608,9 +762,6 @@ function TradeReviewsPage() {
                 }}
               >
                 Reset Zoom
-              </button>
-              <button type="button" className="ui-button px-3 py-2" onClick={() => handleDeleteImage(activeImage)} disabled={deletingId === activeImage.id}>
-                {deletingId === activeImage.id ? "Deleting..." : "Delete"}
               </button>
               <button type="button" className="ui-button px-3 py-2" aria-label="Close image preview" onClick={() => setActiveIndex(null)}>
                 <CloseIcon />
