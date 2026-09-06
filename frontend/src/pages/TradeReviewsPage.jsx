@@ -757,11 +757,11 @@ function TradeReviewsPage() {
             description="Upload trade screenshots with review tags and notes, then use this space as your visual review board."
           />
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          <div className="grid gap-7 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {images.map((image, index) => (
               <div
                 key={image.id}
-                className="overflow-hidden rounded-[6px] border border-[var(--line)] bg-black text-left transition-colors duration-200 hover:border-white"
+                className="overflow-hidden rounded-[6px] border border-white/22 bg-black text-left transition-colors duration-200 hover:border-[rgba(132,183,255,0.68)]"
               >
                 <div className="group relative">
                   <button
