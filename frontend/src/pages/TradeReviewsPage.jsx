@@ -958,7 +958,7 @@ function TradeReviewsPage() {
             description="Upload trade screenshots with review tags and notes, then use this space as your visual review board."
           />
         ) : (
-          <div className="grid gap-7 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          <div className="grid gap-7 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
             {images.map((image, index) => (
               <div
                 key={image.id}
