@@ -45,6 +45,21 @@ const tradeReviewService = {
     return response.data.data ?? [];
   },
 
+  async createTag(name) {
+    const response = await api.post("/trade-reviews/tags", { name });
+    return response.data.data;
+  },
+
+  async updateTag(id, name) {
+    const response = await api.put(`/trade-reviews/tags/${id}`, { name });
+    return response.data.data;
+  },
+
+  async deleteTag(id) {
+    const response = await api.delete(`/trade-reviews/tags/${id}`);
+    return response.data.data;
+  },
+
   async getImage(id) {
     const response = await api.get(`/trade-reviews/${id}`);
     return response.data.data;

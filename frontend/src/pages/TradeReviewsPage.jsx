@@ -66,6 +66,21 @@ function createImageThumbnail(source, options = {}) {
   });
 }
 
+function sortTags(list) {
+  return [...list].sort((left, right) => left.name.localeCompare(right.name));
+}
+
+function mergeTag(list, nextTag) {
+  return sortTags([
+    ...list.filter((tag) => tag.id !== nextTag.id && tag.name.toLowerCase() !== nextTag.name.toLowerCase()),
+    nextTag
+  ]);
+}
+
+function replaceTagName(list, oldName, newName) {
+  return [...new Set(list.map((tag) => (tag === oldName ? newName : tag)))];
+}
+
 function ArrowIcon({ direction = "right" }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
@@ -114,9 +129,10 @@ function DeleteIcon() {
   );
 }
 
-function MultiTagSelect({ tags, selectedTags, onChange, allowCreate = false, placeholder = "Select" }) {
+function MultiTagSelect({ tags, selectedTags, onChange, onCreateTag, allowCreate = false, placeholder = "Select" }) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [creatingTag, setCreatingTag] = useState(false);
   const rootRef = useRef(null);
   const selectedLabel =
     selectedTags.length > 0
@@ -140,16 +156,30 @@ function MultiTagSelect({ tags, selectedTags, onChange, allowCreate = false, pla
     );
   }
 
-  function addSearchValue() {
+  async function addSearchValue() {
     const name = search.trim();
 
-    if (!name) {
+    if (!name || creatingTag) {
       return;
     }
 
-    onChange([...selectedTags, name]);
-    setSearch("");
-    setIsOpen(false);
+    setCreatingTag(true);
+
+    try {
+      const createdTag = onCreateTag ? await onCreateTag(name) : { name };
+      const createdName = createdTag?.name || name;
+      onChange(
+        selectedTags.some((tag) => tag.toLowerCase() === createdName.toLowerCase())
+          ? selectedTags
+          : [...selectedTags, createdName]
+      );
+      setSearch("");
+      setIsOpen(false);
+    } catch {
+      // The caller owns the notification so the dropdown can stay reusable.
+    } finally {
+      setCreatingTag(false);
+    }
   }
 
   useEffect(() => {
@@ -243,9 +273,10 @@ function MultiTagSelect({ tags, selectedTags, onChange, allowCreate = false, pla
                   <button
                     type="button"
                     onClick={addSearchValue}
+                    disabled={creatingTag}
                     className="flex w-full items-center justify-between rounded-[6px] px-3 py-2.5 text-sm text-[var(--text-muted)] transition hover:bg-[#1f1f1f] hover:text-[var(--text)]"
                   >
-                    <span>Add "{search.trim()}"</span>
+                    <span>{creatingTag ? "Adding..." : `Add "${search.trim()}"`}</span>
                   </button>
                 ) : null}
               </>
@@ -253,9 +284,10 @@ function MultiTagSelect({ tags, selectedTags, onChange, allowCreate = false, pla
               <button
                 type="button"
                 onClick={addSearchValue}
+                disabled={creatingTag}
                 className="flex w-full items-center justify-between rounded-[6px] px-3 py-2.5 text-sm text-[var(--text-muted)] transition hover:bg-[#1f1f1f] hover:text-[var(--text)]"
               >
-                <span>Add "{search.trim()}"</span>
+                <span>{creatingTag ? "Adding..." : `Add "${search.trim()}"`}</span>
               </button>
             ) : (
               <div className="px-3 py-2.5 text-sm text-[var(--text-muted)]">No tags</div>
@@ -276,6 +308,7 @@ function TradeReviewsPage() {
   const [uploadTags, setUploadTags] = useState([]);
   const [notes, setNotes] = useState("");
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isTagManagerOpen, setIsTagManagerOpen] = useState(false);
   const [previewUrls, setPreviewUrls] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -284,6 +317,11 @@ function TradeReviewsPage() {
   const [editTags, setEditTags] = useState([]);
   const [editNotes, setEditNotes] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [newTagName, setNewTagName] = useState("");
+  const [renamingTagId, setRenamingTagId] = useState(null);
+  const [renamingTagName, setRenamingTagName] = useState("");
+  const [savingTag, setSavingTag] = useState(false);
+  const [deletingTagId, setDeletingTagId] = useState(null);
   const [error, setError] = useState("");
   const [activeIndex, setActiveIndex] = useState(null);
   const [fullImagesById, setFullImagesById] = useState({});
@@ -315,6 +353,143 @@ function TradeReviewsPage() {
       setTags(data);
     } catch {
       setTags([]);
+    }
+  }
+
+  async function handleCreateReviewTag(name) {
+    const cleanName = String(name || "").trim();
+
+    if (!cleanName) {
+      throw new Error("Tag name is required.");
+    }
+
+    const existingTag = tags.find((tag) => tag.name.toLowerCase() === cleanName.toLowerCase());
+
+    if (existingTag) {
+      return existingTag;
+    }
+
+    try {
+      const createdTag = await tradeReviewService.createTag(cleanName);
+      setTags((current) => mergeTag(current, createdTag));
+      return createdTag;
+    } catch (err) {
+      notify({ title: "Could not add tag", description: err.message, tone: "error" });
+      throw err;
+    }
+  }
+
+  async function handleCreateTagFromManager(event) {
+    event.preventDefault();
+
+    if (savingTag) {
+      return;
+    }
+
+    setSavingTag(true);
+
+    try {
+      const existingTag = tags.find((tag) => tag.name.toLowerCase() === newTagName.trim().toLowerCase());
+
+      if (existingTag) {
+        setNewTagName("");
+        notify({ title: "Tag already exists", description: `${existingTag.name} is already in your review tags.`, tone: "info" });
+        return;
+      }
+
+      const createdTag = await handleCreateReviewTag(newTagName);
+      setNewTagName("");
+      notify({ title: "Tag added", description: `${createdTag.name} is ready to use.`, tone: "success" });
+    } catch {
+      // Error notification is handled by handleCreateReviewTag.
+    } finally {
+      setSavingTag(false);
+    }
+  }
+
+  function startRenamingTag(tag) {
+    setRenamingTagId(tag.id);
+    setRenamingTagName(tag.name);
+  }
+
+  function cancelRenamingTag() {
+    setRenamingTagId(null);
+    setRenamingTagName("");
+  }
+
+  async function handleRenameTag(tag) {
+    const nextName = renamingTagName.trim();
+
+    if (!nextName || savingTag) {
+      return;
+    }
+
+    const duplicateTag = tags.find(
+      (item) => item.id !== tag.id && item.name.toLowerCase() === nextName.toLowerCase()
+    );
+
+    if (duplicateTag) {
+      notify({ title: "Tag already exists", description: `${duplicateTag.name} is already in your review tags.`, tone: "info" });
+      return;
+    }
+
+    setSavingTag(true);
+
+    try {
+      const updatedTag = await tradeReviewService.updateTag(tag.id, nextName);
+      setTags((current) => mergeTag(current, updatedTag));
+      setSelectedTags((current) => replaceTagName(current, tag.name, updatedTag.name));
+      setUploadTags((current) => replaceTagName(current, tag.name, updatedTag.name));
+      setEditTags((current) => replaceTagName(current, tag.name, updatedTag.name));
+      setImages((current) =>
+        current.map((image) => ({
+          ...image,
+          tags: (image.tags || []).map((imageTag) =>
+            imageTag.id === updatedTag.id ? { ...imageTag, name: updatedTag.name } : imageTag
+          )
+        }))
+      );
+      cancelRenamingTag();
+      notify({ title: "Tag updated", description: `${updatedTag.name} was saved.`, tone: "success" });
+    } catch (err) {
+      notify({ title: "Could not rename tag", description: err.message, tone: "error" });
+    } finally {
+      setSavingTag(false);
+    }
+  }
+
+  async function handleDeleteReviewTag(tag) {
+    const confirmed = await confirm({
+      title: "Delete review tag?",
+      description: "This removes the tag from every review image.",
+      confirmLabel: "Delete Tag",
+      tone: "error"
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingTagId(tag.id);
+
+    try {
+      await tradeReviewService.deleteTag(tag.id);
+      setTags((current) => current.filter((item) => item.id !== tag.id));
+      setSelectedTags((current) => current.filter((item) => item !== tag.name));
+      setUploadTags((current) => current.filter((item) => item !== tag.name));
+      setEditTags((current) => current.filter((item) => item !== tag.name));
+      setImages((current) =>
+        current.map((image) => ({
+          ...image,
+          tags: (image.tags || []).filter((imageTag) => imageTag.id !== tag.id)
+        }))
+      );
+      cancelRenamingTag();
+      notify({ title: "Tag deleted", description: "The gallery has been updated.", tone: "success" });
+    } catch (err) {
+      notify({ title: "Could not delete tag", description: err.message, tone: "error" });
+    } finally {
+      setDeletingTagId(null);
     }
   }
 
@@ -731,6 +906,9 @@ function TradeReviewsPage() {
         title="Gallery"
         action={
           <div className="flex flex-wrap gap-2">
+            <button type="button" className="ui-button px-4 py-2.5 text-sm" onClick={() => setIsTagManagerOpen(true)}>
+              Manage Tags
+            </button>
             <button type="button" className="ui-button-solid px-4 py-2.5 text-sm" onClick={() => setIsUploadOpen(true)}>
               Upload Image
             </button>
@@ -833,6 +1011,127 @@ function TradeReviewsPage() {
         )}
       </Card>
 
+      {isTagManagerOpen ? (
+        <div
+          className="fixed inset-0 z-[155] flex items-center justify-center bg-black/80 px-4 py-6"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setIsTagManagerOpen(false);
+              cancelRenamingTag();
+            }
+          }}
+        >
+          <div className="w-full max-w-2xl rounded-[6px] border border-[var(--line)] bg-[var(--surface-1)]">
+            <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] px-5 py-4">
+              <div className="text-sm font-semibold text-white">Manage Tags</div>
+              <button
+                type="button"
+                className="ui-button px-3 py-2"
+                aria-label="Close tag manager"
+                onClick={() => {
+                  setIsTagManagerOpen(false);
+                  cancelRenamingTag();
+                }}
+              >
+                <CloseIcon />
+              </button>
+            </div>
+
+            <div className="space-y-4 p-5">
+              <form className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]" onSubmit={handleCreateTagFromManager}>
+                <input
+                  value={newTagName}
+                  onChange={(event) => setNewTagName(event.target.value)}
+                  className="ui-input min-h-[44px]"
+                  placeholder="New tag name"
+                />
+                <button type="submit" className="ui-button-solid px-4 py-2.5 text-sm" disabled={savingTag || !newTagName.trim()}>
+                  Add Tag
+                </button>
+              </form>
+
+              <div className="max-h-[48vh] overflow-y-auto rounded-[6px] border border-[var(--line)]">
+                {tags.length > 0 ? (
+                  tags.map((tag) => {
+                    const isRenaming = renamingTagId === tag.id;
+
+                    return (
+                      <div
+                        key={tag.id}
+                        className="grid gap-3 border-b border-[var(--line)] bg-white/[0.025] px-4 py-3 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+                      >
+                        {isRenaming ? (
+                          <input
+                            value={renamingTagName}
+                            onChange={(event) => setRenamingTagName(event.target.value)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") {
+                                event.preventDefault();
+                                void handleRenameTag(tag);
+                              }
+
+                              if (event.key === "Escape") {
+                                cancelRenamingTag();
+                              }
+                            }}
+                            className="ui-input min-h-[40px] px-3 py-2 text-sm"
+                            autoFocus
+                          />
+                        ) : (
+                          <div className="min-w-0">
+                            <span className="ui-chip">{tag.name}</span>
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-2">
+                          {isRenaming ? (
+                            <>
+                              <button
+                                type="button"
+                                className="ui-button-solid px-3 py-2 text-xs"
+                                disabled={savingTag || !renamingTagName.trim()}
+                                onClick={() => handleRenameTag(tag)}
+                              >
+                                Save
+                              </button>
+                              <button type="button" className="ui-button px-3 py-2 text-xs" disabled={savingTag} onClick={cancelRenamingTag}>
+                                Cancel
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              type="button"
+                              className="ui-button inline-flex h-9 w-9 items-center justify-center rounded-[6px] p-0 text-white/70 hover:text-white"
+                              aria-label={`Rename ${tag.name}`}
+                              title="Rename tag"
+                              onClick={() => startRenamingTag(tag)}
+                            >
+                              <EditIcon />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-[6px] border border-coral/35 bg-coral/10 p-0 text-coral transition hover:bg-coral/15"
+                            aria-label={`Delete ${tag.name}`}
+                            title="Delete tag"
+                            onClick={() => handleDeleteReviewTag(tag)}
+                            disabled={deletingTagId === tag.id}
+                          >
+                            <DeleteIcon />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="px-4 py-6 text-sm text-white/54">No tags yet</div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {editingImage ? (
         <div
           className="fixed inset-0 z-[156] flex items-center justify-center bg-black/80 px-4 py-6"
@@ -891,6 +1190,7 @@ function TradeReviewsPage() {
                       tags={tags}
                       selectedTags={editTags}
                       onChange={setEditTags}
+                      onCreateTag={handleCreateReviewTag}
                       allowCreate
                     />
                   </div>
@@ -995,6 +1295,7 @@ function TradeReviewsPage() {
                       tags={tags}
                       selectedTags={uploadTags}
                       onChange={setUploadTags}
+                      onCreateTag={handleCreateReviewTag}
                       allowCreate
                     />
                   </div>

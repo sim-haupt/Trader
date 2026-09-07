@@ -11,6 +11,9 @@ router.use(authenticate);
 
 router.get("/", validate(tradeReviewQuerySchema, "query"), tradeReviewController.listReviewImages);
 router.get("/tags", tradeReviewController.listReviewTags);
+router.post("/tags", tradeReviewController.createReviewTag);
+router.put("/tags/:id", tradeReviewController.updateReviewTag);
+router.delete("/tags/:id", tradeReviewController.deleteReviewTag);
 router.get("/:id", tradeReviewController.getReviewImage);
 router.post("/", imageUpload.array("images", 20), tradeReviewController.createReviewImages);
 router.put("/:id", tradeReviewController.updateReviewImage);

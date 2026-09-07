@@ -183,6 +183,77 @@ async function listReviewTags(actor) {
   });
 }
 
+async function createReviewTag(actor, payload = {}) {
+  const name = normalizeTagName(payload.name);
+
+  if (!name) {
+    throw new ApiError(400, "Tag name is required");
+  }
+
+  return prisma.tradeReviewTag.upsert({
+    where: {
+      userId_name: {
+        userId: actor.id,
+        name
+      }
+    },
+    create: {
+      userId: actor.id,
+      name
+    },
+    update: {}
+  });
+}
+
+async function updateReviewTag(actor, tagId, payload = {}) {
+  const name = normalizeTagName(payload.name);
+
+  if (!name) {
+    throw new ApiError(400, "Tag name is required");
+  }
+
+  const existingTag = await prisma.tradeReviewTag.findFirst({
+    where: {
+      id: tagId,
+      userId: actor.id
+    }
+  });
+
+  if (!existingTag) {
+    throw new ApiError(404, "Trade review tag was not found");
+  }
+
+  return prisma.tradeReviewTag.update({
+    where: {
+      id: existingTag.id
+    },
+    data: {
+      name
+    }
+  });
+}
+
+async function deleteReviewTag(actor, tagId) {
+  const existingTag = await prisma.tradeReviewTag.findFirst({
+    where: {
+      id: tagId,
+      userId: actor.id
+    }
+  });
+
+  if (!existingTag) {
+    throw new ApiError(404, "Trade review tag was not found");
+  }
+
+  await prisma.tradeReviewTag.delete({
+    where: {
+      id: existingTag.id
+    }
+  });
+
+  return { message: "Trade review tag deleted successfully" };
+}
+
 async function createReviewImages(actor, files, payload) {
   const uploadFiles = Array.isArray(files) ? files : [];
 
@@ -307,6 +378,9 @@ async function deleteReviewImage(actor, imageId) {
 module.exports = {
   listReviewImages,
   listReviewTags,
+  createReviewTag,
+  updateReviewTag,
+  deleteReviewTag,
   getReviewImage,
   createReviewImages,
   updateReviewImage,
