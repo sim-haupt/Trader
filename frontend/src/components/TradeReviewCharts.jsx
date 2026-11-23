@@ -103,7 +103,7 @@ function buildDayRange(anchorDate) {
   };
 }
 
-function buildMinuteTimeline(rawBars, dayStamp) {
+function buildMinuteTimeline(rawBars, dayStamp, entryMinute) {
   if (!dayStamp) {
     return { candleBars: [], actualBars: [], sessionStart: null, sessionEnd: null };
   }
@@ -119,8 +119,8 @@ function buildMinuteTimeline(rawBars, dayStamp) {
     )
     .sort((left, right) => left.time - right.time);
 
-  const sessionStart = getEasternTimestamp(dayStamp, 4, 0, 0);
-  const sessionEnd = getEasternTimestamp(dayStamp, 20, 0, 0);
+  const sessionStart = entryMinute == null ? getEasternTimestamp(dayStamp, 4, 0, 0) : actualBars[0]?.time ?? entryMinute;
+  const sessionEnd = entryMinute ?? getEasternTimestamp(dayStamp, 20, 0, 0);
   const actualBarMap = new Map(actualBars.map((bar) => [bar.time, bar]));
   const candleBars = [];
 
@@ -259,7 +259,7 @@ function getCandlePixelWidth(chart, time) {
   return Math.max(3, Math.round(rawWidth * 0.72));
 }
 
-function renderOverlay({ overlayEl, chart, candleSeries, bars, markers, dayStamp }) {
+function renderOverlay({ overlayEl, chart, candleSeries, bars, markers, dayStamp, blindCutoff }) {
   if (!overlayEl) {
     return;
   }
@@ -286,6 +286,16 @@ function renderOverlay({ overlayEl, chart, candleSeries, bars, markers, dayStamp
     fragment.appendChild(shadeNode);
   }
 
+  if (blindCutoff != null) {
+    const x = chart.timeScale().timeToCoordinate(blindCutoff);
+    if (x != null) {
+      const cutoffLine = document.createElement("div");
+      cutoffLine.className = "absolute inset-y-0 z-10 border-l border-dashed border-white/70";
+      cutoffLine.style.left = `${x}px`;
+      fragment.appendChild(cutoffLine);
+    }
+  }
+
   const markerStacks = new Map();
 
   for (const marker of markers) {
@@ -304,6 +314,19 @@ function renderOverlay({ overlayEl, chart, candleSeries, bars, markers, dayStamp
       (firstBarTime && snappedTime < firstBarTime) ||
       (lastBarTime && snappedTime > lastBarTime)
     ) {
+      continue;
+    }
+
+    if (marker.annotation) {
+      const note = document.createElement("span");
+      note.className = "absolute z-20 rounded border bg-black px-1.5 py-0.5 text-xs font-medium";
+      note.style.left = `${x}px`;
+      note.style.top = `${y}px`;
+      note.style.transform = "translate(-50%, -120%)";
+      note.style.color = marker.color;
+      note.style.borderColor = marker.color;
+      note.textContent = marker.annotation;
+      fragment.appendChild(note);
       continue;
     }
 
@@ -360,7 +383,11 @@ function renderOverlay({ overlayEl, chart, candleSeries, bars, markers, dayStamp
     const label = document.createElement("div");
     label.className =
       "absolute whitespace-nowrap rounded-[6px] border px-2.5 py-1 text-[10px] font-semibold tracking-[0.03em] backdrop-blur";
-    label.style.left = "24px";
+    if (blindCutoff != null) {
+      label.style.right = "15px";
+    } else {
+      label.style.left = "24px";
+    }
     label.style.top = `${isBuy ? -30 : 10}px`;
     label.style.color = markerColor;
     label.style.background = "rgba(5,5,5,0.94)";
@@ -403,8 +430,13 @@ function PremiumChart({
   candleBars,
   actualBars,
   markers,
-  dayStamp
+  dayStamp,
+  blindCutoff = null,
+  levels,
+  replay = false,
+  screenshotRef
 }) {
+  const blind = blindCutoff !== null;
   const mainRef = useRef(null);
   const macdRef = useRef(null);
   const overlayRef = useRef(null);
@@ -475,7 +507,7 @@ function PremiumChart({
     const mainChart = createChart(mainRef.current, {
       ...chartOptions,
       width: mainRef.current.clientWidth,
-      height: getChartHeights(mainRef.current.clientWidth).main
+      height: blind ? (mainRef.current.clientWidth < 500 ? 310 : 390) : getChartHeights(mainRef.current.clientWidth).main
     });
 
     const candleSeries = mainChart.addSeries(CandlestickSeries, {
@@ -487,7 +519,52 @@ function PremiumChart({
       priceLineVisible: false,
       lastValueVisible: true
     });
+    if (blind && markers[0]) {
+      candleSeries.applyOptions({
+        autoscaleInfoProvider: (original) => {
+          const info = original();
+          if (!info?.priceRange) return info;
+          return {
+            ...info,
+            priceRange: {
+              minValue: Math.min(info.priceRange.minValue, markers[0].price),
+              maxValue: Math.max(info.priceRange.maxValue, markers[0].price)
+            }
+          };
+        }
+      });
+    }
     candleSeries.setData(candleBars);
+    for (const level of levels || []) {
+      if (level.price > 0) candleSeries.createPriceLine({
+        price: level.price, color: level.color, title: level.title,
+        lineStyle: LineStyle.Dashed, axisLabelVisible: true
+      });
+    }
+    if (screenshotRef) {
+      screenshotRef.current = () => {
+        const canvas = mainChart.takeScreenshot();
+        const context = canvas.getContext("2d");
+        const scale = canvas.width / (mainRef.current?.clientWidth || canvas.width);
+        if (!context) return canvas;
+        context.scale(scale, scale);
+        context.font = "12px system-ui";
+        context.textBaseline = "bottom";
+        for (const marker of markers) {
+          const x = mainChart.timeScale().timeToCoordinate(marker.time);
+          const y = candleSeries.priceToCoordinate(marker.price);
+          if (x == null || y == null || x < 0 || y < 0) continue;
+          const label = marker.annotation ?? marker.text;
+          const maxX = canvas.width / scale - context.measureText(label).width - 12;
+          const left = Math.min(Math.max(4, x + 4), Math.max(4, maxX));
+          context.fillStyle = "#050505";
+          context.fillRect(left - 2, Math.max(1, y - 16), context.measureText(label).width + 4, 16);
+          context.fillStyle = marker.color;
+          context.fillText(label, left, Math.max(16, y));
+        }
+        return canvas;
+      };
+    }
 
     const volumeSeries = mainChart.addSeries(HistogramSeries, {
       priceScaleId: "volume",
@@ -577,7 +654,8 @@ function PremiumChart({
         candleSeries,
         bars: candleBars,
         markers,
-        dayStamp
+        dayStamp,
+        blindCutoff
       });
 
     const syncMacdLogicalRange = (range) => {
@@ -589,7 +667,11 @@ function PremiumChart({
     mainChart.timeScale().subscribeVisibleLogicalRangeChange(refreshOverlay);
     mainChart.timeScale().subscribeVisibleLogicalRangeChange(syncMacdLogicalRange);
 
-    const initialLogicalRange = getInitialLogicalRange(candleBars, markers);
+    const initialLogicalRange = replay ? { from: Math.max(0, candleBars.length - 90), to: candleBars.length + 1 }
+      : getInitialLogicalRange(candleBars, markers);
+    if (blind && initialLogicalRange) {
+      initialLogicalRange.to += Math.max(2, Math.round((initialLogicalRange.to - initialLogicalRange.from) * 0.07));
+    }
     if (initialLogicalRange) {
       mainChart.timeScale().setVisibleLogicalRange(initialLogicalRange);
       macdChart.timeScale().setVisibleLogicalRange(initialLogicalRange);
@@ -604,7 +686,7 @@ function PremiumChart({
     const resizeObserver = new ResizeObserver(() => {
       if (mainRef.current) {
         const heights = getChartHeights(mainRef.current.clientWidth);
-        mainChart.applyOptions({ width: mainRef.current.clientWidth, height: heights.main });
+        mainChart.applyOptions({ width: mainRef.current.clientWidth, height: blind ? (mainRef.current.clientWidth < 500 ? 310 : 390) : heights.main });
       }
       if (macdRef.current) {
         const heights = getChartHeights(macdRef.current.clientWidth);
@@ -617,6 +699,7 @@ function PremiumChart({
     resizeObserver.observe(macdRef.current);
 
     return () => {
+      if (screenshotRef) screenshotRef.current = null;
       cancelAnimationFrame(rafId);
       resizeObserver.disconnect();
       mainChart.timeScale().unsubscribeVisibleLogicalRangeChange(refreshOverlay);
@@ -624,7 +707,7 @@ function PremiumChart({
       mainChart.remove();
       macdChart.remove();
     };
-  }, [actualBars, candleBars, markers, dayStamp]);
+  }, [actualBars, candleBars, markers, dayStamp, blind, blindCutoff, replay, levels, screenshotRef]);
 
   return (
     <div className="space-y-3">
@@ -669,7 +752,14 @@ function TradeReviewCharts({ trade, trades, title = "Execution Review" }) {
   const anchorTrade = chartTrades[0];
   const range = buildDayRange(anchorTrade?.entryDate);
   const markers = useMemo(
-    () => chartTrades.flatMap((chartTrade) => buildExecutionMarkers(chartTrade)),
+    () => chartTrades.flatMap((chartTrade) => {
+      const annotations = [["mfePoint", "MFE", CHART_GREEN], ["maePoint", "MAE", CHART_RED]]
+        .flatMap(([key, annotation, color]) => {
+          const point = chartTrade.analysis?.execution?.[key] ?? chartTrade.entryReview?.outcome?.[key];
+          return point ? [{ ...point, annotation, color }] : [];
+        });
+      return [...buildExecutionMarkers(chartTrade), ...annotations];
+    }),
     [chartTrades]
   );
 
@@ -746,6 +836,53 @@ function TradeReviewCharts({ trade, trades, title = "Execution Review" }) {
       dayStamp={range.dayStamp}
     />
   );
+}
+
+export function BlindEntryChart({ entry }) {
+  const { fill, dayKey } = entry;
+  const entryMinute = Math.floor(new Date(fill.time).getTime() / 60_000) * 60;
+  const timeline = useMemo(() => buildMinuteTimeline(entry.bars, dayKey, entryMinute), [entry.bars, dayKey, entryMinute]);
+  const markers = useMemo(() => fill.price == null ? [] : buildExecutionMarkers({
+    id: entry.id,
+    executions: [{ occurredAt: fill.time, price: fill.price, quantity: fill.quantity, action: fill.action }]
+  }), [entry.id, fill]);
+
+  if (!timeline.actualBars.length) {
+    return <p role="status" className="ui-panel p-5 text-sm text-mist">{entry.barsError || "No completed candles are available before this fill."}</p>;
+  }
+
+  return (
+    <PremiumChart
+      title="Chart at first fill"
+      subtitle={entry.feed ? `1-minute bars · ${entry.feed.toUpperCase()}` : undefined}
+      candleBars={timeline.candleBars}
+      actualBars={timeline.actualBars}
+      markers={markers}
+      dayStamp={dayKey}
+      blindCutoff={entryMinute}
+    />
+  );
+}
+
+export function TradeReplayChart({ frame, screenshotRef }) {
+  const cutoff = Math.floor(new Date(frame.cutoff).getTime() / 60_000) * 60;
+  const timeline = useMemo(() => buildMinuteTimeline(frame.bars, frame.dayKey, cutoff), [frame.bars, frame.dayKey, cutoff]);
+  const markers = useMemo(() => [
+    ...buildExecutionMarkers({ executions: frame.executions }),
+    ...[["mfePoint", "MFE", CHART_GREEN], ["maePoint", "MAE", CHART_RED]].flatMap(([key, annotation, color]) => {
+      const point = frame.excursion[key];
+      return point ? [{ ...point, annotation, color }] : [];
+    })
+  ], [frame.executions, frame.excursion]);
+  const levels = useMemo(() => [
+    { title: "Planned stop", price: Number(frame.stop), color: CHART_RED },
+    { title: "Planned target", price: Number(frame.target), color: CHART_GREEN }
+  ], [frame.stop, frame.target]);
+
+  if (!timeline.actualBars.length) return <p role="status" className="analysis-panel text-sm text-mist">No completed market candles are available in this window.</p>;
+  return <PremiumChart title="Replay candles" subtitle={`Completed 1-minute bars${frame.feed ? ` · ${frame.feed.toUpperCase()}` : ""}`}
+    candleBars={timeline.candleBars} actualBars={timeline.actualBars} markers={markers} dayStamp={frame.dayKey}
+    levels={levels} replay screenshotRef={screenshotRef} />;
 }
 
 export default TradeReviewCharts;

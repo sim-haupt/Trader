@@ -1,3 +1,5 @@
+import TradeDisciplineCard from "./TradeDisciplineCard";
+import TradeIntelligenceCard from "./TradeIntelligenceCard";
 import { useEffect, useMemo, useState } from "react";
 import {
   Area,
@@ -675,7 +677,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
                   </button>
                 </div>
                 {isNotesEditorOpen ? (
-                  <div className="mt-4 space-y-3">
+                  <div id="trade-note-editor" className="mt-4 space-y-3">
                     <RichTextEditor
                       value={noteDraft}
                       onChange={setNoteDraft}
@@ -724,6 +726,21 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
           <Card title="Executions" className="dashboard-page-widget">
             <TimelineTable rows={tradeTimeline} />
           </Card>
+
+          <TradeDisciplineCard key={`discipline-${activeTrade.id}`} trade={activeTrade}
+            onUpdate={(analysis) => setEditableTrade((current) => ({ ...(current || activeTrade), analysis }))}
+            onPlanUpdate={(values) => setEditableTrade((current) => {
+              const base = current || activeTrade;
+              return { ...base, entryReview: { ...base.entryReview, ...values } };
+            })}
+            onEditNotes={() => {
+              setNoteDraft(activeTrade.notes || "");
+              setIsNotesEditorOpen(true);
+              requestAnimationFrame(() => document.getElementById("trade-note-editor")?.scrollIntoView({ block: "center" }));
+            }} />
+          <TradeIntelligenceCard key={activeTrade.id} trade={activeTrade}
+            onApplySetup={handleSetSetup}
+            onChange={(analysis) => setEditableTrade((current) => ({ ...(current || activeTrade), analysis }))} />
 
           <Card title="Execution Review Charts" className="dashboard-page-widget">
             <TradeReviewCharts trade={activeTrade} />

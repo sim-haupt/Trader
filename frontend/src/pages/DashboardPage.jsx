@@ -1,3 +1,5 @@
+import DashboardIntelligence from "../components/reports/DashboardIntelligence";
+import { getMarketDayKey } from "../utils/advancedAnalytics";
 import { useMemo, useState } from "react";
 import AnalyticsCharts from "../components/AnalyticsCharts";
 import EmptyState from "../components/ui/EmptyState";
@@ -27,11 +29,19 @@ function filterTradesByRange(trades, days) {
     return trades;
   }
 
-  const rangeStart = new Date();
-  rangeStart.setHours(0, 0, 0, 0);
-  rangeStart.setDate(rangeStart.getDate() - (days - 1));
+  const { from, to } = dashboardRange(days);
+  return trades.filter((trade) => {
+    const day = getMarketDayKey(new Date(trade.entryDate));
+    return day >= from && day <= to;
+  });
+}
 
-  return trades.filter((trade) => new Date(trade.entryDate) >= rangeStart);
+function dashboardRange(days) {
+  if (!days) return {};
+  const to = getMarketDayKey(new Date());
+  const start = new Date(`${to}T00:00:00Z`);
+  start.setUTCDate(start.getUTCDate() - (days - 1));
+  return { from: start.toISOString().slice(0, 10), to };
 }
 
 function DashboardPage() {
@@ -114,6 +124,8 @@ function DashboardPage() {
           </div>
         </div>
       </div>
+
+      <DashboardIntelligence key={`${user?.id}:${user?.activeAccountScope}`} {...dashboardRange(activeRange.days)} />
 
       {filteredTrades.length === 0 ? (
         <EmptyState

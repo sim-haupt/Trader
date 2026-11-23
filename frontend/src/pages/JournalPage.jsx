@@ -1,3 +1,5 @@
+import PremarketRecap from "../components/PremarketRecap";
+import usePremarketRecaps from "../hooks/usePremarketRecaps";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -793,6 +795,7 @@ function SummaryRow({ label, value, tone = "text-white" }) {
 
 function JournalDayCard({
   day,
+  premarketRecap,
   noteDraft,
   feeDraft,
   onNoteChange,
@@ -1003,6 +1006,7 @@ function JournalDayCard({
                 <div className="mt-1 text-sm text-white/58">
                   {day.totalTrades.toLocaleString("en-US")} trades · {Math.round(day.totalVolume).toLocaleString("en-US")} shares · {day.dayKey}
                 </div>
+                {premarketRecap && <div className="mt-2"><PremarketRecap recap={premarketRecap} /></div>}
               </div>
               <div className={`text-right text-xl font-semibold ${positive ? "text-mint" : negative ? "text-coral" : "text-white"}`}>
                 {formatCurrency(day.totalPnl)}
@@ -1398,6 +1402,9 @@ function JournalPage() {
     };
   }, [pagedDayKeys]);
 
+  const recapDays = [...pagedDayKeys, ...(selectedDay ? [selectedDay] : [])].sort();
+  const recaps = usePremarketRecaps({ from: recapDays[0], to: recapDays.at(-1), userId: user?.id });
+
   const pagedDays = useMemo(() => {
     const notesByDay = new Map(journalDaysResource.data.map((day) => [day.dayKey, day]));
     const pagedSet = new Set(pagedDayKeys);
@@ -1661,6 +1668,9 @@ function JournalPage() {
         />
       </Card>
 
+      {selectedDay && !pagedDays.some((day) => day.dayKey === selectedDay) && recaps.has(selectedDay) && (
+        <div className="analysis-panel"><PremarketRecap recap={recaps.get(selectedDay)} /></div>
+      )}
       {pagedDays.length === 0 ? (
         <EmptyState
           title="No journal days match these filters"
@@ -1673,6 +1683,7 @@ function JournalPage() {
             <JournalDayCard
               key={day.dayKey}
               day={day}
+              premarketRecap={recaps.get(day.dayKey)}
               noteDraft={draftNotes[day.dayKey] ?? day.note ?? ""}
               feeDraft={draftDayFees[day.dayKey] ?? buildJournalFeeDraft(day)}
               onNoteChange={handleNotesChange}

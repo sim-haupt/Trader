@@ -1,3 +1,6 @@
+import { getJournalCommissionValue, JOURNAL_COMMISSION_FIELDS } from "../../utils/journalCommissions";
+import { Link } from "react-router-dom";
+import PerformanceIntelligence from "./PerformanceIntelligence";
 import { useMemo, useState } from "react";
 import {
   Area,
@@ -37,6 +40,7 @@ function formatR(value) {
 }
 
 function formatDuration(seconds) {
+  if (seconds == null) return "Unavailable";
   const safeSeconds = Math.max(0, Number(seconds || 0));
   if (safeSeconds < 60) return `${Math.round(safeSeconds)}s`;
   const minutes = Math.floor(safeSeconds / 60);
@@ -305,6 +309,8 @@ function buildColumns(kind = "standard") {
   if (kind === "conditional") {
     return [
       ...common,
+      { key: "sessionCount", label: "Sessions" },
+      { key: "averageR", label: "Avg R", render: (row) => formatR(row.averageR) },
       { key: "averageWinner", label: "Avg winner", render: (row) => formatCurrency(row.averageWinner || 0) },
       { key: "averageLoser", label: "Avg loser", render: (row) => formatCurrency(row.averageLoser || 0) },
       { key: "medianNetPnl", label: "Median", render: (row) => formatCurrency(row.medianNetPnl || 0) },
@@ -356,6 +362,14 @@ function OverviewSection({ analytics }) {
         status="Interpret with win rate"
         metricKey="payoffRatio"
       />
+      <AdvancedMetricCard label="Gross expectancy" value={summary.grossExpectancy == null ? "Unavailable" : formatCurrency(summary.grossExpectancy)}
+        detail={`${summary.grossSamples} trades with gross results`} metricKey="netExpectancy" />
+      <AdvancedMetricCard label="Average winner / loser" value={`${formatCurrency(summary.averageWinner)} / ${formatCurrency(summary.averageLoser)}`}
+        detail="Net of recorded costs" />
+      <AdvancedMetricCard label="Profitable sessions" value={analytics.consistency.profitableSessionRate == null ? "Unavailable" : formatPercent(analytics.consistency.profitableSessionRate)}
+        detail={`${analytics.consistency.sessions} sessions with realized results`} />
+      <AdvancedMetricCard label="Session P&L / volatility" value={formatNumber(analytics.consistency.sessionProfitToVolatility)}
+        detail={`Mean session P&L divided by its sample standard deviation. Downside ratio: ${formatNumber(analytics.consistency.sessionProfitToDownside)}.`} />
       <AdvancedMetricCard label="Median net P&L" value={formatCurrency(summary.medianNetPnl || 0)} detail={`Average: ${formatCurrency(summary.averageNetPnl || 0)}`} metricKey="medianTradeResult" />
       <AdvancedMetricCard label="Median net R" value={formatR(summary.medianNetR)} detail={`Average R: ${formatR(summary.averageNetR)}`} metricKey="medianTradeResult" />
       <AdvancedMetricCard label="Trading-cost drag" value={analytics.tradingCostDrag.costDragPercent === null ? "Not meaningful" : formatPercent(analytics.tradingCostDrag.costDragPercent)} detail={`${formatCostCurrency(analytics.tradingCostDrag.totalCosts || 0)} total costs | ${formatCostCurrency(analytics.tradingCostDrag.costPerTrade || 0)} per trade`} metricKey="tradingCostDrag" />
@@ -472,7 +486,10 @@ function ExcursionSection({ analytics }) {
   );
 }
 
-function CostsAndHoldingSection({ analytics }) {
+function CostsAndHoldingSection({ analytics, journalDays }) {
+  const periodDays = new Set(analytics.trades.map(({ dayKey }) => dayKey));
+  const statements = (journalDays || []).filter((day) => periodDays.has(day.dayKey) &&
+    JOURNAL_COMMISSION_FIELDS.some(({ key }) => getJournalCommissionValue(day, key) !== 0));
   return (
     <div className="space-y-5">
       <Card>
@@ -480,16 +497,44 @@ function CostsAndHoldingSection({ analytics }) {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <AdvancedMetricCard label="Total costs" value={formatCostCurrency(analytics.tradingCostDrag.totalCosts || 0)} metricKey="tradingCostDrag" />
           <AdvancedMetricCard label="Cost per trade" value={formatCostCurrency(analytics.tradingCostDrag.costPerTrade || 0)} metricKey="tradingCostDrag" />
-          <AdvancedMetricCard label="Gross expectancy" value={formatCurrency(analytics.tradingCostDrag.grossExpectancy || 0)} metricKey="tradingCostDrag" />
+          <AdvancedMetricCard label="Gross expectancy" value={analytics.tradingCostDrag.grossExpectancy == null ? "Unavailable" : formatCurrency(analytics.tradingCostDrag.grossExpectancy)} metricKey="tradingCostDrag" />
           <AdvancedMetricCard label="Net expectancy" value={formatCurrency(analytics.tradingCostDrag.netExpectancy || 0)} metricKey="tradingCostDrag" />
         </div>
-        <div className="mt-5">
-          <UnavailablePanel
-            title="Entry and exit slippage unavailable"
-            metricKey="tradingCostDrag"
-            description="The current trade model stores fills and trade prices, but it does not store intended-entry, signal, decision, or expected-exit reference prices needed to normalize slippage without estimation."
-          />
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <AdvancedMetricCard label="Avg entry spread per share"
+            value={analytics.tradingCostDrag.entrySpread == null ? "Unavailable" : `$${analytics.tradingCostDrag.entrySpread.toFixed(4)}`}
+            detail={`${analytics.tradingCostDrag.spreadSamples} trades with a pre-fill SIP quote`} />
+          <AdvancedMetricCard label="Avg entry slippage per share"
+            value={analytics.tradingCostDrag.entrySlippage == null ? "Unavailable" : `$${analytics.tradingCostDrag.entrySlippage.toFixed(4)}`}
+            detail={`${analytics.tradingCostDrag.slippageSamples} trades with an intended entry price · positive is adverse`} />
         </div>
+        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <AdvancedMetricCard label="Commissions / fees"
+            value={`${formatCostCurrency(analytics.executionSummary.commissions)} / ${formatCostCurrency(analytics.executionSummary.fees)}`}
+            detail="Routing and regulatory splits are available in Journal for imported statements." />
+          <AdvancedMetricCard label="Actual executions" value={analytics.executionSummary.combinedFillCount}
+            detail={`${analytics.executionSummary.fillCoverage} trades with imported fills · ${analytics.executionSummary.multipleFills} with more than one fill on a side`} />
+          {[
+            ["exitSlippage", "Exit slippage to plan", false], ["stopSlippage", "Stop fill slippage", false],
+            ["entryVsMidpoint", "Entry vs quote midpoint", false], ["exitVsMidpoint", "Exit vs quote midpoint", false],
+            ["entryEfficiency", "Average entry efficiency", true], ["exitEfficiency", "Average exit efficiency", true]
+          ].map(([key, label, isPercent]) => {
+            const row = analytics.executionSummary[key];
+            return <AdvancedMetricCard key={key} label={label}
+              value={row.value == null ? "Unavailable" : isPercent ? formatPercent(row.value) : `$${row.value.toFixed(4)}`}
+              detail={`${row.count} trades · ${isPercent ? "position within a five-minute range" : "per share, positive is adverse"}`} />;
+          })}
+        </div>
+        <details className="mt-5 border-t border-[var(--line)] pt-4 text-sm">
+          <summary className="cursor-pointer">Journal routing and regulatory costs</summary>
+          <p className="mt-2 text-mist">Imported daily statement totals across {statements.length} covered dates. These account-wide costs are displayed separately from trade-level P&amp;L.</p>
+          {statements.length > 0 ? <dl className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-3">
+            {JOURNAL_COMMISSION_FIELDS.map(({ key, label }) => <div key={key}>
+              <dt className="text-mist">{label}</dt>
+              <dd className="tabular-nums">{formatCostCurrency(statements.reduce((total, day) => total + getJournalCommissionValue(day, key), 0))}</dd>
+            </div>)}
+          </dl> : <Link to="/journal" className="mt-2 inline-block text-[var(--accent)]">Open Journal</Link>}
+        </details>
       </Card>
 
       <Card>
@@ -503,13 +548,15 @@ function CostsAndHoldingSection({ analytics }) {
             { key: "averagePnl", label: "Avg P&L", render: (row) => formatCurrency(row.averagePnl || 0) },
             { key: "averageR", label: "Avg R", render: (row) => formatR(row.averageR) },
             { key: "profitFactor", label: "Profit factor", render: (row) => row.profitFactor === null ? "No losses" : formatNumber(row.profitFactor) },
+            { key: "netPerMinute", label: "Net P&L/min", render: (row) => row.netPerMinute == null ? "Unavailable" : formatCurrency(row.netPerMinute) },
             { key: "mfeCapture", label: "Avg MFE capture", render: (row) => row.mfeCapture === null ? "Unavailable" : formatPercent(row.mfeCapture) }
           ]}
           rows={analytics.holdingTimePerformance}
         />
         <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <AdvancedMetricCard label="Median holding time" value={formatDuration(analytics.trades.length ? analytics.trades.map((trade) => trade.holdSeconds).sort((a, b) => a - b)[Math.floor(analytics.trades.length / 2)] : 0)} metricKey="holdingTimePerformance" />
-          <AdvancedMetricCard label="Average holding time" value={formatDuration(analytics.trades.reduce((sum, trade) => sum + trade.holdSeconds, 0) / Math.max(analytics.trades.length, 1))} metricKey="holdingTimePerformance" detail="Time to MFE and time to stop require intratrade history." />
+          <AdvancedMetricCard label="Net P&L per minute" value={analytics.summary.netPerMinute == null ? "Unavailable" : formatCurrency(analytics.summary.netPerMinute)}
+            detail={`${analytics.summary.durationSamples} trades with positive recorded holding time`} metricKey="holdingTimePerformance" />
+          <AdvancedMetricCard label="Average holding time" value={formatDuration(analytics.summary.averageHoldSeconds)} metricKey="holdingTimePerformance" />
         </div>
       </Card>
     </div>
@@ -531,13 +578,7 @@ function BehaviorSessionRiskSection({ analytics }) {
             <DataTable columns={buildColumns()} rows={analytics.tradeNumberPerformance} />
           </div>
         </div>
-        <div className="mt-5">
-          <UnavailablePanel
-            title="Rule compliance and discipline cost unavailable"
-            metricKey="ruleCompliance"
-            description="No dedicated compliance category exists in the current trade schema. Add a trade-level compliance field before calculating rule-compliance performance or discipline cost."
-          />
-        </div>
+        <p className="mt-4 text-sm text-mist">Open the Risk &amp; simulation tab for self-reported discipline, historical limits, and rule compliance.</p>
       </Card>
 
       <Card>
@@ -580,7 +621,7 @@ function BehaviorSessionRiskSection({ analytics }) {
           <AdvancedMetricCard label="Current drawdown" value={formatCurrency(-(analytics.drawdown.currentDrawdown || 0))} tone="text-coral" metricKey="drawdown" />
           <AdvancedMetricCard label="Maximum drawdown" value={formatCurrency(-(analytics.drawdown.maxDrawdown || 0))} tone="text-coral" metricKey="drawdown" />
           <AdvancedMetricCard label="Max drawdown in R" value={formatR(analytics.drawdown.maxDrawdownR)} metricKey="drawdown" />
-          <AdvancedMetricCard label="Recovery trades" value={analytics.drawdown.tradesRequiredToRecover} detail={`${analytics.drawdown.drawdownDurationDays} calendar days in longest drawdown`} metricKey="drawdown" />
+          <AdvancedMetricCard label="Recovery trades" value={analytics.drawdown.tradesRequiredToRecover} detail={`${analytics.drawdown.longestRecoveryDays} days to recover at most · ${analytics.drawdown.drawdownDurationDays} longest underwater`} metricKey="drawdown" />
         </div>
         <div className="mt-5 h-[280px] pb-4">
           <ResponsiveContainer width="100%" height="100%">
@@ -604,7 +645,8 @@ function BehaviorSessionRiskSection({ analytics }) {
             </div>
           </div>
           <div>
-            <SectionTitle title="Losing Streaks" metricKey="losingStreaks" />
+            <SectionTitle title="Winning and Losing Streaks" metricKey="losingStreaks" />
+            <p className="mb-4 text-sm text-mist">{analytics.winningStreaks.current} current wins · {analytics.winningStreaks.longest} longest win streak</p>
             <div className="grid gap-4 md:grid-cols-2">
               <AdvancedMetricCard label="Current losing streak" value={analytics.losingStreaks.currentLosingStreak} metricKey="losingStreaks" />
               <AdvancedMetricCard label="Longest losing streak" value={analytics.losingStreaks.longestLosingStreak} metricKey="losingStreaks" />
@@ -697,7 +739,7 @@ function DataQualitySection({ analytics }) {
   );
 }
 
-function AdvancedReportsTab({ trades, defaultCommission = 0, defaultFees = 0 }) {
+function AdvancedReportsTab({ trades, premarketSnapshots, premarketError, onRefreshHistory, journalDays, defaultCommission = 0, defaultFees = 0 }) {
   const [viewMode, setViewMode] = useState("total");
   const [periodKey, setPeriodKey] = useState("");
   const [dimension, setDimension] = useState("setup");
@@ -707,12 +749,13 @@ function AdvancedReportsTab({ trades, defaultCommission = 0, defaultFees = 0 }) 
       buildAdvancedAnalytics(trades, {
         defaultCommission,
         defaultFees,
+        premarketSnapshots,
         mode: viewMode,
         periodKey,
         conditionalDimension: dimension,
         minimumSample
       }),
-    [trades, defaultCommission, defaultFees, viewMode, periodKey, dimension, minimumSample]
+    [trades, premarketSnapshots, defaultCommission, defaultFees, viewMode, periodKey, dimension, minimumSample]
   );
   const periodOptions = buildPeriodOptions(analytics);
   const effectivePeriodKey = analytics.selectedPeriodKey;
@@ -728,6 +771,7 @@ function AdvancedReportsTab({ trades, defaultCommission = 0, defaultFees = 0 }) 
 
   return (
     <div className="space-y-5">
+      {premarketError && <p role="status" className="analysis-panel text-sm text-mist">Premarket context could not load. {premarketError}</p>}
       <Card className="relative z-20 overflow-visible" bodyClassName="overflow-visible">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="flex flex-wrap items-end gap-3">
@@ -742,7 +786,8 @@ function AdvancedReportsTab({ trades, defaultCommission = 0, defaultFees = 0 }) 
                 options={[
                   { label: "Total / All Time", value: "total" },
                   { label: "Weekly", value: "weekly" },
-                  { label: "Monthly", value: "monthly" }
+                  { label: "Monthly", value: "monthly" },
+                  { label: "Yearly", value: "yearly" }
                 ]}
                 buttonClassName="!py-3"
               />
@@ -779,15 +824,27 @@ function AdvancedReportsTab({ trades, defaultCommission = 0, defaultFees = 0 }) 
         ) : null}
       </Card>
 
+      <nav className="analysis-panel flex flex-wrap gap-x-4 gap-y-2 text-sm text-[var(--accent)]" aria-label="Advanced report sections">
+        <a href="#performance-intelligence">Trading windows</a>
+        <a href="#setup-comparison">Setups</a>
+        <a href="#market-evidence">Market</a>
+        <a href="#execution-quality">Execution and holding</a>
+        <a href="#risk-and-streaks">Risk and streaks</a>
+      </nav>
       <Card>
         <SectionTitle title="Overview" metricKey="netExpectancy" />
         <OverviewSection analytics={analytics} />
+        <details className="mt-4 text-sm">
+          <summary className="cursor-pointer">Net P&amp;L distribution</summary>
+          <HistogramChart data={analytics.netDistribution} />
+        </details>
       </Card>
 
+      <PerformanceIntelligence analytics={analytics} onRefresh={onRefreshHistory} />
       <EdgeSection analytics={analytics} />
       <ExcursionSection analytics={analytics} />
-      <CostsAndHoldingSection analytics={analytics} />
-      <BehaviorSessionRiskSection analytics={analytics} />
+      <section id="execution-quality" className="scroll-mt-4"><CostsAndHoldingSection analytics={analytics} journalDays={journalDays} /></section>
+      <section id="risk-and-streaks" className="scroll-mt-4"><BehaviorSessionRiskSection analytics={analytics} /></section>
       <ConditionalSection
         analytics={analytics}
         dimension={dimension}

@@ -653,3 +653,79 @@ strong {
     padding: 16px 16px 24px;
   }
 }
+
+@layer components {
+  .analysis-panel {
+    @apply rounded-md border p-4 sm:p-5;
+    border-color: var(--line);
+    background: var(--surface-1);
+  }
+
+  .analysis-panel :is(.ui-button, .ui-button-solid):disabled {
+    @apply cursor-not-allowed opacity-50;
+  }
+
+  .analysis-tabs {
+    @apply flex flex-wrap gap-x-4 text-sm;
+  }
+
+  .analysis-tabs > :is(button, a) {
+    @apply flex min-h-11 items-center border-b border-transparent text-white/70;
+  }
+
+  .analysis-tabs > :is(button, a):is([aria-pressed="true"], [aria-current="page"]) {
+    border-bottom-color: var(--accent);
+    color: white;
+  }
+
+  .analysis-queue-row {
+    @apply flex min-h-11 flex-col items-start justify-center border-l border-transparent px-2 py-1 text-left text-sm;
+  }
+
+  .analysis-queue-row[aria-pressed="true"] {
+    border-left-color: var(--accent);
+    background: var(--surface-3);
+  }
+
+  .analysis-field {
+    @apply grid min-w-0 gap-1 text-sm;
+  }
+
+  .analysis-field > :is(input, select, textarea) {
+    @apply min-h-11 w-full rounded-md border px-3 py-2 text-white;
+    border-color: var(--line-strong);
+    background: var(--surface-2);
+    color-scheme: dark;
+  }
+
+  .analysis-field > textarea {
+    @apply resize-y;
+  }
+
+  .analysis-choice {
+    @apply grid h-11 min-w-9 place-items-center border-b border-transparent text-sm text-white/70;
+  }
+
+  .analysis-table {
+    @apply w-full whitespace-nowrap text-right text-sm tabular-nums;
+  }
+
+  .analysis-table :is(td, th) {
+    @apply h-10 px-2;
+  }
+
+  .analysis-table th:first-child {
+    @apply text-left;
+    position: sticky;
+    left: 0;
+    background: var(--surface-1);
+  }
+
+  .analysis-table tbody tr {
+    border-top: 1px solid var(--line);
+  }
+
+  .analysis-table thead th {
+    @apply font-normal text-white/70;
+  }
+}

@@ -1,3 +1,4 @@
+import { DASHBOARD_SESSIONS, getSessionBucket } from "./marketSessions.js";
 import { getTradeGrossPnl, getTradePerSharePnl, getTradePnlByType } from "./tradePnl";
 import {
   getLastMarketDayKeys,
@@ -103,25 +104,8 @@ function getTrimmedAverage(values) {
 }
 
 function getTimeBucket(date) {
-  const hours = Number(getMarketDateParts(date).hour);
-
-  if (hours < 9) {
-    return "PREMARKET";
-  }
-
-  if (hours < 11) {
-    return "OPEN";
-  }
-
-  if (hours < 14) {
-    return "MIDDAY";
-  }
-
-  if (hours < 16) {
-    return "POWER HOUR";
-  }
-
-  return "AFTER HOURS";
+  const { hour, minute } = getMarketDateParts(date);
+  return getSessionBucket(Number(hour) * 60 + Number(minute));
 }
 
 function buildHourlyPerformance(processedTrades) {
@@ -312,13 +296,7 @@ export function buildAnalytics(trades, options = {}) {
     ["Thu", 0],
     ["Fri", 0]
   ]);
-  const timeBucketMap = new Map([
-    ["PREMARKET", { label: "Premarket", pnl: 0, trades: 0 }],
-    ["OPEN", { label: "Open", pnl: 0, trades: 0 }],
-    ["MIDDAY", { label: "Midday", pnl: 0, trades: 0 }],
-    ["POWER HOUR", { label: "Power Hour", pnl: 0, trades: 0 }],
-    ["AFTER HOURS", { label: "After Hours", pnl: 0, trades: 0 }]
-  ]);
+  const timeBucketMap = new Map(DASHBOARD_SESSIONS.map((label) => [label, { label, pnl: 0, trades: 0 }]));
 
   let runningEquity = 0;
   let peakEquity = 0;

@@ -1,4 +1,5 @@
 const prisma = require("../config/prisma");
+const { Prisma } = require("@prisma/client");
 const ApiError = require("../utils/ApiError");
 const buildTradePayload = require("../utils/buildTradePayload");
 const parseNewYorkLocalDateTime = require("../utils/parseMarketDateTime");
@@ -19,6 +20,8 @@ const adminTradeInclude = {
 };
 
 const tradeDetailInclude = {
+  analysis: true,
+  entryReview: { select: { plannedStop: true, plannedInitialRisk: true, intendedPrice: true, outcome: true } },
   executions: {
     orderBy: {
       sequence: "asc"
@@ -34,6 +37,13 @@ const tradeDetailInclude = {
 };
 
 const tradeListInclude = {
+  analysis: true,
+  entryReview: {
+    select: {
+      setupFit: true, timing: true, invalidation: true, liquidity: true, wouldRetake: true,
+      plannedInitialRisk: true, plannedStop: true, intendedPrice: true, outcome: true
+    }
+  },
   executions: {
     orderBy: {
       sequence: "asc"
@@ -467,9 +477,18 @@ async function getTradeById(actor, tradeId) {
 async function updateTrade(actor, tradeId, data) {
   const existingTrade = await findAccessibleTrade(actor, tradeId);
 
-  const trade = await prisma.trade.update({
-    where: { id: tradeId },
-    data: buildTradePayload(data, existingTrade.userId, existingTrade.accountScope)
+  const payload = buildTradePayload(data, existingTrade.userId, existingTrade.accountScope);
+  const changedBasis = ["symbol", "side", "entryDate", "exitDate", "entryPrice", "exitPrice", "quantity"]
+    .some((field) => String(payload[field]) !== String(existingTrade[field]));
+  const trade = await prisma.$transaction(async (tx) => {
+    const updated = await tx.trade.update({ where: { id: tradeId }, data: payload });
+    if (changedBasis) {
+      await tx.tradeAnalysis.updateMany({
+        where: { tradeId }, data: { snapshot: Prisma.DbNull, execution: Prisma.DbNull, collectedAt: null }
+      });
+      await tx.tradeEntryReview.updateMany({ where: { tradeId }, data: { outcome: Prisma.DbNull } });
+    }
+    return updated;
   });
 
   if (data.tags) {
@@ -741,6 +760,7 @@ async function createManyTrades(userId, trades, accountScope = "SIMULATOR") {
 }
 
 module.exports = {
+  buildTradeWhere,
   createTrade,
   getTrades,
   getWidgetSummary,

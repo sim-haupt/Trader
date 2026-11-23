@@ -90,6 +90,14 @@ model User {
   taxAuditLogs TaxAuditLog[]
   tradeReviewImages TradeReviewImage[]
   tradeReviewTags TradeReviewTag[]
+  riskProfiles RiskProfile[]
+  intelligenceProfiles IntelligenceProfile[]
+  intelligenceReports IntelligenceReport[]
+  intelligenceDismissals IntelligenceDismissal[]
+  intelligenceGoals IntelligenceGoal[]
+  intelligenceUsage IntelligenceUsage[]
+  premarketScan PremarketScan?
+  premarketSnapshots PremarketSnapshot[]
 }
 
 model Trade {
@@ -121,10 +129,151 @@ model Trade {
   updatedAt            DateTime         @updatedAt
   user                 User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   executions           TradeExecution[]
+  entryReview          TradeEntryReview?
+  analysis             TradeAnalysis?
 
   @@index([userId, accountScope, entryDate])
   @@index([userId, accountScope, symbol])
   @@index([userId, accountScope, strategy])
+}
+
+model TradeAnalysis {
+  tradeId         String   @id
+  intendedExit    Decimal? @db.Decimal(18, 4)
+  stopExecutionId String?
+  snapshot        Json?
+  execution       Json?
+  collectedAt     DateTime?
+  behavior        Json?
+  replayNotes     String?
+  trade           Trade    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+}
+
+model RiskProfile {
+  userId       String
+  accountScope AccountScope
+  settings     Json
+  simulation   Json?
+  user         User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, accountScope])
+}
+
+model IntelligenceProfile {
+  userId       String
+  accountScope AccountScope
+  settings     Json
+  nextRunAt    DateTime?
+  leaseUntil   DateTime?
+  user         User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, accountScope])
+  @@index([nextRunAt])
+}
+
+model IntelligenceReport {
+  id           String @id @default(cuid())
+  userId       String
+  accountScope AccountScope
+  reportKey    String
+  kind         String
+  fromDay      String
+  toDay        String
+  payload      Json
+  createdAt    DateTime @default(now())
+  user         User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, accountScope, reportKey])
+  @@index([userId, accountScope, createdAt])
+}
+
+model IntelligenceDismissal {
+  userId       String
+  accountScope AccountScope
+  fingerprint  String
+  createdAt    DateTime @default(now())
+  user         User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, accountScope, fingerprint])
+  @@index([userId, accountScope, createdAt])
+}
+
+model IntelligenceGoal {
+  id           String @id @default(cuid())
+  userId       String
+  accountScope AccountScope
+  title        String
+  metric       String
+  direction    String
+  target       Float
+  settings     Json
+  startsOn     String
+  archivedAt   DateTime?
+  createdAt    DateTime @default(now())
+  user         User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  observations IntelligenceGoalObservation[]
+
+  @@index([userId, accountScope, archivedAt])
+}
+
+model IntelligenceGoalObservation {
+  goalId       String
+  dayKey       String
+  value        Float
+  sampleCount  Int
+  goal         IntelligenceGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@id([goalId, dayKey])
+}
+
+model IntelligenceUsage {
+  userId       String
+  dayKey       String
+  calls        Int @default(0)
+  user         User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, dayKey])
+}
+
+model TradeEntryReview {
+  tradeId            String   @id
+  setupFit           Int
+  timing             Int
+  invalidation       Int
+  liquidity          Int
+  wouldRetake        Boolean
+  notes              String
+  postRevealNotes    String?
+  plannedStop        Decimal? @db.Decimal(18, 4)
+  plannedInitialRisk Decimal? @db.Decimal(18, 4)
+  intendedPrice      Decimal? @db.Decimal(18, 4)
+  outcome            Json?
+  gradedAt           DateTime @default(now())
+  trade              Trade    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+}
+
+model PremarketScan {
+  userId         String  @id
+  symbols        String[]
+  minDollarVolume Int
+  automatic      Boolean @default(false)
+  user           User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PremarketSnapshot {
+  id            String   @id @default(cuid())
+  userId        String
+  universeKey   String
+  dayKey        String
+  checkpoint    String
+  feed          String
+  cutoff        DateTime
+  recordedAt    DateTime @default(now())
+  metrics       Json
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, universeKey, feed, dayKey, checkpoint], map: "PremarketSnapshot_scope_checkpoint_key")
+  @@index([userId, universeKey, feed, checkpoint, dayKey], map: "PremarketSnapshot_scope_history_idx")
 }
 
 model TradeExecution {

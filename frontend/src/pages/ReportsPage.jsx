@@ -1,3 +1,9 @@
+import { useSearchParams } from "react-router-dom";
+import IntelligenceWorkspace from "../components/reports/IntelligenceWorkspace";
+import RiskWorkspace from "../components/reports/RiskWorkspace";
+import { getMarketDayKey, getMarketParts } from "../utils/advancedAnalytics";
+import { getMarketSession } from "../utils/marketSessions";
+import analysisService from "../services/analysisService";
 import { useEffect, useMemo, useState } from "react";
 import {
   Area,
@@ -26,7 +32,7 @@ import LoadingState from "../components/ui/LoadingState";
 import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
 import tagService from "../services/tagService";
 import setupService from "../services/setupService";
-import tradeService from "../services/tradeService";
+import tradeService, { clearTradeCaches } from "../services/tradeService";
 import journalService from "../services/journalService";
 import { formatCostCurrency, formatCurrency, formatPercent } from "../utils/formatters";
 import { useAuth } from "../context/AuthContext";
@@ -44,6 +50,8 @@ const TAB_ITEMS = [
   "Overview",
   "Detailed",
   "Advanced",
+  "Intelligence",
+  "Risk & simulation",
   "Strategy",
   "Win vs Loss Days",
   "Drawdown",
@@ -64,6 +72,7 @@ const REPORT_FILTERS = {
   tag: "",
   setup: "",
   side: "",
+  session: "",
   from: "",
   to: ""
 };
@@ -2094,9 +2103,10 @@ function applyReportFilters(trades, filters, rangeDays) {
       const tradeDate = new Date(trade.entryDate);
       return tradeDate > latest ? tradeDate : latest;
     }, new Date(nextTrades[0].entryDate));
-    const rangeStart = startOfDay(latestTradeDate);
-    rangeStart.setDate(rangeStart.getDate() - (rangeDays - 1));
-    nextTrades = nextTrades.filter((trade) => new Date(trade.entryDate) >= rangeStart);
+    const rangeStart = new Date(`${getMarketDayKey(latestTradeDate)}T00:00:00Z`);
+    rangeStart.setUTCDate(rangeStart.getUTCDate() - (rangeDays - 1));
+    const fromKey = rangeStart.toISOString().slice(0, 10);
+    nextTrades = nextTrades.filter((trade) => getMarketDayKey(new Date(trade.entryDate)) >= fromKey);
   }
 
   if (filters.symbol) {
@@ -2120,16 +2130,18 @@ function applyReportFilters(trades, filters, rangeDays) {
     nextTrades = nextTrades.filter((trade) => trade.side === filters.side);
   }
 
-  if (filters.from) {
-    const from = new Date(filters.from);
-    from.setHours(0, 0, 0, 0);
-    nextTrades = nextTrades.filter((trade) => new Date(trade.entryDate) >= from);
+  if (filters.session) {
+    nextTrades = nextTrades.filter((trade) => {
+      const parts = getMarketParts(new Date(trade.executions?.[0]?.occurredAt || trade.entryDate));
+      return getMarketSession(Number(parts.hour) * 60 + Number(parts.minute)) === filters.session;
+    });
   }
 
-  if (filters.to) {
-    const to = new Date(filters.to);
-    to.setHours(23, 59, 59, 999);
-    nextTrades = nextTrades.filter((trade) => new Date(trade.entryDate) <= to);
+  if (filters.from || filters.to) {
+    nextTrades = nextTrades.filter((trade) => {
+      const day = getMarketDayKey(new Date(trade.entryDate));
+      return (!filters.from || day >= filters.from) && (!filters.to || day <= filters.to);
+    });
   }
 
   return nextTrades;
@@ -2193,7 +2205,11 @@ function applyCompareGroupFilters(trades, filters, options = {}) {
 
 function ReportsPage() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState("Overview");
+  const [searchParams] = useSearchParams();
+  const requestedView = searchParams.get("view");
+  const tabForView = requestedView === "intelligence" ? "Intelligence" : requestedView === "risk" ? "Risk & simulation" : null;
+  const [activeTab, setActiveTab] = useState(tabForView || "Overview");
+  useEffect(() => { if (tabForView) setActiveTab(tabForView); }, [tabForView]);
   const [rangeKey, setRangeKey] = useState("ALL");
   const [filters, setFilters] = useState(REPORT_FILTERS);
   const [groupAFilters, setGroupAFilters] = useState(COMPARE_GROUP_FILTERS);
@@ -2210,7 +2226,8 @@ function ReportsPage() {
   const {
     data: trades,
     loading,
-    error
+    error,
+    reload: reloadTrades
   } = useCachedAsyncResource({
     peek: () => tradeService.peekTrades(),
     load: () => tradeService.getTrades(),
@@ -2235,6 +2252,18 @@ function ReportsPage() {
     initialValue: [],
     deps: [user?.activeAccountScope, user?.liveDataStartDate]
   });
+
+  const premarketResource = useCachedAsyncResource({
+    load: () => analysisService.getEntryContext(),
+    initialValue: [],
+    enabled: activeTab === "Advanced",
+    deps: [user?.id, activeTab]
+  });
+
+  const intelligenceFilters = useMemo(() => Object.fromEntries(Object.entries(filters).filter(([key, value]) =>
+    !["from", "to"].includes(key) && value)), [filters]);
+  const lastTradingDate = useMemo(() => trades.length ? getMarketDayKey(new Date(trades.reduce((latest, trade) =>
+    Date.parse(trade.entryDate) > Date.parse(latest.entryDate) ? trade : latest, trades[0]).entryDate)) : getMarketDayKey(new Date()), [trades]);
 
   const activeRange = RANGE_OPTIONS.find((item) => item.key === rangeKey) || RANGE_OPTIONS[0];
   const journalCommissionsByDay = useMemo(
@@ -2425,15 +2454,12 @@ function ReportsPage() {
     return <div className="ui-notice border-coral/20 bg-coral/10 text-coral">{error}</div>;
   }
 
-  if (trades.length === 0) {
-    return (
-      <EmptyState
-        title="No trades yet"
-        description="Import or add trades to unlock your overview reports."
-      />
-    );
-  }
 
+
+  const intelligenceTo = filters.to || lastTradingDate;
+  const intelligenceStart = new Date(`${intelligenceTo}T00:00:00Z`);
+  intelligenceStart.setUTCDate(intelligenceStart.getUTCDate() - ((activeRange.days || 30) - 1));
+  const intelligenceRange = { from: filters.from || intelligenceStart.toISOString().slice(0, 10), to: intelligenceTo };
   const suffix = activeRange.days ? `(${activeRange.days} Days)` : "(All)";
   const pnlLabel = pnlType === "GROSS" ? "GROSS" : "NET";
 
@@ -2491,6 +2517,13 @@ function ReportsPage() {
                 buttonClassName="!py-3"
               />
             </div>
+            <label className="analysis-field min-w-0">
+              Session (ET)
+              <select value={filters.session} onChange={(event) => updateFilter("session", event.target.value)}>
+                <option value="">All sessions</option>
+                {["Premarket", "Regular", "After hours", "Overnight"].map((session) => <option key={session}>{session}</option>)}
+              </select>
+            </label>
             <div className="min-w-0 xl:w-[180px]">
               <label className="mb-2 block text-xs font-medium text-white/72">Date range</label>
               <DateRangePicker
@@ -2560,7 +2593,12 @@ function ReportsPage() {
         </div>
       </div>
 
-      {filteredTrades.length === 0 ? (
+      {activeTab === "Intelligence" ? (
+        <IntelligenceWorkspace key={JSON.stringify([user?.id, user?.activeAccountScope, intelligenceRange, intelligenceFilters])}
+          initialRange={intelligenceRange} filters={intelligenceFilters} />
+      ) : activeTab === "Risk & simulation" ? (
+        <RiskWorkspace key={`${user?.id}:${user?.activeAccountScope}`} trades={filteredTrades} />
+      ) : filteredTrades.length === 0 ? (
         <EmptyState
           title="No trades match these filters"
           description="Try expanding the date range or clearing one of the report filters."
@@ -2581,6 +2619,10 @@ function ReportsPage() {
       ) : activeTab === "Advanced" ? (
         <AdvancedReportsTab
           trades={filteredTrades}
+          premarketSnapshots={premarketResource.data}
+          premarketError={premarketResource.error}
+          journalDays={journalDays}
+          onRefreshHistory={() => { clearTradeCaches(); return reloadTrades(); }}
           defaultCommission={user?.defaultCommission ?? 0}
           defaultFees={user?.defaultFees ?? 0}
         />

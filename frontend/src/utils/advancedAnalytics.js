@@ -1,3 +1,5 @@
+import { buildMarketAssociations, calculateConsistency, getExecutionFacts, getMarketFactors, summarizeExecution } from "./performanceIntelligence.js";
+import { getMarketSession, getSessionBucket, isPremarketMinute } from "./marketSessions.js";
 import {
   getEffectiveTradeCosts,
   getTradeGrossPnl,
@@ -54,22 +56,29 @@ function getField(trade, keys) {
 }
 
 function getDate(value) {
+  if (value == null || value === "") return null;
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+const marketFormatters = new Map();
+
 export function getMarketParts(date, timeZone = MARKET_TIME_ZONE) {
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    weekday: "short",
-    hourCycle: "h23"
-  });
+  let formatter = marketFormatters.get(timeZone);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      weekday: "short",
+      hourCycle: "h23"
+    });
+    marketFormatters.set(timeZone, formatter);
+  }
 
   return Object.fromEntries(
     formatter
@@ -86,25 +95,25 @@ export function getMarketDayKey(date, timeZone = MARKET_TIME_ZONE) {
 
 function getWeekStartDate(date) {
   const next = new Date(date);
-  next.setHours(0, 0, 0, 0);
-  const day = next.getDay();
+  next.setUTCHours(0, 0, 0, 0);
+  const day = next.getUTCDay();
   const diff = day === 0 ? -6 : 1 - day;
-  next.setDate(next.getDate() + diff);
+  next.setUTCDate(next.getUTCDate() + diff);
   return next;
 }
 
 function getDateKey(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
 }
 
 function addDays(date, days) {
   const next = new Date(date);
-  next.setDate(next.getDate() + days);
+  next.setUTCDate(next.getUTCDate() + days);
   return next;
 }
 
 function addMonths(date, months) {
-  return new Date(date.getFullYear(), date.getMonth() + months, 1);
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + months, 1));
 }
 
 export function getPeriodKey(date, mode) {
@@ -115,22 +124,21 @@ export function getPeriodKey(date, mode) {
     return getDateKey(getWeekStartDate(marketDate));
   }
 
-  if (mode === "monthly") {
-    return `${parts.year}-${parts.month}`;
-  }
+  if (mode === "monthly") return `${parts.year}-${parts.month}`;
+  if (mode === "yearly") return parts.year;
 
   return "ALL";
 }
 
 function getPeriodRange(mode, periodKey, sortedTrades) {
   if (mode === "weekly") {
-    const start = new Date(`${periodKey}T00:00:00`);
+    const start = new Date(`${periodKey}T00:00:00Z`);
     return { start, end: addDays(start, 7), previousStart: addDays(start, -7), previousEnd: start };
   }
 
   if (mode === "monthly") {
     const [year, month] = String(periodKey).split("-").map(Number);
-    const start = new Date(year, month - 1, 1);
+    const start = new Date(Date.UTC(year, month - 1, 1));
     const end = addMonths(start, 1);
     const previousStart = addMonths(start, -1);
     return { start, end, previousStart, previousEnd: start };
@@ -154,16 +162,17 @@ function getPreviousPeriodKey(mode, periodKey) {
     return `${previousYear}-${String(previousMonth).padStart(2, "0")}`;
   }
 
+  if (mode === "yearly") return String(Number(periodKey) - 1);
   return null;
 }
 
 function inRange(item, start, end) {
-  return item.entryDate >= start && item.entryDate < end;
+  return item.dayKey >= start.toISOString().slice(0, 10) && item.dayKey < end.toISOString().slice(0, 10);
 }
 
 function getRMultiple(trade, netPnl) {
   const risk = finiteNumber(
-    getField(trade, ["plannedInitialRisk", "plannedRisk", "initialRisk", "riskAmount"])
+    trade.entryReview?.plannedInitialRisk ?? getField(trade, ["plannedInitialRisk", "plannedRisk", "initialRisk", "riskAmount"])
   );
 
   if (!risk || risk <= 0) {
@@ -179,13 +188,14 @@ function getExcursion(trade, kind) {
       ? ["mfe", "maxFavorableExcursion", "maximumFavorableExcursion", "mfeAmount"]
       : ["mae", "maxAdverseExcursion", "maximumAdverseExcursion", "maeAmount"];
 
-  const value = finiteNumber(getField(trade, keys));
+  const value = finiteNumber(trade.analysis?.execution?.[kind] ?? trade.entryReview?.outcome?.[kind] ?? getField(trade, keys));
   return value === null ? null : Math.abs(value);
 }
 
 export function normalizeAdvancedTrades(trades, options = {}) {
   const defaultCommission = options.defaultCommission ?? 0;
   const defaultFees = options.defaultFees ?? 0;
+  const snapshotsByDay = groupBy(options.premarketSnapshots || [], (snapshot) => snapshot.dayKey);
 
   return (Array.isArray(trades) ? trades : [])
     .map((trade, sourceIndex) => {
@@ -194,8 +204,13 @@ export function normalizeAdvancedTrades(trades, options = {}) {
         return null;
       }
 
-      const exitDate = getDate(trade?.exitDate) || entryDate;
-      const grossPnl = getTradeGrossPnl(trade);
+      const actualExit = getDate(trade?.exitDate);
+      const exitDate = actualExit || entryDate;
+      const exitParts = actualExit && getMarketParts(actualExit, MARKET_TIME_ZONE);
+      const grossReported = finiteNumber(trade.grossPnl);
+      const netReported = finiteNumber(trade.netPnl);
+      if (grossReported === null && netReported === null) return null;
+      const grossPnl = grossReported === null ? null : getTradeGrossPnl(trade);
       const netPnl = getTradeNetPnl(trade, defaultCommission, defaultFees);
       const costs = getEffectiveTradeCosts(trade, defaultCommission, defaultFees);
       const rMultiple = getRMultiple(trade, netPnl);
@@ -208,6 +223,19 @@ export function normalizeAdvancedTrades(trades, options = {}) {
       const parts = getMarketParts(entryDate, options.timeZone || MARKET_TIME_ZONE);
       const mfe = getExcursion(trade, "mfe");
       const mae = getExcursion(trade, "mae");
+      const review = trade.entryReview;
+      const outcome = trade.analysis?.execution ?? review?.outcome;
+      const executionFacts = getExecutionFacts(trade);
+      const spread = finiteNumber(outcome?.spreadPerShare);
+      const entryScore = review ? review.setupFit + review.timing + review.invalidation + review.liquidity : null;
+      const fillTime = getDate(trade.executions?.[0]?.occurredAt) ?? entryDate;
+      const fillParts = getMarketParts(fillTime, MARKET_TIME_ZONE);
+      const fillMinute = Number(fillParts.hour) * 60 + Number(fillParts.minute);
+      const checkpoint = isPremarketMinute(fillMinute)
+        ? snapshotsByDay.get(getMarketDayKey(fillTime))?.slice().reverse().find((snapshot) =>
+          new Date(snapshot.recordedAt) <= fillTime && new Date(snapshot.cutoff) <= fillTime
+        )
+        : null;
 
       return {
         id: trade?.id || `trade-${sourceIndex}`,
@@ -217,7 +245,16 @@ export function normalizeAdvancedTrades(trades, options = {}) {
         exitDate,
         dayKey,
         weekday: parts.weekday,
-        minutesFromMidnight: Number(parts.hour) * 60 + Number(parts.minute),
+        minutesFromMidnight: fillMinute,
+        entryScore,
+        wouldRetake: review?.wouldRetake ?? null,
+        premarketHeat: checkpoint?.heat ?? null,
+        spreadPerShare: spread,
+        slippagePerShare: executionFacts.entrySlippage ?? finiteNumber(review?.outcome?.slippagePerShare),
+        executionFacts,
+        factors: getMarketFactors(trade, spread),
+        actualExit,
+        exitMinute: exitParts ? Number(exitParts.hour) * 60 + Number(exitParts.minute) : null,
         grossPnl,
         netPnl,
         costs,
@@ -226,18 +263,16 @@ export function normalizeAdvancedTrades(trades, options = {}) {
         symbol,
         side,
         quantity,
-        holdSeconds,
+        holdSeconds: actualExit && exitDate >= entryDate ? holdSeconds : null,
         mfe,
         mae,
-        tags: String(trade?.tags || "")
-          .split(",")
-          .map((tag) => tag.trim())
-          .filter(Boolean),
+        tags: Array.from(new Map(String(trade?.tags || "").split(",").map((tag) => tag.trim()).filter(Boolean)
+          .map((tag) => [tag.toLowerCase(), tag])).values()),
         exitReason: String(getField(trade, ["exitReason", "exit_reason"]) || "Unclassified"),
         entryReason: String(getField(trade, ["entryReason", "entry_reason"]) || "Unclassified"),
         orderType: String(getField(trade, ["orderType", "order_type"]) || "Unclassified"),
         marketCondition: String(getField(trade, ["marketCondition", "market_condition"]) || "Unclassified"),
-        ruleCompliance: String(getField(trade, ["ruleCompliance", "complianceCategory"]) || "Unclassified"),
+        ruleCompliance: String(getField(trade, ["ruleCompliance", "complianceCategory"]) || (trade.analysis?.behavior?.setup === "unknown" ? null : trade.analysis?.behavior?.setup) || "Unclassified"),
         relativeVolume: finiteNumber(getField(trade, ["entryRelativeVolume", "relativeVolume"])),
         gapPercent: finiteNumber(getField(trade, ["entryPriorCloseDiffPercent", "gapPercent"]))
       };
@@ -281,7 +316,10 @@ function summarizeItems(items) {
   const grossProfit = wins.reduce((sum, item) => sum + item.netPnl, 0);
   const grossLoss = losses.reduce((sum, item) => sum + item.netPnl, 0);
   const totalNetPnl = items.reduce((sum, item) => sum + item.netPnl, 0);
-  const totalGrossPnl = items.reduce((sum, item) => sum + item.grossPnl, 0);
+  const grossResults = items.map((item) => item.grossPnl).filter(Number.isFinite);
+  const totalGrossPnl = grossResults.length ? grossResults.reduce((sum, value) => sum + value, 0) : null;
+  const timed = items.filter((item) => item.holdSeconds > 0);
+  const minutes = timed.reduce((sum, item) => sum + item.holdSeconds / 60, 0);
   const totalCosts = items.reduce((sum, item) => sum + item.costs, 0);
   const rValues = items.map((item) => item.rMultiple).filter((value) => value !== null);
   const winningRValues = items.filter((item) => item.rMultiple !== null && item.rMultiple > 0).map((item) => item.rMultiple);
@@ -303,6 +341,11 @@ function summarizeItems(items) {
     breakevenTrades: scratches.length,
     totalNetPnl: round(totalNetPnl),
     totalGrossPnl: round(totalGrossPnl),
+    grossExpectancy: round(average(grossResults)),
+    grossSamples: grossResults.length,
+    averageHoldSeconds: average(items.map((item) => item.holdSeconds)),
+    netPerMinute: minutes > 0 ? timed.reduce((sum, item) => sum + item.netPnl, 0) / minutes : null,
+    durationSamples: timed.length,
     totalCosts: round(totalCosts),
     grossProfit: round(grossProfit),
     grossLoss: round(grossLoss),
@@ -327,6 +370,7 @@ function summarizeGroup(label, items) {
   return {
     label,
     ...summarizeItems(items),
+    sessionCount: new Set(items.map(({ dayKey }) => dayKey)).size,
     averagePnl: round(average(items.map((item) => item.netPnl)) ?? 0),
     averageR: items.some((item) => item.rMultiple !== null)
       ? round(average(items.map((item) => item.rMultiple).filter((value) => value !== null)) ?? 0, 4)
@@ -337,7 +381,8 @@ function summarizeGroup(label, items) {
     averageMae: items.some((item) => item.mae !== null)
       ? round(average(items.map((item) => item.mae).filter((value) => value !== null)) ?? 0)
       : null,
-    mfeCapture: calculateMfeCapture(items).averageCapture
+    mfeCapture: calculateMfeCapture(items).averageCapture,
+    execution: summarizeExecution(items)
   };
 }
 
@@ -361,20 +406,11 @@ function buildGroupedRows(items, getKey, sortKey = "expectancy") {
 }
 
 function getTimeOfDayBucket(item) {
-  const minutes = item.minutesFromMidnight;
-  const open = 9 * 60 + 30;
-  const close = 16 * 60;
-
-  if (minutes >= open && minutes < open + 5) return "Market open to +5m";
-  if (minutes >= open + 5 && minutes < open + 15) return "+5m to +15m";
-  if (minutes >= open + 15 && minutes < open + 30) return "+15m to +30m";
-  if (minutes >= open + 30 && minutes < open + 60) return "+30m to +60m";
-  if (minutes >= 11 * 60 && minutes < 15 * 60) return "Midday";
-  if (minutes >= close - 60 && minutes < close) return "Final trading hour";
-  return "Outside regular session";
+  return getSessionBucket(item.minutesFromMidnight, true);
 }
 
 function getHoldingBucket(item) {
+  if (item.holdSeconds === null) return "Unavailable";
   return HOLDING_BUCKETS.find((bucket) => item.holdSeconds >= bucket.minSeconds && item.holdSeconds < bucket.maxSeconds)?.label || "Unknown";
 }
 
@@ -428,7 +464,7 @@ function getRollingExpectancy(items, windowSize) {
   return rows;
 }
 
-function buildHistogram(values, bucketCount = 8) {
+export function buildHistogram(values, bucketCount = 8) {
   const numeric = values.filter((value) => Number.isFinite(value));
   if (!numeric.length) {
     return [];
@@ -469,8 +505,8 @@ function calculateMfeCapture(items) {
 
   return {
     sampleSize: captures.length,
-    averageCapture: captures.length ? round((average(captures.map((entry) => Math.min(entry.value, 1.5))) ?? 0) * 100, 2) : null,
-    medianCapture: captures.length ? round((median(captures.map((entry) => Math.min(entry.value, 1.5))) ?? 0) * 100, 2) : null,
+    averageCapture: captures.length ? round((average(captures.map((entry) => entry.value)) ?? 0) * 100, 2) : null,
+    medianCapture: captures.length ? round((median(captures.map((entry) => entry.value)) ?? 0) * 100, 2) : null,
     extremeCount: captures.filter((entry) => entry.extreme).length
   };
 }
@@ -533,10 +569,11 @@ function calculateExcursions(items) {
   };
 }
 
-function calculateTradingCostDrag(items) {
+export function calculateTradingCostDrag(items) {
   const grossProfit = items.filter((item) => item.grossPnl > 0).reduce((sum, item) => sum + item.grossPnl, 0);
   const totalCosts = items.reduce((sum, item) => sum + item.costs, 0);
-  const grossSummary = summarizeItems(items.map((item) => ({ ...item, netPnl: item.grossPnl })));
+  const paired = items.filter((item) => item.grossPnl !== null);
+  const grossSummary = summarizeItems(paired.map((item) => ({ ...item, netPnl: item.grossPnl })));
   const netSummary = summarizeItems(items);
 
   return {
@@ -545,10 +582,14 @@ function calculateTradingCostDrag(items) {
     costPerTrade: items.length ? round(totalCosts / items.length) : null,
     costDragPercent: grossProfit > 0 ? round((totalCosts / grossProfit) * 100, 2) : null,
     costsAsGrossPnlPercent: grossSummary.totalGrossPnl > 0 ? round((totalCosts / grossSummary.totalGrossPnl) * 100, 2) : null,
-    grossExpectancy: grossSummary.expectancy,
+    grossExpectancy: grossSummary.grossExpectancy,
     netExpectancy: netSummary.expectancy,
-    expectancyDifference: round((grossSummary.expectancy || 0) - (netSummary.expectancy || 0)),
-    percentageMeaningful: grossProfit > 0
+    expectancyDifference: paired.length ? round(average(paired.map((item) => item.grossPnl - item.netPnl))) : null,
+    percentageMeaningful: grossProfit > 0,
+    entrySpread: average(items.flatMap((item) => item.spreadPerShare == null ? [] : [item.spreadPerShare])),
+    entrySlippage: average(items.flatMap((item) => item.slippagePerShare == null ? [] : [item.slippagePerShare])),
+    spreadSamples: items.filter((item) => item.spreadPerShare != null).length,
+    slippageSamples: items.filter((item) => item.slippagePerShare != null).length
   };
 }
 
@@ -626,72 +667,73 @@ function calculateAfterLosses(items) {
   }));
 }
 
-function calculateDrawdown(items) {
+export function calculateDrawdown(items) {
+  const closed = [...items].sort((a, b) => a.exitDate - b.exitDate || a.entryDate - b.entryDate || a.sourceIndex - b.sourceIndex);
   let running = 0;
   let peak = 0;
-  let currentDrawdownStart = null;
+  let peakAt = closed[0]?.exitDate;
+  let peakIndex = -1;
   let maxDrawdown = 0;
-  let maxDrawdownR = 0;
   let maxDurationTrades = 0;
   let maxDurationDays = 0;
   let longestRecoveryTrades = 0;
-  const curve = [];
-  let currentDurationTrades = 0;
-  let currentRecoveryTrades = 0;
-
-  for (let index = 0; index < items.length; index += 1) {
-    const item = items[index];
+  let longestRecoveryDays = 0;
+  let underwater = false;
+  let runningR = 0;
+  let peakR = 0;
+  let drawdownR = 0;
+  let hasR = false;
+  const curve = closed.map((item, index) => {
     running += item.netPnl;
+    const duration = peakAt ? (item.exitDate - peakAt) / 86400000 : 0;
     if (running >= peak) {
+      if (underwater) {
+        longestRecoveryTrades = Math.max(longestRecoveryTrades, index - peakIndex);
+        longestRecoveryDays = Math.max(longestRecoveryDays, duration);
+        maxDurationDays = Math.max(maxDurationDays, duration);
+      }
+      underwater = false;
       peak = running;
-      if (currentDrawdownStart) {
-        longestRecoveryTrades = Math.max(longestRecoveryTrades, currentRecoveryTrades);
-      }
-      currentDrawdownStart = null;
-      currentDurationTrades = 0;
-      currentRecoveryTrades = 0;
+      peakAt = item.exitDate;
+      peakIndex = index;
     } else {
-      if (!currentDrawdownStart) {
-        currentDrawdownStart = item.entryDate;
-        currentDurationTrades = 0;
-        currentRecoveryTrades = 0;
-      }
-      currentDurationTrades += 1;
-      currentRecoveryTrades += 1;
-      const durationDays = Math.max(0, (item.entryDate - currentDrawdownStart) / 86400000);
-      maxDurationTrades = Math.max(maxDurationTrades, currentDurationTrades);
-      maxDurationDays = Math.max(maxDurationDays, durationDays);
+      underwater = true;
+      maxDurationTrades = Math.max(maxDurationTrades, index - peakIndex);
+      maxDurationDays = Math.max(maxDurationDays, duration);
+      maxDrawdown = Math.max(maxDrawdown, peak - running);
     }
-
-    const drawdown = Math.max(0, peak - running);
-    if (drawdown > maxDrawdown) {
-      maxDrawdown = drawdown;
-      const rAtPoint = item.rMultiple === null ? null : Math.abs(item.rMultiple);
-      maxDrawdownR = rAtPoint || maxDrawdownR;
+    if (item.rMultiple !== null) {
+      hasR = true;
+      runningR += item.rMultiple;
+      peakR = Math.max(peakR, runningR);
+      drawdownR = Math.max(drawdownR, peakR - runningR);
     }
-
-    curve.push({
-      label: `${index + 1}`,
-      tradeNumber: index + 1,
-      equity: round(running),
-      drawdown: round(-drawdown)
-    });
-  }
-
-  const currentDrawdown = curve.length ? Math.abs(curve[curve.length - 1].drawdown || 0) : 0;
+    return { label: String(index + 1), tradeNumber: index + 1, equity: round(running), drawdown: round(running - peak) };
+  });
   return {
-    currentDrawdown: round(currentDrawdown),
+    currentDrawdown: round(peak - running),
     maxDrawdown: round(maxDrawdown),
-    maxDrawdownR: maxDrawdownR ? round(maxDrawdownR, 4) : null,
+    maxDrawdownR: hasR ? round(drawdownR) : null,
     drawdownDurationTrades: maxDurationTrades,
-    drawdownDurationDays: round(maxDurationDays, 1),
+    drawdownDurationDays: round(maxDurationDays, 2),
     longestRecoveryPeriod: longestRecoveryTrades,
     tradesRequiredToRecover: longestRecoveryTrades,
+    longestRecoveryDays: round(longestRecoveryDays, 2),
     underwaterCurve: curve
   };
 }
 
-function calculateLosingStreaks(items) {
+function calculateWinningStreaks(items) {
+  let current = 0;
+  let longest = 0;
+  for (const item of items) {
+    current = item.netPnl > 0 ? current + 1 : 0;
+    longest = Math.max(current, longest);
+  }
+  return { current, longest };
+}
+
+export function calculateLosingStreaks(items) {
   const lengths = [];
   const afterStreakRows = [];
   let current = 0;
@@ -797,11 +839,19 @@ function calculateConcentration(items) {
   };
 }
 
+function getGradeBucket(item) {
+  if (item.entryScore === null) return "Ungraded";
+  if (item.entryScore >= 7) return "Strong (7–8)";
+  if (item.entryScore >= 4) return "Mixed (4–6)";
+  return "Weak (0–3)";
+}
+
 export const CONDITIONAL_DIMENSIONS = [
   { key: "setup", label: "Setup", getKey: (item) => item.setup },
   { key: "symbol", label: "Symbol", getKey: (item) => item.symbol },
   { key: "direction", label: "Direction", getKey: (item) => item.side },
-  { key: "timeOfDay", label: "Time of day", getKey: getTimeOfDayBucket },
+  { key: "timeOfDay", label: "Entry time of day", getKey: getTimeOfDayBucket },
+  { key: "exitTime", label: "Exit time of day", getKey: (item) => item.exitMinute == null ? "Unavailable" : getSessionBucket(item.exitMinute, true) },
   { key: "dayOfWeek", label: "Day of week", getKey: (item) => item.weekday },
   { key: "holdingTime", label: "Holding-time bucket", getKey: getHoldingBucket },
   { key: "positionSize", label: "Position-size bucket", getKey: getPositionSizeBucket },
@@ -809,6 +859,20 @@ export const CONDITIONAL_DIMENSIONS = [
   { key: "entryReason", label: "Entry reason", getKey: (item) => item.entryReason },
   { key: "orderType", label: "Order type", getKey: (item) => item.orderType },
   { key: "marketCondition", label: "Market condition", getKey: (item) => item.marketCondition },
+  { key: "session", label: "Market session", getKey: (item) => getMarketSession(item.minutesFromMidnight) },
+  { key: "benchmark", label: "SPY direction at entry", getKey: (item) => item.factors.marketDirection || "Unavailable" },
+  { key: "volatilityRegime", label: "Benchmark volatility regime", getKey: (item) => item.factors.regime || "Unavailable" },
+  { key: "catalyst", label: "News catalyst", getKey: (item) => item.factors.catalyst || "Unavailable" },
+  { key: "vwap", label: "Entry relative to VWAP", getKey: (item) =>
+    item.factors.vwapDistance == null ? "Unavailable" : item.factors.vwapDistance >= 0 ? "At / above VWAP" : "Below VWAP" },
+  { key: "premarketHeat", label: "Premarket heat at entry", getKey: (item) => item.premarketHeat ?? "Unavailable" },
+  { key: "tradeGrade", label: "Blind entry grade", getKey: getGradeBucket },
+  { key: "gradeByPremarketTime", label: "Blind grade and premarket window", getKey: (item) =>
+    isPremarketMinute(item.minutesFromMidnight)
+      ? `${getTimeOfDayBucket(item)} · ${getGradeBucket(item)}`
+      : "Outside premarket" },
+  { key: "wouldRetake", label: "Would take entry again", getKey: (item) =>
+    item.wouldRetake === null ? "Ungraded" : item.wouldRetake ? "Yes" : "No" },
   { key: "relativeVolume", label: "Relative-volume bucket", getKey: getRelativeVolumeBucket },
   { key: "gapSize", label: "Gap-size bucket", getKey: getGapSizeBucket },
   { key: "longShort", label: "Long versus short", getKey: (item) => item.side },
@@ -864,7 +928,6 @@ export function buildAdvancedAnalytics(rawTrades, options = {}) {
   const availablePeriods = calculateAvailablePeriods(allItems, mode);
   const selectedPeriodKey =
     mode === "total" ? "ALL" : options.periodKey || availablePeriods[availablePeriods.length - 1]?.key || "";
-  const range = getPeriodRange(mode, selectedPeriodKey, allItems);
   const previousPeriodKey = getPreviousPeriodKey(mode, selectedPeriodKey);
   const currentItems =
     mode === "total"
@@ -874,6 +937,7 @@ export function buildAdvancedAnalytics(rawTrades, options = {}) {
     mode === "total" || !previousPeriodKey
       ? []
       : allItems.filter((item) => getPeriodKey(item.entryDate, mode) === previousPeriodKey);
+  const realizedOrder = [...currentItems].sort((a, b) => a.exitDate - b.exitDate || a.entryDate - b.entryDate || a.sourceIndex - b.sourceIndex);
   const summary = summarizeItems(currentItems);
   const previousSummary = summarizeItems(previousItems);
   const excursions = calculateExcursions(currentItems);
@@ -881,7 +945,7 @@ export function buildAdvancedAnalytics(rawTrades, options = {}) {
 
   if (!currentItems.some((item) => item.rMultiple !== null)) missing.push("Planned initial risk is not recorded, so R-multiple metrics are unavailable.");
   if (!excursions.available) missing.push("MFE and MAE are not recorded for these trades.");
-  if (!currentItems.some((item) => item.source?.intendedEntryPrice || item.source?.signalPrice || item.source?.decisionPrice)) {
+  if (!currentItems.some((item) => item.executionFacts.entrySlippage !== null || item.executionFacts.exitSlippage !== null)) {
     missing.push("Reference prices for entry and exit slippage are not recorded.");
   }
   if (!currentItems.some((item) => item.ruleCompliance && item.ruleCompliance !== "Unclassified")) {
@@ -915,6 +979,10 @@ export function buildAdvancedAnalytics(rawTrades, options = {}) {
     },
     expectancyBySetup: buildGroupedRows(currentItems, (item) => item.setup, "expectancy"),
     expectancyByTimeOfDay: buildGroupedRows(currentItems, getTimeOfDayBucket, "expectancy"),
+    marketAssociations: buildMarketAssociations(currentItems, groupBy),
+    netDistribution: buildHistogram(currentItems.map((item) => item.netPnl)),
+    consistency: calculateConsistency(currentItems, groupBy, (item) => getMarketDayKey(item.actualExit || item.entryDate)),
+    executionSummary: summarizeExecution(currentItems),
     holdingTimePerformance: buildGroupedRows(currentItems, getHoldingBucket, "tradeCount"),
     tradingCostDrag: calculateTradingCostDrag(currentItems),
     excursions,
@@ -923,7 +991,8 @@ export function buildAdvancedAnalytics(rawTrades, options = {}) {
     performanceAfterLosses: calculateAfterLosses(currentItems),
     tailLoss: calculateTailLoss(currentItems),
     drawdown: calculateDrawdown(currentItems),
-    losingStreaks: calculateLosingStreaks(currentItems),
+    winningStreaks: calculateWinningStreaks(realizedOrder),
+    losingStreaks: calculateLosingStreaks(realizedOrder),
     setupContribution: calculateSetupContribution(currentItems),
     concentration: calculateConcentration(currentItems),
     conditionalExplorer: calculateConditionalExplorer(
@@ -939,6 +1008,8 @@ export const __advancedAnalyticsInternals = {
   summarizeItems,
   getTimeOfDayBucket,
   getHoldingBucket,
+  groupBy,
+  summarizeGroup,
   calculateDrawdown,
   calculateTailLoss
 };

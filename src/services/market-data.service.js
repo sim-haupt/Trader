@@ -1,6 +1,7 @@
 const env = require("../config/env");
 const ApiError = require("../utils/ApiError");
 const prisma = require("../config/prisma");
+const { marketDayKey, marketTime, shiftDay, completedBars } = require("../utils/marketSession");
 
 const ALPACA_BASE_URL = String(env.alpacaDataUrl || "https://data.alpaca.markets").replace(/\/$/, "");
 const FRANKFURTER_BASE_URL = "https://api.frankfurter.dev/v1";
@@ -22,29 +23,6 @@ function toRoundedNumber(value, decimals = 4) {
   return Number(value.toFixed(decimals));
 }
 
-function startOfDay(value) {
-  const date = new Date(value);
-  date.setHours(0, 0, 0, 0);
-  return date;
-}
-
-function endOfDay(value) {
-  const date = new Date(value);
-  date.setHours(23, 59, 59, 999);
-  return date;
-}
-
-function addDays(value, days) {
-  const date = new Date(value);
-  date.setDate(date.getDate() + days);
-  return date;
-}
-
-function floorToMinuteTimestampSeconds(value) {
-  const timestampMs = new Date(value).getTime();
-  return Math.floor(timestampMs / 60000) * 60;
-}
-
 async function alpacaFetch(path, params = {}) {
   if (!env.alpacaApiKeyId || !env.alpacaSecretKey) {
     throw new ApiError(
@@ -60,6 +38,7 @@ async function alpacaFetch(path, params = {}) {
   );
 
   const response = await fetch(`${ALPACA_BASE_URL}${path}?${searchParams.toString()}`, {
+    signal: AbortSignal.timeout(20000),
     headers: {
       "APCA-API-KEY-ID": env.alpacaApiKeyId,
       "APCA-API-SECRET-KEY": env.alpacaSecretKey
@@ -243,10 +222,6 @@ async function fetchDailyBarsWithMeta(symbol, from, to) {
   return fetchBars(symbol, "1Day", from, to, dailyBarsCache);
 }
 
-async function fetchMinuteBars(symbol, from, to) {
-  return (await fetchMinuteBarsWithMeta(symbol, from, to)).bars;
-}
-
 async function fetchDailyBars(symbol, from, to) {
   return (await fetchDailyBarsWithMeta(symbol, from, to)).bars;
 }
@@ -281,36 +256,13 @@ async function getUsdEurFxRates({ from, to }) {
 }
 
 function calculateEntryVolume(minuteBars, entryDate) {
-  if (!Array.isArray(minuteBars) || minuteBars.length === 0) {
-    return null;
-  }
-
-  const entryMinute = floorToMinuteTimestampSeconds(entryDate);
-  let cumulativeVolume = 0;
-  let foundMatchingWindow = false;
-
-  for (const bar of minuteBars) {
-    if (!Number.isFinite(bar.time) || !Number.isFinite(bar.volume)) {
-      continue;
-    }
-
-    if (bar.time > entryMinute) {
-      break;
-    }
-
-    cumulativeVolume += bar.volume;
-    foundMatchingWindow = true;
-  }
-
-  return foundMatchingWindow ? cumulativeVolume : null;
+  const bars = completedBars(minuteBars, entryDate).filter((bar) => Number.isFinite(bar.volume));
+  return bars.length ? bars.reduce((total, bar) => total + bar.volume, 0) : null;
 }
 
 function getPriorSessionBars(dailyBars, entryDate) {
-  const entryDayStart = startOfDay(entryDate).getTime();
-
-  return (dailyBars || [])
-    .filter((bar) => bar.time * 1000 < entryDayStart)
-    .sort((left, right) => left.time - right.time);
+  const dayStart = marketTime(marketDayKey(entryDate), "00:00").getTime();
+  return dailyBars.filter((bar) => bar.time * 1000 < dayStart).sort((a, b) => a.time - b.time);
 }
 
 function calculateRelativeVolume(entryVolume, priorDailyBars) {
@@ -358,15 +310,17 @@ async function getTradeImportContext({ symbol, entryDate, entryPrice }) {
     return null;
   }
 
-  const dayStart = startOfDay(parsedEntryDate);
-  const dayEnd = endOfDay(parsedEntryDate);
-  const dailyHistoryStart = addDays(dayStart, -45);
+  const dayKey = marketDayKey(parsedEntryDate);
+  const dayStart = marketTime(dayKey, "04:00");
+  const marketDayEnd = marketTime(dayKey, "20:00");
+  const priorDayEnd = new Date(marketTime(dayKey, "00:00").getTime() - 1);
+  const dailyHistoryStart = marketTime(shiftDay(dayKey, -45), "00:00");
   const priorSessionLimit = 20;
 
   try {
     const [minuteBarsResult, dailyBarsResult] = await Promise.all([
-      fetchMinuteBarsWithMeta(normalizedSymbol, dayStart, dayEnd),
-      fetchDailyBarsWithMeta(normalizedSymbol, dailyHistoryStart, dayEnd)
+      fetchMinuteBarsWithMeta(normalizedSymbol, dayStart, marketDayEnd),
+      fetchDailyBarsWithMeta(normalizedSymbol, dailyHistoryStart, priorDayEnd)
     ]);
 
     const minuteFeed = minuteBarsResult.feed || null;
@@ -473,20 +427,79 @@ async function getBars({ symbol, resolution, from, to, includeExtended }) {
     throw new ApiError(400, "The Alpaca market data integration currently supports 1-minute bars only.");
   }
 
-  const bars = await fetchMinuteBars(normalizedSymbol, fromDate, toDate);
+  const { bars, feed } = await fetchMinuteBarsWithMeta(normalizedSymbol, fromDate, toDate);
 
   return {
     symbol: normalizedSymbol,
     resolution,
     includeExtended,
+    feed,
     from: fromDate.toISOString(),
     to: toDate.toISOString(),
     bars
   };
 }
 
+async function fetchScanBars(symbols, timeframe, start, end, feed, asof, adjustment = "split") {
+  const grouped = new Map();
+  let pageToken;
+
+  do {
+    const data = await alpacaFetch("/v2/stocks/bars", {
+      symbols: symbols.join(","),
+      timeframe,
+      start: start.toISOString(),
+      end: end.toISOString(),
+      adjustment,
+      asof,
+      sort: "asc",
+      limit: 10000,
+      feed,
+      page_token: pageToken
+    });
+    for (const [symbol, bars] of Object.entries(data.bars || {})) {
+      const existing = grouped.get(symbol) || [];
+      for (const bar of bars) {
+        existing.push({ ...normalizeBarPayload(bar), vwap: Number(bar.vw) || null });
+      }
+      grouped.set(symbol, existing);
+    }
+    pageToken = data.next_page_token;
+  } while (pageToken);
+
+  return grouped;
+}
+
+async function getEntryQuote(symbol, entryTime) {
+  const normalizedSymbol = normalizeSymbol(symbol);
+  const data = await alpacaFetch("/v2/stocks/quotes", {
+    symbols: normalizedSymbol,
+    asof: marketDayKey(entryTime),
+    start: new Date(entryTime.getTime() - 60_000).toISOString(),
+    end: entryTime.toISOString(),
+    sort: "desc",
+    limit: 20,
+    feed: "sip"
+  });
+  const quote = data.quotes?.[normalizedSymbol]?.find((item) => new Date(item.t) < entryTime && item.bp > 0 && item.ap >= item.bp);
+  return quote ? { bid: quote.bp, ask: quote.ap, time: quote.t, feed: "sip" } : null;
+}
+
+async function getHistoricalNews(symbol, start, end) {
+  const data = await alpacaFetch("/v1beta1/news", {
+    symbols: normalizeSymbol(symbol), start: start.toISOString(), end: end.toISOString(),
+    limit: 50, include_content: false
+  });
+  return (data.news || []).filter((item) => new Date(item.created_at) < end && new Date(item.updated_at ?? item.created_at) < end)
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 5)
+    .map((item) => ({ headline: item.headline, publishedAt: item.created_at, source: item.source }));
+}
+
 module.exports = {
   getBars,
+  fetchScanBars,
+  getHistoricalNews,
+  getEntryQuote,
   getUsdEurFxRates,
   getTradeImportContext,
   refreshTradeImportContext,

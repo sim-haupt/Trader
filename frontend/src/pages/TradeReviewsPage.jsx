@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Card from "../components/ui/Card";
@@ -896,6 +897,10 @@ function TradeReviewsPage() {
 
   return (
     <div className="space-y-6">
+      <nav className="analysis-tabs" aria-label="Trade reviews">
+        <Link to="/trade-reviews" aria-current="page">Gallery</Link>
+        <Link to="/trade-reviews/grade">Grade entries</Link>
+      </nav>
       {error ? (
         <div className="rounded-[6px] border border-[var(--danger)]/40 bg-[var(--danger-soft)] px-4 py-3 text-sm text-[var(--danger)]">
           {error}
