@@ -1,10 +1,12 @@
 const prisma = require("../config/prisma");
 const ApiError = require("../utils/ApiError");
 const { buildTradeWhere } = require("./trade.service");
-const { getBars } = require("./market-data.service");
+const { getBars, getScalpMarketData, getScalpExitMarket, getEntryQuote } = require("./market-data.service");
 const { firstFill, calculateEntryOutcome } = require("../utils/entryReview");
 const { completedBars, startOfMinute, marketDayKey, marketTime } = require("../utils/marketSession");
 const { exitTimingPlan, compareExitTiming, MINUTE, OFFSETS } = require("../utils/exitTiming");
+const { scalpComparison, SECOND_OFFSETS, MINUTE_OFFSETS } = require("../utils/scalpExit");
+const { simulateScalpExit } = require("../utils/scalpStrategy");
 
 const minute = 60_000;
 const maxPathMs = 48 * 60 * minute;
@@ -142,6 +144,36 @@ async function getExitTiming(actor, id) {
     rows: compareExitTiming(plan, result.bars, now) };
 }
 
+async function getScalpExit(actor, id, { window, mode, summary }) {
+  const trade = await findTrade(actor, id);
+  const plan = exitTimingPlan(trade);
+  if (plan.reason) return { reason: plan.reason };
+  const now = Date.now();
+  const [market, quote] = await Promise.all([
+    getScalpExitMarket(trade.symbol, plan.exit, window, mode, now),
+    plan.approximate ? null : getEntryQuote(trade.symbol, new Date(plan.exit)).catch(() => null)
+  ]);
+  const analytics = scalpComparison(plan, market, window, now, quote);
+  const offsets = market.resolution === "minute" ? MINUTE_OFFSETS : SECOND_OFFSETS;
+  return { entry: plan.entry, exit: plan.exit, exitPrice: plan.exitPrice, actualNet: plan.actualNet,
+    ...(!summary && { fills: plan.fills.map(({ time, shares, price }) => ({ time, shares, price })) }),
+    approximate: plan.approximate, resolution: market.resolution, feed: market.feed, partialWindow: market.partialWindow, offsets, metrics: analytics.metrics,
+    points: summary ? analytics.points.filter(({ seconds }) => offsets.includes(Math.abs(seconds))) : analytics.points };
+}
+
+async function runScalpStrategy(actor, id, settings) {
+  const trade = await findTrade(actor, id);
+  const plan = exitTimingPlan(trade);
+  if (plan.reason) return { reason: plan.reason };
+  const now = Date.now();
+  const from = startOfMinute(new Date(plan.entry));
+  const to = new Date(Math.min(now, plan.entry + settings.holdSeconds * 1000 + MINUTE));
+  const market = await getScalpMarketData(trade.symbol, from, to, settings.mode);
+  const completed = market.events.filter(({ end }) => end <= now);
+  return { actualNet: plan.actualNet, approximate: plan.approximate,
+    ...simulateScalpExit(plan, { ...market, events: completed }, settings) };
+}
+
 async function getSimulationPaths(actor, ids) {
   const output = [];
   for (let index = 0; index < ids.length; index += 3) {
@@ -156,4 +188,5 @@ async function getSimulationPaths(actor, ids) {
   return output;
 }
 
-module.exports = { getProfile, saveProfile, saveSimulation, saveTradeRecord, completeOriginalRisk, replay, getSimulationPaths, getExitTiming };
+module.exports = { getProfile, saveProfile, saveSimulation, saveTradeRecord, completeOriginalRisk, replay, getSimulationPaths, getExitTiming,
+  getScalpExit, runScalpStrategy };

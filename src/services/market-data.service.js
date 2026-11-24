@@ -23,7 +23,7 @@ function toRoundedNumber(value, decimals = 4) {
   return Number(value.toFixed(decimals));
 }
 
-async function alpacaFetch(path, params = {}) {
+async function alpacaFetch(path, params = {}, timeout = 20000) {
   if (!env.alpacaApiKeyId || !env.alpacaSecretKey) {
     throw new ApiError(
       503,
@@ -38,7 +38,7 @@ async function alpacaFetch(path, params = {}) {
   );
 
   const response = await fetch(`${ALPACA_BASE_URL}${path}?${searchParams.toString()}`, {
-    signal: AbortSignal.timeout(20000),
+    signal: AbortSignal.timeout(timeout),
     headers: {
       "APCA-API-KEY-ID": env.alpacaApiKeyId,
       "APCA-API-SECRET-KEY": env.alpacaSecretKey
@@ -485,6 +485,102 @@ async function getEntryQuote(symbol, entryTime) {
   return quote ? { bid: quote.bp, ask: quote.ap, time: quote.t, feed: "sip" } : null;
 }
 
+const scalpMarketCache = new Map();
+const SCALP_MAX_TICKS = 20000;
+
+function printTime(stamp) {
+  const ms = Date.parse(stamp);
+  const fraction = typeof stamp === "string" ? /\.(\d{4,9})(?=Z|[+-]\d{2}:\d{2})/i.exec(stamp)?.[1] : null;
+  return ms + (fraction ? Number(`0.${fraction.slice(3)}`) : 0);
+}
+
+async function getScalpTicks(symbol, from, to) {
+  const events = [];
+  let token;
+  for (let page = 0; page < SCALP_MAX_TICKS / 10000; page += 1) {
+    const data = await alpacaFetch(`/v2/stocks/${encodeURIComponent(symbol)}/trades`, {
+      start: from.toISOString(), end: to.toISOString(), sort: "asc", feed: "sip", limit: 10000, asof: "-", page_token: token
+    }, 5000);
+    for (const trade of data.trades || []) {
+      const time = printTime(trade.t);
+      const price = Number(trade.p);
+      if (!Number.isFinite(time) || !(price > 0) || time < from.getTime() || time > to.getTime()) continue;
+      events.push({ time, end: time, stamp: trade.t, open: price, high: price, low: price, close: price });
+    }
+    token = data.next_page_token;
+    if (!token) return events.sort((a, b) => a.time - b.time);
+  }
+  return null;
+}
+
+async function getScalpQuotes(symbol, from, to) {
+  if (!(from < to)) return [];
+  const found = [];
+  let token;
+  for (let page = 0; page < 2; page += 1) {
+    const data = await alpacaFetch(`/v2/stocks/${encodeURIComponent(normalizeSymbol(symbol))}/quotes`, {
+      start: from.toISOString(), end: to.toISOString(), feed: "sip", sort: "asc", asof: "-", limit: 10000, page_token: token
+    }, 5000);
+    for (const quote of data.quotes || []) {
+      const time = printTime(quote.t);
+      if (Number.isFinite(time) && time >= from.getTime() && time <= to.getTime()) {
+        found.push({ end: time, bid: Number(quote.bp), ask: Number(quote.ap), bidSize: Number(quote.bs), askSize: Number(quote.as) });
+      }
+    }
+    token = data.next_page_token;
+    if (!token) return found.sort((a, b) => a.end - b.end);
+  }
+  return [];
+}
+
+async function getScalpSeconds(symbol, from, to) {
+  const key = process.env.MASSIVE_API_KEY || process.env.POLYGON_API_KEY;
+  if (!key) return [];
+  const url = `https://api.massive.com/v2/aggs/ticker/${encodeURIComponent(symbol)}/range/1/second/${from.getTime()}/${to.getTime()}?adjusted=false&sort=asc&limit=50000`;
+  const response = await fetch(url, { headers: { Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(6000), redirect: "error" });
+  if (!response.ok) return [];
+  const data = await response.json();
+  return (data.results || []).filter(({ t, o, h, l, c }) => Number.isFinite(t) && [o, h, l, c].every((value) => value > 0))
+    .map((bar) => ({ time: bar.t, end: bar.t + 1000, open: bar.o, high: bar.h, low: bar.l, close: bar.c }));
+}
+
+async function loadScalpMarket(symbol, from, to, mode) {
+  let limited = false;
+  if (mode !== "minute") {
+    const ticks = await getScalpTicks(symbol, from, to).catch(() => []);
+    limited = ticks === null;
+    if (ticks?.length) return { resolution: "tick", feed: "Alpaca SIP", events: ticks };
+    const seconds = await getScalpSeconds(symbol, from, to).catch(() => []);
+    if (seconds.length) return { resolution: "second", feed: "Massive", events: seconds };
+  }
+  const result = await getBars({ symbol, resolution: "1m", from, to, includeExtended: true }).catch(() => ({ bars: [], feed: null }));
+  return { resolution: "minute", feed: result.feed ? `Alpaca ${result.feed.toUpperCase()}` : null, limited,
+    events: result.bars.map((bar) => ({ ...bar, time: bar.time * 1000, end: (bar.time + 60) * 1000 })) };
+}
+
+function getScalpMarketData(symbol, from, to, mode = "auto") {
+  if (!(from < to)) return Promise.resolve({ resolution: "minute", feed: null, events: [] });
+  const normalized = normalizeSymbol(symbol);
+  const key = `${normalized}:${from.getTime()}:${to.getTime()}:${mode}`;
+  const cached = scalpMarketCache.get(key);
+  if (cached?.until > Date.now()) return cached.result;
+  const result = loadScalpMarket(normalized, from, to, mode);
+  if (scalpMarketCache.size >= 24) scalpMarketCache.delete(scalpMarketCache.keys().next().value);
+  scalpMarketCache.set(key, { until: Date.now() + 60_000, result });
+  return result;
+}
+
+async function getScalpExitMarket(symbol, exit, window, mode, now) {
+  const from = new Date(Math.floor((exit - window * 1000) / 60_000) * 60_000 - 60_000);
+  const to = new Date(Math.min(now, exit + window * 1000));
+  const market = await getScalpMarketData(symbol, from, to, mode);
+  if (market.limited && window > 30) {
+    const inner = await getScalpMarketData(symbol, new Date(exit - 35_000), new Date(Math.min(now, exit + 30_000)), mode);
+    if (inner.resolution !== "minute") return { ...inner, partialWindow: true };
+  }
+  return { ...market, partialWindow: false };
+}
+
 async function getHistoricalNews(symbol, start, end) {
   const data = await alpacaFetch("/v1beta1/news", {
     symbols: normalizeSymbol(symbol), start: start.toISOString(), end: end.toISOString(),
@@ -500,6 +596,9 @@ module.exports = {
   fetchScanBars,
   getHistoricalNews,
   getEntryQuote,
+  getScalpMarketData,
+  getScalpExitMarket,
+  getScalpQuotes,
   getUsdEurFxRates,
   getTradeImportContext,
   refreshTradeImportContext,

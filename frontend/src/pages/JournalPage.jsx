@@ -1,3 +1,4 @@
+import downloadCsv from "../utils/downloadCsv";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -461,29 +462,6 @@ function buildJournalVisualization(dayKey, trades) {
 
 function formatFxRate(rate) {
   return Number.isFinite(Number(rate)) ? Number(rate).toFixed(6) : "Unavailable";
-}
-
-function csvValue(value) {
-  const stringValue = value === undefined || value === null ? "" : String(value);
-
-  if (/["\n,]/.test(stringValue)) {
-    return `"${stringValue.replace(/"/g, '""')}"`;
-  }
-
-  return stringValue;
-}
-
-function downloadCsv(filename, rows) {
-  const csv = rows.map((row) => row.map(csvValue).join(",")).join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
 }
 
 function exportJournalDayTrades(day) {

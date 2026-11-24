@@ -52,7 +52,23 @@ function exitTimingPlan(trade) {
   const costs = (finite(trade.commissions) ?? 0) + (finite(trade.fees) ?? 0);
   const reportedGross = finite(trade.grossPnl);
   const actualNet = reportedGross === null ? finite(trade.netPnl) ?? (actualGross - costs) : reportedGross - costs;
-  return { fills, entry, exit, actualGross, actualNet, approximate };
+  const finalFills = fills.filter((fill) => fill.time === exit && fill.shares * direction < 0);
+  const finalShares = finalFills.reduce((sum, fill) => sum + Math.abs(fill.shares), 0);
+  const exitPrice = finalFills.reduce((sum, fill) => sum + Math.abs(fill.shares) * fill.price, 0) / finalShares;
+  return { fills, entry, exit, actualGross, actualNet, approximate, direction, exitPrice, finalShares };
+}
+
+function positionBefore(plan, time) {
+  let position = 0;
+  let cash = 0;
+  let lastEntry = plan.entry;
+  for (const fill of plan.fills) {
+    if (fill.time >= Math.min(time, plan.exit)) break;
+    if (Math.sign(fill.shares) === plan.direction) lastEntry = fill.time;
+    position += fill.shares;
+    cash -= fill.shares * fill.price;
+  }
+  return { position, cash, lastEntry };
 }
 
 function compareExitTiming(plan, bars, now = Date.now()) {
@@ -65,16 +81,7 @@ function compareExitTiming(plan, bars, now = Date.now()) {
     if (time <= plan.entry) return { ...row, reason: "Before the entry" };
     if (time > now) return { ...row, reason: "Time has not occurred yet" };
 
-    const keepThrough = Math.min(time, plan.exit);
-    let position = 0;
-    let cash = 0;
-    let lastEntry = plan.entry;
-    for (const fill of plan.fills) {
-      if (fill.time >= keepThrough) break;
-      if (Math.sign(fill.shares) === Math.sign(plan.fills[0].shares)) lastEntry = fill.time;
-      position += fill.shares;
-      cash -= fill.shares * fill.price;
-    }
+    const { position, cash, lastEntry } = positionBefore(plan, time);
     const barEnd = Math.floor(time / MINUTE) * MINUTE;
     const price = prices.get(barEnd);
     if (!(barEnd > lastEntry) || !price) return { ...row, reason: "No completed candle near this time" };
@@ -84,4 +91,4 @@ function compareExitTiming(plan, bars, now = Date.now()) {
   });
 }
 
-module.exports = { exitTimingPlan, compareExitTiming, MINUTE, OFFSETS };
+module.exports = { exitTimingPlan, compareExitTiming, positionBefore, MINUTE, OFFSETS };

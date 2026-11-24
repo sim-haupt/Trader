@@ -131,10 +131,23 @@ model Trade {
   executions           TradeExecution[]
   entryReview          TradeEntryReview?
   analysis             TradeAnalysis?
+  exitPerformance      TradeExitPerformance[]
 
   @@index([userId, accountScope, entryDate])
   @@index([userId, accountScope, symbol])
   @@index([userId, accountScope, strategy])
+}
+
+model TradeExitPerformance {
+  tradeId         String
+  mode            String
+  sourceUpdatedAt DateTime
+  collectedAt     DateTime @default(now())
+  version         Int
+  metrics         Json
+  trade           Trade @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+
+  @@id([tradeId, mode])
 }
 
 model TradeAnalysis {

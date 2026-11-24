@@ -6,6 +6,7 @@ const validate = require("../middleware/validate.middleware");
 const reviews = require("../services/entry-review.service");
 const intelligence = require("../services/trade-intelligence.service");
 const risk = require("../services/risk-workspace.service");
+const { getExitPerformanceBatch } = require("../services/exit-performance.service");
 
 const router = express.Router();
 router.use(authenticate);
@@ -94,7 +95,24 @@ router.put("/trades/:id/replay-notes", validate(z.object({ notes: z.string().tri
   risk.saveTradeRecord(user, params.id, { replayNotes: validatedBody.notes })));
 router.get("/trades/:id/replay", validate(z.object({ step: z.coerce.number().int().min(1).max(3100).default(10) }), "query"),
   respond(({ user, params, validatedQuery }) => risk.replay(user, params.id, validatedQuery.step)));
-router.get("/trades/:id/exit-timing", respond(({ user, params }) => risk.getExitTiming(user, params.id)));
+const scalpMode = z.enum(["auto", "minute"]).default("auto");
+router.get("/trades/:id/exit-timing", validate(z.object({ window: z.coerce.number().int().min(10).max(1800).optional(), mode: scalpMode,
+  summary: z.enum(["true", "false"]).optional().transform((value) => value === "true") }), "query"),
+  respond(({ user, params, validatedQuery }) => validatedQuery.window == null
+    ? risk.getExitTiming(user, params.id) : risk.getScalpExit(user, params.id, validatedQuery)));
+router.post("/trades/:id/exit-timing/strategy", validate(z.object({
+  type: z.enum(["time", "target", "stop", "trail", "ema", "partial", "breakEven"]),
+  holdSeconds: z.number().int().min(1).max(1800),
+  threshold: z.number().min(0.01).max(1000), stop: z.number().min(0.01).max(1000),
+  partial: z.number().min(1).max(99), addedCost: z.number().min(0).max(1000), mode: scalpMode
+})), respond(({ user, params, validatedBody }) => risk.runScalpStrategy(user, params.id, validatedBody)));
+const exitBatch = (max) => z.object({ ids: z.array(z.string().min(1).max(100)).min(1).max(max), mode: scalpMode,
+  offsets: z.array(z.number().int().min(1).max(300)).min(1).max(24),
+  windows: z.array(z.number().int().min(1).max(300)).min(1).max(12) });
+router.post("/exit-performance/read", validate(exitBatch(120)), respond(({ user, validatedBody }) =>
+  getExitPerformanceBatch(user, validatedBody, false)));
+router.post("/exit-performance/collect", validate(exitBatch(4)), respond(({ user, validatedBody }) =>
+  getExitPerformanceBatch(user, validatedBody, true)));
 router.post("/simulation/paths", validate(z.object({ ids: z.array(z.string().min(1).max(100)).min(1).max(10) })),
   respond(({ user, validatedBody }) => risk.getSimulationPaths(user, [...new Set(validatedBody.ids)])));
 

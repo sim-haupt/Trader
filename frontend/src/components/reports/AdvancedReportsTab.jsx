@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import Card from "../ui/Card";
+import ScalpExitReport from "./ScalpExitReport";
 import EmptyState from "../ui/EmptyState";
 import { MarketEvidence, Table, TimeHeatmap } from "./PerformanceIntelligence";
 import { __advancedAnalyticsInternals, MARKET_TIME_ZONE, normalizeAdvancedTrades } from "../../utils/advancedAnalytics";
@@ -119,6 +120,7 @@ export default function AdvancedReportsTab({ trades, tradeHistory, onRefreshHist
         <ExecutionSummary trades={normalized} summary={summary} />
       </Card>
       <MarketEvidence trades={normalized} onRefresh={onRefreshHistory} />
+      <ScalpExitReport trades={trades} />
     </div>
   );
 }
