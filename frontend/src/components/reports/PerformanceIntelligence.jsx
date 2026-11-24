@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Card from "../ui/Card";
-import { __advancedAnalyticsInternals, getPeriodKey } from "../../utils/advancedAnalytics.js";
-import { buildTimeCells, MARKET_FACTORS } from "../../utils/performanceIntelligence.js";
+import { __advancedAnalyticsInternals } from "../../utils/advancedAnalytics.js";
+import { buildMarketAssociations, buildTimeCells, MARKET_FACTORS } from "../../utils/performanceIntelligence.js";
 import { formatCurrency } from "../../utils/formatters";
 import analysisService from "../../services/analysisService";
 
@@ -13,7 +13,6 @@ const missing = "–";
 const money = (value) => value == null ? missing : formatCurrency(value);
 const number = (value, digits = 2) => value == null ? missing : Number(value).toFixed(digits);
 const percent = (value) => value == null ? missing : `${number(value, 1)}%`;
-const duration = (value) => value == null ? missing : `${number(value / 60, 1)} min`;
 const clock = (value) => `${String(Math.floor(value / 60)).padStart(2, "0")}:${String(value % 60).padStart(2, "0")}`;
 
 export function Table({ headings, rows, caption, empty = "No matching trades with recorded results." }) {
@@ -37,7 +36,7 @@ const metrics = {
   averageR: ["Average net R", (value) => number(value)]
 };
 
-function TimeHeatmap({ trades, timeZone }) {
+export function TimeHeatmap({ trades, timeZone }) {
   const [interval, setInterval] = useState(30);
   const [metric, setMetric] = useState("expectancy");
   const [selected, setSelected] = useState(null);
@@ -52,7 +51,7 @@ function TimeHeatmap({ trades, timeZone }) {
   const [name, format] = metrics[metric];
 
   return (
-    <Card title="Trading windows" subtitle={`${timeZone} · intervals anchored to the 09:30 cash open`}>
+    <Card subtitle={`${timeZone} · intervals anchored to the 09:30 cash open`}>
       <div className="mb-4 flex flex-wrap items-end gap-3">
         <label className="analysis-field">Interval
           <select value={interval} onChange={(event) => { setInterval(Number(event.target.value)); setSelected(null); }}>
@@ -104,60 +103,15 @@ function TimeHeatmap({ trades, timeZone }) {
   );
 }
 
-function SetupComparison({ trades }) {
-  const groups = useMemo(() => groupBy(trades, (item) => item.setup), [trades]);
-  const [selected, setSelected] = useState(null);
-  const defaultKeys = [...groups.keys()].slice(0, 2);
-  const active = (selected ? selected.filter((name) => groups.has(name)) : defaultKeys);
-  const summary = active.map((name) => summarizeGroup(name, groups.get(name)));
-  const periods = active.flatMap((name) => Array.from(groupBy(groups.get(name), (item) => getPeriodKey(item.entryDate, "monthly")),
-    ([month, cohort]) => summarizeGroup(`${name} · ${month}`, cohort))).sort((a, b) => a.label.localeCompare(b.label));
-  const conditions = active.flatMap((name) => Array.from(groupBy(groups.get(name),
-    (item) => item.premarketHeat ? `Premarket ${item.premarketHeat}` : item.factors.marketDirection ? `SPY ${item.factors.marketDirection}` : "Unavailable"),
-    ([condition, cohort]) => summarizeGroup(`${name} · ${condition}`, cohort)));
-  const underperformers = Array.from(groups).filter(([, rows]) => {
-    const months = [...groupBy(rows, (row) => getPeriodKey(row.entryDate, "monthly")).values()].filter((month) => month.length >= 5);
-    return months.length >= 3 && months.every((month) => month.reduce((sum, trade) => sum + trade.netPnl, 0) < 0);
-  }).map(([name]) => name);
-  const columns = ["Setup", "Trades", "Win rate", "Net expectancy", "Profit factor", "Avg R", "Avg MFE", "Avg MAE", "Hold", "Net P&L", "Entry eff.", "Exit eff."];
-  const row = (item) => [item.label, item.tradeCount, percent(item.winRate), money(item.expectancy), number(item.profitFactor),
-    number(item.averageR), money(item.averageMfe), money(item.averageMae), duration(item.averageHoldSeconds),
-    money(item.totalNetPnl), percent(item.execution.entryEfficiency.value), percent(item.execution.exitEfficiency.value)];
-
-  return (
-    <Card title="Setup comparison" subtitle="Setup assignment, holding time, excursions, and execution at a glance.">
-      <fieldset className="mb-4 flex max-h-40 flex-wrap gap-x-4 overflow-y-auto">
-        <legend className="mb-1 text-sm text-mist">Choose setups</legend>
-        {[...groups.keys()].sort().map((name) => <label key={name} className="flex min-h-11 items-center gap-2 text-sm">
-          <input type="checkbox" checked={active.includes(name)}
-            onChange={() => setSelected(active.includes(name) ? active.filter((value) => value !== name) : [...active, name])} />{name}
-        </label>)}
-      </fieldset>
-      <Table caption="Setup performance" headings={columns} rows={summary.map(row)} />
-      {underperformers.length > 0 && <p className="mt-3 text-sm text-coral">
-        Negative in every qualifying month: {underperformers.join(", ")}. At least three months with five trades each.
-      </p>}
-      <details className="mt-4 text-sm">
-        <summary className="cursor-pointer">Monthly trends and market conditions</summary>
-        <div className="mt-4 space-y-4">
-          <Table caption="Setup monthly trends" headings={["Setup and month", "Trades", "Expectancy", "Net P&L"]}
-            rows={periods.map((item) => [item.label, item.tradeCount, money(item.expectancy), money(item.totalNetPnl)])} />
-          <Table caption="Setup performance by market condition" headings={["Setup and conditions", "Trades", "Sessions", "Expectancy", "Net P&L"]}
-            rows={conditions.map((item) => [item.label, item.tradeCount, item.sessionCount, money(item.expectancy), money(item.totalNetPnl)])} />
-        </div>
-      </details>
-    </Card>
-  );
-}
-
 const factorLabels = new Map(MARKET_FACTORS.map(([key, label, unit]) => [key, [label, unit]]));
-function MarketEvidence({ analytics, onRefresh }) {
+export function MarketEvidence({ trades, onRefresh }) {
+  const associations = useMemo(() => buildMarketAssociations(trades, groupBy), [trades]);
   const [factor, setFactor] = useState("gap");
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   const [failed, setFailed] = useState([]);
-  const candidates = analytics.trades.filter((item) => !item.source.analysis?.collectedAt && !failed.includes(item.id)).slice(-5);
-  const sessions = analytics.trades.filter((item) => Number.isFinite(item.factors[factor])).sort((a, b) => a.factors[factor] - b.factors[factor]);
+  const candidates = trades.filter((item) => !item.source.analysis?.collectedAt && !failed.includes(item.id)).slice(-5);
+  const sessions = trades.filter((item) => Number.isFinite(item.factors[factor])).sort((a, b) => a.factors[factor] - b.factors[factor]);
   const low = sessions[Math.floor((sessions.length - 1) / 3)]?.factors[factor];
   const high = sessions[Math.floor((sessions.length - 1) * 2 / 3)]?.factors[factor];
   const bins = low === high ? [] : Array.from(groupBy(sessions, (item) =>
@@ -185,7 +139,7 @@ function MarketEvidence({ analytics, onRefresh }) {
   }
 
   return (
-    <Card title="Market conditions" subtitle="Historical values as of entry. Missing coverage is shown as a dash.">
+    <Card subtitle="Historical values at entry.">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
         <label className="analysis-field">Segment by
           <select value={factor} onChange={(event) => setFactor(event.target.value)}>
@@ -203,18 +157,8 @@ function MarketEvidence({ analytics, onRefresh }) {
       <div className="mt-5">
         <p className="mb-3 text-sm text-mist">Pearson correlation uses session averages with at least 20 sessions. Approximate p-values use Holm correction across tested factors. Associations are exploratory and do not establish causation.</p>
         <Table caption="Market factor correlations" headings={["Market factor", "Trades", "Sessions", "Correlation", "Adjusted p"]}
-          rows={analytics.marketAssociations.map((item) => [item.label, item.count, item.sessions, number(item.correlation, 3), number(item.adjustedP, 4)])} />
+          rows={associations.map((item) => [item.label, item.count, item.sessions, number(item.correlation, 3), number(item.adjustedP, 4)])} />
       </div>
     </Card>
-  );
-}
-
-export default function PerformanceIntelligence({ analytics, onRefresh }) {
-  return (
-    <section id="performance-intelligence" className="space-y-5">
-      <TimeHeatmap trades={analytics.trades} timeZone={analytics.timeZone} />
-      <section id="setup-comparison" className="scroll-mt-4"><SetupComparison trades={analytics.trades} /></section>
-      <section id="market-evidence" className="scroll-mt-4"><MarketEvidence analytics={analytics} onRefresh={onRefresh} /></section>
-    </section>
   );
 }

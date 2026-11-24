@@ -22,6 +22,8 @@ export default {
   saveGrade(id, data) { return api.post(`${reviews}/${id}`, data).then(unwrap); },
   getOutcome(id) { return api.get(`${reviews}/${id}/outcome`).then(unwrap); },
   saveReflection(id, notes) { return api.patch(`${reviews}/${id}/reflection`, { notes }).then(unwrap); },
+  getMovers(day, signal) { return api.get(`${premarket}/movers`, { params: { day }, signal }).then(unwrap); },
+  collectMovers(day, signal) { return api.post(`${premarket}/movers`, { day }, { signal }).then(unwrap); },
   getPremarket(params) { return api.get(premarket, { params }).then(unwrap); },
   saveScan(data) { return api.put(`${premarket}/scan`, data).then(unwrap); },
   capture(data) { return api.post(`${premarket}/snapshot`, data).then(unwrap); },

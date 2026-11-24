@@ -7,6 +7,7 @@ const reviews = require("../services/entry-review.service");
 const intelligence = require("../services/trade-intelligence.service");
 const risk = require("../services/risk-workspace.service");
 const premarket = require("../services/premarket.service");
+const movers = require("../services/market-movers.service");
 
 const router = express.Router();
 router.use(authenticate);
@@ -109,6 +110,12 @@ router.get("/trades/:id/replay", validate(z.object({ step: z.coerce.number().int
 router.post("/simulation/paths", validate(z.object({ ids: z.array(z.string().min(1).max(100)).min(1).max(10) })),
   respond(({ user, validatedBody }) => risk.getSimulationPaths(user, [...new Set(validatedBody.ids)])));
 
+router.get("/premarket/movers", validate(z.object({ day: day.optional() }), "query"), respond(({ validatedQuery }) =>
+  movers.read(validatedQuery.day)
+));
+router.post("/premarket/movers", validate(z.object({ day })), respond(({ validatedBody }) =>
+  movers.collect(validatedBody.day)
+));
 router.get("/premarket", validate(checkpointSchema, "query"), respond(({ user, validatedQuery }) =>
   premarket.getOverview(user.id, validatedQuery.day, validatedQuery.checkpoint)
 ));

@@ -261,10 +261,6 @@ function GradingWorkspace() {
 
   return (
     <div className="space-y-4">
-      <nav className="analysis-tabs" aria-label="Trade reviews">
-        <Link to="/trade-reviews">Gallery</Link>
-        <Link to="/trade-reviews/grade" aria-current="page">Grade entries</Link>
-      </nav>
       <div className="grid items-start gap-4 lg:grid-cols-[12rem_minmax(0,1fr)]">
         <aside className="analysis-panel min-w-0 space-y-3">
           <button type="button" className="ui-button min-h-11 px-3 text-sm lg:hidden"

@@ -9,7 +9,6 @@ const tradeRoutes = require("./trade.routes");
 const tradeReviewRoutes = require("./trade-review.routes");
 const taxReportRoutes = require("./tax-report.routes");
 const analysisRoutes = require("./analysis.routes");
-const intelligenceRoutes = require("./trading-intelligence.routes");
 
 const router = express.Router();
 
@@ -23,6 +22,5 @@ router.use("/trades", tradeRoutes);
 router.use("/trade-reviews", tradeReviewRoutes);
 router.use("/tax-reports", taxReportRoutes);
 router.use("/analysis", analysisRoutes);
-router.use("/intelligence", intelligenceRoutes);
 
 module.exports = router;

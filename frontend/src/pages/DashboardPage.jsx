@@ -1,4 +1,3 @@
-import DashboardIntelligence from "../components/reports/DashboardIntelligence";
 import { getMarketDayKey } from "../utils/advancedAnalytics";
 import { useMemo, useState } from "react";
 import AnalyticsCharts from "../components/AnalyticsCharts";
@@ -124,8 +123,6 @@ function DashboardPage() {
           </div>
         </div>
       </div>
-
-      <DashboardIntelligence key={`${user?.id}:${user?.activeAccountScope}`} {...dashboardRange(activeRange.days)} />
 
       {filteredTrades.length === 0 ? (
         <EmptyState

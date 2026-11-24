@@ -133,11 +133,11 @@ function HeatHistory({ history, checkpoint }) {
   );
 }
 
-function PremarketWorkspace() {
+function PremarketWorkspace({ defaultDay }) {
   const [params, setParams] = useSearchParams();
   const today = getMarketDayKey(new Date());
   const requestedDay = params.get("day");
-  const day = /^\d{4}-\d{2}-\d{2}$/.test(requestedDay ?? "") ? requestedDay : today;
+  const day = /^\d{4}-\d{2}-\d{2}$/.test(requestedDay ?? "") ? requestedDay : defaultDay || today;
   const requestedCheckpoint = params.get("checkpoint");
   const checkpoint = checkpoints.includes(requestedCheckpoint) ? requestedCheckpoint : "09:25";
   const [overview, setOverview] = useState(null);
@@ -184,18 +184,27 @@ function PremarketWorkspace() {
   }
 
   const snapshot = overview?.snapshot;
+  function selectCheckpoint(day, checkpoint) {
+    setParams((current) => {
+      const next = new URLSearchParams(current);
+      next.set("day", day);
+      next.set("checkpoint", checkpoint);
+      return next;
+    });
+  }
+
   return (
     <div className="space-y-4">
       <section className="analysis-panel">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <label className="analysis-field">Session date (ET)
             <input type="date" value={day} max={today} disabled={Boolean(busy)}
-              onChange={(event) => event.target.value && setParams({ day: event.target.value, checkpoint })} />
+              onChange={(event) => event.target.value && selectCheckpoint(event.target.value, checkpoint)} />
           </label>
           <div className="analysis-tabs" aria-label="Premarket checkpoint">
             {checkpoints.map((time) => (
               <button key={time} aria-pressed={time === checkpoint} disabled={Boolean(busy)}
-                onClick={() => setParams({ day, checkpoint: time })}>{time}</button>
+                onClick={() => selectCheckpoint(day, time)}>{time}</button>
             ))}
           </div>
           <div className="flex flex-wrap gap-2">
@@ -227,7 +236,191 @@ function PremarketWorkspace() {
   );
 }
 
+const sessionViews = {
+  premarket: { label: "Premarket", gap: "Last premarket price vs. prior close." },
+  wholeDay: { label: "Whole day", gap: "First regular-session price vs. prior close." }
+};
+const price = new Intl.NumberFormat("en-US", {
+  style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 4
+});
+const displayDay = new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeZone: "UTC" });
+const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+
+function MoverTable({ rows, coverage, title, description, empty, metric, priceKey, priceLabel }) {
+  return (
+    <section className="analysis-panel min-w-0">
+      <div className="mb-3">
+        <h2 className="text-lg font-semibold">{title}</h2>
+        <p className="mt-1 text-sm text-mist">{description}</p>
+      </div>
+      {rows.length ? (
+        <table className="w-full text-sm tabular-nums" aria-label={title}>
+          <thead className="text-mist">
+            <tr className="border-b border-white/10">
+              <th scope="col" className="py-2 pr-1 text-left font-medium">Ticker</th>
+              <th scope="col" className="py-2 pr-1 text-right font-medium">{metric === "gap" ? "Gap" : "Peak gain"}</th>
+              <th scope="col" className="py-2 pr-1 text-right font-medium">Prior close</th>
+              <th scope="col" className="py-2 text-right font-medium">{priceLabel}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/10">
+            {rows.map((row) => (
+              <tr key={row.symbol}>
+                <th scope="row" className="py-2.5 pr-1 text-left font-semibold">{row.symbol}</th>
+                <td className="py-2.5 pr-1 text-right text-mint">+{percent(row[metric])}</td>
+                <td className="py-2.5 pr-1 text-right">{price.format(row.priorClose)}</td>
+                <td className="py-2.5 text-right">{price.format(row[priceKey])}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : <p className="border-t border-white/10 py-3 text-sm text-mist">{coverage ? empty : "No comparable price data for this session."}</p>}
+    </section>
+  );
+}
+
+function HistoricalMovers() {
+  const [params, setParams] = useSearchParams();
+  const selectedDay = params.get("day");
+  const requestedDay = datePattern.test(selectedDay ?? "") ? selectedDay : undefined;
+  const view = params.get("session") === "whole-day" ? "wholeDay" : "premarket";
+  const today = getMarketDayKey(new Date());
+  const [status, setStatus] = useState(null);
+  const [loadError, setLoadError] = useState("");
+  const [attempt, setAttempt] = useState(0);
+  const [heatOpen, setHeatOpen] = useState(false);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const { signal } = controller;
+    let timer;
+
+    async function load(day, forceCollect = false) {
+      try {
+        let next = forceCollect ? await analysisService.collectMovers(day, signal) : await analysisService.getMovers(day, signal);
+        if (signal.aborted) return;
+        if (!forceCollect && next.state === "new") {
+          setStatus({ ...next, state: "loading" });
+          next = await analysisService.collectMovers(next.day, signal);
+        }
+        if (signal.aborted) return;
+        setStatus(next);
+        if (["loading", "waiting"].includes(next.state)) {
+          timer = setTimeout(() => load(next.day, next.state === "waiting"), 2000);
+        } else if (next.state === "failed" && !next.canRetry) {
+          timer = setTimeout(() => load(next.day), 5000);
+        }
+      } catch (error) {
+        if (!signal.aborted) setLoadError(error.message);
+      }
+    }
+
+    setStatus(null);
+    setLoadError("");
+    void load(requestedDay);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [requestedDay, attempt]);
+
+  async function retry() {
+    if (status?.state !== "failed") {
+      setAttempt((value) => value + 1);
+      return;
+    }
+    setLoadError("");
+    const day = status.day;
+    try {
+      await analysisService.collectMovers(day);
+      setAttempt((value) => value + 1);
+    } catch (error) {
+      setLoadError(error.message);
+    }
+  }
+
+  function selectDay(day) {
+    setParams((current) => {
+      const next = new URLSearchParams(current);
+      if (day) next.set("day", day);
+      else next.delete("day");
+      return next;
+    });
+  }
+
+  function selectView(key) {
+    setParams((current) => {
+      const next = new URLSearchParams(current);
+      if (key === "wholeDay") next.set("session", "whole-day");
+      else next.delete("session");
+      return next;
+    }, { replace: true });
+  }
+
+  const session = (!requestedDay || status?.day === requestedDay) ? status?.data?.[view] : null;
+  const open = status?.data?.open ?? "09:30";
+  const day = requestedDay || status?.day || "";
+  const window = view === "premarket" ? `04:00–${open} ET` : "04:00–20:00 ET";
+  return (
+    <div className="space-y-4">
+      <section className="analysis-panel space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="analysis-field">Trading date (ET)
+              <input type="date" max={today} value={day} onChange={(event) => event.target.value && selectDay(event.target.value)} />
+            </label>
+            <button className="ui-button min-h-11 px-3" aria-label="Previous trading day" disabled={!status?.previous}
+              onClick={() => selectDay(status.previous)}>‹</button>
+            <button className="ui-button min-h-11 px-3" aria-label="Next trading day" disabled={!status?.next}
+              onClick={() => selectDay(status.next)}>›</button>
+            {requestedDay && <button className="ui-button min-h-11 px-3" onClick={() => selectDay()}>Latest</button>}
+          </div>
+          <div className="analysis-tabs" aria-label="Trading session">
+            {Object.entries(sessionViews).map(([key, { label }]) => (
+              <button key={key} aria-pressed={view === key} onClick={() => selectView(key)}>{label}</button>
+            ))}
+          </div>
+        </div>
+        {session && <p className="text-sm text-mist">
+          {displayDay.format(new Date(`${day}T00:00:00Z`))} · {window} · {integer.format(session.covered)} symbols with prices and a prior close
+        </p>}
+      </section>
+      {loadError ? (
+        <div className="analysis-panel space-y-3" role="alert">
+          <p className="text-sm text-coral">{loadError}</p>
+          <button className="ui-button min-h-11 px-3" onClick={retry}>Try again</button>
+        </div>
+      ) : session ? (
+        <div className="grid items-start gap-4 lg:grid-cols-2">
+          <MoverTable rows={session.gappers} coverage={session.covered} title="Top 10 gappers" description={sessionViews[view].gap}
+            empty="No positive gaps in the covered symbols." metric="gap" priceKey="gapPrice"
+            priceLabel={view === "premarket" ? "Last price" : "Open price"} />
+          <MoverTable rows={session.runners} coverage={session.covered} title={`Runners above 50% (${session.runners.length})`}
+            description={`Highest price from ${window} vs. prior close.`} empty="No covered symbol rose more than 50%."
+            metric="peakGain" priceKey="high" priceLabel="High" />
+        </div>
+      ) : ["closed", "incomplete", "failed", "unavailable"].includes(status?.state) ? (
+        <section className="analysis-panel space-y-3" role="status">
+          <p className="text-sm text-mist">{status.message ?? (status.state === "closed"
+            ? "The market was closed on this date." : "This trading day is still in progress. Full-day rankings are available after 20:16 ET.")}</p>
+          {(status.state === "unavailable" || status.canRetry) && <button className="ui-button min-h-11 px-3" onClick={retry}>Try again</button>}
+        </section>
+      ) : <LoadingState label={status?.state === "waiting" ? "Waiting for another date to finish loading…" :
+        status ? "Collecting historical SIP bars. This may take a minute…" : "Loading trading date…"} panel />}
+      {session && <p className="px-1 text-xs text-mist">
+        Alpaca SIP · U.S. exchange-listed symbols in Alpaca’s catalog · Prices adjusted for splits.
+        {status.data.withBars > status.data.wholeDay.covered &&
+          ` ${integer.format(status.data.withBars - status.data.wholeDay.covered)} symbols with trades lacked a prior-session close.`}
+      </p>}
+      <details className="analysis-panel" open={heatOpen} onToggle={(event) => setHeatOpen(event.currentTarget.open)}>
+        <summary className="cursor-pointer text-sm font-medium">Heat history and scan settings</summary>
+        {heatOpen && <div className="mt-4"><PremarketWorkspace defaultDay={day} /></div>}
+      </details>
+    </div>
+  );
+}
+
 export default function PremarketPage() {
   const { user } = useAuth();
-  return <PremarketWorkspace key={user?.id} />;
+  return <HistoricalMovers key={user?.id} />;
 }

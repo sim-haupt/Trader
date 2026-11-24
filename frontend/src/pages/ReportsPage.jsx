@@ -1,9 +1,7 @@
 import { useSearchParams } from "react-router-dom";
-import IntelligenceWorkspace from "../components/reports/IntelligenceWorkspace";
 import RiskWorkspace from "../components/reports/RiskWorkspace";
 import { getMarketDayKey, getMarketParts } from "../utils/advancedAnalytics";
 import { getMarketSession } from "../utils/marketSessions";
-import analysisService from "../services/analysisService";
 import { useEffect, useMemo, useState } from "react";
 import {
   Area,
@@ -23,7 +21,6 @@ import {
 } from "recharts";
 import Card from "../components/ui/Card";
 import AdvancedReportsTab from "../components/reports/AdvancedReportsTab";
-import StrategyReportsTab from "../components/reports/StrategyReportsTab";
 import PnlBarCumulativeChart, { ChartViewSwitch } from "../components/PnlBarCumulativeChart";
 import CustomSelect from "../components/ui/CustomSelect";
 import DateRangePicker from "../components/ui/DateRangePicker";
@@ -50,9 +47,7 @@ const TAB_ITEMS = [
   "Overview",
   "Detailed",
   "Advanced",
-  "Intelligence",
   "Risk & simulation",
-  "Strategy",
   "Win vs Loss Days",
   "Drawdown",
   "Compare"
@@ -2207,7 +2202,8 @@ function ReportsPage() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const requestedView = searchParams.get("view");
-  const tabForView = requestedView === "intelligence" ? "Intelligence" : requestedView === "risk" ? "Risk & simulation" : null;
+  const tabForView = requestedView === "risk" ? "Risk & simulation"
+    : ["advanced", "strategy"].includes(requestedView) ? "Advanced" : null;
   const [activeTab, setActiveTab] = useState(tabForView || "Overview");
   useEffect(() => { if (tabForView) setActiveTab(tabForView); }, [tabForView]);
   const [rangeKey, setRangeKey] = useState("ALL");
@@ -2252,18 +2248,6 @@ function ReportsPage() {
     initialValue: [],
     deps: [user?.activeAccountScope, user?.liveDataStartDate]
   });
-
-  const premarketResource = useCachedAsyncResource({
-    load: () => analysisService.getEntryContext(),
-    initialValue: [],
-    enabled: activeTab === "Advanced",
-    deps: [user?.id, activeTab]
-  });
-
-  const intelligenceFilters = useMemo(() => Object.fromEntries(Object.entries(filters).filter(([key, value]) =>
-    !["from", "to"].includes(key) && value)), [filters]);
-  const lastTradingDate = useMemo(() => trades.length ? getMarketDayKey(new Date(trades.reduce((latest, trade) =>
-    Date.parse(trade.entryDate) > Date.parse(latest.entryDate) ? trade : latest, trades[0]).entryDate)) : getMarketDayKey(new Date()), [trades]);
 
   const activeRange = RANGE_OPTIONS.find((item) => item.key === rangeKey) || RANGE_OPTIONS[0];
   const journalCommissionsByDay = useMemo(
@@ -2454,12 +2438,6 @@ function ReportsPage() {
     return <div className="ui-notice border-coral/20 bg-coral/10 text-coral">{error}</div>;
   }
 
-
-
-  const intelligenceTo = filters.to || lastTradingDate;
-  const intelligenceStart = new Date(`${intelligenceTo}T00:00:00Z`);
-  intelligenceStart.setUTCDate(intelligenceStart.getUTCDate() - ((activeRange.days || 30) - 1));
-  const intelligenceRange = { from: filters.from || intelligenceStart.toISOString().slice(0, 10), to: intelligenceTo };
   const suffix = activeRange.days ? `(${activeRange.days} Days)` : "(All)";
   const pnlLabel = pnlType === "GROSS" ? "GROSS" : "NET";
 
@@ -2567,7 +2545,7 @@ function ReportsPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3 px-1">
         <div className="flex flex-wrap items-center gap-3">
-          <CustomSelect
+          {activeTab !== "Advanced" && <CustomSelect
             value={pnlType}
             onChange={(nextValue) => setPnlType(nextValue)}
             options={[
@@ -2576,7 +2554,7 @@ function ReportsPage() {
             ]}
             className="max-w-[150px]"
             buttonClassName="max-w-[150px]"
-          />
+          />}
         </div>
 
         <div className="ui-segment">
@@ -2593,10 +2571,7 @@ function ReportsPage() {
         </div>
       </div>
 
-      {activeTab === "Intelligence" ? (
-        <IntelligenceWorkspace key={JSON.stringify([user?.id, user?.activeAccountScope, intelligenceRange, intelligenceFilters])}
-          initialRange={intelligenceRange} filters={intelligenceFilters} />
-      ) : activeTab === "Risk & simulation" ? (
+      {activeTab === "Risk & simulation" ? (
         <RiskWorkspace key={`${user?.id}:${user?.activeAccountScope}`} trades={filteredTrades} />
       ) : filteredTrades.length === 0 ? (
         <EmptyState
@@ -2619,17 +2594,7 @@ function ReportsPage() {
       ) : activeTab === "Advanced" ? (
         <AdvancedReportsTab
           trades={filteredTrades}
-          premarketSnapshots={premarketResource.data}
-          premarketError={premarketResource.error}
-          journalDays={journalDays}
           onRefreshHistory={() => { clearTradeCaches(); return reloadTrades(); }}
-          defaultCommission={user?.defaultCommission ?? 0}
-          defaultFees={user?.defaultFees ?? 0}
-        />
-      ) : activeTab === "Strategy" ? (
-        <StrategyReportsTab
-          trades={filteredTrades}
-          pnlType={pnlType}
           defaultCommission={user?.defaultCommission ?? 0}
           defaultFees={user?.defaultFees ?? 0}
         />

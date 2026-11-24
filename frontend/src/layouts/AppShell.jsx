@@ -14,7 +14,8 @@ const navigationItems = [
   { label: "Premarket", path: "/premarket", icon: "M3 18h18M5 15l4-5 4 2 5-7m-4 0h4v4" },
   { label: "Reports", path: "/reports", icon: "M4 19V9M10 19V5M16 19v-8M22 19V3" },
   { label: "Trades", path: "/trades", icon: "M4 18h16M5 15l4-4 3 3 7-8" },
-  { label: "Reviews", path: "/trade-reviews", icon: "M4 5h16v14H4V5zm3 3h3v3H7V8zm0 6h3v2H7v-2zm6-6h4m-4 4h4m-4 4h4" },
+  { label: "Reviews", path: "/trade-reviews/grade", icon: "M4 5h16v14H4V5zm3 3h3v3H7V8zm0 6h3v2H7v-2zm6-6h4m-4 4h4m-4 4h4" },
+  { label: "Gallery", path: "/gallery", icon: "M4 5h16v14H4V5zm0 11 5-5 4 4 2-2 5 5M15 9h.01" },
   { label: "Journal", path: "/journal", icon: "M7 4h10a2 2 0 0 1 2 2v12H7a2 2 0 0 0-2 2V6a2 2 0 0 1 2-2zm0 0a2 2 0 0 0-2 2v14" },
   { label: "Tax reports", path: "/tax-reports", icon: "M6 3h9l3 3v15H6V3zm8 0v4h4M8 11h8M8 15h8M8 19h5" },
   { label: "Settings", path: "/settings", icon: "M12 3l2.4 2.2 3.2-.6.9 3.1 3 1.2-1.3 3 1.3 3-3 1.2-.9 3.1-3.2-.6L12 21l-2.4-2.2-3.2.6-.9-3.1-3-1.2 1.3-3-1.3-3 3-1.2.9-3.1 3.2.6zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" }
@@ -43,13 +44,13 @@ function getPageMeta(pathname) {
     return { title: "Trade Review", description: "Execution detail, notes, and chart context." };
   }
   if (pathname === "/premarket") {
-    return { title: "Premarket conditions", description: "" };
+    return { title: "Historical movers", description: "" };
   }
-  if (pathname === "/trade-reviews/grade") {
+  if (pathname === "/trade-reviews" || pathname === "/trade-reviews/grade") {
     return { title: "Blind entry review", description: "" };
   }
-  if (pathname.startsWith("/trade-reviews")) {
-    return { title: "Reviews", description: "" };
+  if (pathname === "/gallery") {
+    return { title: "Gallery", description: "" };
   }
   if (pathname.startsWith("/trades")) {
     return { title: "Trades", description: "Import, filter, and review your full trade history." };
@@ -73,7 +74,7 @@ function AppShell() {
   const { notify } = useNotifications();
   const [isSwitchingAccount, setIsSwitchingAccount] = useState(false);
   const [mobileMenuPath, setMobileMenuPath] = useState(null);
-  const blindWorkspace = location.pathname === "/trade-reviews/grade" || /^\/trades\/[^/]+\/replay$/.test(location.pathname);
+  const blindWorkspace = location.pathname === "/trade-reviews" || location.pathname === "/trade-reviews/grade" || /^\/trades\/[^/]+\/replay$/.test(location.pathname);
   const compactNavigation = blindWorkspace || location.pathname === "/premarket";
   const mobileMenuOpen = mobileMenuPath === location.pathname;
   const HeaderTitle = compactNavigation ? "h1" : "p";

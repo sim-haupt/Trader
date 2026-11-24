@@ -8,7 +8,7 @@ import DashboardPage from "./pages/DashboardPage";
 import TradesPage from "./pages/TradesPage";
 import EntryGradingPage from "./pages/EntryGradingPage";
 import PremarketPage from "./pages/PremarketPage";
-import TradeReviewsPage from "./pages/TradeReviewsPage";
+import GalleryPage from "./pages/GalleryPage";
 import TradeReplayPage from "./pages/TradeReplayPage";
 import TradeDetailPage from "./pages/TradeDetailPage";
 import AdminPage from "./pages/AdminPage";
@@ -37,7 +37,8 @@ function App() {
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/tax-reports" element={<TaxReportsPage />} />
         <Route path="/trades" element={<TradesPage />} />
-        <Route path="/trade-reviews" element={<TradeReviewsPage />} />
+        <Route path="/gallery" element={<GalleryPage />} />
+        <Route path="/trade-reviews" element={<Navigate to="/trade-reviews/grade" replace />} />
         <Route path="/trade-reviews/grade" element={<EntryGradingPage />} />
         <Route path="/premarket" element={<PremarketPage />} />
         <Route path="/trades/:id" element={<TradeDetailPage />} />

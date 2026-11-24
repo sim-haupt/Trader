@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Card from "../components/ui/Card";
@@ -300,7 +299,7 @@ function MultiTagSelect({ tags, selectedTags, onChange, onCreateTag, allowCreate
   );
 }
 
-function TradeReviewsPage() {
+function GalleryPage() {
   const { notify, confirm } = useNotifications();
   const [images, setImages] = useState([]);
   const [tags, setTags] = useState([]);
@@ -752,7 +751,7 @@ function TradeReviewsPage() {
   async function handleDeleteImage(image) {
     const confirmed = await confirm({
       title: "Delete review image?",
-      description: "This removes the image from the trade reviews gallery.",
+      description: "This removes the image from your gallery.",
       confirmLabel: "Delete Image",
       tone: "error"
     });
@@ -897,10 +896,6 @@ function TradeReviewsPage() {
 
   return (
     <div className="space-y-6">
-      <nav className="analysis-tabs" aria-label="Trade reviews">
-        <Link to="/trade-reviews" aria-current="page">Gallery</Link>
-        <Link to="/trade-reviews/grade">Grade entries</Link>
-      </nav>
       {error ? (
         <div className="rounded-[6px] border border-[var(--danger)]/40 bg-[var(--danger-soft)] px-4 py-3 text-sm text-[var(--danger)]">
           {error}
@@ -1482,4 +1477,4 @@ function TradeReviewsPage() {
   );
 }
 
-export default TradeReviewsPage;
+export default GalleryPage;

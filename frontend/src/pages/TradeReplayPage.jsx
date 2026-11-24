@@ -66,7 +66,7 @@ function ReplayWorkspace({ id }) {
           files: [new File([blob], `${frame.symbol}-replay-${frame.step}.png`, { type: "image/png" })],
           tags: ["Replay"], notes: `${frame.symbol} · Trade ${id} · ${timeLabel(frame.cutoff)}\n${notes || ""}`
         });
-        setStatus("Screenshot saved to the Reviews gallery.");
+        setStatus("Screenshot saved to Gallery.");
       } else {
         await analysisService.saveReplayNotes(id, notes || "");
         setStatus("Replay notes saved.");
