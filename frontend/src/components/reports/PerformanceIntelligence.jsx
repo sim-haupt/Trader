@@ -51,7 +51,7 @@ export function TimeHeatmap({ trades, timeZone }) {
   const [name, format] = metrics[metric];
 
   return (
-    <Card subtitle={`${timeZone} · intervals anchored to the 09:30 cash open`}>
+    <Card title="Trading windows" subtitle={`${timeZone} · intervals anchored to the 09:30 cash open`}>
       <div className="mb-4 flex flex-wrap items-end gap-3">
         <label className="analysis-field">Interval
           <select value={interval} onChange={(event) => { setInterval(Number(event.target.value)); setSelected(null); }}>
@@ -139,7 +139,7 @@ export function MarketEvidence({ trades, onRefresh }) {
   }
 
   return (
-    <Card subtitle="Historical values at entry.">
+    <Card title="Market conditions" subtitle="Historical values at entry.">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
         <label className="analysis-field">Segment by
           <select value={factor} onChange={(event) => setFactor(event.target.value)}>

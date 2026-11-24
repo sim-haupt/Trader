@@ -6,15 +6,10 @@ const validate = require("../middleware/validate.middleware");
 const reviews = require("../services/entry-review.service");
 const intelligence = require("../services/trade-intelligence.service");
 const risk = require("../services/risk-workspace.service");
-const premarket = require("../services/premarket.service");
-const movers = require("../services/market-movers.service");
 
 const router = express.Router();
 router.use(authenticate);
 
-const day = z.string().date();
-const rangeSchema = z.object({ from: day.optional(), to: day.optional() })
-  .refine(({ from, to }) => !from || !to || from <= to, "The start date must precede the end date.");
 const score = z.number().int().min(0).max(2);
 const amount = z.number().finite().min(0.0001).max(1_000_000_000).nullable();
 const gradeSchema = z.object({
@@ -99,17 +94,8 @@ router.put("/trades/:id/replay-notes", validate(z.object({ notes: z.string().tri
   risk.saveTradeRecord(user, params.id, { replayNotes: validatedBody.notes })));
 router.get("/trades/:id/replay", validate(z.object({ step: z.coerce.number().int().min(1).max(3100).default(10) }), "query"),
   respond(({ user, params, validatedQuery }) => risk.replay(user, params.id, validatedQuery.step)));
+router.get("/trades/:id/exit-timing", respond(({ user, params }) => risk.getExitTiming(user, params.id)));
 router.post("/simulation/paths", validate(z.object({ ids: z.array(z.string().min(1).max(100)).min(1).max(10) })),
   respond(({ user, validatedBody }) => risk.getSimulationPaths(user, [...new Set(validatedBody.ids)])));
-
-router.get("/premarket/movers", validate(z.object({ through: day.optional() }), "query"), respond(({ validatedQuery }) =>
-  movers.readArchive(validatedQuery.through)
-));
-router.get("/premarket/recaps", validate(rangeSchema, "query"), respond(({ user, validatedQuery }) =>
-  premarket.getSnapshotSummary(user.id, validatedQuery, "recap")
-));
-router.get("/premarket/entry-context", validate(rangeSchema, "query"), respond(({ user, validatedQuery }) =>
-  premarket.getSnapshotSummary(user.id, validatedQuery, "entries")
-));
 
 module.exports = router;

@@ -4,10 +4,15 @@ import EmptyState from "../ui/EmptyState";
 import { MarketEvidence, Table, TimeHeatmap } from "./PerformanceIntelligence";
 import { __advancedAnalyticsInternals, MARKET_TIME_ZONE, normalizeAdvancedTrades } from "../../utils/advancedAnalytics";
 import { summarizeExecution } from "../../utils/performanceIntelligence";
+import { buildNextTradeStreaks, buildOpeningPerformance, makeRiskRecords } from "../../utils/riskAnalytics";
 import { formatCostCurrency, formatCurrency, formatPercent } from "../../utils/formatters";
 
 const { groupBy, summarizeItems } = __advancedAnalyticsInternals;
 const GROUPS = { setup: "Setup", tag: "Tag", combination: "Setup + tags" };
+const outcomeColumns = ["Closed trades", "Win rate", "Net P&L", "Avg. net"];
+const metricCells = ({ closed, winRate, pnl, expectancy }) => [closed,
+  winRate == null ? "–" : formatPercent(winRate), pnl == null ? "–" : formatCurrency(pnl),
+  expectancy == null ? "–" : formatCurrency(expectancy)];
 
 function breakdown(trades, dimension) {
   const members = trades.flatMap((trade) => {
@@ -43,16 +48,6 @@ function Metrics({ items }) {
   );
 }
 
-function ReportDetails({ title, children }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <details className="analysis-panel" onToggle={(event) => setOpen(event.currentTarget.open)}>
-      <summary className="cursor-pointer text-sm font-medium">{title}</summary>
-      {open && <div className="mt-4">{children}</div>}
-    </details>
-  );
-}
-
 function ExecutionSummary({ trades, summary }) {
   const execution = useMemo(() => summarizeExecution(trades), [trades]);
   const efficiency = (row) => row.value == null ? "–" : `${formatPercent(row.value)} · ${row.count} trades`;
@@ -64,12 +59,19 @@ function ExecutionSummary({ trades, summary }) {
   ]} />;
 }
 
-export default function AdvancedReportsTab({ trades, onRefreshHistory, defaultCommission, defaultFees }) {
+export default function AdvancedReportsTab({ trades, tradeHistory, onRefreshHistory, defaultCommission, defaultFees }) {
   const [dimension, setDimension] = useState("setup");
+  const [largeLoss, setLargeLoss] = useState("100");
   const normalized = useMemo(() => normalizeAdvancedTrades(trades, { defaultCommission, defaultFees }),
     [trades, defaultCommission, defaultFees]);
   const summary = useMemo(() => summarizeItems(normalized), [normalized]);
   const rows = useMemo(() => breakdown(normalized, dimension), [normalized, dimension]);
+  const streakRecords = useMemo(() => makeRiskRecords(tradeHistory, { defaultCommission, defaultFees }),
+    [tradeHistory, defaultCommission, defaultFees]);
+  const selectedIds = useMemo(() => new Set(trades.map(({ id }) => id)), [trades]);
+  const streaks = useMemo(() => buildNextTradeStreaks(streakRecords, selectedIds), [streakRecords, selectedIds]);
+  const openings = useMemo(() => buildOpeningPerformance(streakRecords, selectedIds, Number(largeLoss)),
+    [streakRecords, selectedIds, largeLoss]);
 
   if (!normalized.length) {
     return <EmptyState title="No recorded trade results" description="Choose another date range or adjust the report filters." />;
@@ -99,15 +101,24 @@ export default function AdvancedReportsTab({ trades, onRefreshHistory, defaultCo
         </div>
         {dimension === "tag" && <p className="mt-2 text-sm text-mist">A trade can appear under multiple tags.</p>}
       </Card>
-      <ReportDetails title="Trading windows">
-        <TimeHeatmap trades={normalized} timeZone={MARKET_TIME_ZONE} />
-      </ReportDetails>
-      <ReportDetails title="Execution and holding time">
+      <Card title="Performance after a streak" subtitle="The next entry after a win or loss streak on the same New York trading day. Report filters apply to the next trade.">
+        <Table caption="Next trade after a streak" headings={["Before entry", ...outcomeColumns]}
+          rows={streaks.map((row) => [row.label, ...metricCells(row)])} />
+      </Card>
+      <Card title="Performance after the day opens" subtitle="Results for later trades on the same New York trading day. The opening trade or trades must have closed before the later entry. Groups can overlap."
+        action={<div className="analysis-field">
+          <label htmlFor="large-opening-loss">Large loss threshold ($)</label>
+          <input id="large-opening-loss" type="number" min="0.01" step="0.01" value={largeLoss}
+            onChange={(event) => setLargeLoss(event.target.value)} />
+        </div>}>
+        <Table caption="Results after opening trades" headings={["Opening result", "Days", ...outcomeColumns]}
+          rows={openings.map((row) => [row.label, row.openingDays, ...metricCells(row)])} />
+      </Card>
+      <TimeHeatmap trades={normalized} timeZone={MARKET_TIME_ZONE} />
+      <Card title="Execution and holding time">
         <ExecutionSummary trades={normalized} summary={summary} />
-      </ReportDetails>
-      <ReportDetails title="Market conditions">
-        <MarketEvidence trades={normalized} onRefresh={onRefreshHistory} />
-      </ReportDetails>
+      </Card>
+      <MarketEvidence trades={normalized} onRefresh={onRefreshHistory} />
     </div>
   );
 }

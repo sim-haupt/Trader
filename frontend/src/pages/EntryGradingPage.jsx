@@ -206,12 +206,6 @@ function EntryReview({ id, onGraded }) {
         <h2 className="text-xl font-semibold">{entry.symbol} <span className="text-sm font-normal text-mist">{entry.side}</span></h2>
         <p className="text-sm text-mist tabular-nums">{accountClock.format(new Date(entry.fill.time))} ET{entry.fill.price != null && ` · ${formatCurrency(entry.fill.price)}`}{entry.fill.approximate ? " · Reported entry time" : ""}</p>
       </div>
-      {entry.premarket && (
-        <p className="text-sm text-mist">
-          Premarket at {entry.premarket.checkpoint} ET · {entry.premarket.heat ?? "Building baseline"}
-          {entry.premarket.cycle && ` · ${entry.premarket.cycle}`} · {entry.premarket.breadth} names up 10%+
-        </p>
-      )}
       {error && <p className="text-sm text-coral" role="alert">{error}</p>}
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_19rem]">
         <div className="min-w-0">

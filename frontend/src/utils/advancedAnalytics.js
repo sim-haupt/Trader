@@ -195,7 +195,6 @@ function getExcursion(trade, kind) {
 export function normalizeAdvancedTrades(trades, options = {}) {
   const defaultCommission = options.defaultCommission ?? 0;
   const defaultFees = options.defaultFees ?? 0;
-  const snapshotsByDay = groupBy(options.premarketSnapshots || [], (snapshot) => snapshot.dayKey);
 
   return (Array.isArray(trades) ? trades : [])
     .map((trade, sourceIndex) => {
@@ -231,12 +230,6 @@ export function normalizeAdvancedTrades(trades, options = {}) {
       const fillTime = getDate(trade.executions?.[0]?.occurredAt) ?? entryDate;
       const fillParts = getMarketParts(fillTime, MARKET_TIME_ZONE);
       const fillMinute = Number(fillParts.hour) * 60 + Number(fillParts.minute);
-      const checkpoint = isPremarketMinute(fillMinute)
-        ? snapshotsByDay.get(getMarketDayKey(fillTime))?.slice().reverse().find((snapshot) =>
-          new Date(snapshot.recordedAt) <= fillTime && new Date(snapshot.cutoff) <= fillTime
-        )
-        : null;
-
       return {
         id: trade?.id || `trade-${sourceIndex}`,
         source: trade,
@@ -248,7 +241,6 @@ export function normalizeAdvancedTrades(trades, options = {}) {
         minutesFromMidnight: fillMinute,
         entryScore,
         wouldRetake: review?.wouldRetake ?? null,
-        premarketHeat: checkpoint?.heat ?? null,
         spreadPerShare: spread,
         slippagePerShare: executionFacts.entrySlippage ?? finiteNumber(review?.outcome?.slippagePerShare),
         executionFacts,
@@ -865,7 +857,6 @@ export const CONDITIONAL_DIMENSIONS = [
   { key: "catalyst", label: "News catalyst", getKey: (item) => item.factors.catalyst || "Unavailable" },
   { key: "vwap", label: "Entry relative to VWAP", getKey: (item) =>
     item.factors.vwapDistance == null ? "Unavailable" : item.factors.vwapDistance >= 0 ? "At / above VWAP" : "Below VWAP" },
-  { key: "premarketHeat", label: "Premarket heat at entry", getKey: (item) => item.premarketHeat ?? "Unavailable" },
   { key: "tradeGrade", label: "Blind entry grade", getKey: getGradeBucket },
   { key: "gradeByPremarketTime", label: "Blind grade and premarket window", getKey: (item) =>
     isPremarketMinute(item.minutesFromMidnight)

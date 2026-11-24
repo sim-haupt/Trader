@@ -159,7 +159,7 @@ test("keeps metric definitions centralized for tooltips and duplicate-sensitive 
   assert.ok(ADVANCED_METRIC_DEFINITIONS.drawdown.limitations.includes("open positions"));
 });
 
-test("separates premarket buckets and attaches only snapshots available by the first fill", () => {
+test("keeps trade grading grouped by premarket time", () => {
   const entryDate = "2026-11-23T14:15:00.000Z";
   const data = [
     trade({ id: "pre", entryDate, executions: [{ occurredAt: entryDate }], entryReview: {
@@ -168,17 +168,8 @@ test("separates premarket buckets and attaches only snapshots available by the f
     } }),
     trade({ id: "open", entryDate: "2026-11-23T14:30:00.000Z" })
   ];
-  const premarketSnapshots = [
-    { dayKey: "2026-11-23", cutoff: "2026-11-23T13:00:00Z", recordedAt: "2026-11-23T13:16:00Z", heat: "Cold" },
-    { dayKey: "2026-11-23", cutoff: "2026-11-23T14:00:00Z", recordedAt: "2026-11-23T14:16:00Z", heat: "Hot" }
-  ];
-  const result = buildAdvancedAnalytics(data, {
-    premarketSnapshots, conditionalDimension: "gradeByPremarketTime", minimumSample: 1
-  });
-  const pre = result.trades.find(({ id }) => id === "pre");
-  assert.equal(pre.premarketHeat, "Cold");
-  assert.equal(pre.mfe, 24);
-  assert.equal(result.trades.find(({ id }) => id === "open").premarketHeat, null);
+  const result = buildAdvancedAnalytics(data, { conditionalDimension: "gradeByPremarketTime", minimumSample: 1 });
+  assert.equal(result.trades.find(({ id }) => id === "pre").mfe, 24);
   const graded = result.conditionalExplorer.find(({ label }) => label === "Premarket 09:00–09:30 · Strong (7–8)");
   assert.equal(graded.sessionCount, 1);
 });

@@ -2,7 +2,6 @@ const prisma = require("../config/prisma");
 const ApiError = require("../utils/ApiError");
 const { buildTradeWhere } = require("./trade.service");
 const { getBars, getEntryQuote } = require("./market-data.service");
-const { getPremarketAtFill } = require("./premarket.service");
 const { completedBars, startOfMinute, marketDayKey, marketTime } = require("../utils/marketSession");
 const { firstFill, calculateEntryOutcome } = require("../utils/entryReview");
 
@@ -41,17 +40,13 @@ async function getBlindEntry(actor, id) {
     ? regularPremarketStart
     : new Date(fill.time.getTime() - 3 * 60 * 60_000);
   const to = new Date(startOfMinute(fill.time).getTime() - 1);
-  const [result, premarket] = await Promise.all([
-    getBars({ symbol: trade.symbol, resolution: "1m", from, to, includeExtended: true })
-      .catch((error) => ({ bars: [], feed: null, error: error.message })),
-    getPremarketAtFill(actor.id, fill.time)
-  ]);
+  const result = await getBars({ symbol: trade.symbol, resolution: "1m", from, to, includeExtended: true })
+    .catch((error) => ({ bars: [], feed: null, error: error.message }));
 
   return {
     id, symbol: trade.symbol, side: trade.side, fill, dayKey, feed: result.feed,
     bars: completedBars(result.bars, fill.time),
     barsError: result.error ?? null,
-    premarket,
     review: trade.entryReview ? {
       ...trade.entryReview,
       outcome: undefined,

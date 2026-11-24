@@ -37,8 +37,8 @@ export function summarizeDiscipline(observation) {
   return { checked, followed, violated, score: checked ? followed / checked * 100 : null };
 }
 
-export function makeRiskRecords(trades) {
-  const performance = new Map(normalizeAdvancedTrades(trades).map((item) => [item.id, item]));
+export function makeRiskRecords(trades, options) {
+  const performance = new Map(normalizeAdvancedTrades(trades, options).map((item) => [item.id, item]));
   return trades.flatMap((trade) => {
     const first = trade.executions?.find((execution) => execution.source === "IMPORTED");
     const entry = timestamp(first?.occurredAt ?? trade.entryDate);
@@ -66,11 +66,12 @@ export function makeRiskRecords(trades) {
   }).sort((a, b) => a.entry - b.entry || String(a.id).localeCompare(String(b.id)));
 }
 
-export function chronologicalEvents(records) {
+export function chronologicalEvents(records, { entryFirstOnTie = false } = {}) {
+  const eventOrder = (type) => Number(type === (entryFirstOnTie ? "exit" : "entry"));
   return records.flatMap((record) => [
     { time: record.entry, type: "entry", record },
     ...(record.exit !== null ? [{ time: record.exit, type: "exit", record }] : [])
-  ]).sort((a, b) => a.time - b.time || Number(a.type === "entry") - Number(b.type === "entry"));
+  ]).sort((a, b) => a.time - b.time || eventOrder(a.type) - eventOrder(b.type));
 }
 
 export function newDailyState() {
@@ -109,6 +110,66 @@ export function summarizeRiskRows(rows, daysById) {
     holdingSeconds: mean(holds),
     riskViolations: rows.filter((row) => (daysById.get(row.id)?.length || 0) > 0).length
   };
+}
+
+const STREAK_GROUPS = ["After 1 win", "After 2 consecutive wins", "After 3+ consecutive wins",
+  "After 1 loss", "After 2 consecutive losses", "After 3+ consecutive losses"];
+
+export function buildNextTradeStreaks(records, selectedIds = new Set(records.map(({ id }) => id))) {
+  const days = new Map();
+  const groups = STREAK_GROUPS.map(() => []);
+
+  for (const { type, record } of chronologicalEvents(records, { entryFirstOnTie: true })) {
+    const day = type === "entry" ? record.day : record.exitDay;
+    const state = days.get(day) ?? { ...newDailyState(), pending: false };
+    days.set(day, state);
+
+    if (type === "exit") {
+      if (Number.isFinite(record.net)) {
+        realize(state, record.net);
+      } else {
+        state.wins = 0;
+        state.losses = 0;
+      }
+      state.pending = state.wins > 0 || state.losses > 0;
+    } else if (state.pending) {
+      const groupIndex = state.wins ? Math.min(state.wins, 3) - 1 : Math.min(state.losses, 3) + 2;
+      if (selectedIds.has(record.id)) groups[groupIndex].push(record);
+      state.pending = false;
+    }
+  }
+
+  const noViolations = new Map();
+  return STREAK_GROUPS.map((label, index) => ({ label, ...summarizeRiskRows(groups[index], noViolations) }));
+}
+
+export function buildOpeningPerformance(records, selectedIds, largeLoss) {
+  const groups = ["First trade won", "First two trades won", "First trade lost", "First two trades lost", "Large first-trade loss"]
+    .map((label) => ({ label, openingDays: 0, trades: [] }));
+  const selectedDays = new Set(records.filter(({ id }) => selectedIds.has(id)).map(({ day }) => day));
+  const byDay = group(records.filter(({ day }) => selectedDays.has(day)), (record) => record.day);
+  const knownResult = (record, day) => record?.exit !== null && record?.exitDay === day && Number.isFinite(record?.net);
+
+  for (const [day, trades] of byDay) {
+    const [first, second] = trades;
+    if (!knownResult(first, day) || first.net === 0) continue;
+
+    const win = first.net > 0;
+    const cases = [[win ? 0 : 2, first.exit, 1]];
+    if (!win && largeLoss > 0 && first.net <= -largeLoss) cases.push([4, first.exit, 1]);
+    if (knownResult(second, day) && Math.sign(second.net) === Math.sign(first.net)) {
+      cases.push([win ? 1 : 3, Math.max(first.exit, second.exit), 2]);
+    }
+
+    for (const [index, cutoff, openingTrades] of cases) {
+      groups[index].openingDays += 1;
+      groups[index].trades.push(...trades.slice(openingTrades)
+        .filter((row) => row.entry > cutoff && selectedIds.has(row.id)));
+    }
+  }
+
+  const noViolations = new Map();
+  return groups.map(({ label, openingDays, trades }) => ({ label, openingDays, ...summarizeRiskRows(trades, noViolations) }));
 }
 
 function coefficientOfVariation(values) {

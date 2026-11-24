@@ -11,7 +11,6 @@ import tradeReviewService from "../services/tradeReviewService";
 const navigationItems = [
   { label: "Dashboard", path: "/dashboard", icon: "M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" },
   { label: "Calendar", path: "/calendar", icon: "M7 2v3M17 2v3M4 8h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" },
-  { label: "Premarket", path: "/premarket", icon: "M3 18h18M5 15l4-5 4 2 5-7m-4 0h4v4" },
   { label: "Reports", path: "/reports", icon: "M4 19V9M10 19V5M16 19v-8M22 19V3" },
   { label: "Trades", path: "/trades", icon: "M4 18h16M5 15l4-4 3 3 7-8" },
   { label: "Reviews", path: "/trade-reviews/grade", icon: "M4 5h16v14H4V5zm3 3h3v3H7V8zm0 6h3v2H7v-2zm6-6h4m-4 4h4m-4 4h4" },
@@ -43,9 +42,6 @@ function getPageMeta(pathname) {
   if (pathname.startsWith("/trades/")) {
     return { title: "Trade Review", description: "Execution detail, notes, and chart context." };
   }
-  if (pathname === "/premarket") {
-    return { title: "Historical movers", description: "" };
-  }
   if (pathname === "/trade-reviews" || pathname === "/trade-reviews/grade") {
     return { title: "Blind entry review", description: "" };
   }
@@ -75,7 +71,7 @@ function AppShell() {
   const [isSwitchingAccount, setIsSwitchingAccount] = useState(false);
   const [mobileMenuPath, setMobileMenuPath] = useState(null);
   const blindWorkspace = location.pathname === "/trade-reviews" || location.pathname === "/trade-reviews/grade" || /^\/trades\/[^/]+\/replay$/.test(location.pathname);
-  const compactNavigation = blindWorkspace || location.pathname === "/premarket";
+  const compactNavigation = blindWorkspace;
   const mobileMenuOpen = mobileMenuPath === location.pathname;
   const HeaderTitle = compactNavigation ? "h1" : "p";
   const pageMeta = getPageMeta(location.pathname);

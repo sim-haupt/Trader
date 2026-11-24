@@ -1,5 +1,6 @@
 import TradeDisciplineCard from "./TradeDisciplineCard";
 import TradeIntelligenceCard from "./TradeIntelligenceCard";
+import TradeExitTiming from "./TradeExitTiming";
 import { useEffect, useMemo, useState } from "react";
 import {
   Area,
@@ -726,6 +727,8 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
           <Card title="Executions" className="dashboard-page-widget">
             <TimelineTable rows={tradeTimeline} />
           </Card>
+
+          {activeTrade.exitDate && <TradeExitTiming key={`exit-timing-${activeTrade.id}`} tradeId={activeTrade.id} />}
 
           <TradeDisciplineCard key={`discipline-${activeTrade.id}`} trade={activeTrade}
             onUpdate={(analysis) => setEditableTrade((current) => ({ ...(current || activeTrade), analysis }))}

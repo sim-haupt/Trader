@@ -1,4 +1,3 @@
-import usePremarketRecaps from "../hooks/usePremarketRecaps";
 import { Fragment, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -529,7 +528,6 @@ function CalendarToolbar({
 
 function MonthCalendar({
   month,
-  recaps,
   compact = false,
   pnlMode,
   onSelectDay,
@@ -573,14 +571,14 @@ function MonthCalendar({
                 type="button"
                 key={day.dayKey}
                 onClick={() => {
-                  if (day.isCurrentMonth && (day.stats || recaps.has(day.dayKey))) {
+                  if (day.isCurrentMonth && day.stats) {
                     onSelectDay(day.dayKey);
                   }
                 }}
-                disabled={!day.isCurrentMonth || (!day.stats && !recaps.has(day.dayKey))}
+                disabled={!day.isCurrentMonth || !day.stats}
                 className={`min-h-[86px] rounded-[5px] border border-[var(--line)] p-2 text-left transition ${
                   compact ? "min-h-[62px]" : "sm:min-h-[104px]"
-                } ${day.isCurrentMonth && (day.stats || recaps.has(day.dayKey)) ? "cursor-pointer hover:brightness-110" : "cursor-default"} ${
+                } ${day.isCurrentMonth && day.stats ? "cursor-pointer hover:brightness-110" : "cursor-default"} ${
                   day.isCurrentMonth ? getDayTone(day.stats, true, pnlMode) : "opacity-40"
                 } ${day.isCurrentMonth && !day.isMarketDay && !day.stats ? "opacity-55 saturate-50" : ""}`}
                 style={day.isCurrentMonth ? getDayStyle(day.stats, monthScale, pnlMode) : undefined}
@@ -600,11 +598,6 @@ function MonthCalendar({
                     {day.isMarketDay ? "No trades" : "Market closed"}
                   </div>
                 ) : null}
-                {day.isCurrentMonth && recaps.has(day.dayKey) && (
-                  <span className="mt-1 block truncate text-[11px] text-white/75" title="09:25 ET premarket recap">
-                    {recaps.get(day.dayKey).heat ?? "Premarket"}
-                  </span>
-                )}
               </button>
             ))}
 
@@ -870,7 +863,6 @@ function MonthCharts({ month, pnlMode, selectedWeekIndex = null }) {
 
 function MonthPanel({
   month,
-  recaps,
   onSelectDay,
   compact = false,
   pnlMode,
@@ -904,7 +896,6 @@ function MonthPanel({
       <div className={compact ? "grid gap-4" : "grid gap-5 2xl:grid-cols-[minmax(0,1.4fr)_minmax(360px,0.8fr)]"}>
         <MonthCalendar
           month={month}
-          recaps={recaps}
           compact={compact}
           pnlMode={pnlMode}
           onSelectDay={onSelectDay}
@@ -957,7 +948,6 @@ function CalendarPage() {
 
     const months = Array.from({ length: 12 }, (_, monthIndex) => {
       const monthDate = new Date(targetYear, monthIndex, 1);
-      const lastDate = new Date(targetYear, monthIndex + 1, 0);
       const weeks = createMonthGrid(targetYear, monthIndex, dailyStats);
       const monthDays = weeks.flat().filter((day) => day.isCurrentMonth);
       const grossSummary = calculateSummary(monthDays, "GROSS");
@@ -969,8 +959,6 @@ function CalendarPage() {
           month: "long",
           year: "numeric"
         }),
-        rangeStart: getCalendarGridKey(monthDate),
-        rangeEnd: getCalendarGridKey(lastDate),
         weeks,
         grossSummary,
         netSummary
@@ -985,12 +973,6 @@ function CalendarPage() {
 
   const selectedMonth = calendarData.months[selectedMonthIndex] ?? calendarData.months[currentMonthIndex] ?? calendarData.months[0];
 
-  const recaps = usePremarketRecaps({
-    from: viewMode === "MONTH" ? selectedMonth.rangeStart : `${calendarData.year}-01-01`,
-    to: viewMode === "MONTH" ? selectedMonth.rangeEnd : `${calendarData.year}-12-31`,
-    userId: user?.id
-  });
-
   if (loading) {
     return (
       <div className="calendar-page">
@@ -1003,7 +985,7 @@ function CalendarPage() {
     return <div className="calendar-page ui-notice border-coral/20 bg-coral/10 text-coral">{error}</div>;
   }
 
-  if (trades.length === 0 && !recaps.size) {
+  if (trades.length === 0) {
     return (
       <div className="calendar-page">
         <EmptyState
@@ -1038,7 +1020,6 @@ function CalendarPage() {
       {viewMode === "MONTH" ? (
         <MonthPanel
           month={selectedMonth}
-          recaps={recaps}
           pnlMode={pnlMode}
           selectedWeekIndex={selectedWeekIndex}
           onWeekToggle={setSelectedWeekIndex}
@@ -1050,7 +1031,6 @@ function CalendarPage() {
             <MonthPanel
               key={month.label}
               month={month}
-              recaps={recaps}
               compact
               pnlMode={pnlMode}
               onOpen={() => {

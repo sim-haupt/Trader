@@ -7,8 +7,6 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "test:tax-report": "node scripts/test-tax-report-fixture.js",
-    "premarket:backfill": "node scripts/backfill-premarket.js",
-    "movers:import": "node scripts/import-mover-history.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio"

@@ -2594,6 +2594,7 @@ function ReportsPage() {
       ) : activeTab === "Advanced" ? (
         <AdvancedReportsTab
           trades={filteredTrades}
+          tradeHistory={trades}
           onRefreshHistory={() => { clearTradeCaches(); return reloadTrades(); }}
           defaultCommission={user?.defaultCommission ?? 0}
           defaultFees={user?.defaultFees ?? 0}

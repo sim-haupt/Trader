@@ -4,6 +4,7 @@ const { buildTradeWhere } = require("./trade.service");
 const { getBars } = require("./market-data.service");
 const { firstFill, calculateEntryOutcome } = require("../utils/entryReview");
 const { completedBars, startOfMinute, marketDayKey, marketTime } = require("../utils/marketSession");
+const { exitTimingPlan, compareExitTiming, MINUTE, OFFSETS } = require("../utils/exitTiming");
 
 const minute = 60_000;
 const maxPathMs = 48 * 60 * minute;
@@ -127,6 +128,20 @@ async function getSimulationPath(actor, id) {
   };
 }
 
+async function getExitTiming(actor, id) {
+  const trade = await findTrade(actor, id);
+  const plan = exitTimingPlan(trade);
+  if (plan.reason) return { reason: plan.reason };
+
+  const now = Date.now();
+  const from = startOfMinute(new Date(Math.max(plan.entry, plan.exit + (OFFSETS[0] - 1) * MINUTE)));
+  const to = new Date(Math.min(now, plan.exit + OFFSETS.at(-1) * MINUTE));
+  const result = from < to ? await getBars({ symbol: trade.symbol, resolution: "1m", from, to, includeExtended: true })
+    .catch(() => ({ bars: [], feed: null })) : { bars: [], feed: null };
+  return { actualNet: plan.actualNet, exit: plan.exit, approximate: plan.approximate, feed: result.feed,
+    rows: compareExitTiming(plan, result.bars, now) };
+}
+
 async function getSimulationPaths(actor, ids) {
   const output = [];
   for (let index = 0; index < ids.length; index += 3) {
@@ -141,4 +156,4 @@ async function getSimulationPaths(actor, ids) {
   return output;
 }
 
-module.exports = { getProfile, saveProfile, saveSimulation, saveTradeRecord, completeOriginalRisk, replay, getSimulationPaths };
+module.exports = { getProfile, saveProfile, saveSimulation, saveTradeRecord, completeOriginalRisk, replay, getSimulationPaths, getExitTiming };

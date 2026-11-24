@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildRiskAnalytics, makeRiskRecords, summarizeDiscipline } from "./riskAnalytics.js";
+import { buildNextTradeStreaks, buildOpeningPerformance, buildRiskAnalytics, makeRiskRecords, summarizeDiscipline } from "./riskAnalytics.js";
 import { monteCarlo, reconstructExit, simulateTrades } from "./tradeSimulation.js";
 
 const timestamp = (clock, day = "2026-11-23") => new Date(`${day}T${clock}-05:00`).getTime();
@@ -18,6 +18,50 @@ const rows = () => makeRiskRecords([
   trade("overlap", timestamp("08:04:00"), timestamp("08:20:00"), 52),
   trade("late", timestamp("08:06:00"), timestamp("08:30:00"), 12)
 ]);
+
+test("reports the next entry separately after one, two, and three consecutive wins or losses", () => {
+  const outcomes = [102, 52, 32, -8, -18, -28, 42];
+  const records = makeRiskRecords(outcomes.map((pnl, index) =>
+    trade(`trade-${index}`, timestamp(`08:0${index}:00`), timestamp(`08:0${index}:30`), pnl)));
+  const next = buildNextTradeStreaks(records);
+  assert.deepEqual(next.map(({ closed, expectancy, winRate }) => [closed, expectancy, winRate]), [
+    [1, 50, 100], [1, 30, 100], [1, -10, 0], [1, -20, 0], [1, -30, 0], [1, 40, 100]
+  ]);
+});
+
+test("uses the first later entry only, excludes ties, and resets streaks on the next day", () => {
+  const day = "2026-11-24";
+  const records = makeRiskRecords([
+    trade("starting-win", timestamp("08:00:00"), timestamp("08:01:00"), 20),
+    trade("same-time", timestamp("08:01:00"), timestamp("08:10:00"), 12),
+    trade("next", timestamp("08:02:00"), timestamp("08:11:00"), 12),
+    trade("overlap", timestamp("08:03:00"), timestamp("08:12:00"), 12),
+    trade("next-day", timestamp("08:00:00", day), timestamp("08:05:00", day), 12)
+  ]);
+  assert.deepEqual(buildNextTradeStreaks(records).map(({ count }) => count), [1, 0, 0, 0, 0, 0]);
+  assert.deepEqual(buildNextTradeStreaks(records, new Set(["same-time", "overlap", "next-day"]))
+    .map(({ count }) => count), [0, 0, 0, 0, 0, 0]);
+});
+
+test("opening-day groups measure only trades entered after the relevant opening closes", () => {
+  const next = "2026-11-24";
+  const records = makeRiskRecords([
+    trade("large loss", timestamp("08:00:00"), timestamp("08:05:00"), -118),
+    trade("second loss", timestamp("08:03:00"), timestamp("08:08:00"), -18),
+    trade("between closes", timestamp("08:06:00"), timestamp("08:11:00"), 22),
+    trade("after both", timestamp("08:09:00"), timestamp("08:12:00"), 42),
+    trade("first win", timestamp("08:00:00", next), timestamp("08:03:00", next), 22),
+    trade("second win", timestamp("08:04:00", next), timestamp("08:05:00", next), 32),
+    trade("after two wins", timestamp("08:06:00", next), timestamp("08:07:00", next), -8)
+  ]);
+  const ids = new Set(records.map(({ id }) => id));
+  assert.deepEqual(buildOpeningPerformance(records, ids, 100).map(({ openingDays, closed, pnl }) => [openingDays, closed, pnl]),
+    [[1, 2, 20], [1, 1, -10], [1, 2, 60], [1, 1, 40], [1, 2, 60]]);
+  assert.equal(buildOpeningPerformance(records, ids, 150).at(-1).openingDays, 0);
+  const [,, firstLoss, secondLoss] = buildOpeningPerformance(records, new Set(["between closes"]), 100);
+  assert.equal(firstLoss.pnl, 20);
+  assert.equal(secondLoss.pnl, null);
+});
 
 test("discipline uses only assessed rules and does not depend on realized P&L", () => {
   const report = { setup: "followed", entry: "followed", exit: "unknown",

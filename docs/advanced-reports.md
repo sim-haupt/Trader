@@ -77,23 +77,21 @@ Weekly reports use ISO-style Monday week starts based on the market-day key. Mon
 - Advanced Reports currently runs client-side with memoized React calculations, matching the existing Reports architecture.
 
 
-## Blind Entry Review and Premarket Conditions
+## Blind Entry Review
 
 Apply [the additive database migration](../prisma/manual/20261123_add_premarket_analysis.sql) before deploying the updated API, then run `npm run prisma:generate`. The review queue uses the current Live or Simulator account and preserves the first submitted grade. Legacy round trips with a known averaged entry show a time marker with no pre-reveal price.
-
-Existing checkpoints use extended-hours consolidated Alpaca SIP bars and a split-adjusted prior regular close. Saved checkpoint snapshots remain available for blind-entry context and Journal or Calendar recaps.
-- The leaderboard applies the configured dollar-volume floor and requires a completed bar within five minutes of the checkpoint. The amount of the move held is current gain divided by peak gain since 04:00, both measured from the prior close.
-- Heat averages the percentile ranks of names up 10% or more, median top-five gain, and eligible dollar volume. It uses up to 60 prior snapshots at the same checkpoint, feed, symbol universe, and liquidity setting. At least 10 comparable sessions and 80% prior-close coverage are required. Hot is at or above the 70th percentile and cold is at or below the 30th. The cycle compares the median heat score over five sessions with the preceding five using a common historical baseline for those sessions. A change of at least 10 points moves the label to heating up or cooling.
-- Relative volume on the leaderboard compares cumulative premarket shares with the median at the same checkpoint over at least five comparable sessions. The legacy per-trade report field remains a ratio to typical full-day volume.
-- Journal and Calendar use the 09:25 ET recap. Entry-conditioned Reports use the latest same-session snapshot recorded by the time of the first fill. Historical capture can fill the recap and baseline while preserving the true recording timestamps.
-
-To build historical baselines for a saved scan, run `npm run premarket:backfill -- ACCOUNT_EMAIL FIRST_DATE LAST_DATE`. Dates use `YYYY-MM-DD`. The backfill is resumable since an existing checkpoint for the same settings is reused.
 
 ## Performance Intelligence
 
 Apply both additive SQL migrations in order before deploying the API. The second migration [moves saved outcome data into TradeAnalysis](../prisma/manual/20261123_extend_trade_analysis.sql) and preserves the original blind grade and planning fields. Prisma needs to be regenerated with `npm run prisma:generate`.
 
-Open **Reports → Advanced** for one net performance table grouped by setup, tag, or setup plus tags. It uses the global Reports filters. Tag groups can overlap and are never summed to produce aggregate P&L. Expand **Trading windows** to see the New York time-of-day heatmap, with 5-, 15-, 30-, and 60-minute intervals. Cells show sample sizes and link to the trades. An observed leading window requires at least 20 trades over 10 sessions. Execution and holding time and Market conditions are available below the table.
+Open **Reports → Advanced** for one net performance table grouped by setup, tag, or setup plus tags. It uses the global Reports filters. Tag groups can overlap and are never summed to produce aggregate P&L. **Trading windows** shows the New York time-of-day heatmap, with 5-, 15-, 30-, and 60-minute intervals. Cells show sample sizes and link to the trades. An observed leading window requires at least 20 trades over 10 sessions. Execution and holding time and Market conditions are available below the table.
+
+**Performance after a streak** groups the next entry after one, two, or three or more realized wins or losses. Streaks reset each New York trading day and a breakeven or unknown result breaks the streak. Only outcomes closed strictly before the next entry count. Report filters apply to the next trade, while the streak uses the account history available to Reports.
+
+**Performance after the day opens** classifies the first one or two entries of each New York trading day by their net results. It summarizes later trades only when they were entered after the qualifying opening trades had closed. The editable large-loss threshold defaults to $100 net. Opening categories can overlap.
+
+**Trade Detail → Exit timing** compares the actual result with exits 1, 5, 15, and 30 minutes earlier or later. Earlier exits keep fills before the hypothetical time and cancel later fills. For a later exit, the final closing fills move together and earlier partial exits stay in place. The last completed one-minute close at each time estimates the exit, with the recorded costs carried across scenarios. Reported aggregate prices are marked when used. Missing historical prices remain unavailable.
 
 Use **Collect historical data** in an individual trade or **Collect next 5 trades** under Market conditions. Collected data is reconstructed historical evidence. It uses Alpaca SIP intraday bars, completed daily bars, pre-fill bid/ask quotes where entitled, and pre-entry Alpaca news. News categories use a headline-based rule on the latest eligible article. Older or edited news can be absent. The setup candidate uses completed minute bars, EMA alignment, VWAP, and price structure. You can apply the candidate to an existing setup through the normal setup workflow. A manually chosen setup stays in place until explicitly changed.
 
@@ -124,17 +122,3 @@ In **Reports → Risk & simulation**, configure the daily loss and profit stops,
 - **What-if.** The rescaling mode changes recorded P&L proportionally to position size. Fixed-risk sizing requires original planned risk. Commission and routing overrides are round-trip per share and require recorded gross results unless price-path or assumed outcomes supply gross P&L. The assumed-outcome model uses a seeded Bernoulli outcome with a fixed payoff and loss measured in R. Omitted assumptions require a covered empirical value. Results compare the entire selected history, the eligible actual subset, and the hypothetical subset.
 - **Price paths.** The app evaluates the most recent 30 dated closed trades in the filter, up to 48 hours per trade, using actual single entry and exit fills. Only the original holding window is considered. Unsupported or incomplete paths and ambiguous stop/target touches are identified explicitly. Stop gaps use the observed opening price. Targets use the requested target price. Threshold effects become available when their candle closes, except a time-based exit recorded at its deadline using the last completed close. These are OHLC approximations with no order-book or fill-probability model.
 - **Monte Carlo.** A seeded bootstrap samples complete realized session blocks with replacement and preserves trade order within blocks. Scenario A and B use the same seed. Equity bands and terminal metrics use fifth, median, and 95th percentiles. Ruin is a configured equity-floor crossing after a simulated close. Drawdown uses the peak-to-trough equity decline in dollars. Wilson intervals describe finite-trial uncertainty for event probabilities. They do not quantify changes in the future return distribution. Historical results do not guarantee future performance.
-
-## Historical market movers
-
-Open **Premarket** to see a row per saved trading date with the number of runners above 50% and the three biggest positive gaps. Tabs show Premarket and Whole day. The date field displays the latest 30 saved dates on or before the selected date. The page reads saved summaries only.
-
-Import an already calculated historical CSV on the API host with `npm run movers:import -- path/to/history.csv`. The archive uses the existing [market mover table](../prisma/manual/20261124_add_market_mover_days.sql). For each date and session, import the runner count and up to three gaps. A later import for the same date and session replaces that summary. The other session stays saved.
-
-```csv
-date,session,runner_count,source,gapper_1,gap_1_percent,gapper_2,gap_2_percent,gapper_3,gap_3_percent
-```
-
-- Use `YYYY-MM-DD` and set `session` to `premarket` or `whole-day`. Record a zero count only when the source reports zero. Use a source that counts all runners within its covered universe. A top-movers list alone cannot establish the count.
-- Use the prior regular close as the reference. Premarket gaps use the last premarket price and runner peaks from 04:00 ET to the regular open. Whole-day gaps use the regular open and runner peaks from 04:00 to 20:00 ET. Runner counts require gains strictly above 50%.
-- Gaps are percentage points. Each gap can include a ticker, and empty gap columns are allowed. The source is displayed with each row.
