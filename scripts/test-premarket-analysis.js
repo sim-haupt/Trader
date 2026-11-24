@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const { completedBars, marketDayKey, marketTime } = require("../src/utils/marketSession");
 const { summarizePremarket, classifyPremarket } = require("../src/utils/premarketMetrics");
 const { firstFill, calculateEntryOutcome } = require("../src/utils/entryReview");
-const { summarizeMovers, sortMoverLists } = require("../src/utils/marketMovers");
+const { archiveSession, parseMoverArchive } = require("../src/utils/marketMovers");
 
 const day = "2026-11-23";
 const at = (clock) => marketTime(day, clock);
@@ -95,36 +95,23 @@ test("heat requires comparable sessions, handles ties, and identifies a rising c
   assert.equal(classifyPremarket({ ...make(100), covered: 5 }, baseline).heat, null);
 });
 
-test("historical movers use the premarket close, regular open, and distinct peak windows", () => {
-  const session = { date: "2026-11-27", open: "09:30", close: "13:00" };
-  const bar = (clock, open, close, high) => ({ time: marketTime(session.date, clock).getTime() / 1000, open, close, high });
-  const prior = new Map([["AA", 10], ["BB", 10], ["PM", 10], ["LATE", 10], ["EDGE", 0.2]]);
-  const bars = new Map([
-    ["AA", [bar("09:30", 10.5, 11, 12), bar("09:00", 11, 14, 16), bar("15:00", 16, 17, 18), bar("20:00", 22, 40, 42)]],
-    ["BB", [bar("09:00", 8, 8, 9), bar("09:30", 13, 13, 14), bar("12:30", 13, 17, 19)]],
-    ["PM", [bar("04:00", 14, 15, 17)]],
-    ["LATE", [bar("13:30", 20, 20, 20)]],
-    ["EDGE", [bar("09:00", 0.2, 0.3, 0.3)]],
-    ["IPO", [bar("09:30", 10, 20, 100)]]
-  ]);
-  const result = summarizeMovers(prior, bars, session);
-  assert.deepEqual(result.premarket.gappers.map((row) => row.symbol), ["PM", "EDGE", "AA"]);
-  assert.deepEqual(result.wholeDay.gappers.map((row) => row.symbol), ["BB", "AA"]);
-  assert.deepEqual(result.premarket.runners.map((row) => row.symbol), ["PM", "AA"]);
-  assert.deepEqual(result.wholeDay.runners.map((row) => row.symbol), ["LATE", "BB", "AA", "PM"]);
-  assert.equal(result.premarket.gappers.find((row) => row.symbol === "AA").gapPrice, 14);
-  assert.equal(result.wholeDay.gappers.find((row) => row.symbol === "AA").gapPrice, 10.5);
-  assert.equal(result.wholeDay.runners.find((row) => row.symbol === "AA").high, 18);
-  assert.equal(result.withBars, 6);
-  assert.equal(result.wholeDay.covered, 5);
+const archiveHeader = "date,session,runner_count,source,gapper_1,gap_1_percent,gapper_2,gap_2_percent,gapper_3,gap_3_percent";
+
+test("historical archives sort top gaps and preserve zero runners and missing sessions", () => {
+  const result = parseMoverArchive(`${archiveHeader}\n2026-11-20,premarket,3,Historical export,ALFA,234%,BRVO,333,,99\n2026-11-20,whole-day,0,Historical export,,,,,,`);
+  const day = result.get("2026-11-20");
+  assert.deepEqual(archiveSession(day.premarket), { source: "Historical export", runnerCount: 3,
+    gappers: [{ symbol: "BRVO", gap: 333 }, { symbol: "ALFA", gap: 234 }, { symbol: null, gap: 99 }] });
+  assert.equal(archiveSession(day.wholeDay).runnerCount, 0);
+  assert.equal(archiveSession(undefined), null);
+  assert.equal(archiveSession({ covered: 0, runners: [], gappers: [] }), null);
+  const old = archiveSession({ covered: 12, runners: [{ symbol: "OLDR" }], gappers: [{ symbol: "OLDR", gap: 56 }] });
+  assert.deepEqual(old, { source: "Alpaca SIP", runnerCount: 1, gappers: [{ symbol: "OLDR", gap: 56 }] });
 });
 
-test("the merged ranking keeps ten gappers and all strictly qualifying runners", () => {
-  const rows = Array.from({ length: 12 }, (_, index) => ({ symbol: `T${index}`, gap: index, peakGain: 55 + index }));
-  const session = { gappers: [...rows], runners: [...rows] };
-  sortMoverLists(session);
-  assert.equal(session.gappers.length, 10);
-  assert.equal(session.gappers[0].symbol, "T11");
-  assert.equal(session.runners.length, 12);
-  assert.equal(session.runners[0].symbol, "T11");
+test("rejects duplicate dates/sessions and distinguishes blank inputs from counts", () => {
+  const row = "2026-11-20,premarket,2,Export,ABC,10,,,,";
+  assert.throws(() => parseMoverArchive([archiveHeader, row, row].join("\n")), /already occur/);
+  assert.throws(() => parseMoverArchive([archiveHeader, row.replace(",2,", ",,")].join("\n")), /integer runner count/);
+  assert.throws(() => parseMoverArchive([archiveHeader, row.replace(",10,", ",,")].join("\n")), /positive percentage/);
 });

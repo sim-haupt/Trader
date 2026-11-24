@@ -23,11 +23,6 @@ async function getScan(userId) {
   return (await prisma.premarketScan.findUnique({ where: { userId } })) ?? { userId, ...DEFAULT_SCAN };
 }
 
-async function updateScan(userId, input) {
-  const scan = { ...input, symbols: [...new Set(input.symbols)].sort() };
-  return prisma.premarketScan.upsert({ where: { userId }, create: { userId, ...scan }, update: scan });
-}
-
 function snapshotKey(scope, dayKey, checkpoint) {
   return { userId_universeKey_feed_dayKey_checkpoint: { ...scope, dayKey, checkpoint } };
 }
@@ -89,34 +84,6 @@ async function capture(scan, dayKey, checkpoint) {
   return operation;
 }
 
-async function getOverview(userId, dayKey, checkpoint) {
-  const scan = await getScan(userId);
-  const rows = await prisma.premarketSnapshot.findMany({
-    where: { ...getScope(scan), checkpoint, dayKey: { lte: dayKey } },
-    orderBy: { dayKey: "desc" },
-    take: 80
-  });
-  const current = rows[0]?.dayKey === dayKey ? rows[0] : null;
-  const history = rows.slice(0, 20).reverse().map((row) => {
-    const prior = rows.filter((item) => item.dayKey < row.dayKey).map(({ metrics }) => metrics);
-    const { heat, score } = classifyPremarket(row.metrics, prior);
-    return { dayKey: row.dayKey, heat, score, breadth: row.metrics.counts[0] };
-  });
-  const { covered, universeSize, totalDollarVolume, counts, medianTopFive, medianRetained } = current?.metrics ?? {};
-
-  return {
-    scan,
-    checkpoints: CHECKPOINTS,
-    delayMinutes: DATA_DELAY_MS / 60_000,
-    history,
-    snapshot: current ? {
-      dayKey, checkpoint, feed: current.feed, cutoff: current.cutoff, recordedAt: current.recordedAt,
-      covered, universeSize, totalDollarVolume, counts, medianTopFive, medianRetained,
-      ...classifyPremarket(current.metrics, rows.slice(1).map(({ metrics }) => metrics))
-    } : null
-  };
-}
-
 async function getPremarketAtFill(userId, fillTime) {
   const dayKey = marketDayKey(fillTime);
   if (fillTime < marketTime(dayKey, "04:00") || fillTime >= marketTime(dayKey, "09:30")) return null;
@@ -166,42 +133,4 @@ async function getSnapshotSummary(userId, { from, to }, mode) {
   });
 }
 
-function startPremarketCapture() {
-  let running = false;
-  const lastAttempt = new Map();
-  async function tick() {
-    const now = new Date();
-    const dayKey = marketDayKey(now);
-    const weekday = new Date(`${dayKey}T12:00:00Z`).getUTCDay();
-    const checkpoint = CHECKPOINTS.findLast((time) => canCapture(marketTime(dayKey, time), now));
-    if (running || weekday === 0 || weekday === 6 || !checkpoint || now - marketTime(dayKey, checkpoint) > DATA_DELAY_MS + 600_000) return;
-    running = true;
-    try {
-      const settings = await prisma.premarketScan.findMany({ where: { automatic: true } });
-      for (const scan of settings) {
-        const key = JSON.stringify(snapshotKey(getScope(scan), dayKey, checkpoint));
-        const attempted = lastAttempt.get(key);
-        if (attempted && (attempted.complete || now - attempted.time < 120_000)) continue;
-        lastAttempt.set(key, { time: now });
-        try {
-          await capture(scan, dayKey, checkpoint);
-          lastAttempt.set(key, { time: now, complete: true });
-        } catch (error) {
-          console.warn("Premarket checkpoint capture failed", dayKey, checkpoint, error.message);
-        }
-      }
-      for (const [key, attempt] of lastAttempt) {
-        if (now - attempt.time > 86_400_000) lastAttempt.delete(key);
-      }
-    } catch (error) {
-      console.warn("Premarket capture could not load settings", error.message);
-    } finally {
-      running = false;
-    }
-  }
-  const timer = setInterval(tick, 60_000);
-  timer.unref();
-  void tick();
-}
-
-module.exports = { CHECKPOINTS, getScan, updateScan, capture, getOverview, getPremarketAtFill, getSnapshotSummary, startPremarketCapture };
+module.exports = { CHECKPOINTS, getScan, capture, getPremarketAtFill, getSnapshotSummary };

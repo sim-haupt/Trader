@@ -81,8 +81,7 @@ Weekly reports use ISO-style Monday week starts based on the market-day key. Mon
 
 Apply [the additive database migration](../prisma/manual/20261123_add_premarket_analysis.sql) before deploying the updated API, then run `npm run prisma:generate`. The review queue uses the current Live or Simulator account and preserves the first submitted grade. Legacy round trips with a known averaged entry show a time marker with no pre-reveal price.
 
-Save your universe of up to 100 symbols under **Premarket → Scan settings**. Snapshots use extended-hours consolidated Alpaca SIP bars and a split-adjusted prior regular close. They require configured Alpaca credentials and SIP historical bars access. Automatic collection runs in the API process on weekdays when enabled in scan settings. Checkpoints are **04:30, 06:00, 07:00, 08:00, 09:00, and 09:25 ET**. The default `PREMARKET_DATA_DELAY_MINUTES` of 16 supports delayed SIP. Set it to 1 if the deployment has real-time SIP access. The server needs to be running around the checkpoint to collect it automatically.
-
+Existing checkpoints use extended-hours consolidated Alpaca SIP bars and a split-adjusted prior regular close. Saved checkpoint snapshots remain available for blind-entry context and Journal or Calendar recaps.
 - The leaderboard applies the configured dollar-volume floor and requires a completed bar within five minutes of the checkpoint. The amount of the move held is current gain divided by peak gain since 04:00, both measured from the prior close.
 - Heat averages the percentile ranks of names up 10% or more, median top-five gain, and eligible dollar volume. It uses up to 60 prior snapshots at the same checkpoint, feed, symbol universe, and liquidity setting. At least 10 comparable sessions and 80% prior-close coverage are required. Hot is at or above the 70th percentile and cold is at or below the 30th. The cycle compares the median heat score over five sessions with the preceding five using a common historical baseline for those sessions. A change of at least 10 points moves the label to heating up or cooling.
 - Relative volume on the leaderboard compares cumulative premarket shares with the median at the same checkpoint over at least five comparable sessions. The legacy per-trade report field remains a ratio to typical full-day volume.
@@ -128,9 +127,14 @@ In **Reports → Risk & simulation**, configure the daily loss and profit stops,
 
 ## Historical market movers
 
-The **Premarket** tab opens historical movers for the most recent completed New York trading date. Use the date field or the previous and next trading-day controls to browse earlier sessions. The first visit scans and saves both views. Apply [the market mover cache migration](../prisma/manual/20261124_add_market_mover_days.sql) and regenerate Prisma before deploying.
+Open **Premarket** to see a row per saved trading date with the number of runners above 50% and the three biggest positive gaps. Tabs show Premarket and Whole day. The date field displays the latest 30 saved dates on or before the selected date. The page reads saved summaries only.
 
-- **Premarket** runs from 04:00 ET until the regular open. The ten top gappers use the last available premarket price against the previous session’s regular close. Runners use the highest covered premarket price against that same close.
-- **Whole day** runs from 04:00 to 20:00 ET, including after-hours. The ten top gappers use the first covered regular-session price against the previous session’s regular close. Runners use the highest covered price across the full window. Both runner lists include every covered symbol whose peak gain was strictly greater than 50%.
-- The scan uses Alpaca historical SIP bars and the Alpaca asset and trading-calendar endpoints. Set `ALPACA_TRADING_URL` to the matching paper or live API for the configured keys. The U.S. exchange-listed catalog includes available inactive assets, but is not a point-in-time listing archive. Older ticker coverage can vary. Symbols without a previous session’s close have no percentage ranking. A missing or failed scan has its own state.
-- **Heat history and scan settings** still opens the custom checkpoint scanner used by Journal and Reports.
+Import an already calculated historical CSV on the API host with `npm run movers:import -- path/to/history.csv`. The archive uses the existing [market mover table](../prisma/manual/20261124_add_market_mover_days.sql). For each date and session, import the runner count and up to three gaps. A later import for the same date and session replaces that summary. The other session stays saved.
+
+```csv
+date,session,runner_count,source,gapper_1,gap_1_percent,gapper_2,gap_2_percent,gapper_3,gap_3_percent
+```
+
+- Use `YYYY-MM-DD` and set `session` to `premarket` or `whole-day`. Record a zero count only when the source reports zero. Use a source that counts all runners within its covered universe. A top-movers list alone cannot establish the count.
+- Use the prior regular close as the reference. Premarket gaps use the last premarket price and runner peaks from 04:00 ET to the regular open. Whole-day gaps use the regular open and runner peaks from 04:00 to 20:00 ET. Runner counts require gains strictly above 50%.
+- Gaps are percentage points. Each gap can include a ticker, and empty gap columns are allowed. The source is displayed with each row.

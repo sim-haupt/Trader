@@ -1,62 +1,63 @@
-const { marketTime } = require("./marketSession");
+const { parse } = require("csv-parse/sync");
+const { z } = require("zod");
 
-const TOP_GAPPERS = 10;
-const BAR_MINUTES = 30;
-const AFTER_HOURS_END = "20:00";
+const SESSIONS = { premarket: "premarket", "whole-day": "wholeDay" };
+const GAPPER_COLUMNS = [1, 2, 3];
+const dateSchema = z.string().date();
+const columns = ["date", "session", "runner_count", "source",
+  ...GAPPER_COLUMNS.flatMap((index) => [`gapper_${index}`, `gap_${index}_percent`])];
 
-function gain(price, priorClose) {
-  return ((price - priorClose) / priorClose) * 100;
-}
+function parseMoverArchive(text) {
+  const rows = parse(text, {
+    bom: true, trim: true, skip_empty_lines: true,
+    columns(headers) {
+      if (new Set(headers).size !== headers.length || columns.some((key) => !headers.includes(key))) {
+        throw new Error(`CSV headers must include ${columns.join(", ")}.`);
+      }
+      return headers;
+    }
+  });
+  if (!rows.length) throw new Error("The file contains no historical summaries.");
+  const days = new Map();
 
-function compareRank(metric) {
-  return (left, right) => right[metric] - left[metric] || left.symbol.localeCompare(right.symbol);
-}
-
-function rankSession(rows) {
-  const session = {
-    covered: rows.length,
-    gappers: rows.filter((row) => row.gap > 0),
-    runners: rows.filter((row) => row.peakGain > 50 + 1e-9)
-  };
-  sortMoverLists(session);
-  return session;
-}
-
-function sortMoverLists(session) {
-  session.gappers = session.gappers.sort(compareRank("gap")).slice(0, TOP_GAPPERS);
-  session.runners.sort(compareRank("peakGain"));
-}
-
-function summarizeMovers(priors, intraday, session) {
-  const open = marketTime(session.date, session.open).getTime() / 1000;
-  const regularEnd = marketTime(session.date, session.close).getTime() / 1000;
-  const start = marketTime(session.date, "04:00").getTime() / 1000;
-  const end = marketTime(session.date, AFTER_HOURS_END).getTime() / 1000;
-  const premarket = [];
-  const wholeDay = [];
-  let withBars = 0;
-
-  for (const [symbol, bars] of intraday) {
-    const valid = bars.filter((bar) => bar.time >= start && bar.time + BAR_MINUTES * 60 <= end &&
-      bar.open > 0 && bar.close > 0 && bar.high > 0).sort((a, b) => a.time - b.time);
-    if (!valid.length) continue;
-    withBars += 1;
-    const priorClose = priors.get(symbol);
-    if (!Number.isFinite(priorClose) || priorClose <= 0) continue;
-    const before = valid.filter((bar) => bar.time + BAR_MINUTES * 60 <= open);
-    const regularFirst = valid.find((bar) => bar.time >= open && bar.time < regularEnd);
-
-    function summarize(covered, gapPrice) {
-      const high = Math.max(...covered.map((bar) => bar.high));
-      return { symbol, priorClose, gapPrice: gapPrice ?? null, gap: gapPrice == null ? null : gain(gapPrice, priorClose),
-        high, peakGain: gain(high, priorClose) };
+  rows.forEach((row, index) => {
+    const { date, session, runner_count: count, source } = row;
+    const key = Object.hasOwn(SESSIONS, session) ? SESSIONS[session] : null;
+    const fail = (reason) => { throw new Error(`Data row ${index + 1}: ${reason}`); };
+    if (!dateSchema.safeParse(date).success || !key) fail("Use a YYYY-MM-DD date and a premarket or whole-day session.");
+    if (!/^\d{1,6}$/.test(count) || !source || source.length > 120) {
+      fail("Provide a nonnegative integer runner count and a data source.");
+    }
+    const gappers = GAPPER_COLUMNS.flatMap((column) => {
+      const symbol = row[`gapper_${column}`].toUpperCase();
+      const raw = row[`gap_${column}_percent`];
+      if (!symbol && !raw) return [];
+      const gap = Number(raw.replace(/%$/, ""));
+      if (!raw || !Number.isFinite(gap) || gap <= 0 || (symbol && !/^[A-Z0-9][A-Z0-9.-]{0,14}$/.test(symbol))) {
+        fail(`Gap ${column} needs a positive percentage and may include a valid ticker.`);
+      }
+      return [{ symbol: symbol || null, gap }];
+    }).sort((a, b) => b.gap - a.gap);
+    const named = gappers.filter(({ symbol }) => symbol).map(({ symbol }) => symbol);
+    if (new Set(named).size !== named.length || gappers.filter(({ gap }) => gap > 50).length > Number(count)) {
+      fail("Use each ticker once and include every gap above 50% in the runner count.");
     }
 
-    if (before.length) premarket.push(summarize(before, before.at(-1).close));
-    wholeDay.push(summarize(valid, regularFirst?.open));
-  }
-
-  return { premarket: rankSession(premarket), wholeDay: rankSession(wholeDay), withBars };
+    const prior = days.get(date) ?? {};
+    if (prior[key]) fail("This date and session already occur in the file.");
+    prior[key] = { source, runnerCount: Number(count), gappers };
+    days.set(date, prior);
+  });
+  return days;
 }
 
-module.exports = { summarizeMovers, sortMoverLists, BAR_MINUTES, AFTER_HOURS_END };
+function archiveSession(session) {
+  if (!session || session.covered === 0) return null;
+  const runnerCount = session.runnerCount ?? (Array.isArray(session.runners) ? session.runners.length : null);
+  const gappers = Array.isArray(session.gappers) ? session.gappers.filter(({ gap }) => Number.isFinite(gap) && gap > 0)
+    .sort((a, b) => b.gap - a.gap).slice(0, 3).map(({ symbol, gap }) => ({ symbol, gap })) : [];
+  if (runnerCount === null && !gappers.length) return null;
+  return { runnerCount, gappers, source: session.source ?? "Alpaca SIP" };
+}
+
+module.exports = { parseMoverArchive, archiveSession };

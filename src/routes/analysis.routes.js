@@ -13,8 +13,6 @@ const router = express.Router();
 router.use(authenticate);
 
 const day = z.string().date();
-const checkpoint = z.enum(premarket.CHECKPOINTS);
-const checkpointSchema = z.object({ day, checkpoint });
 const rangeSchema = z.object({ from: day.optional(), to: day.optional() })
   .refine(({ from, to }) => !from || !to || from <= to, "The start date must precede the end date.");
 const score = z.number().int().min(0).max(2);
@@ -35,12 +33,6 @@ const queueSchema = z.object({
   entryDate: z.string().datetime().transform((value) => new Date(value)).optional(),
   id: z.string().min(1).max(100).optional()
 }).refine(({ entryDate, id }) => Boolean(entryDate) === Boolean(id));
-const scanSchema = z.object({
-  symbols: z.array(z.string().trim().toUpperCase().regex(/^[A-Z][A-Z0-9.-]{0,14}$/)).min(1).max(100),
-  minDollarVolume: z.number().int().min(0).max(1_000_000_000),
-  automatic: z.boolean()
-});
-
 function respond(handler) {
   return asyncHandler(async (req, res) => {
     const data = await handler(req);
@@ -110,23 +102,9 @@ router.get("/trades/:id/replay", validate(z.object({ step: z.coerce.number().int
 router.post("/simulation/paths", validate(z.object({ ids: z.array(z.string().min(1).max(100)).min(1).max(10) })),
   respond(({ user, validatedBody }) => risk.getSimulationPaths(user, [...new Set(validatedBody.ids)])));
 
-router.get("/premarket/movers", validate(z.object({ day: day.optional() }), "query"), respond(({ validatedQuery }) =>
-  movers.read(validatedQuery.day)
+router.get("/premarket/movers", validate(z.object({ through: day.optional() }), "query"), respond(({ validatedQuery }) =>
+  movers.readArchive(validatedQuery.through)
 ));
-router.post("/premarket/movers", validate(z.object({ day })), respond(({ validatedBody }) =>
-  movers.collect(validatedBody.day)
-));
-router.get("/premarket", validate(checkpointSchema, "query"), respond(({ user, validatedQuery }) =>
-  premarket.getOverview(user.id, validatedQuery.day, validatedQuery.checkpoint)
-));
-router.put("/premarket/scan", validate(scanSchema), respond(({ user, validatedBody }) =>
-  premarket.updateScan(user.id, validatedBody)
-));
-router.post("/premarket/snapshot", validate(checkpointSchema), respond(async ({ user, validatedBody }) => {
-  const scan = await premarket.getScan(user.id);
-  await premarket.capture(scan, validatedBody.day, validatedBody.checkpoint);
-  return premarket.getOverview(user.id, validatedBody.day, validatedBody.checkpoint);
-}));
 router.get("/premarket/recaps", validate(rangeSchema, "query"), respond(({ user, validatedQuery }) =>
   premarket.getSnapshotSummary(user.id, validatedQuery, "recap")
 ));

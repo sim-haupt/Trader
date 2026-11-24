@@ -4,7 +4,6 @@ const prisma = require("../config/prisma");
 const { marketDayKey, marketTime, shiftDay, completedBars } = require("../utils/marketSession");
 
 const ALPACA_BASE_URL = String(env.alpacaDataUrl || "https://data.alpaca.markets").replace(/\/$/, "");
-const ALPACA_TRADING_URL = String(process.env.ALPACA_TRADING_URL || "https://paper-api.alpaca.markets").replace(/\/$/, "");
 const FRANKFURTER_BASE_URL = "https://api.frankfurter.dev/v1";
 const minuteBarsCache = new Map();
 const dailyBarsCache = new Map();
@@ -24,7 +23,7 @@ function toRoundedNumber(value, decimals = 4) {
   return Number(value.toFixed(decimals));
 }
 
-async function alpacaFetch(path, params = {}, baseUrl = ALPACA_BASE_URL) {
+async function alpacaFetch(path, params = {}) {
   if (!env.alpacaApiKeyId || !env.alpacaSecretKey) {
     throw new ApiError(
       503,
@@ -38,7 +37,7 @@ async function alpacaFetch(path, params = {}, baseUrl = ALPACA_BASE_URL) {
       .map(([key, value]) => [key, String(value)])
   );
 
-  const response = await fetch(`${baseUrl}${path}?${searchParams.toString()}`, {
+  const response = await fetch(`${ALPACA_BASE_URL}${path}?${searchParams.toString()}`, {
     signal: AbortSignal.timeout(20000),
     headers: {
       "APCA-API-KEY-ID": env.alpacaApiKeyId,
@@ -471,14 +470,6 @@ async function fetchScanBars(symbols, timeframe, start, end, feed, asof, adjustm
   return grouped;
 }
 
-function fetchEquityAssets() {
-  return alpacaFetch("/v2/assets", { asset_class: "us_equity" }, ALPACA_TRADING_URL);
-}
-
-function fetchMarketCalendar(start, end) {
-  return alpacaFetch("/v2/calendar", { start, end }, ALPACA_TRADING_URL);
-}
-
 async function getEntryQuote(symbol, entryTime) {
   const normalizedSymbol = normalizeSymbol(symbol);
   const data = await alpacaFetch("/v2/stocks/quotes", {
@@ -507,8 +498,6 @@ async function getHistoricalNews(symbol, start, end) {
 module.exports = {
   getBars,
   fetchScanBars,
-  fetchEquityAssets,
-  fetchMarketCalendar,
   getHistoricalNews,
   getEntryQuote,
   getUsdEurFxRates,
