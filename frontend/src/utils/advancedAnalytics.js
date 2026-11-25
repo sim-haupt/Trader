@@ -240,6 +240,7 @@ export function normalizeAdvancedTrades(trades, options = {}) {
         weekday: parts.weekday,
         minutesFromMidnight: fillMinute,
         entryScore,
+        manualEntryGrade: review?.source === "MANUAL",
         wouldRetake: review?.wouldRetake ?? null,
         spreadPerShare: spread,
         slippagePerShare: executionFacts.entrySlippage ?? finiteNumber(review?.outcome?.slippagePerShare),
@@ -857,10 +858,11 @@ export const CONDITIONAL_DIMENSIONS = [
   { key: "catalyst", label: "News catalyst", getKey: (item) => item.factors.catalyst || "Unavailable" },
   { key: "vwap", label: "Entry relative to VWAP", getKey: (item) =>
     item.factors.vwapDistance == null ? "Unavailable" : item.factors.vwapDistance >= 0 ? "At / above VWAP" : "Below VWAP" },
-  { key: "tradeGrade", label: "Blind entry grade", getKey: getGradeBucket },
+  { key: "tradeGrade", label: "Entry grade", getKey: (item) =>
+    item.entryScore === null ? "Ungraded" : `${item.manualEntryGrade ? "Manual" : "Blind"} · ${getGradeBucket(item)}` },
   { key: "gradeByPremarketTime", label: "Blind grade and premarket window", getKey: (item) =>
     isPremarketMinute(item.minutesFromMidnight)
-      ? `${getTimeOfDayBucket(item)} · ${getGradeBucket(item)}`
+      ? `${getTimeOfDayBucket(item)} · ${item.manualEntryGrade ? "Manual grade only" : getGradeBucket(item)}`
       : "Outside premarket" },
   { key: "wouldRetake", label: "Would take entry again", getKey: (item) =>
     item.wouldRetake === null ? "Ungraded" : item.wouldRetake ? "Yes" : "No" },

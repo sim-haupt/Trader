@@ -1,4 +1,6 @@
 import api from "./api";
+import { clearTagCache } from "./tagService";
+import { clearSetupCache } from "./setupService";
 import {
   clearPersistentCacheGroup,
   readPersistentCache,
@@ -249,18 +251,24 @@ const tradeService = {
   async createTrade(payload) {
     const response = await api.post("/trades", normalizeTradePayload(payload));
     clearTradeCaches();
+    if (payload.tags !== undefined) clearTagCache();
+    if (payload.setups !== undefined || payload.setup !== undefined) clearSetupCache();
     return normalizeTradeFromApi(response.data.data);
   },
 
   async updateTrade(id, payload) {
     const response = await api.put(`/trades/${id}`, normalizeTradePayload(payload));
     clearTradeCaches();
+    if (payload.tags !== undefined) clearTagCache();
+    if (payload.setups !== undefined || payload.setup !== undefined) clearSetupCache();
     return normalizeTradeFromApi(response.data.data);
   },
 
   async updateTradeMeta(id, payload) {
     const response = await api.patch(`/trades/${id}/meta`, normalizeTradePayload(payload));
     clearTradeCaches();
+    if (payload.tags !== undefined) clearTagCache();
+    if (payload.setups !== undefined || payload.setup !== undefined) clearSetupCache();
     return normalizeTradeFromApi(response.data.data);
   },
 

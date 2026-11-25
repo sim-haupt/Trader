@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import TradeReviewCharts, { BlindEntryChart } from "../components/TradeReviewCharts";
+import EntryGradeFields, { entryGradePayload, isEntryGradeReady, SavedEntryGrade } from "../components/EntryGradeFields";
 import LoadingState from "../components/ui/LoadingState";
 import { useAuth } from "../context/AuthContext";
 import analysisService from "../services/analysisService";
@@ -11,93 +12,20 @@ const accountClock = new Intl.DateTimeFormat("en-US", {
   timeZone: "America/New_York", month: "short", day: "numeric", year: "numeric",
   hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23"
 });
-const criteria = [
-  ["setupFit", "Setup fit"],
-  ["timing", "Trigger and timing"],
-  ["invalidation", "Clear invalidation"],
-  ["liquidity", "Liquidity at entry"]
-];
-const numberFields = [
-  ["plannedStop", "Original stop price"],
-  ["plannedInitialRisk", "Original planned risk ($)"],
-  ["intendedPrice", "Intended entry price"]
-];
-
 function GradeForm({ review, onSave, busy, hasBars }) {
-  const [scores, setScores] = useState({});
-  const [retake, setRetake] = useState("");
-  const [notes, setNotes] = useState("");
-  const [prices, setPrices] = useState({});
-  const total = criteria.reduce((sum, [key]) => sum + (review?.[key] ?? scores[key] ?? 0), 0);
-  const ready = criteria.every(([key]) => scores[key] !== undefined) && retake !== "" && notes.trim();
-
-  function submit(event) {
-    event.preventDefault();
-    onSave({
-      ...scores,
-      wouldRetake: retake === "yes",
-      notes,
-      ...Object.fromEntries(numberFields.map(([key]) => [key, prices[key] ? Number(prices[key]) : null]))
-    });
-  }
+  const [draft, setDraft] = useState({});
+  if (review) return <div className="analysis-panel"><SavedEntryGrade review={review} /></div>;
 
   return (
-    <form onSubmit={submit} className="analysis-panel space-y-4">
-      <div className="flex justify-between gap-3">
-        <h2 className="text-lg font-semibold">{review ? "Saved entry grade" : "Grade this entry"}</h2>
-        <span className="tabular-nums text-lg">{Object.keys(scores).length || review ? `${total}/8` : "— / 8"}</span>
-      </div>
-      {!review && <p className="text-sm text-mist">0 Poor · 1 Mixed · 2 Strong</p>}
-      {criteria.map(([key, label]) => (
-        <fieldset key={key} className="flex items-center justify-between gap-3" disabled={Boolean(review) || busy}>
-          <legend className="sr-only">{label}</legend>
-          <span aria-hidden="true" className="text-sm">{label}</span>
-          <div className="flex items-center gap-1">
-            {[0, 1, 2].map((value) => (
-              <label key={value} className="cursor-pointer">
-                <input type="radio" name={key} value={value} className="peer sr-only"
-                  checked={(review?.[key] ?? scores[key]) === value}
-                  onChange={() => setScores((current) => ({ ...current, [key]: value }))} />
-                <span className="analysis-choice peer-checked:border-b-[var(--accent)] peer-checked:text-white peer-focus-visible:outline">{value}</span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
-      ))}
-      {review ? (
-        <div className="space-y-2 border-t border-[var(--line)] pt-3 text-sm">
-          <p>Would take again · {review.wouldRetake ? "Yes" : "No"}</p>
-          <p className="whitespace-pre-wrap break-words text-mist">{review.notes}</p>
-          {numberFields.map(([key, label]) => review[key] != null && (
-            <p key={key}>{label} · {formatCurrency(Number(review[key]))}</p>
-          ))}
-        </div>
-      ) : (
-        <>
-          <label className="analysis-field">Would you take it again?
-            <select required value={retake} onChange={(event) => setRetake(event.target.value)} disabled={busy}>
-              <option value="">Choose</option><option value="yes">Yes</option><option value="no">No</option>
-            </select>
-          </label>
-          <label className="analysis-field">What did you see?
-            <textarea required maxLength={4000} rows={2} value={notes} onChange={(event) => setNotes(event.target.value)} disabled={busy} />
-          </label>
-          <details className="text-sm">
-            <summary className="cursor-pointer">Original trade plan (optional)</summary>
-            <div className="mt-3 grid gap-3">
-              {numberFields.map(([key, label]) => (
-                <label key={key} className="analysis-field">{label}
-                  <input type="number" min="0.0001" max="1000000000" step="0.0001" disabled={busy}
-                    value={prices[key] ?? ""} onChange={(event) => setPrices((current) => ({ ...current, [key]: event.target.value }))} />
-                </label>
-              ))}
-            </div>
-          </details>
-          <button className="ui-button-solid min-h-11 w-full px-4 py-2" disabled={!ready || busy || !hasBars}>
-            {busy ? "Saving grade…" : "Save grade and reveal"}
-          </button>
-        </>
-      )}
+    <form onSubmit={(event) => {
+      event.preventDefault();
+      if (isEntryGradeReady(draft) && hasBars) onSave(entryGradePayload(draft));
+    }} className="analysis-panel space-y-4">
+      <h2 className="text-lg font-semibold">Grade this entry</h2>
+      <EntryGradeFields value={draft} onChange={setDraft} busy={busy} />
+      <button className="ui-button-solid min-h-11 w-full px-4 py-2" disabled={!isEntryGradeReady(draft) || busy || !hasBars}>
+        {busy ? "Saving grade…" : "Save grade and reveal"}
+      </button>
     </form>
   );
 }

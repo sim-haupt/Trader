@@ -15,8 +15,9 @@ import {
   YAxis
 } from "recharts";
 import tradeService from "../services/tradeService";
-import tagService from "../services/tagService";
-import setupService from "../services/setupService";
+import TradeClassificationFields, { classificationDraft, classificationPayload, classificationReady } from "./TradeClassificationFields";
+import { tradeSetups, tradeTags, uniqueLabels } from "../utils/tradeClassifications";
+import { SavedEntryGrade } from "./EntryGradeFields";
 import TradeReviewCharts from "./TradeReviewCharts";
 import Card from "./ui/Card";
 import LoadingState from "./ui/LoadingState";
@@ -33,25 +34,6 @@ import {
   getTradePnl
 } from "../utils/tradeDetail";
 import useCachedAsyncResource from "../hooks/useCachedAsyncResource";
-
-function parseTags(value) {
-  return String(value || "")
-    .split(",")
-    .map((tag) => tag.trim())
-    .filter(Boolean);
-}
-
-function mergeTags(existingTags, nextTag) {
-  return [...new Set([...parseTags(existingTags), nextTag])].join(", ");
-}
-
-function RemoveIcon() {
-  return (
-    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className="ui-chip-remove-icon h-3.5 w-3.5">
-      <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 function SummaryMetric({ label, value, accent = "text-white" }) {
   return (
@@ -247,12 +229,8 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
     deps: [tradeDetail?.entryDate]
   });
   const [editableTrade, setEditableTrade] = useState(trade);
-  const [availableTags, setAvailableTags] = useState(() => tagService.peekTags() || []);
-  const [availableSetups, setAvailableSetups] = useState(
-    () => setupService.peekSetups() || []
-  );
-  const [isSetupEditorOpen, setIsSetupEditorOpen] = useState(false);
-  const [isTagEditorOpen, setIsTagEditorOpen] = useState(false);
+  const [classifications, setClassifications] = useState(null);
+  const [metaError, setMetaError] = useState("");
   const [isNotesEditorOpen, setIsNotesEditorOpen] = useState(false);
   const [noteDraft, setNoteDraft] = useState(trade.notes || "");
   const [isSavingMeta, setIsSavingMeta] = useState(false);
@@ -265,54 +243,6 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
     setEditableTrade(nextTrade);
     setNoteDraft(nextTrade.notes || "");
   }, [trade, tradeDetail]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadTags() {
-      try {
-        const tags = await tagService.getTags();
-
-        if (!cancelled) {
-          setAvailableTags(tags);
-        }
-      } catch {
-        if (!cancelled) {
-          setAvailableTags([]);
-        }
-      }
-    }
-
-    loadTags();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadSetups() {
-      try {
-        const setups = await setupService.getSetups();
-
-        if (!cancelled) {
-          setAvailableSetups(setups);
-        }
-      } catch {
-        if (!cancelled) {
-          setAvailableSetups([]);
-        }
-      }
-    }
-
-    loadSetups();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   useEffect(() => {
     function handleEscape(event) {
@@ -352,129 +282,28 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
   );
   const signedDayRunningPnl = useMemo(() => buildSignedChartSeries(dayRunningPnl), [dayRunningPnl]);
   const chartHeights = getReviewChartHeights(viewportWidth);
-  const activeTags = useMemo(() => parseTags(activeTrade.tags), [activeTrade.tags]);
-  const activeSetup = useMemo(() => String(activeTrade.setup || "").trim(), [activeTrade.setup]);
-  const tagSuggestions = useMemo(() => {
-    const current = new Set(activeTags.map((tag) => tag.toLowerCase()));
+  const review = Number.isInteger(activeTrade.entryReview?.setupFit) ? activeTrade.entryReview : null;
 
-    return availableTags.filter((tag) => {
-      const tagName = typeof tag === "string" ? tag : tag.name;
-
-      if (current.has(tagName.toLowerCase())) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [activeTags, availableTags]);
-  const setupSuggestions = useMemo(
-    () =>
-      availableSetups.filter(
-        (setup) =>
-          String(setup.name || "").trim().toLowerCase() !== activeSetup.toLowerCase()
-      ),
-    [availableSetups, activeSetup]
-  );
-
-  async function refreshAvailableTags() {
-    const tags = await tagService.getTags({ forceRefresh: true });
-    setAvailableTags(tags);
-  }
-
-  async function refreshAvailableSetups() {
-    const setups = await setupService.getSetups({ forceRefresh: true });
-    setAvailableSetups(setups);
-  }
-
-  async function handleAddTag(tagValue) {
-    const nextTag = tagValue.trim();
-
-    if (!nextTag || activeTags.some((tag) => tag.toLowerCase() === nextTag.toLowerCase())) {
-      return;
-    }
-
-    const optimisticTrade = {
-      ...activeTrade,
-      tags: mergeTags(activeTrade.tags, nextTag)
-    };
-
-    setEditableTrade(optimisticTrade);
+  async function handleSaveClassifications(event) {
+    event.preventDefault();
+    if (!classificationReady(classifications) || isSavingMeta) return;
     setIsSavingMeta(true);
-
+    setMetaError("");
     try {
-      const updatedTrade = await tradeService.updateTradeMeta(activeTrade.id, {
-        tags: nextTag,
-        tagsMode: "append"
-      });
-
-      setEditableTrade(updatedTrade);
-      await refreshAvailableTags();
+      const saved = await tradeService.updateTradeMeta(activeTrade.id, classificationPayload(classifications));
+      setEditableTrade(saved);
+      setClassifications(null);
     } catch (error) {
-      setEditableTrade(activeTrade);
-      throw error;
+      setMetaError(error.message);
     } finally {
       setIsSavingMeta(false);
     }
   }
 
-  async function handleRemoveTag(tagValue) {
-    const remainingTags = activeTags.filter((tag) => tag !== tagValue).join(", ");
-
-    setIsSavingMeta(true);
-
-    try {
-      const updatedTrade = await tradeService.updateTradeMeta(activeTrade.id, {
-        tags: remainingTags,
-        tagsMode: "replace"
-      });
-
-      setEditableTrade(updatedTrade);
-    } finally {
-      setIsSavingMeta(false);
-    }
-  }
-
-  async function handleSetSetup(setupValue) {
-    const nextSetup = String(setupValue || "").trim();
-
-    if (!nextSetup || nextSetup.toLowerCase() === activeSetup.toLowerCase()) {
-      return;
-    }
-
-    setEditableTrade({
-      ...activeTrade,
-      setup: nextSetup
-    });
-    setIsSetupEditorOpen(false);
-    setIsSavingMeta(true);
-
-    try {
-      const updatedTrade = await tradeService.updateTradeMeta(activeTrade.id, {
-        setup: nextSetup
-      });
-
-      setEditableTrade(updatedTrade);
-      await refreshAvailableSetups();
-    } catch (error) {
-      setEditableTrade(activeTrade);
-      throw error;
-    } finally {
-      setIsSavingMeta(false);
-    }
-  }
-
-  async function handleRemoveSetup() {
-    setIsSavingMeta(true);
-
-    try {
-      const updatedTrade = await tradeService.updateTradeMeta(activeTrade.id, {
-        setup: ""
-      });
-
-      setEditableTrade(updatedTrade);
-    } finally {
-      setIsSavingMeta(false);
-    }
+  async function handleSetSetup(name) {
+    const setups = uniqueLabels([...tradeSetups(activeTrade), name]);
+    const updated = await tradeService.updateTradeMeta(activeTrade.id, { setups });
+    setEditableTrade(updated);
   }
 
   async function handleSaveNotes() {
@@ -556,115 +385,35 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
 
           <Card title="TRADER NOTES" className="dashboard-page-widget">
             <div className="space-y-5">
-              <div className="grid gap-5 lg:grid-cols-2">
-                <div className="ui-inset-box p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="ui-title text-xs text-white/48">Setup</p>
-                  <button
-                    type="button"
-                    onClick={() => setIsSetupEditorOpen((current) => !current)}
-                    className="ui-button px-3 py-2 text-xs"
-                  >
-                    Add setup
+              {classifications ? <form className="space-y-4" onSubmit={handleSaveClassifications}>
+                <TradeClassificationFields draft={classifications} onChange={setClassifications} review={review} busy={isSavingMeta} />
+                {metaError && <p role="alert" className="text-sm text-coral">{metaError}</p>}
+                <div className="flex flex-wrap justify-end gap-2">
+                  <button type="button" className="ui-button min-h-11 text-sm" disabled={isSavingMeta}
+                    onClick={() => setClassifications(null)}>Cancel</button>
+                  <button type="submit" className="ui-button-solid min-h-11 text-sm" disabled={isSavingMeta}>
+                    {isSavingMeta ? "Saving…" : "Save changes"}
                   </button>
                 </div>
-                {activeSetup ? (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={handleRemoveSetup}
-                      className="ui-chip-removable"
-                    >
-                      <span>{activeSetup}</span>
-                      <RemoveIcon />
-                    </button>
-                  </div>
-                ) : (
-                  <p className="mt-2 text-sm text-phosphor">No setup selected</p>
-                )}
-
-                {isSetupEditorOpen && (
-                  <div className="mt-4 space-y-3">
-                    {setupSuggestions.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {setupSuggestions.map((setup) => (
-                          <button
-                            key={setup.id}
-                            type="button"
-                            onClick={() => handleSetSetup(setup.name)}
-                            className="ui-button px-3 py-1.5 text-xs"
-                          >
-                            {setup.name}
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-xs text-white/48">
-                        No more saved setups available. Add new ones from Settings.
-                      </div>
-                    )}
-                  </div>
-                )}
-                </div>
-
-                <div className="ui-inset-box p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="ui-title text-xs text-white/48">Tags</p>
-                  <button
-                    type="button"
-                    onClick={() => setIsTagEditorOpen((current) => !current)}
-                    className="ui-button px-3 py-2 text-xs"
-                  >
-                    Add tags
+              </form> : <div className="space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-base font-semibold">Setups, tags and grade</h3>
+                  <button type="button" className="ui-button min-h-11 text-sm" disabled={loadingTradeDetail}
+                    onClick={() => { setMetaError(""); setClassifications(classificationDraft(activeTrade)); }}>
+                    Edit classification
                   </button>
                 </div>
-                {activeTags.length > 0 ? (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {activeTags.map((tag) => (
-                      <button
-                        key={tag}
-                        type="button"
-                        onClick={() => handleRemoveTag(tag)}
-                        className="ui-chip-removable"
-                      >
-                        <span>{tag}</span>
-                        <RemoveIcon />
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="mt-2 text-sm text-phosphor">No tags added</p>
-                )}
-
-                {isTagEditorOpen && (
-                  <div className="mt-4 space-y-3">
-                    {tagSuggestions.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {tagSuggestions.map((tag) => {
-                          const tagName = typeof tag === "string" ? tag : tag.name;
-
-                          return (
-                            <button
-                              key={tagName}
-                              type="button"
-                              onClick={() => handleAddTag(tagName)}
-                              className="ui-button px-3 py-1.5 text-xs"
-                            >
-                              {tagName}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                    {tagSuggestions.length === 0 ? (
-                      <div className="text-xs text-white/48">
-                        No more saved tags available. Add new ones from Settings.
-                      </div>
-                    ) : null}
-                  </div>
-                )}
-              </div>
-              </div>
+                <dl className="grid gap-3 sm:grid-cols-2">
+                  {[["Setups", tradeSetups(activeTrade)], ["Tags", tradeTags(activeTrade)]].map(([label, values]) =>
+                    <div key={label}>
+                      <dt className="mb-1 text-sm text-mist">{label}</dt>
+                      <dd className="flex flex-wrap gap-1.5">{values.length
+                        ? values.map((name) => <span className="ui-chip max-w-full break-all" key={name}>{name}</span>)
+                        : <span className="text-sm text-mist">None</span>}</dd>
+                    </div>)}
+                </dl>
+                {review ? <SavedEntryGrade review={review} /> : <p className="text-sm text-mist">No entry grade</p>}
+              </div>}
 
               <div className="ui-inset-box p-4">
                 <div className="flex items-center justify-between gap-3">

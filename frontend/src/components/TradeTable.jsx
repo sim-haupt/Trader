@@ -1,3 +1,4 @@
+import { tradeSetups } from "../utils/tradeClassifications";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { formatCurrency, formatDate, formatDateTimeLocal } from "../utils/formatters";
@@ -399,7 +400,9 @@ function TradeTable({
                             </td>
                             <td className="px-4 py-3 text-white/64">{trade.side}</td>
                             <td className="px-4 py-3 text-white/64">
-                              {trade.setup ? <span className="ui-chip ui-setup-pill">{trade.setup}</span> : <span className="text-sm text-white/36">-</span>}
+                              {tradeSetups(trade).length ? <div className="flex flex-wrap gap-1.5">
+                                {tradeSetups(trade).map((setup) => <span key={setup} className="ui-chip ui-setup-pill">{setup}</span>)}
+                              </div> : <span className="text-sm text-white/36">-</span>}
                             </td>
                             <td className="px-4 py-3 text-white/64">
                               <TagsCell tags={tags} tradeId={trade.id} />

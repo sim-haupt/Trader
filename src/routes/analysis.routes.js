@@ -7,23 +7,11 @@ const reviews = require("../services/entry-review.service");
 const intelligence = require("../services/trade-intelligence.service");
 const risk = require("../services/risk-workspace.service");
 const { getExitPerformanceBatch } = require("../services/exit-performance.service");
+const { gradeSchema, amount } = require("../validators/entry-grade.schemas");
 
 const router = express.Router();
 router.use(authenticate);
 
-const score = z.number().int().min(0).max(2);
-const amount = z.number().finite().min(0.0001).max(1_000_000_000).nullable();
-const gradeSchema = z.object({
-  setupFit: score,
-  timing: score,
-  invalidation: score,
-  liquidity: score,
-  wouldRetake: z.boolean(),
-  notes: z.string().trim().min(1).max(4000),
-  plannedStop: amount.default(null),
-  plannedInitialRisk: amount.default(null),
-  intendedPrice: amount.default(null)
-});
 const queueSchema = z.object({
   graded: z.enum(["true", "false"]).default("false").transform((value) => value === "true"),
   entryDate: z.string().datetime().transform((value) => new Date(value)).optional(),

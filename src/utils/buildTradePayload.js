@@ -10,6 +10,20 @@ function toNumber(value) {
   return Number.isNaN(numericValue) ? null : numericValue;
 }
 
+function getSetupFields(data) {
+  if (data.setups !== undefined) {
+    const names = new Map();
+    for (const value of data.setups) {
+      const name = value.trim();
+      if (name && !names.has(name.toLowerCase())) names.set(name.toLowerCase(), name);
+    }
+    const [strategy = null, ...additionalSetups] = names.values();
+    return { strategy, additionalSetups };
+  }
+  const setup = data.setup !== undefined ? data.setup : data.strategy;
+  return setup === undefined ? {} : { strategy: setup?.trim() || null };
+}
+
 function buildTradePayload(data, userId, accountScope = "SIMULATOR") {
   const metrics = calculateTradeMetrics(data);
   const commissions = toNumber(data.commissions) ?? 0;
@@ -32,7 +46,6 @@ function buildTradePayload(data, userId, accountScope = "SIMULATOR") {
   const hasEntryPriorCloseDiffPercent = Object.prototype.hasOwnProperty.call(data, "entryPriorCloseDiffPercent");
   const hasMarketDataFeed = Object.prototype.hasOwnProperty.call(data, "marketDataFeed");
   const hasMarketDataNeedsBackfill = Object.prototype.hasOwnProperty.call(data, "marketDataNeedsBackfill");
-  const setup = data.setup !== undefined ? data.setup : data.strategy;
 
   const payload = {
     userId,
@@ -46,7 +59,7 @@ function buildTradePayload(data, userId, accountScope = "SIMULATOR") {
     exitDate: data.exitDate ? parseNewYorkLocalDateTime(data.exitDate) : null,
     commissions,
     fees,
-    strategy: typeof setup === "string" ? setup.trim() || null : setup ?? null,
+    ...getSetupFields(data),
     tags: data.tags ?? null,
     notes: data.notes ?? null,
     grossPnl,
@@ -83,3 +96,4 @@ function buildTradePayload(data, userId, accountScope = "SIMULATOR") {
 }
 
 module.exports = buildTradePayload;
+module.exports.getSetupFields = getSetupFields;

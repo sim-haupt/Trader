@@ -1,4 +1,10 @@
 const { z } = require("zod");
+const { gradeSchema } = require("./entry-grade.schemas");
+
+const tradeClassifications = {
+  setups: z.array(z.string().trim().min(1).max(100)).max(30).optional(),
+  entryGrade: gradeSchema.optional()
+};
 
 function isValidDateString(value) {
   return !Number.isNaN(new Date(value).getTime());
@@ -20,6 +26,7 @@ const tradeSchema = z
       .optional(),
     commissions: z.coerce.number().min(0).optional(),
     fees: z.coerce.number().min(0).optional(),
+    ...tradeClassifications,
     setup: z.string().trim().max(100).nullable().optional(),
     strategy: z.string().trim().max(100).nullable().optional(),
     tags: z.string().trim().max(500).nullable().optional(),
@@ -80,6 +87,7 @@ const bulkUpdateTradesSchema = z
 
 const tradeMetaSchema = z
   .object({
+    ...tradeClassifications,
     tags: z.string().trim().max(500).nullable().optional(),
     setup: z.string().trim().max(100).nullable().optional(),
     strategy: z.string().trim().max(100).nullable().optional(),
@@ -91,11 +99,13 @@ const tradeMetaSchema = z
       data.tags === undefined &&
       data.notes === undefined &&
       data.setup === undefined &&
-      data.strategy === undefined
+      data.strategy === undefined &&
+      data.setups === undefined &&
+      data.entryGrade === undefined
     ) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "At least one of tags, setup or notes is required"
+        message: "Include a tag, setup, note or entry grade change"
       });
     }
   });

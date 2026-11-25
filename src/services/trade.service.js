@@ -2,6 +2,7 @@ const prisma = require("../config/prisma");
 const { Prisma } = require("@prisma/client");
 const ApiError = require("../utils/ApiError");
 const buildTradePayload = require("../utils/buildTradePayload");
+const { getSetupFields } = buildTradePayload;
 const parseNewYorkLocalDateTime = require("../utils/parseMarketDateTime");
 const tagService = require("./tag.service");
 const strategyService = require("./strategy.service");
@@ -21,7 +22,7 @@ const adminTradeInclude = {
 
 const tradeDetailInclude = {
   analysis: true,
-  entryReview: { select: { plannedStop: true, plannedInitialRisk: true, intendedPrice: true, outcome: true } },
+  entryReview: true,
   executions: {
     orderBy: {
       sequence: "asc"
@@ -41,7 +42,7 @@ const tradeListInclude = {
   entryReview: {
     select: {
       setupFit: true, timing: true, invalidation: true, liquidity: true, wouldRetake: true,
-      plannedInitialRisk: true, plannedStop: true, intendedPrice: true, outcome: true
+      notes: true, source: true, plannedInitialRisk: true, plannedStop: true, intendedPrice: true, outcome: true
     }
   },
   executions: {
@@ -236,7 +237,7 @@ function buildTradeWhere(actor, filters = {}) {
   const setupFilter = filters.setup || filters.strategy;
 
   if (setupFilter) {
-    where.strategy = setupFilter;
+    where.OR = [{ strategy: setupFilter }, { additionalSetups: { has: setupFilter } }];
   }
 
   if (filters.from || filters.to) {
@@ -280,22 +281,39 @@ async function findAccessibleTrade(actor, tradeId) {
   return trade;
 }
 
-async function createTrade(actor, data) {
-  const trade = await prisma.trade.create({
-    data: buildTradePayload(data, actor.id, getActorAccountScope(actor))
+async function saveManualGrade(tx, tradeId, grade) {
+  if (!grade) return;
+  const created = await tx.tradeEntryReview.createMany({
+    data: { ...grade, tradeId, source: "MANUAL" }, skipDuplicates: true
   });
+  if (created.count) return;
 
-  if (data.tags) {
-    await tagService.ensureTags(actor.id, data.tags);
-  }
+  const updated = await tx.tradeEntryReview.updateMany({
+    where: { tradeId, source: "MANUAL" },
+    data: { ...grade, gradedAt: new Date(), outcome: Prisma.DbNull }
+  });
+  if (!updated.count) throw new ApiError(409, "An existing blind entry grade is locked.");
+}
 
-  const setup = data.setup || data.strategy;
+async function ensureTradeLabels(tx, userId, tags, fields) {
+  if (tags) await tagService.ensureTags(userId, tags, tx);
+  const setups = [fields.strategy, ...(fields.additionalSetups ?? [])].filter(Boolean);
+  if (setups.length) await strategyService.ensureStrategies(userId, setups, tx);
+}
 
-  if (setup) {
-    await strategyService.ensureStrategies(actor.id, setup);
-  }
-
-  return trade;
+async function createTrade(actor, data) {
+  const payload = buildTradePayload(data, actor.id, getActorAccountScope(actor));
+  return prisma.$transaction(async (tx) => {
+    const trade = await tx.trade.create({
+      data: {
+        ...payload,
+        ...(data.entryGrade && { entryReview: { create: { ...data.entryGrade, source: "MANUAL" } } })
+      },
+      include: { entryReview: true }
+    });
+    await ensureTradeLabels(tx, actor.id, data.tags, payload);
+    return trade;
+  });
 }
 
 async function getTrades(actor, filters) {
@@ -480,28 +498,23 @@ async function updateTrade(actor, tradeId, data) {
   const payload = buildTradePayload(data, existingTrade.userId, existingTrade.accountScope);
   const changedBasis = ["symbol", "side", "entryDate", "exitDate", "entryPrice", "exitPrice", "quantity"]
     .some((field) => String(payload[field]) !== String(existingTrade[field]));
-  const trade = await prisma.$transaction(async (tx) => {
+  if (data.tags === undefined) delete payload.tags;
+  if (data.notes === undefined) delete payload.notes;
+
+  return prisma.$transaction(async (tx) => {
     const updated = await tx.trade.update({ where: { id: tradeId }, data: payload });
+    await saveManualGrade(tx, tradeId, data.entryGrade);
+    await ensureTradeLabels(tx, existingTrade.userId, data.tags, payload);
     if (changedBasis) {
       await tx.tradeAnalysis.updateMany({
         where: { tradeId }, data: { snapshot: Prisma.DbNull, execution: Prisma.DbNull, collectedAt: null }
       });
       await tx.tradeEntryReview.updateMany({ where: { tradeId }, data: { outcome: Prisma.DbNull } });
     }
-    return updated;
+    if (!data.entryGrade) return updated;
+    const entryReview = await tx.tradeEntryReview.findUnique({ where: { tradeId } });
+    return { ...updated, entryReview };
   });
-
-  if (data.tags) {
-    await tagService.ensureTags(existingTrade.userId, data.tags);
-  }
-
-  const setup = data.setup || data.strategy;
-
-  if (setup) {
-    await strategyService.ensureStrategies(existingTrade.userId, setup);
-  }
-
-  return trade;
 }
 
 async function updateTradeMeta(actor, tradeId, payload) {
@@ -519,11 +532,7 @@ async function updateTradeMeta(actor, tradeId, payload) {
 
   const notes =
     payload.notes === undefined ? undefined : payload.notes === "" ? null : payload.notes;
-  const setupValue = payload.setup !== undefined ? payload.setup : payload.strategy;
-  const strategy =
-    setupValue === undefined ? undefined : setupValue === "" ? null : setupValue.trim();
-
-  const data = {};
+  const data = getSetupFields(payload);
 
   if (nextTags !== undefined) {
     data.tags = nextTags;
@@ -533,25 +542,12 @@ async function updateTradeMeta(actor, tradeId, payload) {
     data.notes = notes;
   }
 
-  if (strategy !== undefined) {
-    data.strategy = strategy;
-  }
-
-  const trade = await prisma.trade.update({
-    where: { id: tradeId },
-    data,
-    include: tradeDetailInclude
+  return prisma.$transaction(async (tx) => {
+    if (Object.keys(data).length) await tx.trade.update({ where: { id: tradeId }, data });
+    await saveManualGrade(tx, tradeId, payload.entryGrade);
+    await ensureTradeLabels(tx, existingTrade.userId, nextTags, data);
+    return tx.trade.findUniqueOrThrow({ where: { id: tradeId }, include: tradeDetailInclude });
   });
-
-  if (nextTags) {
-    await tagService.ensureTags(existingTrade.userId, nextTags);
-  }
-
-  if (strategy) {
-    await strategyService.ensureStrategies(existingTrade.userId, strategy);
-  }
-
-  return trade;
 }
 
 async function deleteTrade(actor, tradeId) {
@@ -640,8 +636,7 @@ async function bulkUpdateTrades(actor, payload) {
     payload.notes === undefined ? undefined : payload.notes === "" ? null : payload.notes;
   const tagsMode = payload.tagsMode || "append";
   const setupValue = payload.setup !== undefined ? payload.setup : payload.strategy;
-  const strategy =
-    setupValue === undefined ? undefined : setupValue === "" ? null : setupValue.trim();
+  const setupFields = setupValue === undefined ? {} : getSetupFields({ setups: setupValue?.trim() ? [setupValue] : [] });
 
   await prisma.$transaction(
     trades.map((trade) => {
@@ -654,7 +649,7 @@ async function bulkUpdateTrades(actor, payload) {
               ? payload.tags
               : mergeTagStrings(trade.tags, payload.tags);
 
-      const data = {};
+      const data = { ...setupFields };
 
       if (nextTags !== undefined) {
         data.tags = nextTags;
@@ -662,10 +657,6 @@ async function bulkUpdateTrades(actor, payload) {
 
       if (notes !== undefined) {
         data.notes = notes;
-      }
-
-      if (strategy !== undefined) {
-        data.strategy = strategy;
       }
 
       return prisma.trade.update({
@@ -690,7 +681,7 @@ async function bulkUpdateTrades(actor, payload) {
     await Promise.all(userIds.map((userId) => tagService.ensureTags(userId, payload.tags)));
   }
 
-  if (strategy) {
+  if (setupFields.strategy) {
     const userIds = actor.role === "ADMIN"
       ? [...new Set((await prisma.trade.findMany({
           where: {
@@ -702,7 +693,7 @@ async function bulkUpdateTrades(actor, payload) {
         })).map((trade) => trade.userId))]
       : [actor.id];
 
-    await Promise.all(userIds.map((userId) => strategyService.ensureStrategies(userId, strategy)));
+    await Promise.all(userIds.map((userId) => strategyService.ensureStrategies(userId, [setupFields.strategy])));
   }
 
   return {

@@ -1,391 +1,114 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import FormField from "./ui/FormField";
 import RichTextEditor from "./ui/RichTextEditor";
+import TradeClassificationFields, { classificationDraft, classificationPayload, classificationReady } from "./TradeClassificationFields";
 import { formatDateTimeLocal, toMarketISOString } from "../utils/formatters";
-import tagService from "../services/tagService";
-import setupService from "../services/setupService";
 
-const initialState = {
-  symbol: "",
-  side: "LONG",
-  quantity: "",
-  entryPrice: "",
-  exitPrice: "",
-  entryDate: "",
-  exitDate: "",
-  commissions: "",
-  fees: "",
-  setup: "",
-  tags: "",
-  notes: ""
-};
+const fields = [
+  ["symbol", "Symbol", "text", true],
+  ["side", "Side", "select", true],
+  ["quantity", "Quantity", "number", true],
+  ["entryPrice", "Entry price", "number", true],
+  ["entryDate", "Entry time (ET)", "datetime-local", true],
+  ["exitPrice", "Exit price", "number"],
+  ["exitDate", "Exit time (ET)", "datetime-local"]
+];
+const costFields = [["commissions", "Commissions", "number"], ["fees", "Fees", "number"]];
 
-function formatCommissionInputValue(value) {
-  if (value === null || value === undefined || value === "") {
-    return "";
-  }
-
-  const numericValue = Number(value);
-
-  if (!Number.isFinite(numericValue)) {
-    return "";
-  }
-
-  return String(Math.round(numericValue * 100) / 100);
-}
-
-function RemoveIcon() {
-  return (
-    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className="ui-chip-remove-icon h-3.5 w-3.5">
-      <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function mapTradeToForm(trade) {
-  if (!trade) {
-    return initialState;
-  }
-
+function financialDraft(trade) {
   return {
-    symbol: trade.symbol || "",
-    side: trade.side || "LONG",
-    quantity: trade.quantity ?? "",
-    entryPrice: trade.entryPrice ?? "",
-    exitPrice: trade.exitPrice ?? "",
-    entryDate: formatDateTimeLocal(trade.entryDate),
-    exitDate: formatDateTimeLocal(trade.exitDate),
-    commissions: formatCommissionInputValue(trade.commissions),
-    fees: trade.fees ?? "",
-    setup: trade.setup ?? "",
-    tags: trade.tags ?? "",
-    notes: trade.notes ?? ""
+    symbol: trade?.symbol ?? "",
+    side: trade?.side ?? "LONG",
+    quantity: trade?.quantity ?? "",
+    entryPrice: trade?.entryPrice ?? "",
+    exitPrice: trade?.exitPrice ?? "",
+    entryDate: trade?.entryDate ? formatDateTimeLocal(trade.entryDate) : "",
+    exitDate: trade?.exitDate ? formatDateTimeLocal(trade.exitDate) : "",
+    commissions: trade?.commissions ?? "",
+    fees: trade?.fees ?? ""
   };
 }
 
-function TradeForm({ trade, onSubmit, onCancel, isSubmitting }) {
-  const [form, setForm] = useState(initialState);
-  const [availableTags, setAvailableTags] = useState(() => tagService.peekTags() || []);
-  const [availableSetups, setAvailableSetups] = useState(
-    () => setupService.peekSetups() || []
-  );
+export default function TradeForm({ trade, onSubmit, onCancel, isSubmitting, error }) {
+  const [form, setForm] = useState(() => financialDraft(trade));
+  const [labels, setLabels] = useState(() => classificationDraft(trade));
+  const [notes, setNotes] = useState(trade?.notes ?? "");
+  const [invalid, setInvalid] = useState(false);
 
-  useEffect(() => {
-    setForm(mapTradeToForm(trade));
-  }, [trade]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadTags() {
-      try {
-        const tags = await tagService.getTags();
-
-        if (!cancelled) {
-          setAvailableTags(tags);
-        }
-      } catch {
-        if (!cancelled) {
-          setAvailableTags([]);
-        }
-      }
-    }
-
-    loadTags();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadSetups() {
-      try {
-        const setups = await setupService.getSetups();
-
-        if (!cancelled) {
-          setAvailableSetups(setups);
-        }
-      } catch {
-        if (!cancelled) {
-          setAvailableSetups([]);
-        }
-      }
-    }
-
-    loadSetups();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  function handleChange(event) {
-    const { name, value } = event.target;
-    setForm((current) => ({ ...current, [name]: value }));
-  }
-
-  const selectedTags = useMemo(
-    () =>
-      String(form.tags || "")
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean),
-    [form.tags]
-  );
-
-  const selectedSetup = useMemo(() => String(form.setup || "").trim(), [form.setup]);
-
-  function handleAddTag(tagName) {
-    setForm((current) => {
-      const currentTags = String(current.tags || "")
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean);
-
-      return {
-        ...current,
-        tags: [...new Set([...currentTags, tagName])].join(", ")
-      };
-    });
-  }
-
-  function handleRemoveTag(tagName) {
-    setForm((current) => ({
-      ...current,
-      tags: String(current.tags || "")
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter((tag) => tag && tag !== tagName)
-        .join(", ")
-    }));
-  }
-
-  function handleSelectSetup(setupName) {
-    setForm((current) => ({
-      ...current,
-      setup: setupName
-    }));
-  }
-
-  function handleRemoveSetup() {
-    setForm((current) => ({
-      ...current,
-      setup: ""
-    }));
-  }
-
-  function handleSubmit(event) {
+  function submit(event) {
     event.preventDefault();
+    if (!classificationReady(labels)) {
+      setInvalid(true);
+      return;
+    }
+    if (isSubmitting) return;
+    const currentLabels = classificationDraft(trade);
+    const { setups, tags, tagsMode, entryGrade } = classificationPayload(labels);
+    const metadata = {
+      ...(JSON.stringify(currentLabels.setups) !== JSON.stringify(setups) && { setups }),
+      ...(JSON.stringify(currentLabels.tags) !== JSON.stringify(labels.tags) && { tags, tagsMode }),
+      ...(notes !== (trade?.notes ?? "") && { notes }),
+      ...(entryGrade && { entryGrade })
+    };
+
+    const original = financialDraft(trade);
+    if (trade && Object.keys(original).every((key) => String(original[key]) === String(form[key]))) {
+      if (Object.keys(metadata).length) onSubmit(metadata, { metadataOnly: true });
+      else onCancel();
+      return;
+    }
 
     onSubmit({
       ...form,
       quantity: Number(form.quantity),
       entryPrice: Number(form.entryPrice),
       exitPrice: form.exitPrice ? Number(form.exitPrice) : null,
-      commissions: form.commissions ? Number(Number(form.commissions).toFixed(2)) : 0,
-      fees: form.fees ? Number(form.fees) : 0,
+      commissions: Number(form.commissions),
+      fees: Number(form.fees),
       entryDate: toMarketISOString(form.entryDate),
-      exitDate: form.exitDate ? toMarketISOString(form.exitDate) : null
+      exitDate: form.exitDate ? toMarketISOString(form.exitDate) : null,
+      ...metadata
     });
   }
 
-  return (
-    <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
-      <FormField label="Symbol">
-        <input
-          name="symbol"
-          value={form.symbol}
-          onChange={handleChange}
-          required
-          className="ui-input"
-        />
+  function renderField([key, label, type, required]) {
+    const input = { name: key, value: form[key], required, className: "ui-input min-h-11",
+      onChange: (event) => setForm((current) => ({ ...current, [key]: event.target.value })) };
+    return <div key={key} className={type === "datetime-local" || key === "exitPrice" ? "col-span-2 min-w-0 sm:col-span-1" : "min-w-0"}>
+      <FormField label={label}>
+      {type === "select" ? <select {...input}><option value="LONG">Long</option><option value="SHORT">Short</option></select>
+        : <input {...input} type={type} step={type === "datetime-local" ? "1" : type === "number" ? "0.0001" : undefined}
+          min={type === "number" ? (required ? "0.0001" : "0") : undefined} />}
       </FormField>
+    </div>;
+  }
 
-      <FormField label="Side">
-        <select
-          name="side"
-          value={form.side}
-          onChange={handleChange}
-          className="ui-input"
-        >
-          <option value="LONG">LONG</option>
-          <option value="SHORT">SHORT</option>
-        </select>
-      </FormField>
-
-      <FormField label="Quantity">
-        <input
-          name="quantity"
-          type="number"
-          step="0.0001"
-          min="0"
-          value={form.quantity}
-          onChange={handleChange}
-          required
-          className="ui-input"
-        />
-      </FormField>
-
-      <FormField label="Entry Price">
-        <input
-          name="entryPrice"
-          type="number"
-          step="0.0001"
-          min="0"
-          value={form.entryPrice}
-          onChange={handleChange}
-          required
-          className="ui-input"
-        />
-      </FormField>
-
-      <FormField label="Exit Price">
-        <input
-          name="exitPrice"
-          type="number"
-          step="0.0001"
-          min="0"
-          value={form.exitPrice}
-          onChange={handleChange}
-          className="ui-input"
-        />
-      </FormField>
-
-      <FormField label="Entry Date">
-        <input
-          name="entryDate"
-          type="datetime-local"
-          step="1"
-          value={form.entryDate}
-          onChange={handleChange}
-          required
-          className="ui-input"
-        />
-      </FormField>
-
-      <FormField label="Exit Date">
-        <input
-          name="exitDate"
-          type="datetime-local"
-          step="1"
-          value={form.exitDate}
-          onChange={handleChange}
-          className="ui-input"
-        />
-      </FormField>
-
-      <div className="md:col-span-2">
-        <FormField label="Setup">
-          <div className="space-y-2">
-            {availableSetups.length > 0 ? (
-              <div className="flex flex-wrap gap-1.5">
-                {availableSetups.map((setup) => {
-                  const selected = setup.name === selectedSetup;
-
-                  return (
-                    <button
-                      key={setup.id}
-                      type="button"
-                      onClick={() => (selected ? handleRemoveSetup() : handleSelectSetup(setup.name))}
-                      className="ui-chip-removable ui-setup-pill"
-                      data-active={selected}
-                    >
-                      <span>{setup.name}</span>
-                      {selected && <RemoveIcon />}
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-xs text-white/48">
-                No saved setups available. Add them from Settings.
-              </div>
-            )}
-            {selectedSetup && (
-              <button type="button" onClick={handleRemoveSetup} className="text-xs font-medium text-white/56 transition hover:text-white">
-                Clear setup
-              </button>
-            )}
-          </div>
-        </FormField>
+  return <form className="space-y-5" onSubmit={submit}>
+    <div className="grid items-start gap-5 xl:grid-cols-2 xl:grid-rows-[auto_1fr]">
+      <fieldset className="min-w-0 space-y-3" disabled={isSubmitting}>
+        <legend className="mb-3 text-base font-semibold">Trade details</legend>
+        <div className="grid grid-cols-2 gap-x-3 gap-y-3 sm:gap-x-4">{fields.map(renderField)}</div>
+        <details className="text-sm">
+          <summary className="cursor-pointer py-2 text-mist">Commissions and fees</summary>
+          <div className="mt-2 grid grid-cols-2 gap-3">{costFields.map(renderField)}</div>
+        </details>
+      </fieldset>
+      <section className="min-w-0 space-y-3 border-t border-white/10 pt-4 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:border-l xl:border-t-0 xl:pl-5 xl:pt-0" aria-label="Trade classification">
+        <h2 className="text-base font-semibold">Setups, tags and grade</h2>
+        <TradeClassificationFields draft={labels} onChange={(next) => { setLabels(next); setInvalid(false); }}
+          review={trade?.entryReview} busy={isSubmitting} />
+      </section>
+      <div className="min-w-0 border-t border-white/10 pt-4">
+        <h2 className="mb-2 text-sm font-medium">Trade notes</h2>
+        <RichTextEditor value={notes} onChange={setNotes} placeholder="Capture context and lessons for this trade." minHeight={140} />
       </div>
-
-      <div className="md:col-span-2">
-        <FormField label="Tags">
-          <div className="space-y-2">
-            {availableTags.length > 0 ? (
-              <div className="flex flex-wrap gap-1.5">
-                {availableTags.map((tag) => {
-                  const selected = selectedTags.some(
-                    (selectedTag) => selectedTag.toLowerCase() === tag.name.toLowerCase()
-                  );
-
-                  return (
-                    <button
-                      key={tag.id}
-                      type="button"
-                      onClick={() => (selected ? handleRemoveTag(tag.name) : handleAddTag(tag.name))}
-                      className="ui-chip-removable"
-                      data-active={selected}
-                    >
-                      <span>{tag.name}</span>
-                      {selected && <RemoveIcon />}
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-xs text-white/48">
-                No saved tags available. Add them from Settings.
-              </div>
-            )}
-            {selectedTags.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setForm((current) => ({ ...current, tags: "" }))}
-                className="text-xs font-medium text-white/56 transition hover:text-white"
-              >
-                Clear tags
-              </button>
-            )}
-          </div>
-        </FormField>
-      </div>
-
-      <div className="md:col-span-2">
-        <FormField label="Notes">
-          <RichTextEditor
-            value={form.notes}
-            onChange={(value) => setForm((current) => ({ ...current, notes: value }))}
-            placeholder="Capture setup, context, and review notes for this trade."
-            minHeight={180}
-          />
-        </FormField>
-      </div>
-
-      <div className="md:col-span-2 flex flex-wrap justify-end gap-3">
-        {trade && (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="ui-button text-sm"
-          >
-            Cancel
-          </button>
-        )}
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="ui-button-solid text-sm"
-        >
-          {isSubmitting ? "Saving..." : trade ? "Update Trade" : "Create Trade"}
-        </button>
-      </div>
-    </form>
-  );
+    </div>
+    {(error || invalid) && <p role="alert" className="text-sm text-coral">{invalid ? "Check the selected labels and complete the entry grade before saving." : error}</p>}
+    <div className="flex flex-wrap justify-end gap-2 border-t border-white/10 pt-3">
+      <button type="button" onClick={onCancel} disabled={isSubmitting} className="ui-button min-h-11 text-sm">Cancel</button>
+      <button type="submit" disabled={isSubmitting} className="ui-button-solid min-h-11 text-sm">
+        {isSubmitting ? "Saving…" : trade ? "Save changes" : "Create trade"}
+      </button>
+    </div>
+  </form>;
 }
-
-export default TradeForm;

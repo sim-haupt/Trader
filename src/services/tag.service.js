@@ -13,7 +13,7 @@ async function listTags(actor) {
   return tags;
 }
 
-async function ensureTags(userId, tagString) {
+async function ensureTags(userId, tagString, db = prisma) {
   const tags = [...new Set(
     String(tagString || "")
       .split(",")
@@ -25,23 +25,10 @@ async function ensureTags(userId, tagString) {
     return;
   }
 
-  await prisma.$transaction(
-    tags.map((name) =>
-      prisma.savedTag.upsert({
-        where: {
-          userId_name: {
-            userId,
-            name
-          }
-        },
-        create: {
-          userId,
-          name
-        },
-        update: {}
-      })
-    )
-  );
+  await db.savedTag.createMany({
+    data: tags.sort().map((name) => ({ userId, name })),
+    skipDuplicates: true
+  });
 }
 
 async function createTag(actor, payload) {

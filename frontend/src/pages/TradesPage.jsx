@@ -1,3 +1,4 @@
+import { tradeSetups } from "../utils/tradeClassifications";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Card from "../components/ui/Card";
@@ -78,6 +79,7 @@ function TradesPage() {
   const [loading, setLoading] = useState(() => !tradeService.peekTrades(initialFilters));
   const [csvFormat, setCsvFormat] = useState("das");
   const isImportMode = searchParams.get("mode") === "import";
+  const isFormMode = searchParams.get("mode") === "add" || Boolean(selectedTrade);
 
   async function loadTrades(activeFilters = filters) {
     if (!tradeService.peekTrades(activeFilters) && trades.length === 0) {
@@ -196,14 +198,6 @@ function TradesPage() {
     }
   }, [paginatedTrades, trades]);
 
-  useEffect(() => {
-    if (selectedTrade && !isImportMode) {
-      const nextParams = new URLSearchParams(searchParams);
-      nextParams.set("mode", "import");
-      setSearchParams(nextParams, { replace: true });
-    }
-  }, [selectedTrade, isImportMode, searchParams, setSearchParams]);
-
   function handleFilterChange(key, value) {
     setFilters((current) => ({ ...current, [key]: value }));
   }
@@ -275,24 +269,32 @@ function TradesPage() {
     setFilters(initialFilters);
   }
 
-  async function handleSubmit(payload) {
+  function closeTradeForm() {
+    setSelectedTrade(null);
+    setError("");
+    setSearchParams({}, { replace: true });
+  }
+
+  async function handleSubmit(payload, { metadataOnly } = {}) {
     setIsSubmitting(true);
     setError("");
 
     try {
       if (selectedTrade) {
-        await tradeService.updateTrade(selectedTrade.id, payload);
+        if (metadataOnly) await tradeService.updateTradeMeta(selectedTrade.id, payload);
+        else await tradeService.updateTrade(selectedTrade.id, payload);
         notify({ title: "Trade updated", description: `${payload.symbol || selectedTrade.symbol} was updated.`, tone: "success" });
       } else {
         await tradeService.createTrade(payload);
         notify({ title: "Trade created", description: `${payload.symbol} was added to your journal.`, tone: "success" });
       }
 
-      setSelectedTrade(null);
-      if (!selectedTrade) {
-        setSearchParams({}, { replace: true });
-      }
-      await loadTrades(filters);
+      closeTradeForm();
+      await Promise.allSettled([
+        loadTrades(filters),
+        payload.tags !== undefined && tagService.getTags().then(setAvailableTags),
+        payload.setups !== undefined && setupService.getSetups().then(setAvailableSetups)
+      ]);
     } catch (err) {
       setError(err.message);
       notify({ title: "Could not save trade", description: err.message, tone: "error" });
@@ -726,7 +728,7 @@ function TradesPage() {
               entry_date: trade.entryDate,
               exit_date: trade.exitDate ?? "",
               executions: trade.reportedExecutionCount ?? trade.executions?.length ?? "",
-              setup: trade.setup ?? "",
+              setup: tradeSetups(trade).join(", "),
               tags: trade.tags ?? "",
               gross_pnl_usd: formatCurrency(grossPnl),
               commissions_usd: formatCurrency(commissions),
@@ -871,7 +873,7 @@ function TradesPage() {
 
   return (
     <div className="trades-page space-y-6">
-      {isImportMode && (
+      {isImportMode && !isFormMode && (
         <>
           <div className="grid items-stretch gap-6 xl:grid-cols-[1.05fr_1.35fr]">
             <div className="flex h-full flex-col gap-6">
@@ -898,35 +900,39 @@ function TradesPage() {
               </Card>
             </div>
 
-            <Card title={title} className="h-full" bodyClassName="flex h-full flex-col">
-              <TradeForm
-                trade={selectedTrade}
-                onSubmit={handleSubmit}
-                onCancel={() => {
-                  setSelectedTrade(null);
-                  setSearchParams({}, { replace: true });
-                }}
-                isSubmitting={isSubmitting}
-              />
+            <Card title="Manual entry" className="h-full">
+              <button type="button" className="ui-button-solid min-h-11 text-sm" onClick={() => {
+                setError("");
+                setSearchParams({ mode: "add" });
+              }}>Add a trade manually</button>
             </Card>
           </div>
         </>
       )}
 
-      {error && <div className="ui-notice border-coral/20 bg-coral/10 text-coral">{error}</div>}
+      {isFormMode && <Card title={title} className="mx-auto max-w-6xl">
+        <TradeForm key={selectedTrade?.id ?? "new"} trade={selectedTrade} onSubmit={handleSubmit} onCancel={closeTradeForm}
+          isSubmitting={isSubmitting} error={error} />
+      </Card>}
 
-      {!isImportMode ? (
+      {error && !isFormMode && <div className="ui-notice border-coral/20 bg-coral/10 text-coral">{error}</div>}
+
+      {!isImportMode && !isFormMode ? (
         <Card
           title="TRADE HISTORY"
           className="relative overflow-visible"
           bodyClassName="overflow-visible"
           action={
             <div className="flex flex-wrap items-center gap-3">
+              <button type="button" onClick={() => {
+                setError("");
+                setSearchParams({ mode: "add" });
+              }} className="ui-button-solid min-h-11 text-sm">+ Add trade</button>
               <button
                 type="button"
                 onClick={handleExportTrades}
                 disabled={isExporting}
-                className="ui-button-solid text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                className="ui-button min-h-11 text-sm disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isExporting ? "Exporting..." : "Export CSV"}
               </button>
@@ -1024,11 +1030,11 @@ function TradesPage() {
 
                     <div className="space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/42">Setup</span>
+                        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/42">Setups</span>
                         {[
                           { value: "keep", label: "Keep" },
-                          { value: "set", label: "Set" },
-                          { value: "clear", label: "Clear" }
+                          { value: "set", label: "Replace all" },
+                          { value: "clear", label: "Clear all" }
                         ].map((option) => (
                           <button
                             key={option.value}
@@ -1085,7 +1091,7 @@ function TradesPage() {
               <TradeTable
                 trades={paginatedTrades}
                 groups={paginatedGroups}
-                onEdit={setSelectedTrade}
+                onEdit={(trade) => { setError(""); setSelectedTrade(trade); }}
                 onDelete={handleDelete}
                 onSelectTrade={(trade) => navigate(`/trades/${trade.id}`, { state: { trade } })}
                 selectedIds={selectedIds}

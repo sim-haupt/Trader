@@ -1,3 +1,4 @@
+import { hasTradeSetup } from "../utils/tradeClassifications";
 import { useSearchParams } from "react-router-dom";
 import RiskWorkspace from "../components/reports/RiskWorkspace";
 import { getMarketDayKey, getMarketParts } from "../utils/advancedAnalytics";
@@ -2117,7 +2118,7 @@ function applyReportFilters(trades, filters, rangeDays) {
 
   if (filters.setup) {
     nextTrades = nextTrades.filter(
-      (trade) => String(trade.setup || "").toLowerCase() === filters.setup.toLowerCase()
+      (trade) => hasTradeSetup(trade, filters.setup)
     );
   }
 
@@ -2161,7 +2162,7 @@ function applyCompareGroupFilters(trades, filters, options = {}) {
 
   if (filters.setup) {
     nextTrades = nextTrades.filter(
-      (trade) => String(trade.setup || "").toLowerCase() === filters.setup.toLowerCase()
+      (trade) => hasTradeSetup(trade, filters.setup)
     );
   }
 

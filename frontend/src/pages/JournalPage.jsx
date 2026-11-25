@@ -1,3 +1,4 @@
+import { hasTradeSetup, tradeSetups } from "../utils/tradeClassifications";
 import downloadCsv from "../utils/downloadCsv";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -340,7 +341,6 @@ function buildSignedChartSeries(points) {
 
 function matchesTradeFilters(trade, filters) {
   const symbol = String(trade.symbol || "").toUpperCase();
-  const setup = String(trade.setup || "").trim();
   const side = String(trade.side || "").toUpperCase();
   const dayKey = getDayKey(trade.entryDate);
   const tags = getTradeTags(trade);
@@ -353,7 +353,7 @@ function matchesTradeFilters(trade, filters) {
     return false;
   }
 
-  if (filters.setup && setup !== filters.setup) {
+  if (filters.setup && !hasTradeSetup(trade, filters.setup)) {
     return false;
   }
 
@@ -505,7 +505,7 @@ function exportJournalDayTrades(day) {
     trade.entryDate,
     trade.exitDate ?? "",
     trade.execCount,
-    trade.setup ?? "",
+    tradeSetups(trade).join(", "),
     trade.parsedTags.join("; "),
     Number(trade.dayPnl ?? 0).toFixed(2),
     Number(trade.dayCommissions ?? 0).toFixed(2),

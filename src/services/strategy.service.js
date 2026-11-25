@@ -11,10 +11,9 @@ async function listStrategies(actor) {
   });
 }
 
-async function ensureStrategies(userId, strategyString) {
+async function ensureStrategies(userId, strategyString, db = prisma) {
   const strategies = [...new Set(
-    String(strategyString || "")
-      .split(",")
+    (Array.isArray(strategyString) ? strategyString : String(strategyString || "").split(","))
       .map(normalizeStrategyName)
       .filter(Boolean)
   )];
@@ -23,23 +22,10 @@ async function ensureStrategies(userId, strategyString) {
     return;
   }
 
-  await prisma.$transaction(
-    strategies.map((name) =>
-      prisma.savedStrategy.upsert({
-        where: {
-          userId_name: {
-            userId,
-            name
-          }
-        },
-        create: {
-          userId,
-          name
-        },
-        update: {}
-      })
-    )
-  );
+  await db.savedStrategy.createMany({
+    data: strategies.sort().map((name) => ({ userId, name })),
+    skipDuplicates: true
+  });
 }
 
 async function createStrategy(actor, payload) {

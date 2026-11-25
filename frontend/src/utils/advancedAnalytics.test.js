@@ -3,6 +3,13 @@ import test from "node:test";
 import { buildAdvancedAnalytics, normalizeAdvancedTrades } from "./advancedAnalytics.js";
 import { ADVANCED_METRIC_DEFINITIONS } from "./advancedMetricDefinitions.js";
 
+test("manual grades and blind grades use distinct report cohorts", () => {
+  const grade = { setupFit: 2, timing: 2, invalidation: 1, liquidity: 2, wouldRetake: true };
+  const data = [trade({ entryReview: grade }), trade({ entryReview: { ...grade, source: "MANUAL" } })];
+  const report = buildAdvancedAnalytics(data, { conditionalDimension: "tradeGrade", minimumSample: 1 });
+  assert.deepEqual(new Set(report.conditionalExplorer.map(({ label }) => label)), new Set(["Blind · Strong (7–8)", "Manual · Strong (7–8)"]));
+});
+
 function trade(overrides = {}) {
   return {
     id: overrides.id || Math.random().toString(36).slice(2),
