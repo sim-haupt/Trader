@@ -7,7 +7,7 @@ const reviews = require("../services/entry-review.service");
 const intelligence = require("../services/trade-intelligence.service");
 const risk = require("../services/risk-workspace.service");
 const { getExitPerformanceBatch } = require("../services/exit-performance.service");
-const { gradeSchema, amount } = require("../validators/entry-grade.schemas");
+const { blindGradeSchema, amount } = require("../validators/entry-grade.schemas");
 
 const router = express.Router();
 router.use(authenticate);
@@ -30,7 +30,7 @@ router.get("/entry-reviews", validate(queueSchema, "query"), respond(async ({ us
   return { trades: rows.slice(0, 50), hasMore: rows.length > 50 };
 }));
 router.get("/entry-reviews/:id", respond(({ user, params }) => reviews.getBlindEntry(user, params.id)));
-router.post("/entry-reviews/:id", validate(gradeSchema), respond(({ user, params, validatedBody }) =>
+router.post("/entry-reviews/:id", validate(blindGradeSchema), respond(({ user, params, validatedBody }) =>
   reviews.saveGrade(user, params.id, validatedBody)
 ));
 router.get("/entry-reviews/:id/outcome", respond(({ user, params }) => reviews.getOutcome(user, params.id)));

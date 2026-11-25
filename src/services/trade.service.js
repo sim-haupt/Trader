@@ -41,7 +41,7 @@ const tradeListInclude = {
   analysis: true,
   entryReview: {
     select: {
-      setupFit: true, timing: true, invalidation: true, liquidity: true, wouldRetake: true,
+      letterGrade: true, wouldRetake: true,
       notes: true, source: true, plannedInitialRisk: true, plannedStop: true, intendedPrice: true, outcome: true
     }
   },

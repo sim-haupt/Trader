@@ -1,6 +1,3 @@
-import TradeDisciplineCard from "./TradeDisciplineCard";
-import TradeIntelligenceCard from "./TradeIntelligenceCard";
-import TradeExitTiming from "./TradeExitTiming";
 import { useEffect, useMemo, useState } from "react";
 import {
   Area,
@@ -16,7 +13,7 @@ import {
 } from "recharts";
 import tradeService from "../services/tradeService";
 import TradeClassificationFields, { classificationDraft, classificationPayload, classificationReady } from "./TradeClassificationFields";
-import { tradeSetups, tradeTags, uniqueLabels } from "../utils/tradeClassifications";
+import { tradeSetups, tradeTags } from "../utils/tradeClassifications";
 import { SavedEntryGrade } from "./EntryGradeFields";
 import TradeReviewCharts from "./TradeReviewCharts";
 import Card from "./ui/Card";
@@ -282,7 +279,7 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
   );
   const signedDayRunningPnl = useMemo(() => buildSignedChartSeries(dayRunningPnl), [dayRunningPnl]);
   const chartHeights = getReviewChartHeights(viewportWidth);
-  const review = Number.isInteger(activeTrade.entryReview?.setupFit) ? activeTrade.entryReview : null;
+  const review = activeTrade.entryReview?.letterGrade ? activeTrade.entryReview : null;
 
   async function handleSaveClassifications(event) {
     event.preventDefault();
@@ -298,12 +295,6 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
     } finally {
       setIsSavingMeta(false);
     }
-  }
-
-  async function handleSetSetup(name) {
-    const setups = uniqueLabels([...tradeSetups(activeTrade), name]);
-    const updated = await tradeService.updateTradeMeta(activeTrade.id, { setups });
-    setEditableTrade(updated);
   }
 
   async function handleSaveNotes() {
@@ -476,23 +467,6 @@ function TradeDetailModal({ trade, onClose, pageMode = false }) {
           <Card title="Executions" className="dashboard-page-widget">
             <TimelineTable rows={tradeTimeline} />
           </Card>
-
-          {activeTrade.exitDate && <TradeExitTiming key={`exit-timing-${activeTrade.id}`} tradeId={activeTrade.id} />}
-
-          <TradeDisciplineCard key={`discipline-${activeTrade.id}`} trade={activeTrade}
-            onUpdate={(analysis) => setEditableTrade((current) => ({ ...(current || activeTrade), analysis }))}
-            onPlanUpdate={(values) => setEditableTrade((current) => {
-              const base = current || activeTrade;
-              return { ...base, entryReview: { ...base.entryReview, ...values } };
-            })}
-            onEditNotes={() => {
-              setNoteDraft(activeTrade.notes || "");
-              setIsNotesEditorOpen(true);
-              requestAnimationFrame(() => document.getElementById("trade-note-editor")?.scrollIntoView({ block: "center" }));
-            }} />
-          <TradeIntelligenceCard key={activeTrade.id} trade={activeTrade}
-            onApplySetup={handleSetSetup}
-            onChange={(analysis) => setEditableTrade((current) => ({ ...(current || activeTrade), analysis }))} />
 
           <Card title="Execution Review Charts" className="dashboard-page-widget">
             <TradeReviewCharts trade={activeTrade} />

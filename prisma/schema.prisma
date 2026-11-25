@@ -252,12 +252,13 @@ model IntelligenceUsage {
 
 model TradeEntryReview {
   tradeId            String   @id
-  setupFit           Int
-  timing             Int
-  invalidation       Int
-  liquidity          Int
-  wouldRetake        Boolean
-  notes              String
+  letterGrade        String
+  setupFit           Int?
+  timing             Int?
+  invalidation       Int?
+  liquidity          Int?
+  wouldRetake        Boolean?
+  notes              String   @default("")
   postRevealNotes    String?
   plannedStop        Decimal? @db.Decimal(18, 4)
   plannedInitialRisk Decimal? @db.Decimal(18, 4)

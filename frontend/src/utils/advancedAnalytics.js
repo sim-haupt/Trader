@@ -226,7 +226,6 @@ export function normalizeAdvancedTrades(trades, options = {}) {
       const outcome = trade.analysis?.execution ?? review?.outcome;
       const executionFacts = getExecutionFacts(trade);
       const spread = finiteNumber(outcome?.spreadPerShare);
-      const entryScore = review ? review.setupFit + review.timing + review.invalidation + review.liquidity : null;
       const fillTime = getDate(trade.executions?.[0]?.occurredAt) ?? entryDate;
       const fillParts = getMarketParts(fillTime, MARKET_TIME_ZONE);
       const fillMinute = Number(fillParts.hour) * 60 + Number(fillParts.minute);
@@ -239,7 +238,7 @@ export function normalizeAdvancedTrades(trades, options = {}) {
         dayKey,
         weekday: parts.weekday,
         minutesFromMidnight: fillMinute,
-        entryScore,
+        entryGrade: review?.letterGrade ?? null,
         manualEntryGrade: review?.source === "MANUAL",
         wouldRetake: review?.wouldRetake ?? null,
         spreadPerShare: spread,
@@ -343,6 +342,7 @@ function summarizeItems(items) {
     grossProfit: round(grossProfit),
     grossLoss: round(grossLoss),
     totalNetR: rValues.length ? round(rValues.reduce((sum, value) => sum + value, 0)) : null,
+    rSamples: rValues.length,
     winRate: round(winRate * 100, 2),
     averageWinner: round(averageWin),
     averageLoser: round(-averageLoss),
@@ -356,6 +356,21 @@ function summarizeItems(items) {
     payoffRatio: averageLoss > 0 && averageWin > 0 ? round(averageWin / averageLoss, 4) : null,
     payoffRatioR: averageLosingR > 0 && averageWinningR > 0 ? round(averageWinningR / averageLosingR, 4) : null,
     costPerTrade: items.length ? round(totalCosts / items.length) : null
+  };
+}
+
+const reportGrades = ["A+", "A", "B", "C"];
+
+export function summarizeEntryGrades(items, source = "all") {
+  const closed = items.filter((item) => item.actualExit && item.actualExit >= item.entryDate);
+  const graded = closed.filter((item) => reportGrades.includes(item.entryGrade));
+  const selected = graded.filter((item) => source === "all" || item.manualEntryGrade === (source === "manual"));
+  const groups = groupBy(selected, (item) => item.entryGrade);
+
+  return {
+    ungraded: closed.length - graded.length,
+    graded: selected.length,
+    rows: reportGrades.map((grade) => ({ grade, ...summarizeItems(groups.get(grade) ?? []) }))
   };
 }
 
@@ -832,13 +847,6 @@ function calculateConcentration(items) {
   };
 }
 
-function getGradeBucket(item) {
-  if (item.entryScore === null) return "Ungraded";
-  if (item.entryScore >= 7) return "Strong (7–8)";
-  if (item.entryScore >= 4) return "Mixed (4–6)";
-  return "Weak (0–3)";
-}
-
 export const CONDITIONAL_DIMENSIONS = [
   { key: "setup", label: "Setup", getKey: (item) => item.setup },
   { key: "symbol", label: "Symbol", getKey: (item) => item.symbol },
@@ -859,13 +867,13 @@ export const CONDITIONAL_DIMENSIONS = [
   { key: "vwap", label: "Entry relative to VWAP", getKey: (item) =>
     item.factors.vwapDistance == null ? "Unavailable" : item.factors.vwapDistance >= 0 ? "At / above VWAP" : "Below VWAP" },
   { key: "tradeGrade", label: "Entry grade", getKey: (item) =>
-    item.entryScore === null ? "Ungraded" : `${item.manualEntryGrade ? "Manual" : "Blind"} · ${getGradeBucket(item)}` },
+    item.entryGrade === null ? "Ungraded" : `${item.manualEntryGrade ? "Manual" : "Blind"} · ${item.entryGrade}` },
   { key: "gradeByPremarketTime", label: "Blind grade and premarket window", getKey: (item) =>
     isPremarketMinute(item.minutesFromMidnight)
-      ? `${getTimeOfDayBucket(item)} · ${item.manualEntryGrade ? "Manual grade only" : getGradeBucket(item)}`
+      ? `${getTimeOfDayBucket(item)} · ${item.manualEntryGrade ? "Manual grade only" : item.entryGrade ?? "Ungraded"}`
       : "Outside premarket" },
   { key: "wouldRetake", label: "Would take entry again", getKey: (item) =>
-    item.wouldRetake === null ? "Ungraded" : item.wouldRetake ? "Yes" : "No" },
+    item.wouldRetake === null ? "Unrecorded" : item.wouldRetake ? "Yes" : "No" },
   { key: "relativeVolume", label: "Relative-volume bucket", getKey: getRelativeVolumeBucket },
   { key: "gapSize", label: "Gap-size bucket", getKey: getGapSizeBucket },
   { key: "longShort", label: "Long versus short", getKey: (item) => item.side },

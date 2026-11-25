@@ -2574,7 +2574,7 @@ function ReportsPage() {
 
       {activeTab === "Risk & simulation" ? (
         <RiskWorkspace key={`${user?.id}:${user?.activeAccountScope}`} trades={filteredTrades} />
-      ) : filteredTrades.length === 0 ? (
+      ) : filteredTrades.length === 0 && activeTab !== "Advanced" ? (
         <EmptyState
           title="No trades match these filters"
           description="Try expanding the date range or clearing one of the report filters."

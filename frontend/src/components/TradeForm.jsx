@@ -103,7 +103,7 @@ export default function TradeForm({ trade, onSubmit, onCancel, isSubmitting, err
         <RichTextEditor value={notes} onChange={setNotes} placeholder="Capture context and lessons for this trade." minHeight={140} />
       </div>
     </div>
-    {(error || invalid) && <p role="alert" className="text-sm text-coral">{invalid ? "Check the selected labels and complete the entry grade before saving." : error}</p>}
+    {(error || invalid) && <p role="alert" className="text-sm text-coral">{invalid ? "The selected labels exceed the trade’s limit." : error}</p>}
     <div className="flex flex-wrap justify-end gap-2 border-t border-white/10 pt-3">
       <button type="button" onClick={onCancel} disabled={isSubmitting} className="ui-button min-h-11 text-sm">Cancel</button>
       <button type="submit" disabled={isSubmitting} className="ui-button-solid min-h-11 text-sm">

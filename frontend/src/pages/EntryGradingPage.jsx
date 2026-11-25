@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import TradeReviewCharts, { BlindEntryChart } from "../components/TradeReviewCharts";
-import EntryGradeFields, { entryGradePayload, isEntryGradeReady, SavedEntryGrade } from "../components/EntryGradeFields";
+import EntryGradeFields, { EntryPlanFields, entryPlanPayload, SavedEntryGrade } from "../components/EntryGradeFields";
 import LoadingState from "../components/ui/LoadingState";
 import { useAuth } from "../context/AuthContext";
 import analysisService from "../services/analysisService";
@@ -13,17 +13,19 @@ const accountClock = new Intl.DateTimeFormat("en-US", {
   hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23"
 });
 function GradeForm({ review, onSave, busy, hasBars }) {
-  const [draft, setDraft] = useState({});
+  const [grade, setGrade] = useState(null);
+  const [plan, setPlan] = useState({});
   if (review) return <div className="analysis-panel"><SavedEntryGrade review={review} /></div>;
 
   return (
     <form onSubmit={(event) => {
       event.preventDefault();
-      if (isEntryGradeReady(draft) && hasBars) onSave(entryGradePayload(draft));
+      if (grade && hasBars) onSave({ letterGrade: grade, ...entryPlanPayload(plan) });
     }} className="analysis-panel space-y-4">
       <h2 className="text-lg font-semibold">Grade this entry</h2>
-      <EntryGradeFields value={draft} onChange={setDraft} busy={busy} />
-      <button className="ui-button-solid min-h-11 w-full px-4 py-2" disabled={!isEntryGradeReady(draft) || busy || !hasBars}>
+      <EntryGradeFields value={grade} onChange={setGrade} busy={busy} required />
+      <EntryPlanFields value={plan} onChange={setPlan} busy={busy} />
+      <button className="ui-button-solid min-h-11 w-full px-4 py-2" disabled={!grade || busy || !hasBars}>
         {busy ? "Saving grade…" : "Save grade and reveal"}
       </button>
     </form>

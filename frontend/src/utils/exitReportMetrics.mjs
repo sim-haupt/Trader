@@ -39,7 +39,7 @@ export function exitTradeMetadata(trade, row) {
   const exit = row.exit ?? Date.parse(trade.exitDate);
   const parts = getMarketParts(entry);
   return {
-    id: trade.id, symbol: trade.symbol, date: getMarketDayKey(exit),
+    id: trade.id, symbol: trade.symbol, date: getMarketDayKey(Number.isFinite(exit) ? exit : entry),
     setup: trade.setup || trade.strategy || "Unclassified",
     ticker: trade.symbol, session: getMarketSession(Number(parts.hour) * 60 + Number(parts.minute)),
     hour: `${parts.hour}:00`, weekday: parts.weekday,
@@ -50,7 +50,7 @@ export function exitTradeMetadata(trade, row) {
     size: bucket(trade.quantity, [100, 500, 1000, 5000], " shares"),
     conditions: trade.analysis?.snapshot?.regime || trade.analysis?.snapshot?.marketDirection || "Unavailable",
     recordedEfficiency: trade.analysis?.execution?.exitEfficiency ?? null,
-    exit, entry, timestamp: new Date(exit).toISOString()
+    exit, entry, timestamp: Number.isFinite(exit) ? new Date(exit).toISOString() : null
   };
 }
 
@@ -143,7 +143,8 @@ export function buildExitReport(input, options) {
   const offsets = options.offsets.flatMap((value) => [-value, value]).sort((a, b) => a - b);
   const allowed = new Set(offsets);
   const pricing = options.pricing;
-  const rows = input.filter(({ status }) => status === "ready").map((row) => {
+  const ready = input.filter(({ status }) => status === "ready");
+  const rows = ready.filter(({ hasExit }) => hasExit !== false).map((row) => {
     const scenarios = new Map();
     for (const [seconds, price, quote] of row.offsets) {
       if (!allowed.has(seconds)) continue;
@@ -168,7 +169,7 @@ export function buildExitReport(input, options) {
   const coverage = options.matched ? matched : priced;
   const postAt = options.activeWindow;
   const summary = {
-    eligible: input.length, analyzed: rows.length, pending: input.filter(({ status }) => status === "pending").length,
+    eligible: input.length, analyzed: ready.length, exitAnalyzed: rows.length, pending: input.filter(({ status }) => status === "pending").length,
     priced: coverage.length, matched: matched.length, quality: describe(coverage.map(({ quality }) => quality)),
     recordedEfficiency: describe(input.map(({ recordedEfficiency }) => recordedEfficiency)),
     profitLeft: describe(coverage.map(({ profitLeft }) => profitLeft)),
@@ -180,6 +181,9 @@ export function buildExitReport(input, options) {
     givebackDistribution: histogram(rows.map(({ giveback }) => giveback))
   };
   const timing = offsets.map((seconds) => offsetMetrics(coverage, seconds, seconds === options.activeOffset));
+  if (options.automatic) {
+    return buildAutomaticConclusions(ready, summary, timing);
+  }
   const post = options.windows.map((seconds) => postMetrics(rows, seconds, seconds === postAt));
   const timingIds = new Set(coverage.map(({ id }) => id));
   const groups = [...partition(rows, (row) => row[options.group])].map(([label, group]) => {
@@ -215,4 +219,20 @@ export function buildExitReport(input, options) {
     approximate: row.approximate, resolution: row.resolution, group: row[options.group]
   }));
   return { summary, timing, post, groups, trend, rolling: rollingQuality(coverage, options.rolling), comparison, alerts, drill };
+}
+
+function buildAutomaticConclusions(ready, summary, timing) {
+  const entries = ready.map(({ entryPerformance }) => entryPerformance).filter(Boolean);
+  const moves = entries.map(({ move }) => move).filter(Number.isFinite);
+  const entry = {
+    n: entries.length,
+    approximate: entries.filter(({ approximate, move }) => approximate && Number.isFinite(move)).length,
+    move: describe(moves),
+    adverse: percentage(moves.filter((value) => value < 0).length, moves.length),
+    midpointCost: describe(entries.map(({ midpointCost }) => midpointCost))
+  };
+  const supported = timing.filter(({ n }) => n >= 20);
+  const leading = supported.filter(({ median, improved }) => median > EPS && improved >= 60)
+    .sort((a, b) => b.median - a.median || b.n - a.n)[0] ?? null;
+  return { summary, entry, timing, leading, supportedOffsets: supported.length };
 }

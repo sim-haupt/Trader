@@ -36,6 +36,25 @@ test("report uses quote priority, matched intersection, and covered wins and los
   assert.equal(quote.timing.find(({ seconds }) => seconds === 5).n, 2);
 });
 
+test("automatic findings include open entries and require consistent exit samples", () => {
+  const rows = Array.from({ length: 20 }, (_, index) => trade(index, 3, {
+    hasExit: true, offsets: [[5, index < 12 ? 4 : -3, null], [-5, -20, null]]
+  }));
+  const open = { id: "open", status: "ready", hasExit: false, entryPerformance: { move: -2, midpointCost: null, approximate: true } };
+  const pending = { id: "pending", status: "pending" };
+  const result = buildExitReport([...rows, open, pending], { ...settings, automatic: true });
+  assert.equal(result.summary.eligible, 22);
+  assert.equal(result.summary.analyzed, 21);
+  assert.equal(result.summary.exitAnalyzed, 20);
+  assert.equal(result.summary.pending, 1);
+  assert.equal(result.entry.move.median, -2);
+  assert.equal(result.entry.adverse, 100);
+  assert.equal(result.entry.midpointCost.n, 0);
+  assert.equal(result.leading.seconds, 5);
+  assert.equal(result.leading.improved, 60);
+  assert.equal(buildExitReport(rows.slice(1), { ...settings, automatic: true }).leading, null);
+});
+
 test("classifies New York session/day boundaries and rolls a bounded chart for large histories", () => {
   const boundary = exitTradeMetadata({ id: "0", symbol: "TEST", setup: "A", entryPrice: 2, quantity: 100 }, {
     entry: Date.parse("2026-07-10T13:29:59.999Z"), exit: Date.parse("2026-07-10T13:30:01.300Z")

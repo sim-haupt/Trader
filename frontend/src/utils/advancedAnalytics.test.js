@@ -1,13 +1,41 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildAdvancedAnalytics, normalizeAdvancedTrades } from "./advancedAnalytics.js";
+import { buildAdvancedAnalytics, normalizeAdvancedTrades, summarizeEntryGrades } from "./advancedAnalytics.js";
 import { ADVANCED_METRIC_DEFINITIONS } from "./advancedMetricDefinitions.js";
 
 test("manual grades and blind grades use distinct report cohorts", () => {
-  const grade = { setupFit: 2, timing: 2, invalidation: 1, liquidity: 2, wouldRetake: true };
+  const grade = { letterGrade: "A+" };
   const data = [trade({ entryReview: grade }), trade({ entryReview: { ...grade, source: "MANUAL" } })];
   const report = buildAdvancedAnalytics(data, { conditionalDimension: "tradeGrade", minimumSample: 1 });
-  assert.deepEqual(new Set(report.conditionalExplorer.map(({ label }) => label)), new Set(["Blind · Strong (7–8)", "Manual · Strong (7–8)"]));
+  assert.deepEqual(new Set(report.conditionalExplorer.map(({ label }) => label)), new Set(["Blind · A+", "Manual · A+"]));
+});
+
+test("entry-grade reports summarize realized net outcomes, risk coverage, and grade source", () => {
+  const grade = { letterGrade: "A+", plannedInitialRisk: 50 };
+  const items = normalizeAdvancedTrades([
+    trade({ grossPnl: 103, commissions: 2, fees: 1, entryReview: grade }),
+    trade({ grossPnl: -47, commissions: 2, fees: 1, entryReview: { letterGrade: "A+", source: "MANUAL" } }),
+    trade({ grossPnl: 3, commissions: 2, fees: 1, entryReview: { letterGrade: "B" } }),
+    trade({ exitDate: null, entryReview: { letterGrade: "C" } }),
+    trade({ entryReview: null })
+  ]);
+  const { rows, graded, ungraded } = summarizeEntryGrades(items);
+  assert.deepEqual(rows.map(({ grade, tradeCount }) => [grade, tradeCount]), [["A+", 2], ["A", 0], ["B", 1], ["C", 0]]);
+  assert.equal(graded, 3);
+  assert.equal(ungraded, 1);
+  const [aPlus, , b] = rows;
+  assert.equal(aPlus.totalNetPnl, 50);
+  assert.equal(aPlus.expectancy, 25);
+  assert.equal(aPlus.winRate, 50);
+  assert.equal(aPlus.profitFactor, 2);
+  assert.equal(aPlus.averageNetR, 2);
+  assert.equal(aPlus.rSamples, 1);
+  assert.equal(aPlus.averageHoldSeconds, 60);
+  assert.equal(b.breakevenTrades, 1);
+  assert.equal(b.profitFactor, null);
+  assert.equal(b.averageNetR, null);
+  assert.equal(summarizeEntryGrades(items, "blind").rows[0].totalNetPnl, 100);
+  assert.equal(summarizeEntryGrades(items, "manual").rows[0].totalNetPnl, -50);
 });
 
 function trade(overrides = {}) {
@@ -170,14 +198,14 @@ test("keeps trade grading grouped by premarket time", () => {
   const entryDate = "2026-11-23T14:15:00.000Z";
   const data = [
     trade({ id: "pre", entryDate, executions: [{ occurredAt: entryDate }], entryReview: {
-      setupFit: 2, timing: 2, invalidation: 2, liquidity: 1, wouldRetake: true,
+      letterGrade: "A", wouldRetake: true,
       plannedInitialRisk: "10.0000", outcome: { mfe: 24, mae: 5, slippagePerShare: 0.05 }
     } }),
     trade({ id: "open", entryDate: "2026-11-23T14:30:00.000Z" })
   ];
   const result = buildAdvancedAnalytics(data, { conditionalDimension: "gradeByPremarketTime", minimumSample: 1 });
   assert.equal(result.trades.find(({ id }) => id === "pre").mfe, 24);
-  const graded = result.conditionalExplorer.find(({ label }) => label === "Premarket 09:00–09:30 · Strong (7–8)");
+  const graded = result.conditionalExplorer.find(({ label }) => label === "Premarket 09:00–09:30 · A");
   assert.equal(graded.sessionCount, 1);
 });
 

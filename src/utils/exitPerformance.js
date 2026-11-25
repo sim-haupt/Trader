@@ -2,6 +2,21 @@ const { positionBefore } = require("./exitTiming");
 const { latestCompleted, scalpComparison } = require("./scalpExit");
 
 const WINDOW = 300;
+const ENTRY_SECONDS = 30;
+
+function measureEntry(fill, direction, market, quote, now) {
+  if (!(fill.price > 0)) return null;
+  const entry = fill.time.getTime();
+  const target = entry + ENTRY_SECONDS * 1000;
+  const observed = target <= now && market.resolution !== "minute" ? latestCompleted(market.events, target) : null;
+  const move = observed && observed.time > entry && target - observed.end < 5000
+    ? direction * (observed.close / fill.price - 1) * 100 : null;
+  const quoteAge = entry - Date.parse(quote?.time);
+  const mid = !fill.approximate && quote?.bid > 0 && quote.ask >= quote.bid && quoteAge > 0 && quoteAge < 2000
+    ? (quote.bid + quote.ask) / 2 : null;
+  const midpointCost = mid == null ? null : direction * (fill.price - mid) / mid * 10000;
+  return move == null && midpointCost == null ? null : { move, midpointCost, approximate: fill.approximate };
+}
 
 function measureHeldPath(plan, market) {
   let grossPeak = null;
@@ -83,4 +98,4 @@ function makeExitPerformance(plan, market, quotes, heldMarket, now) {
     offsets, post, ...held };
 }
 
-module.exports = { WINDOW, makeExitPerformance, measureHeldPath };
+module.exports = { WINDOW, ENTRY_SECONDS, makeExitPerformance, measureHeldPath, measureEntry };

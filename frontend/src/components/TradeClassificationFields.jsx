@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import setupService from "../services/setupService";
 import tagService from "../services/tagService";
 import { tradeSetups, tradeTags, uniqueLabels } from "../utils/tradeClassifications";
-import EntryGradeFields, { entryGradePayload, isEntryGradeReady, SavedEntryGrade } from "./EntryGradeFields";
+import EntryGradeFields, { SavedEntryGrade } from "./EntryGradeFields";
 
 export function classificationDraft(trade) {
   return { setups: tradeSetups(trade), tags: tradeTags(trade), grade: null };
@@ -13,13 +13,12 @@ export function classificationPayload(draft) {
     setups: draft.setups,
     tags: draft.tags.join(", "),
     tagsMode: "replace",
-    ...(draft.grade && { entryGrade: entryGradePayload(draft.grade) })
+    ...(draft.grade && { entryGrade: { letterGrade: draft.grade } })
   };
 }
 
 export function classificationReady(draft) {
-  return draft.tags.join(", ").length <= 500 && draft.setups.length <= 30
-    && (!draft.grade || isEntryGradeReady(draft.grade));
+  return draft.tags.join(", ").length <= 500 && draft.setups.length <= 30;
 }
 
 function LabelPicker({ heading, noun, items, selected, onChange, busy, limit, valid, primary, error }) {
@@ -111,7 +110,6 @@ const pickerSources = [
 
 export default function TradeClassificationFields({ draft, onChange, review, busy }) {
   const [catalogs, setCatalogs] = useState(() => Object.fromEntries(pickerSources.map(({ key, peek }) => [key, { values: peek() ?? [] }])));
-  const gradeId = useId();
   useEffect(() => {
     let active = true;
     for (const { key, load } of pickerSources) {
@@ -130,17 +128,15 @@ export default function TradeClassificationFields({ draft, onChange, review, bus
         {...{ heading, noun, limit, valid, primary, busy }} items={uniqueLabels(catalogs[key].values.map(({ name }) => name))}
         error={catalogs[key].error} selected={draft[key]} onChange={(values) => onChange({ ...draft, [key]: values })} />)}
     </div>
-    <section className="border-t border-white/10 pt-3" aria-label="Entry grade">
-      {review && !draft.grade && <SavedEntryGrade review={review} />}
-      {(!review || review.source === "MANUAL") && <button type="button" className={`ui-button min-h-11 px-3 text-sm ${review ? "mt-3" : ""}`}
-        aria-expanded={Boolean(draft.grade)} aria-controls={gradeId} disabled={busy}
-        onClick={() => onChange({ ...draft, grade: draft.grade ? null : (review ?? {}) })}>
-        {draft.grade ? "Discard grade changes" : review ? "Edit entry grade" : "+ Add entry grade"}
-      </button>}
-      {draft.grade && <div id={gradeId} className="mt-3 max-w-xl space-y-3">
-        <p className="text-sm text-mist">Manual entry grade · score the entry you took.</p>
-        <EntryGradeFields value={draft.grade} onChange={(grade) => onChange({ ...draft, grade })} busy={busy} />
-      </div>}
+    <section className="space-y-2 border-t border-white/10 pt-3" aria-label="Entry grade">
+      {review?.source === "BLIND" ? <SavedEntryGrade review={review} /> : <>
+        <EntryGradeFields value={draft.grade ?? review?.letterGrade} busy={busy} label="Manual entry grade"
+          onChange={(grade) => onChange({ ...draft, grade: grade === review?.letterGrade ? null : grade })} />
+        {draft.grade && <button type="button" className="ui-button min-h-11 px-3 text-sm" disabled={busy}
+          onClick={() => onChange({ ...draft, grade: null })}>
+          {review ? "Undo grade change" : "Clear grade selection"}
+        </button>}
+      </>}
     </section>
   </div>;
 }

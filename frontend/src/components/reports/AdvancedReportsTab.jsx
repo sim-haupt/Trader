@@ -3,7 +3,7 @@ import Card from "../ui/Card";
 import ScalpExitReport from "./ScalpExitReport";
 import EmptyState from "../ui/EmptyState";
 import { MarketEvidence, Table, TimeHeatmap } from "./PerformanceIntelligence";
-import { __advancedAnalyticsInternals, MARKET_TIME_ZONE, normalizeAdvancedTrades } from "../../utils/advancedAnalytics";
+import { __advancedAnalyticsInternals, MARKET_TIME_ZONE, normalizeAdvancedTrades, summarizeEntryGrades } from "../../utils/advancedAnalytics";
 import { summarizeExecution } from "../../utils/performanceIntelligence";
 import { buildNextTradeStreaks, buildOpeningPerformance, makeRiskRecords } from "../../utils/riskAnalytics";
 import { formatCostCurrency, formatCurrency, formatPercent } from "../../utils/formatters";
@@ -60,6 +60,38 @@ function ExecutionSummary({ trades, summary }) {
   ]} />;
 }
 
+function GradePerformance({ trades }) {
+  const [source, setSource] = useState("all");
+  const { rows, ungraded, graded } = useMemo(() => summarizeEntryGrades(trades, source), [trades, source]);
+  const noData = "–";
+
+  return <Card title="Performance by entry grade" action={
+    <label className="analysis-field">Grade source
+      <select value={source} onChange={(event) => setSource(event.target.value)}>
+        <option value="all">All grades</option>
+        <option value="blind">Blind only</option>
+        <option value="manual">Manual only</option>
+      </select>
+    </label>
+  }>
+    <p className="mb-2 text-sm text-mist">{graded} matching grades · {ungraded} ungraded. Closed trades with recorded P&L.</p>
+    <Table caption="Entry grade performance"
+      headings={["Grade", "Trades", "Win rate", "Net P&L", "Avg. net / trade", "Profit factor", "Avg. R", "Avg. hold"]}
+      rows={rows.map((row) => [
+        row.grade,
+        row.tradeCount,
+        row.tradeCount ? formatPercent(row.winRate) : noData,
+        row.tradeCount ? formatCurrency(row.totalNetPnl) : noData,
+        row.tradeCount ? formatCurrency(row.expectancy) : noData,
+        row.profitFactor == null ? noData : row.profitFactor.toFixed(2),
+        row.averageNetR == null ? noData : `${row.averageNetR.toFixed(2)} R (n=${row.rSamples})`,
+        row.averageHoldSeconds == null ? noData : row.averageHoldSeconds < 60
+          ? `${row.averageHoldSeconds.toFixed(1)} s`
+          : `${(row.averageHoldSeconds / 60).toFixed(1)} min`
+      ])} />
+  </Card>;
+}
+
 export default function AdvancedReportsTab({ trades, tradeHistory, onRefreshHistory, defaultCommission, defaultFees }) {
   const [dimension, setDimension] = useState("setup");
   const [largeLoss, setLargeLoss] = useState("100");
@@ -74,12 +106,11 @@ export default function AdvancedReportsTab({ trades, tradeHistory, onRefreshHist
   const openings = useMemo(() => buildOpeningPerformance(streakRecords, selectedIds, Number(largeLoss)),
     [streakRecords, selectedIds, largeLoss]);
 
-  if (!normalized.length) {
-    return <EmptyState title="No recorded trade results" description="Choose another date range or adjust the report filters." />;
-  }
-
   return (
     <div className="space-y-4">
+      <ScalpExitReport trades={trades} tradeHistory={tradeHistory} />
+      {!normalized.length ? <EmptyState title="No recorded trade results"
+        description="Choose another date range or adjust the report filters." /> : <>
       <Card title="Performance by strategy" action={
         <div className="analysis-field">
           <label htmlFor="advanced-report-group">Group by</label>
@@ -102,6 +133,7 @@ export default function AdvancedReportsTab({ trades, tradeHistory, onRefreshHist
         </div>
         {dimension === "tag" && <p className="mt-2 text-sm text-mist">A trade can appear under multiple tags.</p>}
       </Card>
+      <GradePerformance trades={normalized} />
       <Card title="Performance after a streak" subtitle="The next entry after a win or loss streak on the same New York trading day. Report filters apply to the next trade.">
         <Table caption="Next trade after a streak" headings={["Before entry", ...outcomeColumns]}
           rows={streaks.map((row) => [row.label, ...metricCells(row)])} />
@@ -120,7 +152,7 @@ export default function AdvancedReportsTab({ trades, tradeHistory, onRefreshHist
         <ExecutionSummary trades={normalized} summary={summary} />
       </Card>
       <MarketEvidence trades={normalized} onRefresh={onRefreshHistory} />
-      <ScalpExitReport trades={trades} />
+      </>}
     </div>
   );
 }

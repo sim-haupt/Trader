@@ -1,7 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { exitTimingPlan } = require("../src/utils/exitTiming");
-const { makeExitPerformance } = require("../src/utils/exitPerformance");
+const { makeExitPerformance, measureEntry } = require("../src/utils/exitPerformance");
 
 const begin = Date.parse("2026-07-10T09:29:55-04:00");
 const at = (seconds) => begin + seconds * 1000;
@@ -10,6 +10,24 @@ const tick = (seconds, price) => ({ time: at(seconds), end: at(seconds), open: p
 const market = (events, resolution = "tick") => ({ events, resolution });
 const to = (result, seconds) => result.offsets.find(([offset]) => seconds === offset);
 const approximately = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-8, `Expected ${expected}, got ${actual}`);
+
+test("30-second entry comparison uses a recent completed price and reports directional quote cost", () => {
+  const first = { time: new Date(begin), price: 10, approximate: false };
+  const quote = { bid: 9.89, ask: 10.09, time: new Date(at(-0.3)).toISOString() };
+  const prints = market([tick(22, 20), tick(29, 9.9), tick(31, 12)]);
+  const long = measureEntry(first, 1, prints, quote, at(60));
+  approximately(long.move, -1);
+  approximately(long.midpointCost, 0.01 / 9.99 * 10_000);
+  const short = measureEntry(first, -1, prints, quote, at(60));
+  approximately(short.move, 1);
+  approximately(short.midpointCost, -long.midpointCost);
+  assert.deepEqual(measureEntry({ ...first, approximate: true }, 1, prints, quote, at(60)),
+    { move: long.move, midpointCost: null, approximate: true });
+  for (const missing of [market([tick(20, 10)]), market([tick(29, 10)], "minute"), market([tick(31, 10)])]) {
+    assert.equal(measureEntry(first, 1, missing, { ...quote, time: new Date(at(-3)) }, at(60)), null);
+  }
+  assert.equal(measureEntry(first, 1, prints, null, at(29.9)), null);
+});
 
 test("accounts for partial fills, fees, quote spreads and premarket to regular transition", () => {
   const plan = exitTimingPlan({
