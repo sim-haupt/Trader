@@ -21,7 +21,7 @@ const setupService = {
     return response.data;
   },
 
-  async saveDetails({ id, name, grade, notes, shareSize, files, removedImageIds }) {
+  async saveDetails({ id, name, grade, notes, shareSize, files, removedImageIds, imageOrder }) {
     const thumbnails = await Promise.all(files.map((file) =>
       createImageThumbnail(file, { maxSize: 180 })
     ));
@@ -37,6 +37,7 @@ const setupService = {
     for (const file of files) form.append("images", file);
 
     if (id) {
+      form.append("imageOrder", JSON.stringify(imageOrder));
       for (const imageId of removedImageIds) form.append("removeImageIds", imageId);
       const response = await api.patch(`/setups/${id}`, form);
       return response.data.data;

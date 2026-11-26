@@ -176,7 +176,7 @@ strong {
     min-height: 100vh;
     margin: 0;
     display: grid;
-    grid-template-columns: 248px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     gap: 0;
   }
 
@@ -612,22 +612,19 @@ strong {
   font-weight: 500 !important;
 }
 
+@media (min-width: 1280px) {
+  .desktop-frame[data-sidebar-open="true"] {
+    grid-template-columns: 248px minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 1180px) {
   .app-shell {
     padding: 0;
   }
 
-  .desktop-frame {
-    min-height: 100vh;
-    grid-template-columns: 1fr;
-  }
-
   .top-status {
     top: 0;
-  }
-
-  .ui-sidebar {
-    display: none;
   }
 
   .ui-content-body {

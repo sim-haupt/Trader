@@ -23,7 +23,7 @@ const navigationItems = [
 
 function NavIcon({ path }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
       <path d={path} strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
@@ -73,11 +73,17 @@ function AppShell() {
   const { user, logout, updateSettings } = useAuth();
   const { notify } = useNotifications();
   const [isSwitchingAccount, setIsSwitchingAccount] = useState(false);
-  const [mobileMenuPath, setMobileMenuPath] = useState(null);
+  const [desktopMenuOpen, setDesktopMenuOpen] = useState(() => {
+    try {
+      return localStorage.getItem("trader-sidebar-collapsed") !== "true";
+    } catch {
+      return true;
+    }
+  });
+  const [mobileMenuKey, setMobileMenuKey] = useState(null);
   const blindWorkspace = location.pathname === "/trade-reviews" || location.pathname === "/trade-reviews/grade" || /^\/trades\/[^/]+\/replay$/.test(location.pathname);
-  const compactNavigation = blindWorkspace || location.pathname === "/setups";
-  const mobileMenuOpen = mobileMenuPath === location.pathname;
-  const HeaderTitle = compactNavigation ? "h1" : "p";
+  const mobileMenuOpen = mobileMenuKey === location.key;
+  const HeaderTitle = blindWorkspace || location.pathname === "/setups" ? "h1" : "p";
   const pageMeta = getPageMeta(location.pathname);
   const isLiveAccount = user?.activeAccountScope === "LIVE";
   const accountLabel = user?.activeAccountScope === "LIVE" ? "Live" : "Simulator";
@@ -118,10 +124,19 @@ function AppShell() {
     }
   }
 
+  function toggleDesktopMenu() {
+    setDesktopMenuOpen(!desktopMenuOpen);
+    try {
+      localStorage.setItem("trader-sidebar-collapsed", String(desktopMenuOpen));
+    } catch {
+      // The menu can still be toggled when browser storage is unavailable.
+    }
+  }
+
   return (
     <div className="app-shell">
-      <div className="desktop-frame">
-        <aside className="ui-sidebar hidden min-h-screen px-4 py-4 xl:block">
+      <div className="desktop-frame" data-sidebar-open={desktopMenuOpen}>
+        <aside id="desktop-workspace-navigation" className={`ui-sidebar hidden min-h-screen px-4 py-4 ${desktopMenuOpen ? "xl:block" : ""}`}>
           <div className="flex items-center gap-3 px-2 pb-5 pt-1">
             <div className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-[var(--line)] bg-black">
               <img src="/favicon.png" alt="tradingStats" className="h-6 w-6" />
@@ -132,7 +147,7 @@ function AppShell() {
             </div>
           </div>
 
-          <nav className="ui-sidebar-nav">
+          <nav aria-label="Main navigation" className="ui-sidebar-nav">
             {navigationItems.map((item) => (
               <NavLink key={item.path} to={item.path}>
                 {({ isActive }) => (
@@ -218,28 +233,41 @@ function AppShell() {
         <div className="ui-content">
           <header className="top-status">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div className={compactNavigation ? "flex min-w-0 flex-wrap items-center justify-between gap-3" : "min-w-0"}>
-                {pageMeta.title ? (
-                  <HeaderTitle className="text-[1.05rem] font-semibold tracking-[-0.03em] text-white">{pageMeta.title}</HeaderTitle>
-                ) : null}
-                {pageMeta.description ? (
-                  <p className="mt-1 text-sm text-white/36">{pageMeta.description}</p>
-                ) : null}
-                {compactNavigation && (
-                  <button type="button" className="ui-button min-h-11 self-end px-3 text-sm xl:hidden"
-                    aria-expanded={mobileMenuOpen} aria-controls="mobile-workspace-navigation"
-                    onClick={() => setMobileMenuPath(mobileMenuOpen ? null : location.pathname)}>
-                    {mobileMenuOpen ? "Close navigation" : "Navigation"}
-                  </button>
-                )}
+              <div className="flex min-w-0 items-center gap-3">
+                <button
+                  type="button"
+                  className="ui-button hidden h-11 w-11 shrink-0 items-center justify-center p-0 xl:inline-flex"
+                  aria-label={desktopMenuOpen ? "Collapse navigation" : "Expand navigation"}
+                  title={desktopMenuOpen ? "Collapse navigation" : "Expand navigation"}
+                  aria-expanded={desktopMenuOpen}
+                  aria-controls="desktop-workspace-navigation"
+                  onClick={toggleDesktopMenu}
+                >
+                  <NavIcon path="M4 5h16v14H4zM9 5v14" />
+                </button>
+                <div className="min-w-0 flex-1">
+                  {pageMeta.title ? (
+                    <HeaderTitle className="text-[1.05rem] font-semibold tracking-[-0.03em] text-white">{pageMeta.title}</HeaderTitle>
+                  ) : null}
+                  {pageMeta.description ? (
+                    <p className="mt-1 text-sm text-white/36">{pageMeta.description}</p>
+                  ) : null}
+                </div>
+                <button type="button" className="ui-button min-h-11 shrink-0 px-3 text-sm xl:hidden"
+                  aria-expanded={mobileMenuOpen} aria-controls="mobile-workspace-navigation"
+                  onClick={() => setMobileMenuKey(mobileMenuOpen ? null : location.key)}>
+                  {mobileMenuOpen ? "Close navigation" : "Navigation"}
+                </button>
               </div>
 
-              <div id="mobile-workspace-navigation" className={`${compactNavigation && !mobileMenuOpen ? "hidden" : "flex"} flex-wrap items-center gap-2 xl:hidden`}>
+              <nav id="mobile-workspace-navigation" aria-label="Main navigation"
+                className={`${mobileMenuOpen ? "flex" : "hidden"} flex-wrap items-center gap-2 xl:hidden`}>
                 {navigationItems.map((item) => (
                   <NavLink
                     key={item.path}
                     to={item.path}
-                  className={({ isActive }) =>
+                    onClick={() => setMobileMenuKey(null)}
+                    className={({ isActive }) =>
                       `flex items-center gap-2 px-3 py-2 text-sm ${
                         isActive
                           ? "rounded-[6px] border border-[var(--line)] bg-[#1f1f1f] text-white"
@@ -256,6 +284,7 @@ function AppShell() {
                 {user?.role === "ADMIN" ? (
                   <NavLink
                     to="/admin"
+                    onClick={() => setMobileMenuKey(null)}
                     className={({ isActive }) =>
                       `flex items-center gap-2 px-3 py-2 text-sm ${
                         isActive
@@ -270,9 +299,6 @@ function AppShell() {
                     Admin
                   </NavLink>
                 ) : null}
-              </div>
-
-              <div className={`${compactNavigation && !mobileMenuOpen ? "hidden" : "flex"} flex-wrap items-center gap-2 lg:justify-end`}>
                 <button
                   type="button"
                   onClick={() => navigate("/trades?mode=import")}
@@ -280,14 +306,14 @@ function AppShell() {
                 >
                   Import Trades
                 </button>
-              <button
-                type="button"
-                onClick={logout}
-                className="xl:hidden rounded-[6px] border border-[var(--line)] bg-black px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1f1f1f]"
-              >
-                Logout
-              </button>
-              </div>
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="rounded-[6px] border border-[var(--line)] bg-black px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1f1f1f]"
+                >
+                  Logout
+                </button>
+              </nav>
             </div>
           </header>
 

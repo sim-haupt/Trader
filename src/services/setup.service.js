@@ -106,22 +106,45 @@ function update(userId, id, payload, files = []) {
       data: { grade: payload.grade, notes: payload.notes, shareSize: payload.shareSize },
       select: { ...setupFields, setup: { select: { name: true } } }
     });
-    const remainingCount = variant.images.filter((image) => !removedIds.has(image.id)).length;
-    if (images.length === 0 && remainingCount === variant.images.length) {
-      return { ...variant, name: setup.name };
-    }
-
-    if (remainingCount + images.length > MAX_IMAGES) {
+    const kept = variant.images.filter((image) => !removedIds.has(image.id));
+    const currentOrder = [...kept.map((image) => image.id), ...images.keys()];
+    if (currentOrder.length > MAX_IMAGES) {
       throw new ApiError(400, `A setup can have up to ${MAX_IMAGES} images.`);
     }
 
-    const nextPosition = (variant.images.at(-1)?.position ?? -1) + 1;
+    const order = payload.imageOrder ?? currentOrder;
+    const positions = new Map(order.map((key, position) => [key, position]));
+    if (order.length !== currentOrder.length || currentOrder.some((key) => !positions.has(key))) {
+      throw new ApiError(409, "The setup images changed. Reopen the editor and try again.");
+    }
+
+    const moved = kept.filter((image) => positions.get(image.id) !== image.position);
+    if (moved.length > 0) {
+      // Park moved rows beyond the occupied positions to avoid unique conflicts during swaps.
+      const offset = Math.max(variant.images.at(-1).position + 1, MAX_IMAGES);
+      await db.setupImage.updateMany({
+        where: { variantId: id, id: { in: moved.map((image) => image.id) } },
+        data: { position: { increment: offset } }
+      });
+    }
+
+    if (images.length === 0 && kept.length === variant.images.length && moved.length === 0) {
+      return { ...variant, name: setup.name };
+    }
+
+    if (kept.length !== variant.images.length) {
+      await db.setupImage.deleteMany({ where: { variantId: id, id: { in: [...removedIds] } } });
+    }
+
     const updated = await db.setupVariant.update({
       where: { id },
       data: {
         images: {
-          deleteMany: { id: { in: [...removedIds] } },
-          create: images.map((image, index) => ({ ...image, position: nextPosition + index }))
+          update: moved.map((image) => ({
+            where: { id: image.id },
+            data: { position: positions.get(image.id) }
+          })),
+          create: images.map((image, index) => ({ ...image, position: positions.get(index) }))
         }
       },
       select: setupFields

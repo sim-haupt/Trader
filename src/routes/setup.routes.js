@@ -16,6 +16,17 @@ const detailsSchema = z.object({
   thumbnails: z.string().optional()
 });
 const updateDetailsSchema = detailsSchema.extend({
+  imageOrder: z.string().transform((value, context) => {
+    try {
+      return JSON.parse(value);
+    } catch {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid image order." });
+      return z.NEVER;
+    }
+  }).pipe(z.array(z.union([
+    z.string().cuid(),
+    z.number().int().min(0).max(setups.MAX_IMAGES - 1)
+  ])).max(setups.MAX_IMAGES)).optional(),
   removeImageIds: z.union([z.string(), z.array(z.string())])
     .transform((value) => Array.isArray(value) ? value : [value])
     .pipe(z.array(z.string().cuid()).max(setups.MAX_IMAGES))
