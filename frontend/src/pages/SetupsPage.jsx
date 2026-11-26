@@ -99,9 +99,23 @@ function SetupEditor({ setup, existingNames, onDismiss, onSave }) {
   const [notes, setNotes] = useState(setup?.notes || "");
   const [shareSize, setShareSize] = useState(setup?.shareSize?.toString() || "");
   const [files, setFiles] = useState([]);
+  const [removedImageIds, setRemovedImageIds] = useState([]);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const savedCount = setup?.images.length || 0;
+  const savedImages = setup?.images ?? [];
+  const savedCount = savedImages.length - removedImageIds.length;
+  const imageCount = savedCount + files.length;
+  const coverId = savedImages.find((image) => !removedImageIds.includes(image.id))?.id;
+
+  function toggleSavedImage(imageId) {
+    const isRemoved = removedImageIds.includes(imageId);
+    if (isRemoved && imageCount >= MAX_SETUP_IMAGES) {
+      setError(`Remove another image before restoring this one. A setup can have up to ${MAX_SETUP_IMAGES} images.`);
+      return;
+    }
+    setRemovedImageIds((current) => isRemoved ? current.filter((id) => id !== imageId) : [...current, imageId]);
+    setError("");
+  }
 
   function chooseFiles(event) {
     const selected = Array.from(event.target.files);
@@ -132,7 +146,9 @@ function SetupEditor({ setup, existingNames, onDismiss, onSave }) {
     setSaving(true);
     setError("");
     try {
-      const result = await setupService.saveDetails({ id: setup?.id, name: name.trim(), grade, notes, shareSize, files });
+      const result = await setupService.saveDetails({
+        id: setup?.id, name: name.trim(), grade, notes, shareSize, files, removedImageIds
+      });
       onSave(result);
     } catch (err) {
       setError(err.message);
@@ -185,6 +201,35 @@ function SetupEditor({ setup, existingNames, onDismiss, onSave }) {
           </label>
 
           <div>
+            {savedImages.length > 0 && (
+              <div className="mb-4">
+                <h3 className="text-sm font-medium">Saved images</h3>
+                <ul className="mt-2 divide-y divide-[var(--line)]">
+                  {savedImages.map((image) => {
+                    const isRemoved = removedImageIds.includes(image.id);
+
+                    return (
+                      <li key={image.id} className="flex items-center gap-3 py-2 text-sm">
+                        <img src={image.thumbnailUrl} alt="" className={`h-11 w-16 shrink-0 rounded bg-black object-contain ${isRemoved ? "opacity-50" : ""}`} />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate" title={image.originalName}>{image.originalName}</p>
+                          {isRemoved && <p className="text-xs text-[var(--text-muted)]">Removed on save</p>}
+                          {image.id === coverId && <p className="text-xs text-[var(--text-muted)]">Cover image</p>}
+                        </div>
+                        <button
+                          type="button"
+                          className={buttonClass}
+                          aria-label={`${isRemoved ? "Undo removal of" : "Remove"} ${image.originalName}`}
+                          onClick={() => toggleSavedImage(image.id)}
+                        >
+                          {isRemoved ? "Undo" : "Remove"}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
             <label className="block text-sm font-medium">
               {setup ? "Add images" : "Images"}
               <input
@@ -192,12 +237,12 @@ function SetupEditor({ setup, existingNames, onDismiss, onSave }) {
                 accept={imageTypes}
                 multiple
                 onChange={chooseFiles}
-                disabled={savedCount + files.length >= MAX_SETUP_IMAGES}
+                disabled={imageCount >= MAX_SETUP_IMAGES}
                 className="mt-2 block w-full text-sm text-[var(--text-muted)] file:mr-3 file:min-h-11 file:cursor-pointer file:rounded-[6px] file:border file:border-[var(--line)] file:bg-black file:px-3 file:font-medium file:text-white disabled:opacity-50"
               />
             </label>
             <p className="mt-2 text-xs text-[var(--text-muted)]">
-              {savedCount + files.length} of {MAX_SETUP_IMAGES} images. The first image is the cover.
+              {imageCount} of {MAX_SETUP_IMAGES} images. The first image is the cover.
             </p>
             {files.length > 0 && (
               <ul className="mt-2 divide-y divide-[var(--line)]">

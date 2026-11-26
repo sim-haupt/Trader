@@ -12,7 +12,7 @@ const setupFields = {
   shareSize: true,
   images: {
     orderBy: { position: "asc" },
-    select: { id: true, originalName: true, thumbnailUrl: true }
+    select: { id: true, position: true, originalName: true, thumbnailUrl: true }
   }
 };
 
@@ -97,25 +97,31 @@ function create(userId, { name, grade, notes, shareSize, thumbnails }, files = [
 
 function update(userId, id, payload, files = []) {
   const images = prepareImages(files, payload.thumbnails);
+  const removedIds = new Set(payload.removeImageIds);
 
   return prisma.$transaction(async (db) => {
-    // Updating the variant first locks it so concurrent uploads append in order.
+    // Lock the variant before reconciling concurrent image changes.
     const { setup, ...variant } = await db.setupVariant.update({
       where: { id, setup: { userId } },
       data: { grade: payload.grade, notes: payload.notes, shareSize: payload.shareSize },
       select: { ...setupFields, setup: { select: { name: true } } }
     });
-    if (images.length === 0) return { ...variant, name: setup.name };
+    const remainingCount = variant.images.filter((image) => !removedIds.has(image.id)).length;
+    if (images.length === 0 && remainingCount === variant.images.length) {
+      return { ...variant, name: setup.name };
+    }
 
-    if (variant.images.length + images.length > MAX_IMAGES) {
+    if (remainingCount + images.length > MAX_IMAGES) {
       throw new ApiError(400, `A setup can have up to ${MAX_IMAGES} images.`);
     }
 
+    const nextPosition = (variant.images.at(-1)?.position ?? -1) + 1;
     const updated = await db.setupVariant.update({
       where: { id },
       data: {
         images: {
-          create: images.map((image, index) => ({ ...image, position: variant.images.length + index }))
+          deleteMany: { id: { in: [...removedIds] } },
+          create: images.map((image, index) => ({ ...image, position: nextPosition + index }))
         }
       },
       select: setupFields

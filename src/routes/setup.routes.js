@@ -15,6 +15,12 @@ const detailsSchema = z.object({
   shareSize: z.union([z.literal("").transform(() => null), z.coerce.number().int().min(1).max(2147483647)]),
   thumbnails: z.string().optional()
 });
+const updateDetailsSchema = detailsSchema.extend({
+  removeImageIds: z.union([z.string(), z.array(z.string())])
+    .transform((value) => Array.isArray(value) ? value : [value])
+    .pipe(z.array(z.string().cuid()).max(setups.MAX_IMAGES))
+    .default([])
+});
 const uploadImages = imageUpload.array("images", setups.MAX_IMAGES);
 
 router.use(authenticate);
@@ -28,7 +34,7 @@ router.post("/", uploadImages, validate(savedStrategySchema.merge(detailsSchema)
   res.status(201).json({ success: true, data: setup });
 }));
 
-router.patch("/:id", uploadImages, validate(detailsSchema), asyncHandler(async (req, res) => {
+router.patch("/:id", uploadImages, validate(updateDetailsSchema), asyncHandler(async (req, res) => {
   const setup = await setups.update(req.user.id, req.params.id, req.validatedBody, req.files);
   res.json({ success: true, data: setup });
 }));
