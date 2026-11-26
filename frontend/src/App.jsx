@@ -8,6 +8,7 @@ import DashboardPage from "./pages/DashboardPage";
 import TradesPage from "./pages/TradesPage";
 import EntryGradingPage from "./pages/EntryGradingPage";
 import GalleryPage from "./pages/GalleryPage";
+import SetupsPage from "./pages/SetupsPage";
 import TradeReplayPage from "./pages/TradeReplayPage";
 import TradeDetailPage from "./pages/TradeDetailPage";
 import AdminPage from "./pages/AdminPage";
@@ -37,6 +38,7 @@ function App() {
         <Route path="/tax-reports" element={<TaxReportsPage />} />
         <Route path="/trades" element={<TradesPage />} />
         <Route path="/gallery" element={<GalleryPage />} />
+        <Route path="/setups" element={<SetupsPage />} />
         <Route path="/trade-reviews" element={<Navigate to="/trade-reviews/grade" replace />} />
         <Route path="/trade-reviews/grade" element={<EntryGradingPage />} />
         <Route path="/trades/:id" element={<TradeDetailPage />} />

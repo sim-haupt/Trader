@@ -287,6 +287,8 @@ const tradeService = {
   async bulkUpdateTrades(payload) {
     const response = await api.post("/trades/bulk-update", normalizeTradePayload(payload));
     clearTradeCaches();
+    if (payload.tags !== undefined) clearTagCache();
+    if (payload.setups !== undefined || payload.setup !== undefined) clearSetupCache();
     return response.data.data;
   },
 

@@ -599,106 +599,101 @@ function mergeTagStrings(existingTags, incomingTags) {
     .map((tag) => tag.trim())
     .filter(Boolean);
 
-  return [...new Set([...current, ...incoming])].join(", ");
+  const merged = new Map();
+  for (const tag of [...current, ...incoming]) {
+    if (!merged.has(tag.toLowerCase())) merged.set(tag.toLowerCase(), tag);
+  }
+  return Array.from(merged.values()).join(", ");
+}
+
+function sameSetups(trade, next) {
+  return trade.strategy === next.strategy && trade.additionalSetups.length === next.additionalSetups.length
+    && trade.additionalSetups.every((value, index) => value === next.additionalSetups[index]);
+}
+
+async function applyBulkTradeUpdate(tx, actor, payload) {
+  const trades = await tx.trade.findMany({
+    where: { ...buildTradeWhere(actor, { scope: "all" }), id: { in: [...new Set(payload.tradeIds)] } },
+    select: { id: true, userId: true, tags: true, strategy: true, additionalSetups: true, notes: true,
+      entryReview: { select: { source: true, letterGrade: true } } },
+    orderBy: { id: "asc" }
+  });
+
+  const legacySetup = payload.setup !== undefined ? payload.setup : payload.strategy;
+  const requestedSetups = payload.setups ?? (legacySetup === undefined ? undefined : legacySetup ? [legacySetup] : []);
+  const requestedSetupFields = getSetupFields({ setups: requestedSetups });
+  const updated = new Set();
+  const batches = new Map();
+  const createGrades = [];
+  const updateGradeIds = [];
+  const grades = { updated: 0, skippedBlind: 0, skippedManual: 0 };
+  const grade = payload.entryGrade?.letterGrade;
+
+  for (const trade of trades) {
+    const data = {};
+    if (payload.tags !== undefined) {
+      const tags = !payload.tags || payload.tagsMode === "replace" ? payload.tags || null : mergeTagStrings(trade.tags, payload.tags);
+      if (tags !== trade.tags) {
+        if (tags?.length > 500) throw new ApiError(400, "Adding these tags would exceed the 500-character limit on a selected trade.");
+        data.tags = tags;
+      }
+    }
+    if (requestedSetups !== undefined) {
+      const next = payload.setups !== undefined && payload.setupsMode !== "replace"
+        ? getSetupFields({ setups: [trade.strategy, ...trade.additionalSetups, ...requestedSetups].filter(Boolean) })
+        : requestedSetupFields;
+      if (!sameSetups(trade, next)) {
+        if ((next.strategy ? 1 : 0) + next.additionalSetups.length > 30) {
+          throw new ApiError(400, "Adding these setups would exceed the 30-setup limit on a selected trade.");
+        }
+        Object.assign(data, next);
+      }
+    }
+    if (payload.notes !== undefined && (payload.notes || null) !== trade.notes) data.notes = payload.notes || null;
+    if (Object.keys(data).length) {
+      const key = JSON.stringify(data);
+      if (!batches.has(key)) batches.set(key, { data, ids: [] });
+      batches.get(key).ids.push(trade.id);
+      updated.add(trade.id);
+    }
+
+    if (!grade) continue;
+    if (trade.entryReview?.source === "BLIND") grades.skippedBlind += 1;
+    else if (trade.entryReview && payload.gradeMode !== "replaceManual") grades.skippedManual += 1;
+    else if (!trade.entryReview) createGrades.push({ tradeId: trade.id, source: "MANUAL", letterGrade: grade });
+    else if (trade.entryReview.letterGrade !== grade) updateGradeIds.push(trade.id);
+  }
+
+  for (const { data, ids } of batches.values()) {
+    await tx.trade.updateMany({ where: { id: { in: ids } }, data });
+  }
+  if (createGrades.length) {
+    const result = await tx.tradeEntryReview.createMany({ data: createGrades });
+    grades.updated += result.count;
+    createGrades.forEach(({ tradeId }) => updated.add(tradeId));
+  }
+  if (updateGradeIds.length) {
+    const result = await tx.tradeEntryReview.updateMany({
+      where: { tradeId: { in: updateGradeIds }, source: "MANUAL" }, data: { letterGrade: grade, gradedAt: new Date() }
+    });
+    grades.updated += result.count;
+    updateGradeIds.forEach((id) => updated.add(id));
+  }
+
+  const owners = new Set(trades.filter(({ id }) => updated.has(id)).map(({ userId }) => userId));
+  for (const userId of owners) await ensureTradeLabels(tx, userId, payload.tags, requestedSetupFields);
+  return { updatedCount: updated.size, matchedCount: trades.length, grades };
 }
 
 async function bulkUpdateTrades(actor, payload) {
-  const uniqueTradeIds = [...new Set(payload.tradeIds)];
-
-  if (uniqueTradeIds.length === 0) {
-    throw new ApiError(400, "At least one trade id is required");
-  }
-
-  const where = {
-    id: {
-      in: uniqueTradeIds
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await prisma.$transaction((tx) => applyBulkTradeUpdate(tx, actor, payload),
+        { isolationLevel: "Serializable", timeout: 20_000 });
+    } catch (error) {
+      if (!["P2002", "P2034"].includes(error.code) || attempt >= 2) throw error;
     }
-  };
-
-  if (actor.role !== "ADMIN") {
-    where.userId = actor.id;
   }
-  where.accountScope = getActorAccountScope(actor);
-
-  const trades = await prisma.trade.findMany({
-    where,
-    select: {
-      id: true,
-      tags: true
-    }
-  });
-
-  if (trades.length === 0) {
-    return { updatedCount: 0 };
-  }
-
-  const notes =
-    payload.notes === undefined ? undefined : payload.notes === "" ? null : payload.notes;
-  const tagsMode = payload.tagsMode || "append";
-  const setupValue = payload.setup !== undefined ? payload.setup : payload.strategy;
-  const setupFields = setupValue === undefined ? {} : getSetupFields({ setups: setupValue?.trim() ? [setupValue] : [] });
-
-  await prisma.$transaction(
-    trades.map((trade) => {
-      const nextTags =
-        payload.tags === undefined
-          ? undefined
-          : payload.tags === ""
-            ? null
-            : tagsMode === "replace"
-              ? payload.tags
-              : mergeTagStrings(trade.tags, payload.tags);
-
-      const data = { ...setupFields };
-
-      if (nextTags !== undefined) {
-        data.tags = nextTags;
-      }
-
-      if (notes !== undefined) {
-        data.notes = notes;
-      }
-
-      return prisma.trade.update({
-        where: { id: trade.id },
-        data
-      });
-    })
-  );
-
-  if (payload.tags) {
-    const userIds = actor.role === "ADMIN"
-      ? [...new Set((await prisma.trade.findMany({
-          where: {
-            id: {
-              in: trades.map((trade) => trade.id)
-            }
-          },
-          select: { userId: true }
-        })).map((trade) => trade.userId))]
-      : [actor.id];
-
-    await Promise.all(userIds.map((userId) => tagService.ensureTags(userId, payload.tags)));
-  }
-
-  if (setupFields.strategy) {
-    const userIds = actor.role === "ADMIN"
-      ? [...new Set((await prisma.trade.findMany({
-          where: {
-            id: {
-              in: trades.map((trade) => trade.id)
-            }
-          },
-          select: { userId: true }
-        })).map((trade) => trade.userId))]
-      : [actor.id];
-
-    await Promise.all(userIds.map((userId) => strategyService.ensureStrategies(userId, [setupFields.strategy])));
-  }
-
-  return {
-    updatedCount: trades.length
-  };
 }
 
 async function deleteAllTrades(actor, options = {}) {

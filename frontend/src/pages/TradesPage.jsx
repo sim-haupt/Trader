@@ -5,6 +5,7 @@ import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
 import Filters from "../components/Filters";
 import TradeForm from "../components/TradeForm";
+import BulkTradeEditor from "../components/BulkTradeEditor";
 import TradeTable, { buildTradeGroups } from "../components/TradeTable";
 import UploadCSV from "../components/UploadCSV";
 import TradeTextImport from "../components/TradeTextImport";
@@ -59,21 +60,17 @@ function TradesPage() {
   const [trades, setTrades] = useState(() => tradeService.peekTrades(initialFilters) || []);
   const [selectedTrade, setSelectedTrade] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
-  const [bulkTags, setBulkTags] = useState("");
-  const [bulkTagsMode, setBulkTagsMode] = useState("append");
-  const [bulkSetupMode, setBulkSetupMode] = useState("keep");
+  const [bulkEditorOpen, setBulkEditorOpen] = useState(false);
   const [availableTags, setAvailableTags] = useState(() => tagService.peekTags() || []);
   const [availableSetups, setAvailableSetups] = useState(
     () => setupService.peekSetups() || []
   );
-  const [bulkSetup, setBulkSetup] = useState("");
   const [filters, setFilters] = useState(initialFilters);
   const [pageSize, setPageSize] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [isBulkSaving, setIsBulkSaving] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(() => !tradeService.peekTrades(initialFilters));
@@ -92,8 +89,9 @@ function TradesPage() {
         Object.entries(activeFilters).filter(([, value]) => value)
       );
       const data = await tradeService.getTrades(cleanedFilters);
+      const availableIds = new Set(data.map(({ id }) => id));
       setTrades(data);
-      setSelectedIds((current) => current.filter((id) => data.some((trade) => trade.id === id)));
+      setSelectedIds((current) => current.filter((id) => availableIds.has(id)));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -188,61 +186,18 @@ function TradesPage() {
     }
   }, [currentPage, totalPages]);
 
-  useEffect(() => {
-    const visibleIds = paginatedTrades.map((trade) => trade.id);
-
-    setSelectedIds((current) => current.filter((id) => trades.some((trade) => trade.id === id)));
-
-    if (visibleIds.length === 0) {
-      setSelectedIds((current) => current.filter((id) => trades.some((trade) => trade.id === id)));
-    }
-  }, [paginatedTrades, trades]);
-
   function handleFilterChange(key, value) {
     setFilters((current) => ({ ...current, [key]: value }));
   }
 
-  function resetBulkForm() {
-    setBulkTags("");
-    setBulkTagsMode("append");
-    setBulkSetupMode("keep");
-    setBulkSetup("");
-  }
-
-  const selectedBulkTags = useMemo(
-    () =>
-      String(bulkTags || "")
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean),
-    [bulkTags]
-  );
-
-  function addBulkTag(tagName) {
-    setBulkTagsMode((current) => (current === "clear" ? "append" : current));
-    setBulkTags((current) => {
-      const tags = String(current || "")
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean);
-
-      return [...new Set([...tags, tagName])].join(", ");
-    });
-  }
-
-  function removeBulkTag(tagName) {
-    setBulkTags((current) =>
-      String(current || "")
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter((tag) => tag && tag !== tagName)
-        .join(", ")
-    );
-  }
+  const selectedTrades = useMemo(() => {
+    const ids = new Set(selectedIds);
+    return trades.filter(({ id }) => ids.has(id));
+  }, [selectedIds, trades]);
 
   function clearSelection() {
     setSelectedIds([]);
-    resetBulkForm();
+    setBulkEditorOpen(false);
   }
 
   function handleToggleSelection(tradeId) {
@@ -331,60 +286,25 @@ function TradesPage() {
     }
   }
 
-  async function handleBulkUpdate() {
-    const trimmedTags = bulkTags.trim();
-    const hasTagChange = bulkTagsMode === "clear" || Boolean(trimmedTags);
-    const hasSetupChange = bulkSetupMode === "clear" || (bulkSetupMode === "set" && Boolean(bulkSetup));
-
-    if (selectedIds.length === 0) {
-      setError("Select at least one trade first.");
-      notify({ title: "No trades selected", description: "Select at least one trade first.", tone: "warning" });
-      return;
-    }
-
-    if (!hasTagChange && !hasSetupChange) {
-      setError("Select tags or a setup before applying bulk changes.");
-      notify({
-        title: "Nothing to apply",
-        description: "Choose tags or a setup before applying bulk changes.",
-        tone: "warning"
-      });
-      return;
-    }
-
-    setIsBulkSaving(true);
+  async function handleBulkUpdate(payload) {
     setError("");
-
-    try {
-      const payload = {
-        tradeIds: selectedIds,
-        ...(hasTagChange
-          ? {
-              tags: bulkTagsMode === "clear" ? "" : trimmedTags,
-              tagsMode: bulkTagsMode === "clear" ? "replace" : bulkTagsMode
-            }
-          : {}),
-        ...(hasSetupChange
-          ? {
-              setup: bulkSetupMode === "clear" ? "" : bulkSetup
-            }
-          : {})
-      };
-      const result = await tradeService.bulkUpdateTrades(payload);
-
-      notify({
-        title: "Trades updated",
-        description: `Updated ${result.updatedCount} selected ${result.updatedCount === 1 ? "trade" : "trades"}.`,
-        tone: "success"
-      });
-      clearSelection();
-      await loadTrades(filters);
-    } catch (err) {
-      setError(err.message);
-      notify({ title: "Could not update trades", description: err.message, tone: "error" });
-    } finally {
-      setIsBulkSaving(false);
-    }
+    const result = await tradeService.bulkUpdateTrades(payload);
+    const counts = result.grades;
+    const detail = [
+      `${result.updatedCount} ${result.updatedCount === 1 ? "trade" : "trades"} updated.`,
+      counts.updated ? `${counts.updated} graded.` : "",
+      counts.skippedBlind ? `${counts.skippedBlind} blind ${counts.skippedBlind === 1 ? "grade" : "grades"} kept.` : "",
+      counts.skippedManual ? `${counts.skippedManual} manual ${counts.skippedManual === 1 ? "grade" : "grades"} kept.` : "",
+      payload.tradeIds.length > result.matchedCount ? "Some selected trades were unavailable." : ""
+    ].filter(Boolean).join(" ");
+    notify({ title: result.updatedCount ? "Bulk changes saved" : "No trades changed", description: detail,
+      tone: result.updatedCount ? "success" : "warning" });
+    clearSelection();
+    await Promise.allSettled([
+      loadTrades(filters),
+      payload.tags !== undefined && tagService.getTags().then(setAvailableTags),
+      payload.setups !== undefined && setupService.getSetups().then(setAvailableSetups)
+    ]);
   }
 
   async function handleBulkDelete() {
@@ -959,134 +879,20 @@ function TradesPage() {
           ) : (
             <div className="relative z-0 space-y-4">
               {selectedIds.length > 0 && (
-                <div className="ui-panel p-4 shadow-none">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="ui-chip ui-chip-count">{selectedIds.length} selected</span>
-                      <button
-                        type="button"
-                        onClick={clearSelection}
-                        className="ui-button px-3 py-1.5 text-xs"
-                      >
-                        Clear
-                      </button>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleBulkDelete}
-                      disabled={isBulkDeleting}
-                      className="ui-button-danger px-3 py-1.5 text-xs disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {isBulkDeleting ? "Deleting..." : "Delete Selected"}
-                    </button>
+                <section aria-label="Trade selection" className="sticky top-2 z-10 flex flex-wrap items-center justify-between gap-2 rounded border border-white/15 bg-[#161616] p-2 sm:px-3">
+                  <p className="text-sm font-semibold tabular-nums" aria-live="polite">{selectedIds.length} selected</p>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <button type="button" onClick={clearSelection} disabled={isBulkDeleting}
+                      className="ui-button min-h-11 px-2 text-xs">Clear selection</button>
+                    <button type="button" onClick={handleBulkDelete} disabled={isBulkDeleting}
+                      className="ui-button min-h-11 px-2 text-xs text-coral">{isBulkDeleting ? "Deleting…" : "Delete selected"}</button>
+                    <button type="button" onClick={() => setBulkEditorOpen(true)} disabled={isBulkDeleting}
+                      className="ui-button-solid min-h-11 px-3 text-sm">Edit selected</button>
                   </div>
-
-                  <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] xl:items-start">
-                    <div className="space-y-2">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/42">Tags</span>
-                        {["append", "replace", "clear"].map((mode) => (
-                          <button
-                            key={mode}
-                            type="button"
-                            onClick={() => {
-                              setBulkTagsMode(mode);
-                              if (mode === "clear") {
-                                setBulkTags("");
-                              }
-                            }}
-                            className="ui-choice-pill"
-                            data-active={bulkTagsMode === mode}
-                          >
-                            {mode === "append" ? "Add" : mode === "replace" ? "Replace" : "Clear"}
-                          </button>
-                        ))}
-                      </div>
-                      {bulkTagsMode !== "clear" && (
-                        <div className="flex flex-wrap gap-1.5">
-                          {availableTags.map((tag) => {
-                            const selected = selectedBulkTags.some(
-                              (selectedTag) => selectedTag.toLowerCase() === tag.name.toLowerCase()
-                            );
-                            return (
-                              <button
-                                key={tag.id}
-                                type="button"
-                                onClick={() => (selected ? removeBulkTag(tag.name) : addBulkTag(tag.name))}
-                                className="ui-chip-removable"
-                                data-active={selected}
-                              >
-                                <span>{tag.name}</span>
-                                {selected && <span className="ui-chip-remove-icon">×</span>}
-                              </button>
-                            );
-                          })}
-                          {availableTags.length === 0 && (
-                            <span className="text-xs text-white/48">No saved tags available.</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/42">Setups</span>
-                        {[
-                          { value: "keep", label: "Keep" },
-                          { value: "set", label: "Replace all" },
-                          { value: "clear", label: "Clear all" }
-                        ].map((option) => (
-                          <button
-                            key={option.value}
-                            type="button"
-                            onClick={() => setBulkSetupMode(option.value)}
-                            className="ui-choice-pill"
-                            data-active={bulkSetupMode === option.value}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </div>
-                      {bulkSetupMode === "set" && (
-                        <div className="flex flex-wrap gap-1.5">
-                          {availableSetups.map((setup) => (
-                            <button
-                              key={setup.id}
-                              type="button"
-                              onClick={() => setBulkSetup(setup.name)}
-                              className="ui-chip-removable ui-setup-pill"
-                              data-active={bulkSetup === setup.name}
-                            >
-                              <span>{setup.name}</span>
-                              {bulkSetup === setup.name && <span className="ui-chip-remove-icon">✓</span>}
-                            </button>
-                          ))}
-                          {availableSetups.length === 0 && (
-                            <span className="text-xs text-white/48">No saved setups available.</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={handleBulkUpdate}
-                      disabled={
-                        isBulkSaving ||
-                        (
-                          bulkTagsMode !== "clear" &&
-                          !bulkTags.trim() &&
-                          bulkSetupMode !== "clear" &&
-                          !(bulkSetupMode === "set" && bulkSetup)
-                        )
-                      }
-                      className="ui-button-solid min-h-[38px] px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {isBulkSaving ? "Applying..." : "Apply Changes"}
-                    </button>
-                  </div>
-                </div>
+                </section>
               )}
+              {bulkEditorOpen && selectedTrades.length > 0 && <BulkTradeEditor trades={selectedTrades}
+                onSave={handleBulkUpdate} onClose={() => setBulkEditorOpen(false)} />}
 
               <TradeTable
                 trades={paginatedTrades}

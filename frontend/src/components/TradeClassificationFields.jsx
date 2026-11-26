@@ -21,7 +21,7 @@ export function classificationReady(draft) {
   return draft.tags.join(", ").length <= 500 && draft.setups.length <= 30;
 }
 
-function LabelPicker({ heading, noun, items, selected, onChange, busy, limit, valid, primary, error }) {
+function LabelPicker({ heading, noun, items, selected, onChange, busy, limit, valid, primary, error, mode, onModeChange }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const search = useRef(null);
@@ -54,11 +54,24 @@ function LabelPicker({ heading, noun, items, selected, onChange, busy, limit, va
   return <section className="min-w-0" aria-labelledby={`${id}-heading`}>
     <div className="flex items-center justify-between gap-2">
       <h3 id={`${id}-heading`} className="text-sm font-medium">{heading}</h3>
-      <button ref={trigger} type="button" className="ui-button min-h-11 px-3 text-sm" disabled={busy}
+      {mode !== "clear" && <button ref={trigger} type="button" className="ui-button min-h-11 px-3 text-sm" disabled={busy}
         aria-expanded={open} aria-controls={id} onClick={() => open ? close() : setOpen(true)}>
         {open ? "Done" : `+ Add ${noun}`}
-      </button>
+      </button>}
     </div>
+    {onModeChange && <label className="mt-2 block text-xs text-mist">
+      <span className="sr-only">{heading} action</span>
+      <select className="ui-input min-h-11" value={mode} disabled={busy} onChange={(event) => {
+        setOpen(false);
+        setQuery("");
+        onModeChange(event.target.value);
+      }}>
+        <option value="append">Add to existing</option>
+        <option value="replace">Replace existing</option>
+        <option value="clear">Clear all</option>
+      </select>
+    </label>}
+    {mode === "clear" ? <p className="mt-2 text-sm text-coral">All {heading.toLowerCase()} will be removed from the selection.</p> : <>
     <div className="mt-1 flex flex-wrap gap-1.5">
       {selected.map((item, index) => <button type="button" key={item} aria-label={`Remove ${noun} ${item}`}
         className="ui-chip-removable min-h-11 max-w-full gap-1.5" disabled={busy}
@@ -66,7 +79,9 @@ function LabelPicker({ heading, noun, items, selected, onChange, busy, limit, va
         <span className="min-w-0 whitespace-normal break-words">{item}{primary && selected.length > 1 && index === 0 && <span className="ml-1.5 text-xs text-mist">Primary</span>}</span>
         <span aria-hidden="true">×</span>
       </button>)}
-      {!selected.length && <p className="py-2 text-sm text-mist">No {heading.toLowerCase()} selected</p>}
+      {!selected.length && <p className="py-2 text-sm text-mist">{onModeChange
+        ? "Choose labels to apply."
+        : `No ${heading.toLowerCase()} selected`}</p>}
     </div>
     {primary && selected.length > 1 && <label className="mt-2 block text-xs text-mist">Primary setup for reports
       <select className="ui-input mt-1 min-h-11" value={selected[0]} disabled={busy}
@@ -75,7 +90,7 @@ function LabelPicker({ heading, noun, items, selected, onChange, busy, limit, va
       </select>
     </label>}
     {open && <div id={id} className="mt-2 space-y-2 rounded border border-white/10 bg-white/[0.03] p-2"
-      onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); close(); } }}>
+      onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); close(); } }}>
       <input ref={search} className="ui-input min-h-11" value={query} maxLength={100} disabled={busy}
         aria-label={`Find or create ${noun}`} placeholder={`Search or type a new ${noun}`}
         onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => {
@@ -99,6 +114,7 @@ function LabelPicker({ heading, noun, items, selected, onChange, busy, limit, va
       {!name && !matches.length && <p className="px-2 text-xs text-mist">Type a name to create a {noun}.</p>}
       {error && <p role="status" className="px-2 text-xs text-mist">Saved {heading.toLowerCase()} could not be loaded.</p>}
     </div>}
+    </>}
   </section>;
 }
 
@@ -108,7 +124,7 @@ const pickerSources = [
     valid: (values) => !values.at(-1).includes(",") && values.join(", ").length <= 500 }
 ];
 
-export default function TradeClassificationFields({ draft, onChange, review, busy }) {
+export function TradeLabelPickers({ draft, onChange, busy, modes, onModeChange }) {
   const [catalogs, setCatalogs] = useState(() => Object.fromEntries(pickerSources.map(({ key, peek }) => [key, { values: peek() ?? [] }])));
   useEffect(() => {
     let active = true;
@@ -122,12 +138,18 @@ export default function TradeClassificationFields({ draft, onChange, review, bus
     return () => { active = false; };
   }, []);
 
+  return <div className="grid gap-4 sm:grid-cols-2">
+    {pickerSources.map(({ key, heading, noun, limit, valid, primary }) => <LabelPicker key={key}
+      {...{ heading, noun, limit, valid, busy }} primary={primary && (!modes || modes[key] === "replace")}
+      mode={modes?.[key]} onModeChange={onModeChange && ((mode) => onModeChange(key, mode))}
+      items={uniqueLabels(catalogs[key].values.map(({ name }) => name))}
+      error={catalogs[key].error} selected={draft[key]} onChange={(values) => onChange({ ...draft, [key]: values })} />)}
+  </div>;
+}
+
+export default function TradeClassificationFields({ draft, onChange, review, busy }) {
   return <div className="space-y-4">
-    <div className="grid gap-4 sm:grid-cols-2">
-      {pickerSources.map(({ key, heading, noun, limit, valid, primary }) => <LabelPicker key={key}
-        {...{ heading, noun, limit, valid, primary, busy }} items={uniqueLabels(catalogs[key].values.map(({ name }) => name))}
-        error={catalogs[key].error} selected={draft[key]} onChange={(values) => onChange({ ...draft, [key]: values })} />)}
-    </div>
+    <TradeLabelPickers draft={draft} onChange={onChange} busy={busy} />
     <section className="space-y-2 border-t border-white/10 pt-3" aria-label="Entry grade">
       {review?.source === "BLIND" ? <SavedEntryGrade review={review} /> : <>
         <EntryGradeFields value={draft.grade ?? review?.letterGrade} busy={busy} label="Manual entry grade"

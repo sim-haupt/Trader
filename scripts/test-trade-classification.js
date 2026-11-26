@@ -1,7 +1,7 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const { getSetupFields } = require("../src/utils/buildTradePayload");
-const { tradeMetaSchema, tradeSchema } = require("../src/validators/trade.schemas");
+const { bulkUpdateTradesSchema, tradeMetaSchema, tradeSchema } = require("../src/validators/trade.schemas");
 const { blindGradeSchema } = require("../src/validators/entry-grade.schemas");
 
 test("setup lists retain order, deduplicate labels and explicitly clear prior assignments", () => {
@@ -11,6 +11,18 @@ test("setup lists retain order, deduplicate labels and explicitly clear prior as
   assert.deepEqual(getSetupFields({ setups: [], strategy: "old" }), { strategy: null, additionalSetups: [] });
   assert.deepEqual(getSetupFields({ strategy: "Legacy, exact" }), { strategy: "Legacy, exact" });
   assert.deepEqual(getSetupFields({ notes: "Only notes" }), {});
+});
+
+test("bulk edits accept grade-only updates, multiple setups, and explicit clear modes", () => {
+  const tradeIds = ["one", "two"];
+  const entryGrade = { letterGrade: "A+" };
+  assert.deepEqual(bulkUpdateTradesSchema.parse({ tradeIds, entryGrade }), { tradeIds, entryGrade });
+  assert.deepEqual(bulkUpdateTradesSchema.parse({ tradeIds, setups: ["Gap", "Reclaim"], setupsMode: "append" }).setups,
+    ["Gap", "Reclaim"]);
+  assert.deepEqual(bulkUpdateTradesSchema.parse({ tradeIds, setups: [], setupsMode: "replace" }).setups, []);
+  assert.equal(bulkUpdateTradesSchema.safeParse({ tradeIds, entryGrade: { letterGrade: "A-" } }).success, false);
+  assert.equal(bulkUpdateTradesSchema.safeParse({ tradeIds, entryGrade, gradeMode: "overwriteBlind" }).success, false);
+  assert.equal(bulkUpdateTradesSchema.safeParse({ tradeIds, gradeMode: "ungraded" }).success, false);
 });
 
 test("trade creation, editing and blind review accept only the four letter grades", () => {

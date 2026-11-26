@@ -1,7 +1,7 @@
 import { useId } from "react";
 import { formatCurrency } from "../utils/formatters";
+import { ENTRY_GRADES } from "../utils/entryGrades";
 
-const grades = ["A+", "A", "B", "C"];
 const planFields = [
   ["plannedStop", "Original stop price"],
   ["plannedInitialRisk", "Original planned risk ($)"],
@@ -40,7 +40,7 @@ export default function EntryGradeFields({ value, onChange, busy, label = "Entry
   return <fieldset disabled={busy}>
     <legend className="mb-2 text-sm font-medium">{label}</legend>
     <div className="flex flex-wrap gap-2">
-      {grades.map((grade) => <label key={grade} className="cursor-pointer">
+      {ENTRY_GRADES.map((grade) => <label key={grade} className="cursor-pointer">
         <input type="radio" name={id} value={grade} required={required} checked={value === grade}
           onChange={() => onChange(grade)} className="peer sr-only" />
         <span className="inline-flex h-11 w-12 items-center justify-center rounded border border-white/15 text-sm font-medium text-mist peer-checked:border-white/70 peer-checked:bg-white/10 peer-checked:text-white peer-focus-visible:outline">{grade}</span>

@@ -161,6 +161,15 @@ function TradeCountBadge({ count }) {
   );
 }
 
+function SelectTradesCheckbox({ label, checked, mixed = false, onChange }) {
+  return <label className="flex min-h-9 min-w-9 cursor-pointer items-center justify-center" onClick={(event) => event.stopPropagation()}>
+    <input type="checkbox" aria-label={label} checked={checked}
+      ref={(element) => { if (element) element.indeterminate = mixed; }}
+      onChange={(event) => { event.stopPropagation(); onChange(); }}
+      className="h-5 w-5 rounded border-[#e5e7eb42] bg-transparent" />
+  </label>;
+}
+
 function TradeTable({
   trades,
   groups,
@@ -179,7 +188,9 @@ function TradeTable({
   const visibleTrades = useMemo(() => tradeGroups.flatMap((group) => group.trades), [tradeGroups]);
   const [expandedGroups, setExpandedGroups] = useState(() => new Set());
   const [chartGroup, setChartGroup] = useState(null);
-  const allSelected = visibleTrades.length > 0 && visibleTrades.every((trade) => selectedIds.includes(trade.id));
+  const selection = useMemo(() => new Set(selectedIds), [selectedIds]);
+  const visibleSelected = visibleTrades.filter(({ id }) => selection.has(id)).length;
+  const allSelected = visibleTrades.length > 0 && visibleSelected === visibleTrades.length;
   const hasActionColumn = showChartAction || showTradeActions;
   const columnCount = (onToggleSelection ? 1 : 0) + 9 + (hasActionColumn ? 1 : 0);
 
@@ -262,12 +273,8 @@ function TradeTable({
               <tr className="ui-title text-left text-[11px] text-white/58">
                 {onToggleSelection && (
                   <th className="px-4 py-4">
-                    <input
-                      type="checkbox"
-                      checked={allSelected}
-                      onChange={() => onToggleAll?.(visibleTrades, !allSelected)}
-                      className="h-4 w-4 rounded border-[#e5e7eb42] bg-transparent"
-                    />
+                    <SelectTradesCheckbox label="Select all trades on this page" checked={allSelected}
+                      mixed={visibleSelected > 0 && !allSelected} onChange={() => onToggleAll?.(visibleTrades, !allSelected)} />
                   </th>
                 )}
                 <th className="px-4 py-4">DATE</th>
@@ -284,7 +291,8 @@ function TradeTable({
             </thead>
             <tbody className="divide-y divide-[var(--line)] bg-transparent">
               {tradeGroups.map((group, index) => {
-                const groupSelected = group.trades.every((trade) => selectedIds.includes(trade.id));
+                const groupCount = group.trades.filter(({ id }) => selection.has(id)).length;
+                const groupSelected = groupCount === group.trades.length;
                 const currentDate = group.dayLabel;
                 const previousDate = index > 0 ? tradeGroups[index - 1].dayLabel : null;
                 const startsNewDay = showDayDividers && currentDate !== previousDate;
@@ -307,15 +315,8 @@ function TradeTable({
                     <tr key={group.id} className="bg-white/[0.045] transition hover:bg-white/[0.065]">
                       {onToggleSelection && (
                         <td className="px-4 py-4">
-                          <input
-                            type="checkbox"
-                            checked={groupSelected}
-                            onChange={(event) => {
-                              event.stopPropagation();
-                              onToggleAll?.(group.trades, !groupSelected);
-                            }}
-                            className="h-4 w-4 rounded border-[#e5e7eb42] bg-transparent"
-                          />
+                          <SelectTradesCheckbox label={`Select ${group.symbol} trades on ${group.dayLabel}`} checked={groupSelected}
+                            mixed={groupCount > 0 && !groupSelected} onChange={() => onToggleAll?.(group.trades, !groupSelected)} />
                         </td>
                       )}
                       <td className="px-4 py-4 text-white/88">{group.dayLabel}</td>
@@ -373,7 +374,7 @@ function TradeTable({
                             role="button"
                             onClick={() => onSelectTrade?.(trade)}
                             onKeyDown={(event) => {
-                              if (event.key === "Enter" || event.key === " ") {
+                              if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
                                 event.preventDefault();
                                 onSelectTrade?.(trade);
                               }
@@ -382,21 +383,17 @@ function TradeTable({
                           >
                             {onToggleSelection && (
                               <td className="px-4 py-3">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedIds.includes(trade.id)}
-                                  onChange={(event) => {
-                                    event.stopPropagation();
-                                    onToggleSelection(trade.id);
-                                  }}
-                                  onClick={(event) => event.stopPropagation()}
-                                  className="h-4 w-4 rounded border-[#e5e7eb42] bg-transparent"
-                                />
+                                <SelectTradesCheckbox label={`Select ${trade.symbol} trade`} checked={selection.has(trade.id)}
+                                  onChange={() => onToggleSelection(trade.id)} />
                               </td>
                             )}
                             <td className="px-4 py-3 text-white/58">{formatDate(trade.entryDate)}</td>
                             <td className="px-4 py-3">
-                              <div className="pl-6 text-sm font-semibold text-white/78">{trade.symbol}</div>
+                              <div className="flex items-center gap-2 pl-6 text-sm font-semibold text-white/78">
+                                {trade.symbol}
+                                {trade.entryReview?.letterGrade && <span className="ui-chip"
+                                  aria-label={`Entry grade ${trade.entryReview.letterGrade}`}>{trade.entryReview.letterGrade}</span>}
+                              </div>
                             </td>
                             <td className="px-4 py-3 text-white/64">{trade.side}</td>
                             <td className="px-4 py-3 text-white/64">

@@ -64,23 +64,28 @@ const bulkDeleteSchema = z.object({
 
 const bulkUpdateTradesSchema = z
   .object({
+    ...tradeClassifications,
     tradeIds: z.array(z.string().min(1)).min(1),
     tags: z.string().trim().max(500).optional(),
     setup: z.string().trim().max(100).nullable().optional(),
     strategy: z.string().trim().max(100).nullable().optional(),
     notes: z.string().trim().max(2000).optional(),
-    tagsMode: z.enum(["append", "replace"]).optional()
+    tagsMode: z.enum(["append", "replace"]).optional(),
+    setupsMode: z.enum(["append", "replace"]).optional(),
+    gradeMode: z.enum(["ungraded", "replaceManual"]).optional()
   })
   .superRefine((data, context) => {
     if (
       data.tags === undefined &&
       !data.notes &&
       data.setup === undefined &&
-      data.strategy === undefined
+      data.strategy === undefined &&
+      data.setups === undefined &&
+      data.entryGrade === undefined
     ) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "At least one of tags, setup or notes is required"
+        message: "Include tags, setups, notes or an entry grade"
       });
     }
   });
